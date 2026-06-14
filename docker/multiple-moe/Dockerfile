@@ -1,3 +1,6 @@
+# Pinned (not the rolling `server-cuda` tag) because builds around the
+# gemma4-assistant MTP merge (#23398, ~b9549) were unstable. Bump manually
+# after confirming a newer build works.
 FROM ghcr.io/ggml-org/llama.cpp:server-cuda-b9592
 
 # huggingface-cli is deprecated; the `hf` command (from huggingface_hub) replaces it.
@@ -22,17 +25,15 @@ ENV PYTHONUNBUFFERED=1
 # args), keep its cache on the volume too.
 ENV LLAMA_CACHE=/models
 
-# Default model preset; override per-service with LLAMA_ARG_MODELS_PRESET.
-ENV LLAMA_ARG_MODELS_PRESET=/presets/rtx6000.ini
-
 # Overriding ENTRYPOINT below drops whatever the base image did to set this
 # up for /app/llama-server's bundled shared libs (libllama-common.so etc).
 ENV LD_LIBRARY_PATH=/app
 
 COPY presets/ /presets/
+COPY detect-preset.sh /detect-preset.sh
 COPY download-models.sh /download-models.sh
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /download-models.sh /entrypoint.sh
+RUN chmod +x /detect-preset.sh /download-models.sh /entrypoint.sh
 
 EXPOSE 8080
 

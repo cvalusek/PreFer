@@ -10,7 +10,7 @@ services:
       - ${LLM_MODEL_PATH:-./model-cache}:/models
     environment:
       - HF_TOKEN=${HF_TOKEN:-}
-      - LLAMA_ARG_MODELS_PRESET=${LLAMA_ARG_MODELS_PRESET:?set to /presets/<name>.ini, e.g. /presets/rtx6000.ini}
+      - LLAMA_ARG_MODELS_PRESET=${LLAMA_ARG_MODELS_PRESET:-}
       - LLAMA_ARG_MODELS_MAX=${LLAMA_ARG_MODELS_MAX:-1}
     deploy:
       resources:
