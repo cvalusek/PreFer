@@ -1,0 +1,14 @@
+# Local model caches / downloaded weights
+model-cache/
+**/model-cache/
+*.gguf
+
+# Env files (HF tokens, RunPod API keys, etc.)
+.env
+*.env
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
