@@ -99,6 +99,38 @@ if loops persist on gemma tool calls despite DRY, consider
 `dry-sequence-breaker = none` (or dropping `:`/`"` from the breaker set) for
 gemma specifically.
 
+## KV cache type: f16 on 96gb, q4_0 on 12gb/8gb
+
+`12gb.ini`/`8gb.ini` use `cache-type-k/v = q4_0` out of necessity — without
+it, the long-context variants wouldn't fit in 12GB/8GB at all. `96gb.ini`
+uses `cache-type-k/v = f16`, deliberately diverging, for two reasons found
+via research:
+
+1. **Speed**: q4_0 KV cache gets significantly *slower* than f16 as context
+   grows — a TurboQuant-related benchmark found q4_0 roughly 12% slower than
+   f16 at ~24K context and ~37% slower at ~110K, with dequantization
+   overhead during decode becoming the bottleneck at long context. Since
+   96gb's whole point is long context (up to 262144), q4_0 there would
+   likely cost speed, not save it.
+2. **Quality, specifically for gemma-4-26B-A4B**: a KL-divergence benchmark
+   of Gemma 4 and Qwen3.6 with quantized KV cache found gemma-4-26B-A4B is
+   unusually sensitive — q8_0 cache gives KL 0.377 (vs Qwen's <0.04), and
+   q4_0 reaches KL 1.088 with only 68% top-1 token match. Cache quantization
+   and weight quantization are independent error sources that stack — our
+   gemma weights are already `UD-Q4_K_XL` (4-bit), so adding q4_0 KV cache on
+   top compounds onto the most quantization-sensitive model in that
+   benchmark. Qwen and GLM weren't shown to have this sensitivity, but f16
+   is applied uniformly via `[*]` for simplicity, and the speed argument
+   applies to all three regardless.
+
+96gb has no VRAM pressure (unlike 12gb/8gb), so there's no real downside to
+trade off here — **except** that f16 KV cache is ~4x q4_0's size, and 96gb
+now has 5 `load-on-startup` models (the original 3 plus E2B/E4B). This
+change has not yet been tested for OOM with all 5 loaded — if it doesn't
+fit, q8_0 would be the fallback for gemma at minimum (still better than
+q4_0's KL 1.088, though q8_0's 0.377 isn't great either) while keeping f16
+for Qwen/GLM if their headroom allows.
+
 ## Qwen sampling: `presence-penalty`
 
 Qwen3.6's official recommendation is `presence_penalty = 1.5` (alongside
@@ -144,41 +176,31 @@ or tune DRY further before doing so.
 - Gemma's MTP draft (`mtp-gemma-4-26B-A4B-it.gguf`) downloads flat into the
   repo's root directory, not under an `MTP/` subfolder.
 - **gemma-4-E2B/E4B** (added for speed — same family, 2B/4B "effective
-  params", 128K max context): filenames
-  `gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf` / `gemma-4-E4B-it-qat-UD-Q4_K_XL.gguf`
-  are assumed by analogy with the 26B-A4B naming pattern, **not yet verified
-  on disk**. The `--include "*UD-Q4_K_XL*"` glob should match regardless of
-  minor naming differences, but the exact `model =` path in the presets
-  could be wrong until a real download confirms it.
+  params", 128K max context). **Confirmed on disk** (2026-06-15):
+  `gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf` (2.62 GB) +
+  `mtp-gemma-4-E2B-it.gguf` (59.2 MB), and
+  `gemma-4-E4B-it-qat-UD-Q4_K_XL.gguf` (4.22 GB) +
+  `mtp-gemma-4-E4B-it.gguf` (59.7 MB), both at the repo root — same
+  root-level-drafter pattern as 26B-A4B's `mtp-gemma-4-26B-A4B-it.gguf`
+  (252 MB next to its 14.2 GB main file). All four filenames/paths in
+  `download-models.sh` and the presets are correct.
 
-  **MTP for these two is the highest-risk, least-verified part of this
-  config.** Without MTP, E2B/E4B were observed to be significantly
-  out-throughput by the 26B-A4B (which has MTP) despite being much larger —
-  so MTP isn't optional polish here, it's the point of including these
-  models at all. The current config assumes MTP is embedded in the main
-  `UD-Q4_K_XL.gguf` (same pattern as Qwen3.6, no separate `model-draft`),
-  via `spec-type = draft-mtp` + `spec-draft-n-max = 4` +
-  `flash-attn = off` (overriding `[*]`'s `on`, per unsloth's documented E4B
-  MTP command).
-
-  Unsloth's Gemma 4 qat-GGUF repos are in *very* active flux around MTP
-  right now — files and folder structure (root-level `mtp-gemma-4-*-it.gguf`
-  vs an `MTP/` subfolder vs embedded) have been renamed/reorganized multiple
-  times within days, confirmed by checking 26B-A4B's repo directly (its
-  root-level 252MB `mtp-gemma-4-26B-A4B-it.gguf` drafter was added within
-  the last hour at the time of checking). E2B/E4B may or may not have
-  reached the same state yet.
-
-  **If `spec-type = draft-mtp` causes E2B/E4B to fail loading** (likely if
-  the GGUF has no embedded MTP tensors), the fix is *not* to just remove
-  `spec-type` — per the above, that makes these models not worth running.
-  Instead: check `unsloth/gemma-4-E{2,4}B-it-qat-GGUF` directly for whatever
-  the current MTP drafter situation is (root-level `mtp-gemma-4-E{2,4}B-it.gguf`,
-  an `MTP/` subfolder with a differently-named/precision file, or genuinely
-  not yet available for these sizes), and either point `model-draft` at the
-  correct file, download from the `MTP/` subfolder, or — if MTP truly isn't
-  available yet for E2B/E4B — hold off on these two entries entirely until
-  it lands, rather than shipping them in a state that's "not worth running."
+  Without MTP, E2B/E4B were observed to be significantly out-throughput by
+  the 26B-A4B (which has MTP) despite being much larger — so MTP isn't
+  optional polish here, it's the point of including these models at all.
+  Config: `model-draft = mtp-gemma-4-E{2,4}B-it.gguf`,
+  `spec-type = draft-mtp`, `spec-draft-n-max = 4`. unsloth's documented E4B
+  MTP command also uses `flash-attn = off`, which originally conflicted with
+  `[*]`'s `cache-type-k/v = q4_0` ("V cache quantization requires
+  flash_attn") — on `96gb.ini`, `[*]` is now `f16` (see KV cache section
+  above), which doesn't have that requirement, so `flash-attn = off` was
+  restored for E2B/E4B there, matching unsloth's documented command.
+  `12gb.ini`/`8gb.ini` still use `q4_0` cache, so `flash-attn = off` would
+  still conflict there — E2B/E4B on those two presets keep `flash-attn = on`
+  (from `[*]`), same as 26B-A4B's confirmed-working MTP + flash-attn=on
+  combination. `spec-draft-n-max = 4` is carried over from unsloth's
+  documented command and not independently verified for E2B/E4B, but the
+  drafter files themselves are confirmed present.
 
 ## Testing
 
