@@ -119,6 +119,13 @@ from the breaker set) for gemma specifically.
   separate `model-draft`).
 - Gemma's MTP draft (`mtp-gemma-4-26B-A4B-it.gguf`) downloads flat into the
   repo's root directory, not under an `MTP/` subfolder.
+- **gemma-4-E2B/E4B** (added for speed — same family, 2B/4B "effective
+  params", 128K max context, no MoE/no MTP/no separate draft): filenames
+  `gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf` / `gemma-4-E4B-it-qat-UD-Q4_K_XL.gguf`
+  are assumed by analogy with the 26B-A4B naming pattern, **not yet verified
+  on disk**. The `--include "*UD-Q4_K_XL*"` glob should match regardless of
+  minor naming differences, but the exact `model =` path in the presets
+  could be wrong until a real download confirms it.
 
 ## Testing
 
