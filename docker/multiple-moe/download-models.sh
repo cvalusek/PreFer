@@ -4,12 +4,14 @@ set -euo pipefail
 MODELS_DIR="/models"
 mkdir -p "$MODELS_DIR"
 
-# Comma-separated list of model keys to pre-stage. Anything not in this list
-# downloads lazily on first request instead, via each preset's `hf =` entry
-# (slower — plain HTTP via libcurl, no Xet — but no separate step needed).
+# Comma-separated list of model keys to pre-stage. Defaults to all of them —
+# presets use local `model =` paths (not HF-direct `hf =` loading; that was
+# tried and reverted, see AGENTS.md), so anything not pre-staged here simply
+# won't be available to load. Override to a subset only if you deliberately
+# don't need every model on this box.
 # Available keys: gemma-4-26b-a4b, gemma-4-e2b, gemma-4-e4b, qwen-3.6-35b-a3b,
 # qwen-3.6-27b, glm-4.7-flash
-PRESTAGE_MODELS="${PRESTAGE_MODELS:-gemma-4-26b-a4b,gemma-4-e2b,qwen-3.6-35b-a3b,qwen-3.6-27b,glm-4.7-flash}"
+PRESTAGE_MODELS="${PRESTAGE_MODELS:-gemma-4-26b-a4b,gemma-4-e2b,gemma-4-e4b,qwen-3.6-35b-a3b,qwen-3.6-27b,glm-4.7-flash}"
 
 wanted() {
   case ",$PRESTAGE_MODELS," in
