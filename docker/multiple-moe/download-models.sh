@@ -36,6 +36,15 @@ download() {
   echo "[download-models] $repo: syncing to $dest"
   mkdir -p "$dest"
   hf download "$repo" --local-dir "$dest" "$@"
+
+  # hf_xet keeps a chunk/shard cache (under $HF_HOME/xet) to speed up
+  # re-downloads and dedup across repos. On a space-constrained volume this
+  # competes with the models themselves for room, and we don't need fast
+  # re-downloads badly enough to keep it around — clear it after each model
+  # so disk usage doesn't accumulate across the whole download run.
+  if [ -d "$MODELS_DIR/xet" ]; then
+    rm -rf "$MODELS_DIR/xet"
+  fi
 }
 
 if wanted gemma-4-26b-a4b; then
