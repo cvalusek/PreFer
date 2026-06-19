@@ -12,6 +12,7 @@ services:
       - HF_TOKEN=${HF_TOKEN:-}
       - LLAMA_ARG_MODELS_PRESET=${LLAMA_ARG_MODELS_PRESET:-}
       - LLAMA_ARG_MODELS_MAX=${LLAMA_ARG_MODELS_MAX:-1}
+      - PRESTAGE_MODELS=${PRESTAGE_MODELS:-}
     deploy:
       resources:
         reservations:
