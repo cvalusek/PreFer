@@ -2,11 +2,10 @@
 
 PreFer is a set of practical llama.cpp inference presets for self-hosted LLMs.
 It packages known-good model mixes, VRAM-aware router configs, and download
-scripts into containers that are easy to run locally, on RunPod, or behind a
-small internal control plane.
+scripts into containers that are easy to run locally or on RunPod.
 
-The current flagship preset is `multiple-moe`: Gemma 4, Qwen3.6, and
-GLM-4.7-Flash served through `llama-server` router mode with an
+The current PreFer container serves Gemma 4, Qwen3.6, and GLM-4.7-Flash
+through `llama-server` router mode with an
 OpenAI-compatible API on port `8080`.
 
 ## Why PreFer
@@ -26,13 +25,9 @@ container can do the boring parts reliably:
 
 ```text
 docker/
-  multiple-moe/       PreFer's current llama.cpp router image
-control-plane/        NeurOn, a lightweight capacity switch for local/AWS targets
+  prefer/             PreFer's llama.cpp router image
 .github/workflows/    Build workflows
 ```
-
-`control-plane/` contains NeurOn for now, but it is intentionally separable
-and may move to its own repository later.
 
 ## Quick Start
 
@@ -45,16 +40,16 @@ cp .env.example .env
 Build the inference image:
 
 ```bash
-docker compose --profile llm-capacity build multiple-moe
+docker compose build prefer
 ```
 
 Run the inference server directly:
 
 ```bash
-docker compose --profile llm-capacity up multiple-moe
+docker compose up prefer
 ```
 
-Models are stored in the named Docker volume `llm-hosting-model-cache` by
+Models are stored in the named Docker volume `prefer-model-cache` by
 default. Override `LLM_MODEL_VOLUME` in `.env` if you want a different cache.
 
 Once the server is ready:
@@ -62,19 +57,6 @@ Once the server is ready:
 ```bash
 curl http://localhost:8080/v1/models
 ```
-
-## NeurOn Local Control
-
-NeurOn is included as a lightweight local control plane. It lets you reserve
-models for a short duration and keeps shared capacity on only while someone
-needs it.
-
-```bash
-docker compose up --build control-plane
-```
-
-Open `http://localhost:8090`, pick models, choose a duration, and reserve.
-`multiple-moe` stays behind the `llm-capacity` profile until NeurOn starts it.
 
 ## Environment
 
@@ -86,7 +68,7 @@ Useful knobs:
 - `LLAMA_ARG_MODELS_PRESET` forces a specific preset instead of VRAM detection.
 - `LLAMA_ARG_MODELS_MAX` controls llama.cpp router concurrency/loading.
 - `LLM_MODEL_VOLUME` names the persistent Docker volume for `/models`.
-- `CONTROL_PLANE_PORT` and `LLM_PORT` set host ports.
+- `LLM_PORT` sets the host port.
 
 ## Netskope / Corporate TLS
 
@@ -95,17 +77,16 @@ overlay. Export your corporate root/intermediate certificates as `.crt` files
 under `docker/certs/` and run:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.netskope.yml --profile llm-capacity build multiple-moe
-docker compose -f docker-compose.yml -f docker-compose.netskope.yml up --build control-plane
+docker compose -f docker-compose.yml -f docker-compose.netskope.yml build prefer
+docker compose -f docker-compose.yml -f docker-compose.netskope.yml up prefer
 ```
 
 Certificate files under `docker/certs/` are ignored by git.
 
 ## Images
 
-GitHub Actions build container images for the repo. The PreFer image is the
-`multiple-moe` service today; additional model sets can be added under
-`docker/<name>/` as the preset library grows.
+GitHub Actions build the PreFer image. Additional model sets can be added
+under `docker/<name>/` as the preset library grows.
 
-See [docker/multiple-moe/README.md](docker/multiple-moe/README.md) for model
+See [docker/prefer/README.md](docker/prefer/README.md) for model
 details, preset tiers, aliases, and operational notes.

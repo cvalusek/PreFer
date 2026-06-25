@@ -21,10 +21,10 @@ ENV PYTHONUNBUFFERED=1
 ENV LLAMA_CACHE=/models
 ENV LD_LIBRARY_PATH=/app
 
-COPY docker/multiple-moe/presets/ /presets/
-COPY docker/multiple-moe/detect-preset.sh /detect-preset.sh
-COPY docker/multiple-moe/download-models.sh /download-models.sh
-COPY docker/multiple-moe/entrypoint.sh /entrypoint.sh
+COPY docker/prefer/presets/ /presets/
+COPY docker/prefer/detect-preset.sh /detect-preset.sh
+COPY docker/prefer/download-models.sh /download-models.sh
+COPY docker/prefer/entrypoint.sh /entrypoint.sh
 RUN sed -i 's/\r$//' /detect-preset.sh /download-models.sh /entrypoint.sh \
     && chmod +x /detect-preset.sh /download-models.sh /entrypoint.sh
 

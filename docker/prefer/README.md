@@ -1,4 +1,4 @@
-# PreFer multiple-moe
+# PreFer Container
 
 A llama.cpp router container hosting Gemma 4, Qwen3.6, and GLM-4.7-Flash.
 On first start it downloads the models from Hugging Face, then serves them
@@ -59,7 +59,7 @@ Full per-model sampling params and shared defaults live in the corresponding
 From the repo root:
 
 ```bash
-docker compose --profile llm-capacity up --build multiple-moe
+docker compose up --build prefer
 ```
 
 Relevant env vars (all read from your shell or a `.env` file in the repo
@@ -67,7 +67,7 @@ root — on Windows, prefer a `.env` file for path-shaped values like
 `LLAMA_ARG_MODELS_PRESET`, since Git Bash mangles leading-`/` paths passed as
 shell env vars):
 
-- `LLM_MODEL_VOLUME` — Docker volume mounted at `/models` (default `llm-hosting-model-cache`)
+- `LLM_MODEL_VOLUME` — Docker volume mounted at `/models` (default `prefer-model-cache`)
 - `LLM_PORT` — host port mapped to the container's 8080 (default `8080`)
 - `HF_TOKEN` — optional, helps with Hugging Face rate limits
 - `PRESTAGE_MODELS` — optional comma-separated subset of model keys to download
@@ -88,7 +88,7 @@ To populate `/models` without starting the GPU server (e.g. ahead of time on
 a slow connection):
 
 ```bash
-docker compose run --rm multiple-moe /download-models.sh
+docker compose run --rm prefer /download-models.sh
 ```
 
 ## Extra args

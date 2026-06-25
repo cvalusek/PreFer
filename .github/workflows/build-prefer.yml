@@ -1,16 +1,16 @@
-name: Build multiple-moe image
+name: Build PreFer image
 
 on:
   push:
     branches: [main]
     paths:
-      - 'docker/multiple-moe/**'
-      - '.github/workflows/build-multiple-moe.yml'
+      - 'docker/prefer/**'
+      - '.github/workflows/build-prefer.yml'
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/multiple-moe
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push:
@@ -45,7 +45,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: docker/multiple-moe
+          context: docker/prefer
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -6,8 +6,8 @@ read this before changing presets, the Dockerfile, or the detection scripts.
 
 ## Project overview
 
-llama.cpp router containers for self-hosted LLM inference, primarily for
-RunPod. `docker/multiple-moe/` hosts three models — gemma-4-26B-A4B,
+PreFer: llama.cpp router containers for self-hosted LLM inference, primarily for
+RunPod. `docker/prefer/` hosts three model families — gemma-4-26B-A4B,
 Qwen3.6-35B-A3B, and GLM-4.7-Flash-REAP-23B-A3B — via `llama-server`'s router
 mode, with models downloaded from Hugging Face on first start.
 
@@ -210,7 +210,7 @@ on actual GPU hardware (a Blackwell-class ~96GB card and a Titan X Pascal
 
 - `docker compose config` — verify env var resolution (especially
   `LLAMA_ARG_MODELS_PRESET`/`LLAMA_ARG_MODELS_MAX`) before `up`.
-- `docker compose run --rm multiple-moe /download-models.sh` — pre-warm the
+- `docker compose run --rm prefer /download-models.sh` — pre-warm the
   model cache without starting the GPU server.
 - `GET /v1/models` and a minimal `POST /v1/chat/completions` per model id —
   confirm a preset's models load and respond.

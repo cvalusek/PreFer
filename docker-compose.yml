@@ -1,35 +1,13 @@
-services:
-  control-plane:
-    build:
-      context: ./control-plane
-      dockerfile: Dockerfile
-    image: llm-capacity-control-plane:local
-    ports:
-      - "${CONTROL_PLANE_PORT:-8090}:8090"
-    volumes:
-      - .:/workspace:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - PORT=8090
-      - SHARED_PASSWORD=${SHARED_PASSWORD:-dev-password}
-      - COOKIE_SECRET=${COOKIE_SECRET:-dev-cookie-secret}
-      - CAPACITY_TARGETS_FILE=/workspace/control-plane/examples/capacity-targets.local-docker.json
-      - USE_FAKE_PROVIDER=false
-      - RECONCILER_INTERVAL_SECONDS=${RECONCILER_INTERVAL_SECONDS:-15}
-      - RESERVATION_STATUS_POLL_SECONDS=${RESERVATION_STATUS_POLL_SECONDS:-5}
-      - ADMIN_STATUS_POLL_SECONDS=${ADMIN_STATUS_POLL_SECONDS:-10}
-      - HF_TOKEN=${HF_TOKEN:-}
-      - LLAMA_ARG_MODELS_PRESET=${LLAMA_ARG_MODELS_PRESET:-}
-      - LLAMA_ARG_MODELS_MAX=${LLAMA_ARG_MODELS_MAX:-1}
-      - PRESTAGE_MODELS=${PRESTAGE_MODELS:-}
+name: prefer
 
-  multiple-moe:
+services:
+  prefer:
     profiles:
-      - llm-capacity
+      - PreFer
     build:
-      context: ./docker/multiple-moe
+      context: ./docker/prefer
       dockerfile: Dockerfile
-    image: multiple-moe:local
+    image: prefer:local
     ports:
       - "${LLM_PORT:-8080}:8080"
     volumes:
@@ -49,4 +27,4 @@ services:
 
 volumes:
   llm-model-cache:
-    name: ${LLM_MODEL_VOLUME:-llm-hosting-model-cache}
+    name: ${LLM_MODEL_VOLUME:-prefer-model-cache}

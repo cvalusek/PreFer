@@ -1,6 +1,6 @@
 # Research Index
 
-Model selection research for `llm-hosting`, as of June 2026.
+Model selection research for PreFer, as of June 2026.
 
 ## Quick Reference
 
