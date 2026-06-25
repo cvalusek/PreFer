@@ -1,52 +1,111 @@
-# llm-containers
+# PreFer
 
-Container builds for self-hosted LLM inference, primarily targeting RunPod
-(and eventually some lighter-weight home-network boxes).
+PreFer is a set of practical llama.cpp inference presets for self-hosted LLMs.
+It packages known-good model mixes, VRAM-aware router configs, and download
+scripts into containers that are easy to run locally, on RunPod, or behind a
+small internal control plane.
 
-Each container packages a known-good [llama.cpp](https://github.com/ggml-org/llama.cpp)
-server configuration: on first start it downloads the relevant model(s) from
-Hugging Face via the `hf` CLI, then launches `llama-server` in
-[router mode](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md#using-multiple-models),
-exposing an OpenAI-compatible API on port `8080`. Each container ships
-multiple VRAM-tiered presets (`presets/<N>gb.ini`) and auto-selects one based
-on the detected GPU's VRAM at startup, so the same image works across
-different hardware without rebuilding.
+The current flagship preset is `multiple-moe`: Gemma 4, Qwen3.6, and
+GLM-4.7-Flash served through `llama-server` router mode with an
+OpenAI-compatible API on port `8080`.
+
+## Why PreFer
+
+Running local inference is mostly plumbing: model filenames, context limits,
+KV cache choices, GPU memory tradeoffs, startup downloads, and the occasional
+upstream sharp edge. PreFer keeps those choices explicit and versioned so the
+container can do the boring parts reliably:
+
+- auto-select a preset from detected GPU VRAM
+- download the right GGUF files into a persistent `/models` volume
+- expose stable model aliases through llama.cpp router mode
+- keep tuning rationale in repo docs instead of tribal memory
+- support tiny local boxes and larger long-context hosts from one image
 
 ## Layout
 
-```
+```text
 docker/
-  multiple-moe/    # gemma-4, qwen3.6, glm-4.7-flash; presets for 96gb/12gb/8gb VRAM tiers
-.github/workflows/ # GitHub Actions to build + push images to GHCR
+  multiple-moe/       PreFer's current llama.cpp router image
+control-plane/        NeurOn, a lightweight capacity switch for local/AWS targets
+.github/workflows/    Build workflows
 ```
 
-Additional `docker/<name>/` folders may be added for other model sets or
-build variants.
+`control-plane/` contains NeurOn for now, but it is intentionally separable
+and may move to its own repository later.
+
+## Quick Start
+
+Copy the example environment file and adjust as needed:
+
+```bash
+cp .env.example .env
+```
+
+Build the inference image:
+
+```bash
+docker compose --profile llm-capacity build multiple-moe
+```
+
+Run the inference server directly:
+
+```bash
+docker compose --profile llm-capacity up multiple-moe
+```
+
+Models are stored in the named Docker volume `llm-hosting-model-cache` by
+default. Override `LLM_MODEL_VOLUME` in `.env` if you want a different cache.
+
+Once the server is ready:
+
+```bash
+curl http://localhost:8080/v1/models
+```
+
+## NeurOn Local Control
+
+NeurOn is included as a lightweight local control plane. It lets you reserve
+models for a short duration and keeps shared capacity on only while someone
+needs it.
+
+```bash
+docker compose up --build control-plane
+```
+
+Open `http://localhost:8090`, pick models, choose a duration, and reserve.
+`multiple-moe` stays behind the `llm-capacity` profile until NeurOn starts it.
+
+## Environment
+
+Most local configuration lives in `.env`; see [.env.example](.env.example).
+Useful knobs:
+
+- `PRESTAGE_MODELS` limits which Hugging Face repos are downloaded.
+- `HF_TOKEN` improves Hugging Face rate limits.
+- `LLAMA_ARG_MODELS_PRESET` forces a specific preset instead of VRAM detection.
+- `LLAMA_ARG_MODELS_MAX` controls llama.cpp router concurrency/loading.
+- `LLM_MODEL_VOLUME` names the persistent Docker volume for `/models`.
+- `CONTROL_PLANE_PORT` and `LLM_PORT` set host ports.
+
+## Netskope / Corporate TLS
+
+If Docker builds fail with Python or npm certificate errors, use the Netskope
+overlay. Export your corporate root/intermediate certificates as `.crt` files
+under `docker/certs/` and run:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.netskope.yml --profile llm-capacity build multiple-moe
+docker compose -f docker-compose.yml -f docker-compose.netskope.yml up --build control-plane
+```
+
+Certificate files under `docker/certs/` are ignored by git.
 
 ## Images
 
-Images are built via GitHub Actions and pushed to GHCR at
-`ghcr.io/<owner>/<repo>/<name>` (e.g. `ghcr.io/<owner>/<repo>/multiple-moe`).
-See each subfolder's README for model details, presets, and the model
-aliases each container's router exposes.
+GitHub Actions build container images for the repo. The PreFer image is the
+`multiple-moe` service today; additional model sets can be added under
+`docker/<name>/` as the preset library grows.
 
-## Building locally
-
-```bash
-docker compose up --build multiple-moe
-```
-
-Relevant env vars (read from your shell or a `.env` file in this directory):
-
-- `LLM_MODEL_PATH` — host directory mounted at `/models` for downloaded GGUFs
-  (default `./model-cache`)
-- `LLM_PORT` — host port mapped to the container's `8080` (default `8080`)
-- `HF_TOKEN` — optional, helps with Hugging Face rate limits
-- `LLAMA_ARG_MODELS_PRESET` / `LLAMA_ARG_MODELS_MAX` — optional, force a
-  specific preset instead of VRAM-based auto-detection. On Windows, prefer
-  setting these in a `.env` file rather than as shell env vars — Git Bash
-  mangles leading-`/` paths passed as arguments/env to non-MSYS programs.
-
-The `/models/<hf-org>/<hf-repo>/...` layout means multiple services in this
-compose file can safely share the same `LLM_MODEL_PATH` without colliding or
-re-downloading shared models.
+See [docker/multiple-moe/README.md](docker/multiple-moe/README.md) for model
+details, preset tiers, aliases, and operational notes.

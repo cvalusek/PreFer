@@ -33,7 +33,8 @@ COPY presets/ /presets/
 COPY detect-preset.sh /detect-preset.sh
 COPY download-models.sh /download-models.sh
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /detect-preset.sh /download-models.sh /entrypoint.sh
+RUN sed -i 's/\r$//' /detect-preset.sh /download-models.sh /entrypoint.sh \
+    && chmod +x /detect-preset.sh /download-models.sh /entrypoint.sh
 
 EXPOSE 8080
 

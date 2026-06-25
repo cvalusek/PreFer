@@ -1,0 +1,27 @@
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY docker/certs/*.crt /usr/local/share/ca-certificates/
+RUN apk add --no-cache ca-certificates && update-ca-certificates
+ENV NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/netskope-root.crt
+ENV NPM_CONFIG_CAFILE=/etc/ssl/certs/ca-certificates.crt
+COPY control-plane/package.json control-plane/package-lock.json* ./
+RUN npm ci
+
+FROM deps AS build
+COPY control-plane/tsconfig.json ./
+COPY control-plane/src ./src
+RUN npm run build
+
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY docker/certs/*.crt /usr/local/share/ca-certificates/
+RUN apk add --no-cache ca-certificates docker-cli docker-cli-compose && update-ca-certificates
+ENV NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/netskope-root.crt
+ENV NPM_CONFIG_CAFILE=/etc/ssl/certs/ca-certificates.crt
+COPY control-plane/package.json control-plane/package-lock.json* ./
+RUN npm ci --omit=dev
+COPY --from=build /app/dist ./dist
+COPY control-plane/examples ./examples
+EXPOSE 8090
+CMD ["node", "dist/server.js"]

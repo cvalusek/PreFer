@@ -1,0 +1,58 @@
+[
+  {
+    "id": "multiple-moe-96gb",
+    "displayName": "Multiple MoE 96GB",
+    "provider": "aws-ecs",
+    "models": [
+      {
+        "id": "qwen-3.6-35b-a3b",
+        "displayName": "Qwen3.6 35B A3B",
+        "modelFamily": "Qwen 3.6",
+        "description": "General coding and reasoning model",
+        "aliases": ["qwen-3.6"],
+        "backendModelIds": ["qwen-3.6", "qwen-3.6-35b-a3b"],
+        "contextLabel": "256k"
+      },
+      {
+        "id": "qwen-3.6-35b-a3b-1m",
+        "displayName": "Qwen3.6 35B A3B 1M",
+        "modelFamily": "Qwen 3.6",
+        "description": "Long-context Qwen profile",
+        "backendModelIds": ["qwen-3.6-35b-a3b-1m"],
+        "contextLabel": "1m"
+      },
+      {
+        "id": "gemma-4-26b-a4b",
+        "displayName": "Gemma 4 26B A4B",
+        "modelFamily": "Gemma 4",
+        "description": "Gemma 4 with MTP draft support",
+        "aliases": ["gemma-4"],
+        "backendModelIds": ["gemma-4", "gemma-4-26b-a4b"],
+        "contextLabel": "128k"
+      },
+      {
+        "id": "glm-4.7-flash",
+        "displayName": "GLM 4.7 Flash",
+        "modelFamily": "GLM 4.7 Flash",
+        "description": "GLM flash/reasoning MoE model",
+        "backendModelIds": ["glm-4.7-flash"],
+        "contextLabel": "198k"
+      }
+    ],
+    "modelDiscovery": {
+      "bootstrapOnStartup": false,
+      "bootstrapTimeoutSeconds": 600
+    },
+    "modelsMax": 2,
+    "aws": {
+      "cluster": "llm-cluster",
+      "service": "llama-cpp-multiple-moe-96gb",
+      "autoScalingGroupName": "llm-multiple-moe-96gb-asg"
+    },
+    "healthCheckUrl": "http://llm-96gb.internal:8080/health",
+    "litellm": {
+      "backendName": "ecs-llama-96gb",
+      "apiBaseUrl": "http://llm-96gb.internal:8080/v1"
+    }
+  }
+]

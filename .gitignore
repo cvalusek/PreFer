@@ -6,9 +6,21 @@ model-cache/
 # Env files (HF tokens, RunPod API keys, etc.)
 .env
 *.env
+!.env.example
+!*.env.example
+
+# Local corporate CA material for Netskope Docker builds
+docker/certs/*.crt
+docker/certs/*.pem
 
 # OS / editor cruft
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+
+# Node app build/dependency output
+node_modules/
+**/node_modules/
+dist/
+**/dist/

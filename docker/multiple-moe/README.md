@@ -1,4 +1,4 @@
-# multiple-moe
+# PreFer multiple-moe
 
 A llama.cpp router container hosting Gemma 4, Qwen3.6, and GLM-4.7-Flash.
 On first start it downloads the models from Hugging Face, then serves them
@@ -24,7 +24,7 @@ smallest tier if VRAM is below all of them. Override with
 | `8gb.ini` | ~8GB | Same 6 variants as `12gb.ini` | `1` | Higher `n-cpu-moe` (18-32), same `mmap`/sleep settings |
 
 All presets share `dry-multiplier = 0.8`, `dry-base = 1.75`,
-`dry-allowed-length = 2` (DRY sampling) as a mitigation against repetition
+`dry-allowed-length = 24` (DRY sampling) as a mitigation against repetition
 loops, particularly relevant to Gemma 4's tool-calling.
 
 ## Models
@@ -59,7 +59,7 @@ Full per-model sampling params and shared defaults live in the corresponding
 From the repo root:
 
 ```bash
-LLM_MODEL_PATH=/path/to/model-cache docker compose up --build multiple-moe
+docker compose --profile llm-capacity up --build multiple-moe
 ```
 
 Relevant env vars (all read from your shell or a `.env` file in the repo
@@ -67,9 +67,10 @@ root — on Windows, prefer a `.env` file for path-shaped values like
 `LLAMA_ARG_MODELS_PRESET`, since Git Bash mangles leading-`/` paths passed as
 shell env vars):
 
-- `LLM_MODEL_PATH` — host directory mounted at `/models` (default `./model-cache`)
+- `LLM_MODEL_VOLUME` — Docker volume mounted at `/models` (default `llm-hosting-model-cache`)
 - `LLM_PORT` — host port mapped to the container's 8080 (default `8080`)
 - `HF_TOKEN` — optional, helps with Hugging Face rate limits
+- `PRESTAGE_MODELS` — optional comma-separated subset of model keys to download
 - `LLAMA_ARG_MODELS_PRESET` / `LLAMA_ARG_MODELS_MAX` — optional, force a
   specific preset instead of auto-detection
 

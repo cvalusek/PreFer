@@ -1,0 +1,11 @@
+.git
+model-cache
+**/model-cache
+*.gguf
+**/node_modules
+**/dist
+**/coverage
+**/.env
+**/*.env
+.vscode
+.idea
