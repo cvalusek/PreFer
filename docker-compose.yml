@@ -2,8 +2,7 @@ name: prefer
 
 services:
   prefer:
-    profiles:
-      - PreFer
+    container_name: prefer
     build:
       context: ./docker/prefer
       dockerfile: Dockerfile
@@ -11,7 +10,7 @@ services:
     ports:
       - "${LLM_PORT:-8080}:8080"
     volumes:
-      - llm-model-cache:/models
+      - prefer-model-cache:/models
     environment:
       - HF_TOKEN=${HF_TOKEN:-}
       - LLAMA_ARG_MODELS_PRESET=${LLAMA_ARG_MODELS_PRESET:-}
@@ -26,5 +25,5 @@ services:
               capabilities: [gpu]
 
 volumes:
-  llm-model-cache:
-    name: ${LLM_MODEL_VOLUME:-prefer-model-cache}
+  prefer-model-cache:
+    name: ${PREFER_MODEL_VOLUME:-prefer-model-cache}
