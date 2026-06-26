@@ -1,5 +1,7 @@
 # PreFer
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 PreFer is a set of practical llama.cpp inference presets for self-hosted LLMs.
 It packages known-good model mixes, VRAM-aware router configs, and download
 scripts into containers that are easy to run locally or on RunPod.
