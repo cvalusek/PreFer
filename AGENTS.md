@@ -18,10 +18,11 @@ mode, with models downloaded from Hugging Face on first start.
   total VRAM (falling back to the smallest tier if VRAM is below all of
   them). Adding a new tier (e.g. `16gb.ini`) requires no changes to the
   detection script.
-- **Router model id naming**: `<model>-<context>` where context is the
-  approximate ctx-size in "k" (e.g. `gemma-4-26b-a4b-64k`,
-  `glm-4.7-flash-reap-23b-a3b-198k`). Ids should reflect the *actual*
-  ctx-size, not a historical/arbitrary label.
+- **Router model id naming**: use llama.cpp's HF-style section ids for the
+  primary sections (e.g. `unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL`) and
+  expose short aliases for clients (e.g. `gemma-4`, `qwen-3.6`,
+  `glm-4.7-flash`). Include context in an alias only when the section uses a
+  non-native explicit context, such as `qwen-3.6-35b-a3b-1m`.
 - **Shared defaults use `[*]`**, not per-section duplication. A per-section
   "common defaults" convention (duplicating `[*]`'s values into every model
   section, with `[*]` commented out as documentation) was tried and
@@ -151,17 +152,17 @@ or tune DRY further before doing so.
 
 - **`96gb.ini`**: `n-cpu-moe = 0` for all three models — confirmed working
   (all three load and generate correctly).
-- **`12gb.ini`**: `gemma-4-26b-a4b-64k` (`n-cpu-moe=12`) and
-  `glm-4.7-flash-reap-23b-a3b-64k` (`n-cpu-moe=12`) are confirmed working on
-  actual Titan X Pascal hardware (GLM measured at ~21 tok/s).
-  `qwen3.6-35b-a3b-64k` (`n-cpu-moe=18`) was confirmed loading and working
-  but "slow" *before* `mmap=false` was added — worth retesting now that
-  mmap is disabled. The four `-256k`/`-198k` variants (`n-cpu-moe` 20/26/18)
-  are **heuristic guesses** (scaled from the 64k values by context-size
-  ratio), untested.
-- **`8gb.ini`**: **entirely heuristic** — all six `n-cpu-moe` values are
-  scaled from `12gb.ini`'s numbers by a rough 33% VRAM-reduction factor.
-  Nothing here has been tested on real 8GB hardware (GTX 1070) yet.
+- **`12gb.ini`**: the preset now mirrors the `96gb.ini`/`8gb.ini` router id
+  shape and uses `ctx-size = 0` for native context except the explicit Qwen
+  1M entry. Legacy 64k smoke tests on Titan X Pascal confirmed
+  gemma-4-26B-A4B and GLM could load/generate, but the current native-context
+  entries are still heuristic: gemma-4-26B-A4B uses `n-cpu-moe=20`, Qwen3.6
+  35B uses `n-cpu-moe=26`, and GLM uses `n-cpu-moe=18`. Qwen3.6 27B is dense,
+  so `n-cpu-moe` is not expected to matter.
+- **`8gb.ini`**: **entirely heuristic**. It mirrors the same router id shape
+  as `12gb.ini`, with higher MoE offload values (`n-cpu-moe` 26/32/24 for
+  gemma-4-26B-A4B, Qwen3.6 35B, and GLM respectively). Nothing here has been
+  tested on real 8GB hardware (GTX 1070) yet.
 
 ## Download / Hugging Face specifics
 
@@ -169,12 +170,17 @@ or tune DRY further before doing so.
 - `HF_HOME=/models` so the HF cache/staging directory shares the model
   volume (avoids filling the container's ephemeral filesystem, and survives
   restarts).
-- Qwen's actual GGUF filename is `Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf` — no
-  `-MTP-` in the filename despite the repo being named
-  `Qwen3.6-35B-A3B-MTP-GGUF`. The MTP layer is embedded in this file (no
-  separate `model-draft`).
+- Qwen's actual GGUF filename omits `-MTP-` despite the repo being named
+  `Qwen3.6-35B-A3B-MTP-GGUF`; the current presets/downloads use
+  `Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf`. The MTP layer is embedded in this file
+  (no separate `model-draft`).
 - Gemma's MTP draft (`mtp-gemma-4-26B-A4B-it.gguf`) downloads flat into the
   repo's root directory, not under an `MTP/` subfolder.
+- Gemma vision is enabled through `mmproj-F16.gguf` for all hosted Gemma
+  variants. F16 was chosen over BF16 as the safer default for Pascal-era
+  cards (Titan X Pascal / GTX 1070), and over F32 because F32 roughly doubles
+  projector size with no known practical quality benefit for this setup.
+  Qwen repos also publish mmproj files, but only Gemma is wired up today.
 - **gemma-4-E2B/E4B** (added for speed — same family, 2B/4B "effective
   params", 128K max context). **Confirmed on disk** (2026-06-15):
   `gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf` (2.62 GB) +

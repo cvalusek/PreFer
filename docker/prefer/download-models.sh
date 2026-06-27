@@ -50,19 +50,22 @@ download() {
 if wanted gemma-4-26b-a4b; then
   download unsloth/gemma-4-26B-A4B-it-qat-GGUF \
     --include "*UD-Q4_K_XL*" \
-    --include "*mtp-gemma*"
+    --include "*mtp-gemma*" \
+    --include "mmproj-F16.gguf"
 fi
 
 if wanted gemma-4-e2b; then
   download unsloth/gemma-4-E2B-it-qat-GGUF \
     --include "*UD-Q4_K_XL*" \
-    --include "*mtp-gemma*"
+    --include "*mtp-gemma*" \
+    --include "mmproj-F16.gguf"
 fi
 
 if wanted gemma-4-e4b; then
   download unsloth/gemma-4-E4B-it-qat-GGUF \
     --include "*UD-Q4_K_XL*" \
-    --include "*mtp-gemma*"
+    --include "*mtp-gemma*" \
+    --include "mmproj-F16.gguf"
 fi
 
 if wanted qwen-3.6-35b-a3b; then
