@@ -4,14 +4,31 @@ set -euo pipefail
 MODELS_DIR="/models"
 mkdir -p "$MODELS_DIR"
 
-# Comma-separated list of model keys to pre-stage. Defaults to all of them —
-# presets use local `model =` paths (not HF-direct `hf =` loading; that was
-# tried and reverted, see AGENTS.md), so anything not pre-staged here simply
-# won't be available to load. Override to a subset only if you deliberately
-# don't need every model on this box.
+# Comma-separated list of model keys to pre-stage. presets use local `model =`
+# paths (not HF-direct `hf =` loading; that was tried and reverted, see
+# AGENTS.md), so anything not pre-staged here simply won't be available to load.
 # Available keys: gemma-4-26b-a4b, gemma-4-e2b, gemma-4-e4b, qwen-3.6-35b-a3b,
-# qwen-3.6-27b, glm-4.7-flash
-PRESTAGE_MODELS="${PRESTAGE_MODELS:-gemma-4-26b-a4b,gemma-4-e2b,gemma-4-e4b,qwen-3.6-35b-a3b,qwen-3.6-27b,glm-4.7-flash}"
+# qwen-3.6-27b, glm-4.7-flash, deepseek-v4-flash, glm-5.2, glm-5.2-reap
+#
+# The default is preset-aware. The big multi-GPU presets (deepseek-v4-flash,
+# glm-5.2, glm-5.2-reap) each own a host, so when one of them is the selected
+# preset, the default is to stage ONLY that one model — not the small-model
+# lineup. The preset comes from LLAMA_ARG_MODELS_PRESET, which entrypoint.sh
+# resolves (via detect-preset.sh) and exports into the environment before
+# running this script; its basename matches the download key one-to-one. Any
+# other preset (the `<N>gb.ini` tiers) defaults to the full small-model set.
+#
+# An explicit PRESTAGE_MODELS always wins — set it to stage a subset, or to
+# stage a big model when pre-warming directly (e.g.
+# `docker compose run --rm prefer /download-models.sh`) without the preset env
+# var set.
+SMALL_MODELS="gemma-4-26b-a4b,gemma-4-e2b,gemma-4-e4b,qwen-3.6-35b-a3b,qwen-3.6-27b,glm-4.7-flash"
+PRESET_NAME="$(basename "${LLAMA_ARG_MODELS_PRESET:-}" .ini)"
+case "$PRESET_NAME" in
+  deepseek-v4-flash|glm-5.2|glm-5.2-reap) DEFAULT_PRESTAGE="$PRESET_NAME" ;;
+  *)                                      DEFAULT_PRESTAGE="$SMALL_MODELS" ;;
+esac
+PRESTAGE_MODELS="${PRESTAGE_MODELS:-$DEFAULT_PRESTAGE}"
 
 wanted() {
   case ",$PRESTAGE_MODELS," in
@@ -115,6 +132,22 @@ fi
 if wanted glm-4.7-flash; then
   download unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF \
     --include "*UD-Q6_K_XL*"
+fi
+
+if wanted deepseek-v4-flash; then
+  download antirez/deepseek-v4-gguf \
+    --include "*Q4KExperts-F16HC*imatrix*" \
+    --include "*MTP-Q4K-Q8_0-F32*"
+fi
+
+if wanted glm-5.2; then
+  download unsloth/GLM-5.2-GGUF \
+    --include "UD-Q4_K_XL/*"
+fi
+
+if wanted glm-5.2-reap; then
+  download 0xSero/GLM-5.2-REAP-504B-GGUF \
+    --include "*Q4_K_XL*"
 fi
 
 if [ -n "$S3_BUCKET_NAME" ]; then

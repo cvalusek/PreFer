@@ -1,6 +1,6 @@
-# Pinned for the same reason as Dockerfile. This variant trusts a local
-# Netskope/corporate CA before Python package installation.
-FROM ghcr.io/ggml-org/llama.cpp:server-cuda-b9592
+# Pinned for the same reason as Dockerfile (kept in lockstep with it). This
+# variant trusts a local Netskope/corporate CA before Python package install.
+FROM ghcr.io/ggml-org/llama.cpp:server-cuda-b9843
 
 COPY docker/certs/*.crt /usr/local/share/ca-certificates/
 

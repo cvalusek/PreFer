@@ -38,16 +38,65 @@ mode, with models downloaded from Hugging Face on first start.
 
 ## Base image
 
-Pinned to `ghcr.io/ggml-org/llama.cpp:server-cuda-b9592`, **not** the rolling
-`server-cuda` tag. Builds around the gemma4-assistant MTP merge (#23398,
-~b9549, merged 2026-06-07) were unstable; b9592 was confirmed working
-(gemma's MTP draft loads, web UI serves correctly).
+Pinned to `ghcr.io/ggml-org/llama.cpp:server-cuda-b9843`, **not** the rolling
+`server-cuda` tag. (`Dockerfile.netskope` is kept on the same pin.)
+
+History: b9592 was the prior pin — builds around the gemma4-assistant MTP merge
+(#23398, ~b9549, merged 2026-06-07) were unstable, and b9592 was confirmed
+working (gemma's MTP draft loads, web UI serves correctly). Bumped to **b9843**
+to get DeepSeek V4 (CSA/HCA compressed attention, PR #24162, merged 2026-06-29
+at ~b9842) and GLM MoE DSA (PR #19460) for the `deepseek-v4-flash` / `glm-5.2`
+presets — neither architecture loads on b9592. **This bump is not yet
+re-verified on hardware for the existing gemma/qwen/glm-4.7 presets** (the big
+models need it; the small ones were tuned on b9592). Run the checklist below on
+a 96gb host before trusting the small-model presets on b9843; if it regresses,
+the options are to pin a build between b9592 and b9843 that has both, or run the
+big models from a separately-pinned image.
 
 To bump this pin: rebuild with `--pull` against a candidate tag, then verify
 on actual hardware that (1) the web UI loads at `/` and (2) gemma's draft
 model (`mtp-gemma-4-26B-A4B-it.gguf`) loads without an
 `unknown model architecture: 'gemma4-assistant'` error before changing the
 `FROM` line.
+
+## Large multi-GPU presets (deepseek-v4-flash, glm-5.2, glm-5.2-reap)
+
+These are **named** presets (not `<N>gb.ini` VRAM tiers) and must be selected
+explicitly via `LLAMA_ARG_MODELS_PRESET=/presets/<name>.ini`. They are not
+auto-detectable: `detect-preset.sh` reads only the *first* GPU's VRAM
+(`nvidia-smi ... | head -n1`), so on a multi-GPU box it can't see the combined
+pool and would wrongly pick `96gb.ini`. Each preset holds a single model and is
+meant to own the whole host (one model at a time — that was the design goal).
+`download-models.sh`'s default `PRESTAGE_MODELS` is **preset-aware**: when one
+of these named presets is selected, the default stages only that one model
+(the preset basename equals the download key), instead of the small-model
+lineup the `<N>gb.ini` tiers get. So selecting the preset is enough; an
+explicit `PRESTAGE_MODELS` still overrides (needed only when pre-warming
+directly without the preset env var set).
+
+Sizes/hardware assume **RTX PRO 6000 Blackwell, 96 GB/card** (the only card that
+makes the GPU counts work). `ctx-size = 65536` is a deliberately conservative
+starting point on all three — DeepSeek-V4-Flash is natively 1M context and
+GLM-5.2 is large too, and `ctx-size = 0` (native) would blow up the KV
+allocation. Raise toward native as VRAM headroom allows.
+
+| Preset | GGUF | On-disk | Fits | Notes |
+| ------ | ---- | ------- | ---- | ----- |
+| `deepseek-v4-flash` | [antirez/deepseek-v4-gguf](https://huggingface.co/antirez/deepseek-v4-gguf) `Q4KExperts...imatrix` | ~153 GB | 2× 96 GB | Q4 experts / F16 attn+indexer / Q8 shared+out — the Q4_K_XL-equivalent. unsloth never shipped a V4-Flash GGUF (only FP4/FP8 base); antirez's are what mainline PR #24162 was patched to load. Includes a 3.5 GB MTP draft wired via `spec-type = draft-mtp`. |
+| `glm-5.2` | [unsloth/GLM-5.2-GGUF](https://huggingface.co/unsloth/GLM-5.2-GGUF) `UD-Q4_K_XL` | ~467 GB (11 shards) | 6× 96 GB (5× very tight) | Full, non-pruned GLM-5.2. Best quality, no REAP loop tax. |
+| `glm-5.2-reap` | [0xSero/GLM-5.2-REAP-504B-GGUF](https://huggingface.co/0xSero/GLM-5.2-REAP-504B-GGUF) `Q4_K_XL` | ~308 GB (8 shards) | 4× 96 GB | REAP 34%-expert-pruned. Fits in 4 cards, but per the card the loop rate roughly doubles (3.6%→7.2%) and the DSA indexer tensors are faked (duplicated from the nearest full layer) to load — no DSA speedup. Prefer `glm-5.2` if you have the 6th card. |
+
+**Untested.** None of these have been run on hardware — settings are heuristic
+(mirroring the `96gb.ini` `[*]` shape with conservative ctx). Known risks to
+check on first boot:
+- `flash-attn = on` is inherited from convention; if either arch rejects flash
+  attention on b9843, set `flash-attn = off` (or `auto`) for that preset.
+- The DeepSeek MTP `model-draft` may not pair cleanly with the main GGUF; if it
+  errors on load, drop `model-draft`/`spec-type`/`spec-draft-n-max` to run the
+  main model alone.
+- Multi-GPU split is left at llama.cpp's default (layer split across all visible
+  GPUs); add `tensor-split` only if the cards are uneven or the layer split
+  OOMs one GPU.
 
 ## Known upstream llama.cpp issues (not fixable via our config)
 

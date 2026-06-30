@@ -4,10 +4,11 @@ A llama.cpp router container hosting Gemma 4, Qwen3.6, and GLM-4.7-Flash.
 On first start it downloads the models from Hugging Face, then serves them
 via `llama-server`'s router mode (OpenAI-compatible API on port 8080).
 
-Base image: pinned to `ghcr.io/ggml-org/llama.cpp:server-cuda-b9592` (not the
-rolling `server-cuda` tag) because builds around the gemma4-assistant MTP
-merge (#23398, ~b9549) were unstable. Bump the `FROM` line in the
-`Dockerfile` manually after confirming a newer build works.
+Base image: pinned to `ghcr.io/ggml-org/llama.cpp:server-cuda-b9843` (not the
+rolling `server-cuda` tag). Bumped from b9592 to pick up DeepSeek V4 and GLM
+DSA support for the large multi-GPU presets; the existing gemma/qwen/glm-4.7
+presets are not yet re-verified on b9843 (see AGENTS.md "Base image"). Bump the
+`FROM` line in the `Dockerfile` manually after confirming a newer build works.
 
 ## Presets
 
@@ -27,6 +28,27 @@ All presets share `dry-multiplier = 0.8`, `dry-base = 1.75`,
 `dry-allowed-length = 24` (DRY sampling) as a mitigation against repetition
 loops, particularly relevant to Gemma 4's tool-calling.
 
+### Large multi-GPU presets (named, not auto-detected)
+
+These host a single multi-hundred-GB model on a dedicated multi-GPU box (one
+model per host). They are **not** auto-detected — VRAM detection only reads the
+first GPU — so you select one explicitly with
+`LLAMA_ARG_MODELS_PRESET=/presets/<name>.ini`. Staging is automatic: when one of
+these is the selected preset, `download-models.sh` defaults `PRESTAGE_MODELS` to
+just that model, so you don't also need to set it (an explicit `PRESTAGE_MODELS`
+still overrides). Sizes assume 96 GB/card (RTX PRO 6000 Blackwell).
+
+| Preset | Model | On-disk | GPUs | Alias |
+| ------ | ----- | ------- | ---- | ----- |
+| `deepseek-v4-flash.ini` | DeepSeek-V4-Flash (antirez Q4 experts + MTP draft) | ~153 GB | 2× 96 GB | `deepseek-v4-flash` |
+| `glm-5.2.ini` | GLM-5.2 full `UD-Q4_K_XL` (11 shards) | ~467 GB | 6× 96 GB | `glm-5.2` |
+| `glm-5.2-reap.ini` | GLM-5.2 REAP-504B `Q4_K_XL` (8 shards) | ~308 GB | 4× 96 GB | `glm-5.2-reap` |
+
+Requires the `b9843` base image (DeepSeek V4 + GLM DSA support). Settings are
+conservative and **untested on hardware** — see AGENTS.md for the per-preset
+risk notes (`ctx-size = 65536` starting point, `flash-attn`, MTP draft, GPU
+split).
+
 ## Models
 
 All models download from Hugging Face on first start (see
@@ -42,6 +64,9 @@ layout means multiple presets/services can safely share one volume.
 | [unsloth/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF) | `UD-Q6_K_XL` | MTP draft is built into the main GGUF, no separate `model-draft` |
 | [unsloth/Qwen3.6-27B-MTP-GGUF](https://huggingface.co/unsloth/Qwen3.6-27B-MTP-GGUF) | `UD-Q6_K_XL` | MTP draft is built into the main GGUF, no separate `model-draft` |
 | [unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF](https://huggingface.co/unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF) | `UD-Q6_K_XL` | No speculative decoding |
+| [antirez/deepseek-v4-gguf](https://huggingface.co/antirez/deepseek-v4-gguf) | `Q4KExperts...imatrix` | `deepseek-v4-flash` preset only; includes the `MTP-Q4K` draft. unsloth ships no V4-Flash GGUF |
+| [unsloth/GLM-5.2-GGUF](https://huggingface.co/unsloth/GLM-5.2-GGUF) | `UD-Q4_K_XL` | `glm-5.2` preset only; full (non-pruned), 11 shards |
+| [0xSero/GLM-5.2-REAP-504B-GGUF](https://huggingface.co/0xSero/GLM-5.2-REAP-504B-GGUF) | `Q4_K_XL` | `glm-5.2-reap` preset only; 34%-pruned, 8 shards |
 
 ## Router model ids
 
@@ -54,9 +79,12 @@ layout means multiple presets/services can safely share one volume.
 | `qwen-3.6-35b-a3b-1m` | 1048576 | `96gb.ini`, `12gb.ini`, `8gb.ini` |
 | `qwen-3.6-27b` | native | `96gb.ini`, `12gb.ini`, `8gb.ini` |
 | `glm-4.7-flash` | native | `96gb.ini`, `12gb.ini`, `8gb.ini` |
+| `deepseek-v4-flash` | 65536 (start) | `deepseek-v4-flash.ini` |
+| `glm-5.2` | 65536 (start) | `glm-5.2.ini` |
+| `glm-5.2-reap` | 65536 (start) | `glm-5.2-reap.ini` |
 
 Full per-model sampling params and shared defaults live in the corresponding
-`presets/<N>gb.ini`.
+`presets/<N>gb.ini` (or the named preset for the large multi-GPU models).
 
 ## Running
 

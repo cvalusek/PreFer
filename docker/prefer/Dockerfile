@@ -1,7 +1,13 @@
 # Pinned (not the rolling `server-cuda` tag) because builds around the
 # gemma4-assistant MTP merge (#23398, ~b9549) were unstable. Bump manually
 # after confirming a newer build works.
-FROM ghcr.io/ggml-org/llama.cpp:server-cuda-b9592
+#
+# Bumped b9592 -> b9843 to pick up DeepSeek V4 (CSA/HCA attention, PR #24162,
+# merged 2026-06-29 at ~b9842) and GLM MoE DSA (PR #19460) for the new
+# deepseek-v4-flash / glm-5.2 presets. NOT yet re-verified on hardware for the
+# existing gemma/qwen/glm-4.7 presets - run the AGENTS.md "Base image" bump
+# checklist before trusting this on a 96gb host.
+FROM ghcr.io/ggml-org/llama.cpp:server-cuda-b9843
 
 # huggingface-cli is deprecated; the `hf` command (from huggingface_hub) replaces it.
 RUN apt-get update \
