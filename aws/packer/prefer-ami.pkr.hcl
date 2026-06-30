@@ -65,6 +65,12 @@ source "amazon-ebs" "prefer" {
 build {
   sources = ["source.amazon-ebs.prefer"]
 
+  # The file provisioner's trailing-slash source uploads boot/'s *contents* into
+  # the destination, which must already exist as a directory — create it first.
+  provisioner "shell" {
+    inline = ["mkdir -p /tmp/prefer-boot"]
+  }
+
   provisioner "file" {
     source      = "../boot/"
     destination = "/tmp/prefer-boot"

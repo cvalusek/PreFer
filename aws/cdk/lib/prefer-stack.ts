@@ -46,6 +46,12 @@ export class PreferStack extends cdk.Stack {
       description: 'Root EBS size (GB). Models do NOT live here — OS + container image only.',
     });
 
+    const prestageModelsParam = new cdk.CfnParameter(this, 'PrestageModels', {
+      type: 'String',
+      default: '',
+      description: 'Comma-separated model keys to pre-stage on boot (blank = all). Set one small model, e.g. gemma-4-e2b, for a cheap first test.',
+    });
+
     // ---- Network: single-AZ public VPC, no NAT, free S3 gateway endpoint ----
     // Instance sits in a public subnet (direct IGW egress for HF / GHCR); S3
     // traffic takes the gateway endpoint (free, on-backbone, full bandwidth).
@@ -102,6 +108,7 @@ export class PreferStack extends cdk.Stack {
     userData.addCommands(
       'set -euo pipefail',
       `echo "S3_BUCKET_NAME=${bucket.bucketName}" >> /opt/prefer/prefer-boot.env`,
+      `echo "PRESTAGE_MODELS=${prestageModelsParam.valueAsString}" >> /opt/prefer/prefer-boot.env`,
       'systemctl restart prefer-boot.service',
     );
 
