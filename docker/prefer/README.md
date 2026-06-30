@@ -4,11 +4,11 @@ A llama.cpp router container hosting Gemma 4, Qwen3.6, and GLM-4.7-Flash.
 On first start it downloads the models from Hugging Face, then serves them
 via `llama-server`'s router mode (OpenAI-compatible API on port 8080).
 
-Base image: pinned to `ghcr.io/ggml-org/llama.cpp:server-cuda-b9843` (not the
-rolling `server-cuda` tag). Bumped from b9592 to pick up DeepSeek V4 and GLM
-DSA support for the large multi-GPU presets; the existing gemma/qwen/glm-4.7
-presets are not yet re-verified on b9843 (see AGENTS.md "Base image"). Bump the
-`FROM` line in the `Dockerfile` manually after confirming a newer build works.
+Base image: pinned to `ghcr.io/ggml-org/llama.cpp:server-cuda-b9843` (we track
+latest). This has both GLM MoE DSA (`glm-5.2` presets) and DeepSeek V4
+(`deepseek-v4-flash`). The `server-cuda` image lags the git tag slightly; if a
+`--pull` 404s, the build is still in flight — wait for it (see AGENTS.md "Base
+image").
 
 ## Presets
 
@@ -44,10 +44,9 @@ still overrides). Sizes assume 96 GB/card (RTX PRO 6000 Blackwell).
 | `glm-5.2.ini` | GLM-5.2 full `UD-Q4_K_XL` (11 shards) | ~467 GB | 6× 96 GB | `glm-5.2` |
 | `glm-5.2-reap.ini` | GLM-5.2 REAP-504B `Q4_K_XL` (8 shards) | ~308 GB | 4× 96 GB | `glm-5.2-reap` |
 
-Requires the `b9843` base image (DeepSeek V4 + GLM DSA support). Settings are
-conservative and **untested on hardware** — see AGENTS.md for the per-preset
-risk notes (`ctx-size = 65536` starting point, `flash-attn`, MTP draft, GPU
-split).
+All three run on the `b9843` base image. Settings are conservative and
+**untested on hardware** — see AGENTS.md for the per-preset risk notes
+(`ctx-size = 65536` starting point, `flash-attn`, MTP draft, GPU split).
 
 ## Models
 

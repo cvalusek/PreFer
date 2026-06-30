@@ -38,26 +38,22 @@ mode, with models downloaded from Hugging Face on first start.
 
 ## Base image
 
-Pinned to `ghcr.io/ggml-org/llama.cpp:server-cuda-b9843`, **not** the rolling
-`server-cuda` tag. (`Dockerfile.netskope` is kept on the same pin.)
+Pinned to `ghcr.io/ggml-org/llama.cpp:server-cuda-b9843`.
+(`Dockerfile.netskope` is kept on the same pin.) Policy here is "track latest" —
+bump freely. Prior pin was b9592, held back when builds around the
+gemma4-assistant MTP merge (#23398, ~b9549) were unstable; that's long settled.
 
-History: b9592 was the prior pin — builds around the gemma4-assistant MTP merge
-(#23398, ~b9549, merged 2026-06-07) were unstable, and b9592 was confirmed
-working (gemma's MTP draft loads, web UI serves correctly). Bumped to **b9843**
-to get DeepSeek V4 (CSA/HCA compressed attention, PR #24162, merged 2026-06-29
-at ~b9842) and GLM MoE DSA (PR #19460) for the `deepseek-v4-flash` / `glm-5.2`
-presets — neither architecture loads on b9592. **This bump is not yet
-re-verified on hardware for the existing gemma/qwen/glm-4.7 presets** (the big
-models need it; the small ones were tuned on b9592). Run the checklist below on
-a 96gb host before trusting the small-model presets on b9843; if it regresses,
-the options are to pin a build between b9592 and b9843 that has both, or run the
-big models from a separately-pinned image.
+b9843 covers both large-preset architectures:
 
-To bump this pin: rebuild with `--pull` against a candidate tag, then verify
-on actual hardware that (1) the web UI loads at `/` and (2) gemma's draft
-model (`mtp-gemma-4-26B-A4B-it.gguf`) loads without an
-`unknown model architecture: 'gemma4-assistant'` error before changing the
-`FROM` line.
+- **GLM MoE DSA** (`GlmMoeDsaForCausalLM`, PR #19460, merged 2026-02-13) — also
+  in any recent build; the GGUFs carry an indexer-tensor workaround (see the
+  large-presets section).
+- **DeepSeek V4** (CSA/HCA, PR #24162, merged 2026-06-29) — landed in build
+  b9840, so b9843 has it.
+
+Note the `server-cuda-b9843` image is published a bit behind the git tag (the
+ggml image matrix lags the source tag); if a `--pull` 404s, the build is still
+in flight — wait for it rather than pinning lower.
 
 ## Large multi-GPU presets (deepseek-v4-flash, glm-5.2, glm-5.2-reap)
 
@@ -90,7 +86,7 @@ allocation. Raise toward native as VRAM headroom allows.
 (mirroring the `96gb.ini` `[*]` shape with conservative ctx). Known risks to
 check on first boot:
 - `flash-attn = on` is inherited from convention; if either arch rejects flash
-  attention on b9843, set `flash-attn = off` (or `auto`) for that preset.
+  attention, set `flash-attn = off` (or `auto`) for that preset.
 - The DeepSeek MTP `model-draft` may not pair cleanly with the main GGUF; if it
   errors on load, drop `model-draft`/`spec-type`/`spec-draft-n-max` to run the
   main model alone.
