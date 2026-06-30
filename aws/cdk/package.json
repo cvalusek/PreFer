@@ -1,0 +1,22 @@
+{
+  "name": "prefer-ec2-cdk",
+  "version": "0.1.0",
+  "private": true,
+  "bin": {
+    "prefer": "bin/prefer.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "synth": "cdk synth",
+    "synth:template": "cdk synth --output cdk.out && cp cdk.out/PreferEc2.template.json ../cloudformation/prefer-ec2.template.json"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.150.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.150.0",
+    "constructs": "^10.3.0"
+  }
+}

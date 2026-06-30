@@ -1,0 +1,63 @@
+name: Build PreFer IaC template
+
+# Isolated from the container build: only CDK changes trigger this. It synths
+# the stack (fails on a broken template) and republishes the CloudFormation
+# template that non-CDK users deploy, so the two never drift.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'aws/cdk/**'
+      - '.github/workflows/build-iac.yml'
+  pull_request:
+    paths:
+      - 'aws/cdk/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # to commit the re-synthesized template on push to main
+
+jobs:
+  synth:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: aws/cdk/package-lock.json
+
+      - name: Install deps
+        working-directory: aws/cdk
+        run: npm ci
+
+      - name: Synthesize CloudFormation template
+        working-directory: aws/cdk
+        run: |
+          npx cdk synth --quiet
+          mkdir -p ../cloudformation
+          cp cdk.out/PreferEc2.template.json ../cloudformation/prefer-ec2.template.json
+
+      - name: Upload template artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prefer-ec2-cloudformation
+          path: aws/cloudformation/prefer-ec2.template.json
+
+      # Keep the committed template in sync. Writes to aws/cloudformation/**,
+      # which is NOT in this workflow's path filter, so it can't loop.
+      # Non-fatal: if main is protected or Actions lack write perms, the template
+      # is still available as the artifact uploaded above.
+      - name: Commit template if changed
+        if: github.event_name == 'push'
+        continue-on-error: true
+        run: |
+          if ! git diff --quiet -- aws/cloudformation/prefer-ec2.template.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add aws/cloudformation/prefer-ec2.template.json
+            git commit -m "ci: re-synth CloudFormation template"
+            git push
+          fi

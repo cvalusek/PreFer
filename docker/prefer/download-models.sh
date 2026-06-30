@@ -20,6 +20,20 @@ wanted() {
   esac
 }
 
+# Optional S3 model cache. When S3_BUCKET_NAME is set (e.g. on EC2 with an
+# instance role granting access to the bucket), each model is synced down from
+# s3://$S3_BUCKET_NAME/<hf-repo>/ before hitting Hugging Face, and any newly
+# downloaded files are synced back up afterwards so the bucket warms itself.
+# Unset (local / RunPod) means HF-only — exactly the prior behavior.
+#
+# Sync is per-repo (inside download() below), not a blanket sync of /models,
+# because HF_HOME=/models also holds HF cache cruft (xet, .cache, locks) that
+# we don't want in the bucket. Per-repo dirs contain only the model files.
+S3_BUCKET_NAME="${S3_BUCKET_NAME:-}"
+if [ -n "$S3_BUCKET_NAME" ]; then
+  echo "[download-models] S3 cache enabled: s3://$S3_BUCKET_NAME"
+fi
+
 # download <hf-repo> [extra hf-download args...]
 # Always invokes `hf download` rather than checking for existing files first —
 # `hf download` already hashes/resumes incomplete or partial downloads itself,
@@ -32,9 +46,17 @@ download() {
   local repo="$1"
   shift
   local dest="$MODELS_DIR/$repo"
+  mkdir -p "$dest"
+
+  # Cache sync-down: pull this repo's cached files first so `hf download` only
+  # fetches what's missing. `|| true` because s5cmd errors when the prefix is
+  # empty (first-ever boot, cold cache), which is not a failure here.
+  if [ -n "$S3_BUCKET_NAME" ]; then
+    echo "[download-models] $repo: sync down from s3://$S3_BUCKET_NAME/$repo"
+    s5cmd sync "s3://$S3_BUCKET_NAME/$repo/*" "$dest/" || true
+  fi
 
   echo "[download-models] $repo: syncing to $dest"
-  mkdir -p "$dest"
   hf download "$repo" --local-dir "$dest" "$@"
 
   # hf_xet keeps a chunk/shard cache (under $HF_HOME/xet) to speed up
@@ -44,6 +66,18 @@ download() {
   # so disk usage doesn't accumulate across the whole download run.
   if [ -d "$MODELS_DIR/xet" ]; then
     rm -rf "$MODELS_DIR/xet"
+  fi
+
+  # Cache sync-up: push newly downloaded files back to the bucket in the
+  # background (fire-and-forget) so warming the cache doesn't delay
+  # `exec llama-server`. On a cache hit there's nothing new to upload, so this
+  # is a fast no-op; on a miss it warms the bucket for the next boot. If it
+  # fails, the next boot just re-uploads — self-healing. Excludes hf's per-dir
+  # `.cache` bookkeeping so only model files land in S3.
+  if [ -n "$S3_BUCKET_NAME" ]; then
+    echo "[download-models] $repo: sync up to s3://$S3_BUCKET_NAME/$repo (background)"
+    nohup s5cmd sync --exclude ".cache/*" "$dest/" "s3://$S3_BUCKET_NAME/$repo/" \
+      >>/var/log/prefer-s3-sync.log 2>&1 &
   fi
 }
 
@@ -83,4 +117,8 @@ if wanted glm-4.7-flash; then
     --include "*UD-Q6_K_XL*"
 fi
 
-echo "[download-models] done (pre-staged: ${PRESTAGE_MODELS:-none})"
+if [ -n "$S3_BUCKET_NAME" ]; then
+  echo "[download-models] done (pre-staged: ${PRESTAGE_MODELS:-none}; S3 cache: s3://$S3_BUCKET_NAME, uploads finishing in background)"
+else
+  echo "[download-models] done (pre-staged: ${PRESTAGE_MODELS:-none})"
+fi

@@ -28,7 +28,8 @@ container can do the boring parts reliably:
 ```text
 docker/
   prefer/             PreFer's llama.cpp router image
-.github/workflows/    Build workflows
+aws/                  EC2 deployment (AMI + boot scripts + CDK); see aws/DESIGN.md
+.github/workflows/    Build workflows (container, AMI, and IaC build independently)
 ```
 
 ## Quick Start
@@ -66,6 +67,8 @@ Most local configuration lives in `.env`; see [.env.example](.env.example).
 Useful knobs:
 
 - `PRESTAGE_MODELS` limits which Hugging Face repos are downloaded.
+- `S3_BUCKET_NAME` enables an optional S3 model cache (sync down before
+  Hugging Face, sync new files back up); unset means Hugging Face only.
 - `HF_TOKEN` improves Hugging Face rate limits.
 - `LLAMA_ARG_MODELS_PRESET` forces a specific preset instead of VRAM detection.
 - `LLAMA_ARG_MODELS_MAX` controls llama.cpp router concurrency/loading.

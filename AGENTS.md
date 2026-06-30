@@ -208,6 +208,29 @@ or tune DRY further before doing so.
   documented command and not independently verified for E2B/E4B, but the
   drafter files themselves are confirmed present.
 
+## S3 model cache (`S3_BUCKET_NAME`)
+
+`download-models.sh` has an optional S3 layer gated on `S3_BUCKET_NAME`: per-repo
+sync **down** from `s3://$BUCKET/<hf-repo>/` before `hf download`, then a
+background sync **up** of new files. Unset (local / RunPod) = HF-only, unchanged.
+Sync is per-repo (not a blanket `/models` sync) on purpose: `HF_HOME=/models`
+holds cache cruft (xet, `.cache`) that shouldn't reach the bucket. Needs `s5cmd`
+(installed in the Dockerfile); creds come from the AWS chain (env / instance
+role). S3 was chosen over a persistent EBS volume because a single EBS volume
+caps at 1 GB/s while S3 via s5cmd is NIC-bound at multiple GB/s.
+
+## EC2 deployment (`aws/`)
+
+Self-serve EC2 launch lives under `aws/` (design + rationale in `aws/DESIGN.md`):
+a Packer-built public AMI (DLAMI Base GPU Ubuntu 24.04 base, resolved via SSM) +
+systemd boot unit (stage instance-store NVMe at `/opt/dlami/nvme`, `docker run`
+with `/models` on NVMe) + a CDK stack distributed as synthesized CloudFormation.
+The container is pulled at boot (not baked), and CI is path-filtered so AWS
+changes never rebuild the container (`build-prefer.yml` is `docker/prefer/**`
+only; `build-ami.yml` and `build-iac.yml` cover `aws/`). Don't reopen the settled
+calls there (S3-over-EBS, AMI base, dlami-nvme, `--restart no`) without reading
+`aws/DESIGN.md` first.
+
 ## Testing
 
 There's no automated test suite — all verification so far has been manual,

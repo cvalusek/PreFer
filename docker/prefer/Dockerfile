@@ -5,10 +5,18 @@ FROM ghcr.io/ggml-org/llama.cpp:server-cuda-b9592
 
 # huggingface-cli is deprecated; the `hf` command (from huggingface_hub) replaces it.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3-pip \
+    && apt-get install -y --no-install-recommends python3-pip curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir --break-system-packages -U "huggingface_hub[cli]"
+
+# s5cmd: fast parallel S3 sync for the optional model cache (used by
+# download-models.sh only when S3_BUCKET_NAME is set). Single static binary;
+# reads AWS creds from the standard chain (env / IMDS instance role). Bump the
+# pin as needed.
+ARG S5CMD_VERSION=2.2.2
+RUN curl -fsSL "https://github.com/peak/s5cmd/releases/download/v${S5CMD_VERSION}/s5cmd_${S5CMD_VERSION}_Linux-64bit.tar.gz" \
+    | tar -xz -C /usr/local/bin s5cmd
 
 # Keep HF's staging/cache dir on the same volume as the final model files,
 # so downloads don't fill the container's ephemeral filesystem and partial

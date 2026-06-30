@@ -75,6 +75,11 @@ shell env vars):
 - `LLM_PORT` - host port mapped to the container's 8080 (default `8080`)
 - `HF_TOKEN` - optional, helps with Hugging Face rate limits
 - `PRESTAGE_MODELS` - optional comma-separated subset of model keys to download
+- `S3_BUCKET_NAME` - optional. When set, `download-models.sh` syncs each model
+  down from `s3://<bucket>/<hf-repo>/` before hitting Hugging Face, and syncs
+  newly downloaded files back up (in the background) to warm the cache. Unset =
+  Hugging Face only. On EC2, supply the bucket via an instance role rather than
+  static keys (the container reads IMDS; the instance needs IMDS hop limit 2).
 - `LLAMA_ARG_MODELS_PRESET` / `LLAMA_ARG_MODELS_MAX` - optional, force a
   specific preset instead of auto-detection
 

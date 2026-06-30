@@ -1,0 +1,62 @@
+name: Build PreFer AMI
+
+# Isolated from the container build: only AMI inputs (Packer template + baked
+# boot scripts) trigger this. Changes under docker/prefer/** never do.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'aws/packer/**'
+      - 'aws/boot/**'
+      - '.github/workflows/build-ami.yml'
+  workflow_dispatch:
+    inputs:
+      region:
+        description: Region to build the AMI in
+        default: us-east-1
+      prefer_image:
+        description: Container image to bake as offline fallback (blank = ghcr.io/<repo>:latest)
+        default: ''
+
+permissions:
+  id-token: write   # OIDC for AWS auth
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-packer@v3
+        with:
+          version: latest
+
+      # Requires an IAM role for GitHub OIDC with EC2 image-build permissions,
+      # stored as the AWS_PACKER_ROLE_ARN repo secret.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PACKER_ROLE_ARN }}
+          aws-region: ${{ github.event.inputs.region || 'us-east-1' }}
+
+      # GHCR image names must be lowercase, but github.repository is cvalusek/PreFer.
+      - name: Resolve container image
+        id: img
+        run: |
+          if [ -n "${{ github.event.inputs.prefer_image }}" ]; then
+            echo "image=${{ github.event.inputs.prefer_image }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "image=ghcr.io/${GITHUB_REPOSITORY,,}:latest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: packer init
+        working-directory: aws/packer
+        run: packer init prefer-ami.pkr.hcl
+
+      - name: packer build
+        working-directory: aws/packer
+        env:
+          PKR_VAR_region: ${{ github.event.inputs.region || 'us-east-1' }}
+          PKR_VAR_prefer_image: ${{ steps.img.outputs.image }}
+        run: packer build prefer-ami.pkr.hcl
