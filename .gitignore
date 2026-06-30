@@ -8,6 +8,8 @@ model-cache/
 *.env
 !.env.example
 !*.env.example
+# Baked AMI boot config (no secrets; must be tracked so CI/Packer get it)
+!aws/boot/prefer-boot.env
 
 # Local corporate CA material for Netskope Docker builds
 docker/certs/*.crt
