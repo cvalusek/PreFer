@@ -138,8 +138,7 @@ fi
 
 if wanted deepseek-v4-flash; then
   download antirez/deepseek-v4-gguf \
-    --include "*Q4KExperts-F16HC*imatrix*" \
-    --include "*MTP-Q4K-Q8_0-F32*"
+    --include "*Q4KExperts-F16HC*imatrix*"
 fi
 
 if wanted glm-5.2; then

@@ -27,7 +27,10 @@ mode, with models downloaded from Hugging Face on first start.
   "common defaults" convention (duplicating `[*]`'s values into every model
   section, with `[*]` commented out as documentation) was tried and
   reverted — it didn't avoid the phantom "default" model entry (see below)
-  and added maintenance burden for no benefit.
+  and added maintenance burden for no benefit. **Exception: single-model named
+  presets** (`smol.ini`, `deepseek-v4-flash.ini`, `glm-5.2*.ini`) skip `[*]`
+  entirely and put every key in their one model section — with nothing to
+  share, `[*]` would just be indirection.
 - **No comments inside `.ini` files** (deliberate preference). Rationale for
   any non-obvious value lives in this file instead.
 - `mmap = false` is set on any preset where `n-cpu-moe > 0` — combining
@@ -86,25 +89,59 @@ explicit `PRESTAGE_MODELS` still overrides (needed only when pre-warming
 directly without the preset env var set).
 
 Sizes/hardware assume **RTX PRO 6000 Blackwell, 96 GB/card** (the only card that
-makes the GPU counts work). `ctx-size = 65536` is a deliberately conservative
-starting point on all three — DeepSeek-V4-Flash is natively 1M context and
-GLM-5.2 is large too, and `ctx-size = 0` (native) would blow up the KV
-allocation. Raise toward native as VRAM headroom allows.
+makes the GPU counts work). `ctx-size = 0` (native) would blow up the KV
+allocation (both models are natively 1M), so context is capped explicitly at
+**262144** (256K) across all three: DeepSeek V4's compressed CSA/HCA and GLM's
+DSA both keep KV small, and these run on big multi-GPU boxes, so 256K is a
+sane "not a joke" default. Raise toward native 1M as VRAM headroom allows — for
+the GLM presets, unsloth's KV-cache-quant trick (`cache-type-k/v = q8_0`, which
+`flash-attn = on` already permits) buys roughly 2× more context if f16 KV runs
+tight. Dial back if a preset OOMs.
+
+`deepseek-v4-flash` also uses `batch-size = 4096`, `ubatch-size = 2048` (vs the
+`96gb.ini` default of 2048/512) — the better starting point for big-GPU prefill
+throughput, matching a real dual-96GB reference run. It costs more compute-buffer
+VRAM; drop back toward 2048/512 first if the 256K context + these batches OOM.
 
 | Preset | GGUF | On-disk | Fits | Notes |
 | ------ | ---- | ------- | ---- | ----- |
-| `deepseek-v4-flash` | [antirez/deepseek-v4-gguf](https://huggingface.co/antirez/deepseek-v4-gguf) `Q4KExperts...imatrix` | ~153 GB | 2× 96 GB | Q4 experts / F16 attn+indexer / Q8 shared+out — the Q4_K_XL-equivalent. unsloth never shipped a V4-Flash GGUF (only FP4/FP8 base); antirez's are what mainline PR #24162 was patched to load. Includes a 3.5 GB MTP draft wired via `spec-type = draft-mtp`. |
+| `deepseek-v4-flash` | [antirez/deepseek-v4-gguf](https://huggingface.co/antirez/deepseek-v4-gguf) `Q4KExperts...imatrix` | ~153 GB | 2× 96 GB | Q4 experts / F16 attn+indexer / Q8 shared+out — the Q4_K_XL-equivalent. unsloth never shipped a V4-Flash GGUF (only FP4/FP8 base); antirez's are what mainline PR #24162 was patched to load. The repo's 3.5 GB MTP draft is **not** wired (b9843 rejects its `deepseek4_mtp_support` arch — see risk notes). |
 | `glm-5.2` | [unsloth/GLM-5.2-GGUF](https://huggingface.co/unsloth/GLM-5.2-GGUF) `UD-Q4_K_XL` | ~467 GB (11 shards) | 6× 96 GB (5× very tight) | Full, non-pruned GLM-5.2. Best quality, no REAP loop tax. |
 | `glm-5.2-reap` | [0xSero/GLM-5.2-REAP-504B-GGUF](https://huggingface.co/0xSero/GLM-5.2-REAP-504B-GGUF) `Q4_K_XL` | ~308 GB (8 shards) | 4× 96 GB | REAP 34%-expert-pruned. Fits in 4 cards, but per the card the loop rate roughly doubles (3.6%→7.2%) and the DSA indexer tensors are faked (duplicated from the nearest full layer) to load — no DSA speedup. Prefer `glm-5.2` if you have the 6th card. |
 
 **Untested.** None of these have been run on hardware — settings are heuristic
 (mirroring the `96gb.ini` `[*]` shape with conservative ctx). Known risks to
 check on first boot:
-- `flash-attn = on` is inherited from convention; if either arch rejects flash
-  attention, set `flash-attn = off` (or `auto`) for that preset.
-- The DeepSeek MTP `model-draft` may not pair cleanly with the main GGUF; if it
-  errors on load, drop `model-draft`/`spec-type`/`spec-draft-n-max` to run the
-  main model alone.
+- `deepseek-v4-flash` uses `flash-attn = auto` (not `on`): DeepSeek V4's
+  compressed attention (CSA/HCA) isn't fully FA-wired, and real dual-96GB runs
+  showed FA auto-disabling with "Flash Attention tensor is assigned to device
+  CPU… missing support". `auto` engages it if a build supports it and falls
+  back cleanly otherwise; our `f16` KV cache doesn't require FA either way. The
+  GLM presets keep `flash-attn = on`; flip to `auto`/`off` if a build rejects
+  it.
+- `deepseek-v4-flash` sets `top-k = 0` and `min-p = 0.0` on purpose. The model
+  card recommends `temp = 1.0, top_p = 1.0` (full distribution), but llama.cpp's
+  defaults (`top_k = 40`, nonzero `min_p`) would silently narrow it — zeroing
+  both honors the recommendation.
+- DeepSeek-V4-Flash is a reasoning model (Non-think / Think-High / Think-Max).
+  `reasoning = off` here only controls how thinking is *parsed* in the
+  response, not whether the model thinks; Think-Max additionally wants
+  `ctx-size` ≥ ~384K (we ship 262144 / 256K, enough for non-think and
+  Think-High; raise toward native 1M for Think-Max). The official chat encoding is a Python encoder, not jinja —
+  antirez's "chat-v2" GGUF embeds a template (`jinja = true` uses it), worth
+  eyeballing that turns render correctly.
+- `glm-5.2` / `glm-5.2-reap` use `temp = 1.0`, `top-p = 0.95`, `min-p = 0.01`,
+  `top-k = 0` — unsloth's and Z.ai's published GLM-5.2 settings (Z.ai advises
+  tuning only one of temp/top_p). This repo's GLM-4.x presets use `temp = 0.7`,
+  but that was a 4.x-specific choice; GLM-5.2's own recommendation is 1.0. If
+  generation doesn't stop cleanly (the GLM EOG-token issue in "Known upstream
+  issues"), dropping temp toward 0.6 is the known lever.
+- The DeepSeek MTP `model-draft` was **removed** — on b9843 it fails with
+  `unknown model architecture: 'deepseek4_mtp_support'` (mainline has no MTP
+  draft support for DeepSeek V4 yet). To re-enable when a build supports it:
+  add back `model-draft = .../DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf`,
+  `spec-type = draft-mtp`, `spec-draft-n-max = 2`, and the `*MTP-Q4K*` download
+  include in `download-models.sh`.
 - Multi-GPU split is left at llama.cpp's default (layer split across all visible
   GPUs); add `tensor-split` only if the cards are uneven or the layer split
   OOMs one GPU.
@@ -227,6 +264,12 @@ or tune DRY further before doing so.
 ## Download / Hugging Face specifics
 
 - Uses the `hf` CLI (not the deprecated `huggingface-cli`).
+- **Download progress** is just hf's default tqdm bars. Considered a custom
+  per-repo progress heartbeat for the big multi-shard pulls (tqdm bars are hard
+  to read in `docker logs`), but the hf CLI has no log-friendly progress mode
+  (only bars, or silence via `--quiet` / `HF_HUB_DISABLE_PROGRESS_BARS`; the
+  verbosity vars set logger level, not progress), and rolling our own wasn't
+  worth it — left as-is.
 - `HF_HOME=/models` so the HF cache/staging directory shares the model
   volume (avoids filling the container's ephemeral filesystem, and survives
   restarts).

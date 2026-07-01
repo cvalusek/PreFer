@@ -40,13 +40,13 @@ still overrides). Sizes assume 96 GB/card (RTX PRO 6000 Blackwell).
 
 | Preset | Model | On-disk | GPUs | Alias |
 | ------ | ----- | ------- | ---- | ----- |
-| `deepseek-v4-flash.ini` | DeepSeek-V4-Flash (antirez Q4 experts + MTP draft) | ~153 GB | 2× 96 GB | `deepseek-v4-flash` |
+| `deepseek-v4-flash.ini` | DeepSeek-V4-Flash (antirez Q4 experts) | ~153 GB | 2× 96 GB | `deepseek-v4-flash` |
 | `glm-5.2.ini` | GLM-5.2 full `UD-Q4_K_XL` (11 shards) | ~467 GB | 6× 96 GB | `glm-5.2` |
 | `glm-5.2-reap.ini` | GLM-5.2 REAP-504B `Q4_K_XL` (8 shards) | ~308 GB | 4× 96 GB | `glm-5.2-reap` |
 
-All three run on the `b9843` base image. Settings are conservative and
-**untested on hardware** — see AGENTS.md for the per-preset risk notes
-(`ctx-size = 65536` starting point, `flash-attn`, MTP draft, GPU split).
+All three run on the `b9843` base image. Settings are **untested on hardware** —
+see AGENTS.md for the per-preset risk notes (context sizing, `flash-attn`,
+DeepSeek sampling, GPU split).
 
 ### Tiny preset (named, not auto-detected)
 
@@ -76,7 +76,7 @@ layout means multiple presets/services can safely share one volume.
 | [unsloth/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF) | `UD-Q6_K_XL` | MTP draft is built into the main GGUF, no separate `model-draft` |
 | [unsloth/Qwen3.6-27B-MTP-GGUF](https://huggingface.co/unsloth/Qwen3.6-27B-MTP-GGUF) | `UD-Q6_K_XL` | MTP draft is built into the main GGUF, no separate `model-draft` |
 | [unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF](https://huggingface.co/unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF) | `UD-Q6_K_XL` | No speculative decoding |
-| [antirez/deepseek-v4-gguf](https://huggingface.co/antirez/deepseek-v4-gguf) | `Q4KExperts...imatrix` | `deepseek-v4-flash` preset only; includes the `MTP-Q4K` draft. unsloth ships no V4-Flash GGUF |
+| [antirez/deepseek-v4-gguf](https://huggingface.co/antirez/deepseek-v4-gguf) | `Q4KExperts...imatrix` | `deepseek-v4-flash` preset only; MTP draft not wired (b9843 lacks the arch). unsloth ships no V4-Flash GGUF |
 | [unsloth/GLM-5.2-GGUF](https://huggingface.co/unsloth/GLM-5.2-GGUF) | `UD-Q4_K_XL` | `glm-5.2` preset only; full (non-pruned), 11 shards |
 | [0xSero/GLM-5.2-REAP-504B-GGUF](https://huggingface.co/0xSero/GLM-5.2-REAP-504B-GGUF) | `Q4_K_XL` | `glm-5.2-reap` preset only; 34%-pruned, 8 shards |
 | [unsloth/SmolLM2-135M-Instruct-GGUF](https://huggingface.co/unsloth/SmolLM2-135M-Instruct-GGUF) | `Q8_0` | `smol` preset only; 135M dense, no draft/mmproj, ~145 MB |
@@ -92,9 +92,9 @@ layout means multiple presets/services can safely share one volume.
 | `qwen-3.6-35b-a3b-1m` | 1048576 | `96gb.ini`, `12gb.ini`, `8gb.ini` |
 | `qwen-3.6-27b` | native | `96gb.ini`, `12gb.ini`, `8gb.ini` |
 | `glm-4.7-flash` | native | `96gb.ini`, `12gb.ini`, `8gb.ini` |
-| `deepseek-v4-flash` | 65536 (start) | `deepseek-v4-flash.ini` |
-| `glm-5.2` | 65536 (start) | `glm-5.2.ini` |
-| `glm-5.2-reap` | 65536 (start) | `glm-5.2-reap.ini` |
+| `deepseek-v4-flash` | 262144 | `deepseek-v4-flash.ini` |
+| `glm-5.2` | 262144 | `glm-5.2.ini` |
+| `glm-5.2-reap` | 262144 | `glm-5.2-reap.ini` |
 | `smol`, `smollm2-135m` | 8192 | `smol.ini` |
 
 Full per-model sampling params and shared defaults live in the corresponding
