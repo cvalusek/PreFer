@@ -33,9 +33,12 @@ mode, with models downloaded from Hugging Face on first start.
   share, `[*]` would just be indirection.
 - **No comments inside `.ini` files** (deliberate preference). Rationale for
   any non-obvious value lives in this file instead.
-- `mmap = false` is set on any preset where `n-cpu-moe > 0` — combining
+- `mmap = false` is set (a) on any preset where `n-cpu-moe > 0` — combining
   mmap with CPU-offloaded MoE tensors triggers a llama.cpp performance
-  warning.
+  warning; and (b) on the large multi-GPU presets (deepseek-v4-flash,
+  glm-5.2, glm-5.2-reap) regardless of `n-cpu-moe`, because mmap loads these
+  multi-hundred-GB models pathologically slowly on RunPod's model-volume
+  storage (see the large-presets section).
 - `sleep-idle-seconds = 1800` is set on `12gb.ini`/`8gb.ini` only.
   `96gb.ini` deliberately omits it (not needed with that much headroom).
 
@@ -80,7 +83,10 @@ explicitly via `LLAMA_ARG_MODELS_PRESET=/presets/<name>.ini`. They are not
 auto-detectable: `detect-preset.sh` reads only the *first* GPU's VRAM
 (`nvidia-smi ... | head -n1`), so on a multi-GPU box it can't see the combined
 pool and would wrongly pick `96gb.ini`. Each preset holds a single model and is
-meant to own the whole host (one model at a time — that was the design goal).
+meant to own the whole host (one model at a time — that was the design goal), so
+each sets `load-on-startup = true`: the one model loads at boot rather than
+lazily on first request (with `LLAMA_ARG_MODELS_MAX=1` there's nothing to evict
+it for anyway).
 `download-models.sh`'s default `PRESTAGE_MODELS` is **preset-aware**: when one
 of these named presets is selected, the default stages only that one model
 (the preset basename equals the download key), instead of the small-model
@@ -90,18 +96,36 @@ directly without the preset env var set).
 
 Sizes/hardware assume **RTX PRO 6000 Blackwell, 96 GB/card** (the only card that
 makes the GPU counts work). `ctx-size = 0` (native) would blow up the KV
-allocation (both models are natively 1M), so context is capped explicitly at
-**262144** (256K) across all three: DeepSeek V4's compressed CSA/HCA and GLM's
-DSA both keep KV small, and these run on big multi-GPU boxes, so 256K is a
-sane "not a joke" default. Raise toward native 1M as VRAM headroom allows — for
-the GLM presets, unsloth's KV-cache-quant trick (`cache-type-k/v = q8_0`, which
-`flash-attn = on` already permits) buys roughly 2× more context if f16 KV runs
-tight. Dial back if a preset OOMs.
+allocation (both models are natively 1M), so context is capped explicitly:
+`deepseek-v4-flash` runs **393216** (384K), the GLM presets **262144** (256K).
+Both archs compress KV (CSA/HCA, DSA) so context is affordable; raise toward
+native 1M as VRAM headroom allows — for the GLM presets, unsloth's KV-cache-quant
+trick (`cache-type-k/v = q8_0`, which `flash-attn = on` already permits) buys
+roughly 2× more if f16 KV runs tight. Dial back if a preset OOMs.
 
-`deepseek-v4-flash` also uses `batch-size = 4096`, `ubatch-size = 2048` (vs the
-`96gb.ini` default of 2048/512) — the better starting point for big-GPU prefill
-throughput, matching a real dual-96GB reference run. It costs more compute-buffer
-VRAM; drop back toward 2048/512 first if the 256K context + these batches OOM.
+`deepseek-v4-flash` uses `batch-size = 2048`, `ubatch-size = 256` — smaller than
+usual, on purpose. With flash-attention inactive for V4 (see risk notes), the
+prefill compute buffer scales with `ubatch × ctx-size` and is a single
+per-device allocation (it can NOT be split across GPUs — see the multi-GPU note
+below). **Measured on 2× RTX PRO 6000 (96 GB)**: the `ubatch × ctx` budget is
+~1.0–1.1e8 before device 0 OOMs. Working points: `256 × 262144` ✓, `512 × 131072`
+✓, `256 × 393216` ✓ (~1.0e8, both cards ~94 GB used); OOM: `512 × 262144`
+(~1.34e8, the buffer was ~71 GB). We ship `256 × 393216` because 384K hits
+DeepSeek's Think-Max threshold. Trade prefill speed (ubatch) against context
+(ctx) within that budget. If a build ever wires up V4 flash-attention, this
+buffer collapses and both can go far higher.
+
+All three set **`mmap = false`** despite `n-cpu-moe = 0`. On RunPod's
+model-volume storage, loading a multi-hundred-GB model via mmap page-faults it
+in on demand over a network/overlay filesystem (no readahead), so it crawls and
+looks like a boot hang — GLM-5.2's 467 GB never appeared to finish loading.
+`--no-mmap` does bulk sequential reads straight into VRAM and loads fine.
+**Confirmed** on 8× 96 GB with 1.5 TB RAM free and the model fully on disk, so
+it is NOT memory pressure (the earlier RAM-thrash guess was wrong) — it's the
+mmap-over-network-FS penalty, and it scales with model size (DeepSeek's 153 GB
+was slow-but-tolerable under mmap; GLM's 467 GB crossed into "looks dead").
+Trade-off: no page-cache reuse across restarts, fine here since these are
+one-model-per-host boxes.
 
 | Preset | GGUF | On-disk | Fits | Notes |
 | ------ | ---- | ------- | ---- | ----- |
@@ -142,9 +166,14 @@ check on first boot:
   add back `model-draft = .../DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf`,
   `spec-type = draft-mtp`, `spec-draft-n-max = 2`, and the `*MTP-Q4K*` download
   include in `download-models.sh`.
-- Multi-GPU split is left at llama.cpp's default (layer split across all visible
-  GPUs); add `tensor-split` only if the cards are uneven or the layer split
-  OOMs one GPU.
+- Multi-GPU: weights split across both GPUs by default (layer split) — confirm
+  with `nvidia-smi` that both cards show weights after load (~76 GB each for
+  DeepSeek). But the prefill **compute buffer** is a single per-device
+  allocation that can't be split or pooled across GPUs (NVLink is bandwidth, not
+  shared memory), so "add/link GPUs" does not help it. If it OOMs, shrink it via
+  `ubatch-size` / `ctx-size` (see the batch note above). `tensor-split` can't
+  rescue it either: 153 GB of weights already forces both 96 GB cards near-full,
+  so you can't bias enough weight off device 0 to make room for a big buffer.
 
 ## Known upstream llama.cpp issues (not fixable via our config)
 

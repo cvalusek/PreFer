@@ -92,7 +92,7 @@ layout means multiple presets/services can safely share one volume.
 | `qwen-3.6-35b-a3b-1m` | 1048576 | `96gb.ini`, `12gb.ini`, `8gb.ini` |
 | `qwen-3.6-27b` | native | `96gb.ini`, `12gb.ini`, `8gb.ini` |
 | `glm-4.7-flash` | native | `96gb.ini`, `12gb.ini`, `8gb.ini` |
-| `deepseek-v4-flash` | 262144 | `deepseek-v4-flash.ini` |
+| `deepseek-v4-flash` | 393216 | `deepseek-v4-flash.ini` |
 | `glm-5.2` | 262144 | `glm-5.2.ini` |
 | `glm-5.2-reap` | 262144 | `glm-5.2-reap.ini` |
 | `smol`, `smollm2-135m` | 8192 | `smol.ini` |
