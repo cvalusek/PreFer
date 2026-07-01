@@ -48,6 +48,19 @@ All three run on the `b9843` base image. Settings are conservative and
 **untested on hardware** — see AGENTS.md for the per-preset risk notes
 (`ctx-size = 65536` starting point, `flash-attn`, MTP draft, GPU split).
 
+### Tiny preset (named, not auto-detected)
+
+| Preset | Model | On-disk | GPUs | Alias |
+| ------ | ----- | ------- | ---- | ----- |
+| `smol.ini` | SmolLM2-135M-Instruct `Q8_0` | ~145 MB | any/none | `smol` |
+
+A single 135M dense model whose only job is to come up fast and light so the
+companion app has something to smoke-test against — not tool calls, reasoning,
+or real work. Like the large presets it is **not** auto-detected (no `<N>gb`
+tier), so select it explicitly with
+`LLAMA_ARG_MODELS_PRESET=/presets/smol.ini`; staging then defaults to just this
+model.
+
 ## Models
 
 All models download from Hugging Face on first start (see
@@ -66,6 +79,7 @@ layout means multiple presets/services can safely share one volume.
 | [antirez/deepseek-v4-gguf](https://huggingface.co/antirez/deepseek-v4-gguf) | `Q4KExperts...imatrix` | `deepseek-v4-flash` preset only; includes the `MTP-Q4K` draft. unsloth ships no V4-Flash GGUF |
 | [unsloth/GLM-5.2-GGUF](https://huggingface.co/unsloth/GLM-5.2-GGUF) | `UD-Q4_K_XL` | `glm-5.2` preset only; full (non-pruned), 11 shards |
 | [0xSero/GLM-5.2-REAP-504B-GGUF](https://huggingface.co/0xSero/GLM-5.2-REAP-504B-GGUF) | `Q4_K_XL` | `glm-5.2-reap` preset only; 34%-pruned, 8 shards |
+| [unsloth/SmolLM2-135M-Instruct-GGUF](https://huggingface.co/unsloth/SmolLM2-135M-Instruct-GGUF) | `Q8_0` | `smol` preset only; 135M dense, no draft/mmproj, ~145 MB |
 
 ## Router model ids
 
@@ -81,6 +95,7 @@ layout means multiple presets/services can safely share one volume.
 | `deepseek-v4-flash` | 65536 (start) | `deepseek-v4-flash.ini` |
 | `glm-5.2` | 65536 (start) | `glm-5.2.ini` |
 | `glm-5.2-reap` | 65536 (start) | `glm-5.2-reap.ini` |
+| `smol`, `smollm2-135m` | 8192 | `smol.ini` |
 
 Full per-model sampling params and shared defaults live in the corresponding
 `presets/<N>gb.ini` (or the named preset for the large multi-GPU models).

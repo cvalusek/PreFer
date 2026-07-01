@@ -8,15 +8,17 @@ mkdir -p "$MODELS_DIR"
 # paths (not HF-direct `hf =` loading; that was tried and reverted, see
 # AGENTS.md), so anything not pre-staged here simply won't be available to load.
 # Available keys: gemma-4-26b-a4b, gemma-4-e2b, gemma-4-e4b, qwen-3.6-35b-a3b,
-# qwen-3.6-27b, glm-4.7-flash, deepseek-v4-flash, glm-5.2, glm-5.2-reap
+# qwen-3.6-27b, glm-4.7-flash, deepseek-v4-flash, glm-5.2, glm-5.2-reap, smol
 #
-# The default is preset-aware. The big multi-GPU presets (deepseek-v4-flash,
-# glm-5.2, glm-5.2-reap) each own a host, so when one of them is the selected
-# preset, the default is to stage ONLY that one model — not the small-model
-# lineup. The preset comes from LLAMA_ARG_MODELS_PRESET, which entrypoint.sh
-# resolves (via detect-preset.sh) and exports into the environment before
-# running this script; its basename matches the download key one-to-one. Any
-# other preset (the `<N>gb.ini` tiers) defaults to the full small-model set.
+# The default is preset-aware. Some presets own their host and want exactly one
+# model staged, not the full small-model lineup: the big multi-GPU presets
+# (deepseek-v4-flash, glm-5.2, glm-5.2-reap), and the tiny single-model `smol`
+# preset (companion-app smoke tests). When one of those is the selected preset,
+# the default is to stage ONLY that one model. The preset comes from
+# LLAMA_ARG_MODELS_PRESET, which entrypoint.sh resolves (via detect-preset.sh)
+# and exports into the environment before running this script; its basename
+# matches the download key one-to-one. Any other preset (the `<N>gb.ini` tiers)
+# defaults to the full small-model set.
 #
 # An explicit PRESTAGE_MODELS always wins — set it to stage a subset, or to
 # stage a big model when pre-warming directly (e.g.
@@ -25,8 +27,8 @@ mkdir -p "$MODELS_DIR"
 SMALL_MODELS="gemma-4-26b-a4b,gemma-4-e2b,gemma-4-e4b,qwen-3.6-35b-a3b,qwen-3.6-27b,glm-4.7-flash"
 PRESET_NAME="$(basename "${LLAMA_ARG_MODELS_PRESET:-}" .ini)"
 case "$PRESET_NAME" in
-  deepseek-v4-flash|glm-5.2|glm-5.2-reap) DEFAULT_PRESTAGE="$PRESET_NAME" ;;
-  *)                                      DEFAULT_PRESTAGE="$SMALL_MODELS" ;;
+  deepseek-v4-flash|glm-5.2|glm-5.2-reap|smol) DEFAULT_PRESTAGE="$PRESET_NAME" ;;
+  *)                                           DEFAULT_PRESTAGE="$SMALL_MODELS" ;;
 esac
 PRESTAGE_MODELS="${PRESTAGE_MODELS:-$DEFAULT_PRESTAGE}"
 
@@ -148,6 +150,11 @@ fi
 if wanted glm-5.2-reap; then
   download 0xSero/GLM-5.2-REAP-504B-GGUF \
     --include "*Q4_K_XL*"
+fi
+
+if wanted smol; then
+  download unsloth/SmolLM2-135M-Instruct-GGUF \
+    --include "*Q8_0.gguf"
 fi
 
 if [ -n "$S3_BUCKET_NAME" ]; then

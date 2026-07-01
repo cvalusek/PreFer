@@ -55,6 +55,21 @@ Note the `server-cuda-b9843` image is published a bit behind the git tag (the
 ggml image matrix lags the source tag); if a `--pull` 404s, the build is still
 in flight — wait for it rather than pinning lower.
 
+## Tiny preset (smol)
+
+`smol.ini` is a single 135M dense model (SmolLM2-135M-Instruct `Q8_0`, ~145 MB)
+whose only purpose is to come up fast and light so the companion app has
+something to smoke-test against — explicitly **not** tool calls, reasoning, or
+real-quality output. Q8_0 (not Q4) because at 135M the size delta is trivial and
+Q8 is noticeably more coherent to eyeball. Like the large presets it is a
+**named** preset, not a `<N>gb.ini` tier, so `detect-preset.sh` never
+auto-selects it; choose it via `LLAMA_ARG_MODELS_PRESET=/presets/smol.ini`. It's
+wired into the same preset-aware `PRESTAGE_MODELS` default in
+`download-models.sh` (preset basename `smol` == download key `smol`), so
+selecting the preset stages only this model. Being dense it carries no
+`n-cpu-moe`/`mmproj`/MTP-draft settings. Future idea (not yet built): a
+CPU-only `tiny.ini` variant for GPU-less local machines.
+
 ## Large multi-GPU presets (deepseek-v4-flash, glm-5.2, glm-5.2-reap)
 
 These are **named** presets (not `<N>gb.ini` VRAM tiers) and must be selected
