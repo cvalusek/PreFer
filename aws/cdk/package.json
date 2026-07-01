@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "synth": "cdk synth",
-    "synth:template": "cdk synth --output cdk.out && cp cdk.out/PreferEc2.template.json ../cloudformation/prefer-ec2.template.json"
+    "synth:template": "cdk synth --output cdk.out && mkdir -p dist && cp cdk.out/PreferEc2.template.json dist/prefer-ec2.template.json"
   },
   "devDependencies": {
     "aws-cdk": "^2.150.0",

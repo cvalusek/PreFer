@@ -1,0 +1,90 @@
+name: Build PreFer CDK template
+
+# Synthesizes the CloudFormation template consumers deploy and publishes it as a
+# release asset (the `template-latest` release). Nothing is committed back to the
+# repo — the template is a released artifact, and the region -> AMI map it embeds
+# comes from the build-ami workflow's `ami-map` artifact.
+#
+# Runs when: a new AMI ships (build-ami finishes) so the RegionMap refreshes, or
+# the CDK source changes. Pull requests synth-and-validate only (no release).
+on:
+  workflow_run:
+    workflows: ["Build PreFer AMI"]
+    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - 'aws/cdk/**'
+      - '.github/workflows/build-cdk.yml'
+  pull_request:
+    paths:
+      - 'aws/cdk/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # publish/refresh the template-latest release
+  actions: read     # download the ami-map artifact from build-ami runs
+
+jobs:
+  synth:
+    runs-on: ubuntu-latest
+    # On workflow_run, only proceed if the AMI build actually succeeded.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: aws/cdk/package-lock.json
+
+      - name: Install deps
+        working-directory: aws/cdk
+        run: npm ci
+
+      # Bake the current region -> AMI map into the template. Pull the latest
+      # successful build-ami run's artifact; if none exists yet, bin/prefer.ts
+      # falls back to a placeholder so synth still validates.
+      - name: Fetch AMI map
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run_id=$(gh run list -w "Build PreFer AMI" -s success -L 1 \
+            --json databaseId -q '.[0].databaseId' || true)
+          if [ -n "${run_id:-}" ]; then
+            echo "Using ami-map from build-ami run $run_id"
+            gh run download "$run_id" -n ami-map -D aws/cdk
+            cat aws/cdk/ami-map.json
+          else
+            echo "No successful build-ami run found; synth uses the placeholder map"
+          fi
+
+      - name: Synthesize template
+        working-directory: aws/cdk
+        run: |
+          npx cdk synth --quiet
+          mkdir -p dist
+          cp cdk.out/PreferEc2.template.json dist/prefer-ec2.template.json
+
+      - name: Upload template artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prefer-ec2-cloudformation
+          path: aws/cdk/dist/prefer-ec2.template.json
+
+      # Release only on non-PR events. Rolling `template-latest` release, asset
+      # replaced in place with --clobber.
+      - name: Publish template release
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view template-latest >/dev/null 2>&1 || \
+            gh release create template-latest \
+              --title "PreFer CloudFormation template (latest)" \
+              --notes "Deployable CloudFormation template with the current region -> AMI RegionMap baked in. Auto-published by build-cdk."
+          gh release upload template-latest \
+            aws/cdk/dist/prefer-ec2.template.json --clobber

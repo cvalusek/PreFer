@@ -10,7 +10,13 @@ packer {
 variable "region" {
   type        = string
   default     = "us-east-1"
-  description = "Region to build the AMI in. Copy to other regions separately (CI matrix)."
+  description = "Region to build the AMI in. Copies are made to copy_regions via ami_regions."
+}
+
+variable "copy_regions" {
+  type        = list(string)
+  default     = ["us-east-2"]
+  description = "Additional regions to copy the built AMI into (Packer ami_regions). Snapshots are copied from the build region — the base DLAMI is only resolved in var.region."
 }
 
 variable "instance_type" {
@@ -48,6 +54,12 @@ source "amazon-ebs" "prefer" {
   ami_name      = "${var.ami_name_prefix}-{{timestamp}}"
   source_ami    = data.amazon-parameterstore.dlami.value
 
+  # Publish in the build region plus every copy_regions entry, and make the AMI
+  # public so consumers can launch it without a copy into their own account.
+  # ami_groups applies to the build AMI and all regional copies.
+  ami_regions = concat([var.region], var.copy_regions)
+  ami_groups  = ["all"]
+
   # Roomy root so the warm image pull fits; models never live here.
   launch_block_device_mappings {
     device_name           = "/dev/sda1"
@@ -79,5 +91,12 @@ build {
   provisioner "shell" {
     environment_vars = ["PREFER_IMAGE=${var.prefer_image}"]
     script           = "provision.sh"
+  }
+
+  # Record the built AMI ids so CI can publish them to SSM. artifact_id is a
+  # comma-separated "region:ami-id" list covering the build region + every copy.
+  post-processor "manifest" {
+    output     = "packer-manifest.json"
+    strip_path = true
   }
 }

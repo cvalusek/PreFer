@@ -20,20 +20,29 @@ CloudFormation template, so the public can deploy with no CDK/Node toolchain.
 | Parameter | Default | Notes |
 | --------- | ------- | ----- |
 | `InstanceType` | `g6e.12xlarge` | GPU family with local NVMe instance store |
-| `AmiId` | — | PreFer AMI built by `aws/packer` in this region |
+| `AmiId` | `` (blank) | Optional override; blank uses the built-in RegionMap for the deploy region. Set an `ami-xxxx` only to pin a specific AMI |
 | `KeyName` | — | Existing EC2 key pair (SSH; SSM also enabled) |
 | `AllowedCidr` | `0.0.0.0/0` | Narrow this to your IP |
 | `RootVolumeGb` | `100` | OS + container image only; models live on NVMe |
 
 ## Deploy as plain CloudFormation (no CDK needed)
 
+Grab the template from the **`template-latest`** GitHub release (published by
+`build-cdk.yml`), then:
+
 ```bash
+gh release download template-latest -p prefer-ec2.template.json
+
 aws cloudformation deploy \
-  --template-file ../cloudformation/prefer-ec2.template.json \
+  --template-file prefer-ec2.template.json \
   --stack-name prefer-ec2 \
   --capabilities CAPABILITY_IAM \
-  --parameter-overrides AmiId=ami-xxxx KeyName=my-key AllowedCidr=1.2.3.4/32
+  --parameter-overrides KeyName=my-key AllowedCidr=1.2.3.4/32
 ```
+
+`AmiId` is optional — leave it blank and the template's built-in RegionMap
+resolves the right public PreFer AMI for whichever region (us-east-1 / us-east-2)
+you deploy into. Pass `AmiId=ami-xxxx` only to pin a specific AMI.
 
 Or upload the template in the CloudFormation console.
 
@@ -42,8 +51,8 @@ Or upload the template in the CloudFormation console.
 ```bash
 npm install
 npm run synth                 # print the template
-npm run synth:template        # write ../cloudformation/prefer-ec2.template.json
 ```
 
-`build-iac.yml` runs the synth in CI and republishes the template so it never
-drifts from this source.
+`build-cdk.yml` runs the synth in CI, bakes in the current region -> AMI map
+(from the build-ami `ami-map` artifact), and publishes the template to the
+`template-latest` release — nothing is committed back to the repo.

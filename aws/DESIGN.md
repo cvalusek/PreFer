@@ -66,14 +66,16 @@ aws/                          all EC2 deployment lives here (parallels docker/)
     20-run-container.sh      docker pull (pinned tag) + docker run with /models on NVMe
     prefer-boot.env          tunables (container tag, S3 bucket, model set)
   cdk/                       thin wrapper: instance + IAM + IMDS + S3/endpoint wiring
-  cloudformation/            synthesized template (CI artifact) for non-CDK users
 docker/prefer/
   download-models.sh         GAINS the S3 sync-down/up block (gated on S3_BUCKET_NAME)
 .github/workflows/
   build-prefer.yml           (existing) container image -> GHCR  [docker/prefer/** only]
-  build-ami.yml              NEW: Packer AMI build           [aws/packer/**, aws/boot/**]
-  build-iac.yml              NEW: cdk synth + publish template [aws/cdk/** only]
+  build-ami.yml              NEW: Packer AMI build (+ ami-map artifact) [aws/packer/**, aws/boot/**]
+  build-cdk.yml              NEW: cdk synth + release template [aws/cdk/**, build-ami finished]
 ```
+
+The synthesized CloudFormation template is not committed — `build-cdk.yml`
+publishes it to the `template-latest` GitHub release for non-CDK users.
 
 ## What goes in the AMI (baked)
 
@@ -93,8 +95,13 @@ docker/prefer/
 
 Build with **Packer** (committed template) so anyone distrusting the public AMI
 (security/air-gapped/compliance) can rebuild it byte-for-byte in their own
-account. Publish the resulting *PreFer* AMI id per region via our own **SSM
-public parameter** so IaC resolves "latest" instead of hardcoding ids.
+account. The build is public and copied to **us-east-1 + us-east-2** (Packer
+`ami_regions`, `ami_groups=["all"]`). `build-ami.yml` emits the resulting
+region -> AMI-id map as an **`ami-map` artifact**; `build-cdk.yml` bakes it into
+the template's **RegionMap** so a deploy picks the right AMI by region with no
+lookup — and no cross-account SSM dependency (Parameter Store can't be shared
+publicly, so an SSM "latest" pointer would only resolve inside the build
+account).
 
 ## Boot sequence (systemd, every start)
 
@@ -147,16 +154,18 @@ exactly as today — HF only.
 
 ## IaC layer (CDK, distributed as CloudFormation)
 
-Inputs (CFN parameters): instance type, AMI id (SSM param ref), S3 bucket name,
-key pair, allowed ingress CIDR. Outputs the instance + IAM profile + S3 gateway
-endpoint.
+Inputs (CFN parameters): instance type, S3 bucket name, key pair, allowed
+ingress CIDR, and an *optional* AMI id override (blank uses the baked-in
+RegionMap). Outputs the instance + IAM profile + S3 gateway endpoint.
 
 **Distribution**: CDK is the authoring tool, but the *public artifact* is the
-**synthesized CloudFormation template** (`cdk synth`). Consumers need no CDK,
-Node, or `cdk bootstrap` — they deploy the template via the Console (incl. a
-"Launch Stack" quick-create URL) or `aws cloudformation deploy`. The CDK source
-stays in-repo for anyone who wants to customize in code; `build-iac.yml`
-re-synths and publishes the template so the two never drift.
+**synthesized CloudFormation template** (`cdk synth`), published to the
+`template-latest` GitHub release. Consumers need no CDK, Node, or `cdk bootstrap`
+— they deploy the template via the Console (incl. a "Launch Stack" quick-create
+URL) or `aws cloudformation deploy`. The CDK source stays in-repo for anyone who
+wants to customize in code; `build-cdk.yml` re-synths (baking the current
+region -> AMI RegionMap from the `ami-map` artifact) and publishes the template
+release. Nothing is committed back to the repo.
 
 Because we stop/start one long-lived instance rather than churning instances,
 the stack primarily **provisions once** (instance + profile + endpoint). It can
@@ -170,28 +179,34 @@ are write-once values, so user-data's run-once nature is fine — the systemd un
 re-reads the file (`EnvironmentFile=`) on every subsequent start.
 
 **IAM**: instance profile needs `s3:GetObject`/`s3:ListBucket` (and
-`s3:PutObject` for the self-populating upload) scoped to the cache bucket, SSM
-read for AMI-id resolution, and optionally CloudWatch Logs. No persistent-volume
-wiring. The IaC must also set **IMDS `HttpPutResponseHopLimit: 2`** so the
-container can reach the instance role's credentials (see S3 cache section).
+`s3:PutObject` for the self-populating upload) scoped to the cache bucket, and
+optionally CloudWatch Logs. No persistent-volume wiring. The IaC must also set
+**IMDS `HttpPutResponseHopLimit: 2`** so the container can reach the instance
+role's credentials (see S3 cache section).
 
 ## CI isolation (builds scoped to their own folders)
 
 The hard requirement: a change in one area must not trigger unrelated builds.
 
-| Workflow | Triggers on paths | Produces |
-| -------- | ----------------- | -------- |
+| Workflow | Triggers on | Produces |
+| -------- | ----------- | -------- |
 | `build-prefer.yml` (existing) | `docker/prefer/**` | container image → GHCR |
-| `build-ami.yml` (new) | `aws/packer/**`, `aws/boot/**`, self | AMI via Packer + region copy |
-| `build-iac.yml` (new) | `aws/cdk/**`, self | `cdk synth` + publish CloudFormation template |
+| `build-ami.yml` (new) | `aws/packer/**`, `aws/boot/**`, self | public AMI (us-east-1 + us-east-2) + `ami-map` artifact |
+| `build-cdk.yml` (new) | `aws/cdk/**`, self, **build-ami finished** | `cdk synth` + `template-latest` release |
 
 The key decoupler: **the container is pulled at boot, not baked**, so the
 container build and the AMI build never need to trigger each other.
 
+The one *intended* dependency is `build-ami → build-cdk`: a new AMI must refresh
+the RegionMap in the released template, so build-cdk runs on build-ami's
+`workflow_run` completion (as well as on its own `aws/cdk/**` changes). This is a
+deliberate one-way edge, not the accidental cross-triggering the rule forbids.
+
 - Edit a preset / Dockerfile → `build-prefer.yml` only → new image in GHCR →
   picked up on the next instance **start** (no AMI rebuild).
-- Edit boot scripts / Packer → `build-ami.yml` only.
-- Edit IaC → `build-iac.yml` only (re-synths + republishes the template).
+- Edit boot scripts / Packer → `build-ami.yml` → then `build-cdk.yml` auto-runs
+  to re-release the template with the new AMI ids.
+- Edit IaC → `build-cdk.yml` only (re-synths + re-releases the template).
 
 The baked image in the AMI is a stale-but-present offline fallback; it never
 gates correctness, so the two image-producing pipelines stay independent.

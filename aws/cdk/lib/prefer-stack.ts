@@ -9,8 +9,17 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
  * + S3 model cache. Authored in CDK but distributed as the synthesized
  * CloudFormation template, so consumers need no CDK/Node toolchain.
  */
+export interface PreferStackProps extends cdk.StackProps {
+  /**
+   * region -> PreFer AMI id, baked into the template as a RegionMap so a
+   * consumer deploys with no id to look up. Supplied at synth time from the
+   * ami-map.json artifact produced by the build-ami workflow.
+   */
+  readonly amiMap: Record<string, string>;
+}
+
 export class PreferStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: PreferStackProps) {
     super(scope, id, props);
 
     // ---- Parameters (filled in the CloudFormation console / CLI) ----
@@ -21,13 +30,30 @@ export class PreferStack extends cdk.Stack {
         'GPU instance type with local NVMe instance store (the models run off NVMe).',
     });
 
-    // No default: the AMI built by aws/packer in THIS region. Once an SSM
-    // public parameter is published, this can become
-    // type AWS::SSM::Parameter::Value<AWS::EC2::Image::Id> with a default path.
-    const amiParam = new cdk.CfnParameter(this, 'AmiId', {
-      type: 'AWS::EC2::Image::Id',
-      description: 'PreFer AMI id (from aws/packer) in this region.',
+    // AMI resolution: a RegionMap baked into the template (region -> ami id)
+    // picks the right public PreFer AMI for the deploy region with nothing to
+    // paste and no cross-account SSM dependency — works in any account. The
+    // optional AmiId param overrides the map to pin a specific AMI.
+    const regionMap = new cdk.CfnMapping(this, 'RegionMap', {
+      mapping: Object.fromEntries(
+        Object.entries(props.amiMap).map(([region, ami]) => [region, { AmiId: ami }]),
+      ),
     });
+
+    const amiParam = new cdk.CfnParameter(this, 'AmiId', {
+      type: 'String',
+      default: '',
+      description:
+        'Optional: pin a specific AMI id. Blank (default) uses the built-in RegionMap for the deploy region.',
+    });
+    const hasAmiOverride = new cdk.CfnCondition(this, 'HasAmiOverride', {
+      expression: cdk.Fn.conditionNot(cdk.Fn.conditionEquals(amiParam.valueAsString, '')),
+    });
+    const resolvedAmiId = cdk.Fn.conditionIf(
+      hasAmiOverride.logicalId,
+      amiParam.valueAsString,
+      regionMap.findInMap(cdk.Aws.REGION, 'AmiId'),
+    ).toString();
 
     const keyNameParam = new cdk.CfnParameter(this, 'KeyName', {
       type: 'AWS::EC2::KeyPair::KeyName',
@@ -112,11 +138,12 @@ export class PreferStack extends cdk.Stack {
       'systemctl restart prefer-boot.service',
     );
 
-    // AMI comes from a CFN parameter, so wrap it in a minimal IMachineImage.
+    // AMI is resolved from the RegionMap (or the override param), so wrap the
+    // resulting token in a minimal IMachineImage.
     // (userData is supplied via the instance prop below; keep this one empty.)
     const machineImage: ec2.IMachineImage = {
       getImage: () => ({
-        imageId: amiParam.valueAsString,
+        imageId: resolvedAmiId,
         osType: ec2.OperatingSystemType.LINUX,
         userData: ec2.UserData.forLinux(),
       }),

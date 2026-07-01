@@ -14,6 +14,9 @@ on:
       region:
         description: Region to build the AMI in
         default: us-east-1
+      copy_regions:
+        description: Comma-separated regions to copy the AMI into (public copies)
+        default: us-east-2
       prefer_image:
         description: Container image to bake as offline fallback (blank = ghcr.io/<repo>:latest)
         default: ''
@@ -50,6 +53,17 @@ jobs:
             echo "image=ghcr.io/${GITHUB_REPOSITORY,,}:latest" >> "$GITHUB_OUTPUT"
           fi
 
+      # Packer list vars take a JSON array via PKR_VAR_*; turn the comma-separated
+      # workflow input into ["us-east-2", ...]. Empty input -> [] (build region only).
+      - name: Resolve copy regions
+        id: regions
+        run: |
+          raw="${{ github.event.inputs.copy_regions }}"
+          raw="${raw:-us-east-2}"
+          json=$(echo "$raw" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -v '^$' \
+            | awk 'BEGIN{printf "["} {printf "%s\"%s\"", sep, $0; sep=","} END{printf "]"}')
+          echo "json=$json" >> "$GITHUB_OUTPUT"
+
       - name: packer init
         working-directory: aws/packer
         run: packer init prefer-ami.pkr.hcl
@@ -58,5 +72,24 @@ jobs:
         working-directory: aws/packer
         env:
           PKR_VAR_region: ${{ github.event.inputs.region || 'us-east-1' }}
+          PKR_VAR_copy_regions: ${{ steps.regions.outputs.json }}
           PKR_VAR_prefer_image: ${{ steps.img.outputs.image }}
         run: packer build prefer-ami.pkr.hcl
+
+      # Turn Packer's manifest into a region -> ami-id map and publish it as an
+      # artifact. build-cdk consumes this to bake the RegionMap into the released
+      # template. artifact_id looks like "us-east-1:ami-abc,us-east-2:ami-def".
+      - name: Build region -> AMI map
+        working-directory: aws/packer
+        run: |
+          jq -r '.builds[-1].artifact_id' packer-manifest.json \
+            | jq -R 'split(",") | map(split(":") | {(.[0]): .[1]}) | add' \
+            > ami-map.json
+          echo "ami-map.json:"; cat ami-map.json
+
+      - name: Upload AMI map
+        uses: actions/upload-artifact@v4
+        with:
+          name: ami-map
+          path: aws/packer/ami-map.json
+          retention-days: 90
