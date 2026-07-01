@@ -5,8 +5,8 @@ import * as cdk from 'aws-cdk-lib';
 import { PreferStack } from '../lib/prefer-stack';
 
 // region -> ami id, baked into the template's RegionMap. CI drops the real
-// ami-map.json (produced by the build-ami workflow) here before synth; the
-// placeholder keeps local/PR synth working before any AMI has been built.
+// ami-map.json (from the build-aws ami job, or the last release) here before
+// synth; the placeholder keeps local/PR synth working before any AMI is built.
 const amiMapPath = path.join(__dirname, '..', 'ami-map.json');
 const amiMap: Record<string, string> = fs.existsSync(amiMapPath)
   ? JSON.parse(fs.readFileSync(amiMapPath, 'utf8'))

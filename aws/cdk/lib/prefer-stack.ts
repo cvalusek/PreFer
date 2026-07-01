@@ -13,7 +13,7 @@ export interface PreferStackProps extends cdk.StackProps {
   /**
    * region -> PreFer AMI id, baked into the template as a RegionMap so a
    * consumer deploys with no id to look up. Supplied at synth time from the
-   * ami-map.json artifact produced by the build-ami workflow.
+   * ami-map.json artifact produced by the build-aws ami job.
    */
   readonly amiMap: Record<string, string>;
 }

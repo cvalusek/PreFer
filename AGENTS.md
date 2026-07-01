@@ -287,12 +287,13 @@ systemd boot unit (stage instance-store NVMe at `/opt/dlami/nvme`, `docker run`
 with `/models` on NVMe) + a CDK stack distributed as synthesized CloudFormation.
 The container is pulled at boot (not baked), and CI is path-filtered so AWS
 changes never rebuild the container (`build-prefer.yml` is `docker/prefer/**`
-only; `build-ami.yml` and `build-cdk.yml` cover `aws/`). The AMI is public and
-built into us-east-1 + us-east-2; `build-ami.yml` emits an `ami-map` artifact
-that `build-cdk.yml` bakes into the template's RegionMap and publishes to the
-`template-latest` release (nothing committed back). Don't reopen the settled
-calls there (S3-over-EBS, AMI base, dlami-nvme, `--restart no`) without reading
-`aws/DESIGN.md` first.
+only; `build-aws.yml` covers `aws/`). `build-aws.yml` is one workflow with
+ordered jobs — a paths-filtered `ami` job (Packer; public AMI built into
+us-east-1 + us-east-2) hands its `ami-map` artifact to a `cdk` job that bakes it
+into the template's RegionMap and publishes the `template-latest` release. A
+CDK-only change skips the AMI build and reuses the last release's map; nothing is
+committed back. Don't reopen the settled calls there (S3-over-EBS, AMI base,
+dlami-nvme, `--restart no`) without reading `aws/DESIGN.md` first.
 
 ## Testing
 

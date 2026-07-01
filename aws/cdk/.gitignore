@@ -1,6 +1,6 @@
 node_modules/
 cdk.out/
-# region -> ami id map: a build-ami artifact fetched at synth time, never committed
+# region -> ami id map: a build-aws artifact fetched at synth time, never committed
 ami-map.json
 *.js
 !jest.config.js

@@ -28,7 +28,7 @@ CloudFormation template, so the public can deploy with no CDK/Node toolchain.
 ## Deploy as plain CloudFormation (no CDK needed)
 
 Grab the template from the **`template-latest`** GitHub release (published by
-`build-cdk.yml`), then:
+`build-aws.yml`), then:
 
 ```bash
 gh release download template-latest -p prefer-ec2.template.json
@@ -53,6 +53,7 @@ npm install
 npm run synth                 # print the template
 ```
 
-`build-cdk.yml` runs the synth in CI, bakes in the current region -> AMI map
-(from the build-ami `ami-map` artifact), and publishes the template to the
-`template-latest` release — nothing is committed back to the repo.
+`build-aws.yml`'s `cdk` job runs the synth in CI, bakes in the current
+region -> AMI map (from the `ami` job's `ami-map` artifact, or the last release
+on a CDK-only change), and publishes the template to the `template-latest`
+release — nothing is committed back to the repo.

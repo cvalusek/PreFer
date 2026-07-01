@@ -1,7 +1,7 @@
 # IAM for the AMI build (GitHub OIDC)
 
-The `build-ami.yml` workflow assumes an IAM role via GitHub OIDC (no long-lived
-keys). One-time setup in your AWS account:
+The `build-aws.yml` workflow's `ami` job assumes an IAM role via GitHub OIDC (no
+long-lived keys). One-time setup in your AWS account:
 
 1. **OIDC provider** (if not already added): provider URL
    `https://token.actions.githubusercontent.com`, audience `sts.amazonaws.com`.
@@ -10,7 +10,7 @@ keys). One-time setup in your AWS account:
    [github-actions-trust-policy.json](github-actions-trust-policy.json), then
    replace `ACCOUNT_ID` with your 12-digit account id. The `:sub` is scoped to
    `repo:cvalusek/PreFer:ref:refs/heads/main` — only the main branch can assume
-   the role (matches build-ami.yml, which runs on push/dispatch to main). The
+   the role (matches build-aws.yml, which runs on push/dispatch to main). The
    sub uses the full git ref, NOT a bare branch name like `:main`.
 
    To allow any branch/tag instead, use StringLike with

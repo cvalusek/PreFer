@@ -70,12 +70,11 @@ docker/prefer/
   download-models.sh         GAINS the S3 sync-down/up block (gated on S3_BUCKET_NAME)
 .github/workflows/
   build-prefer.yml           (existing) container image -> GHCR  [docker/prefer/** only]
-  build-ami.yml              NEW: Packer AMI build (+ ami-map artifact) [aws/packer/**, aws/boot/**]
-  build-cdk.yml              NEW: cdk synth + release template [aws/cdk/**, build-ami finished]
+  build-aws.yml              NEW: ami job (Packer, path-gated) -> cdk job (synth + release) [aws/**]
 ```
 
-The synthesized CloudFormation template is not committed — `build-cdk.yml`
-publishes it to the `template-latest` GitHub release for non-CDK users.
+The synthesized CloudFormation template is not committed — `build-aws.yml`'s
+`cdk` job publishes it to the `template-latest` GitHub release for non-CDK users.
 
 ## What goes in the AMI (baked)
 
@@ -96,8 +95,8 @@ publishes it to the `template-latest` GitHub release for non-CDK users.
 Build with **Packer** (committed template) so anyone distrusting the public AMI
 (security/air-gapped/compliance) can rebuild it byte-for-byte in their own
 account. The build is public and copied to **us-east-1 + us-east-2** (Packer
-`ami_regions`, `ami_groups=["all"]`). `build-ami.yml` emits the resulting
-region -> AMI-id map as an **`ami-map` artifact**; `build-cdk.yml` bakes it into
+`ami_regions`, `ami_groups=["all"]`). The `ami` job emits the resulting
+region -> AMI-id map as an **`ami-map` artifact**; the `cdk` job bakes it into
 the template's **RegionMap** so a deploy picks the right AMI by region with no
 lookup — and no cross-account SSM dependency (Parameter Store can't be shared
 publicly, so an SSM "latest" pointer would only resolve inside the build
@@ -163,9 +162,9 @@ RegionMap). Outputs the instance + IAM profile + S3 gateway endpoint.
 `template-latest` GitHub release. Consumers need no CDK, Node, or `cdk bootstrap`
 — they deploy the template via the Console (incl. a "Launch Stack" quick-create
 URL) or `aws cloudformation deploy`. The CDK source stays in-repo for anyone who
-wants to customize in code; `build-cdk.yml` re-synths (baking the current
-region -> AMI RegionMap from the `ami-map` artifact) and publishes the template
-release. Nothing is committed back to the repo.
+wants to customize in code; `build-aws.yml`'s `cdk` job re-synths (baking the
+current region -> AMI RegionMap from the `ami-map` artifact) and publishes the
+template release. Nothing is committed back to the repo.
 
 Because we stop/start one long-lived instance rather than churning instances,
 the stack primarily **provisions once** (instance + profile + endpoint). It can
@@ -184,29 +183,32 @@ optionally CloudWatch Logs. No persistent-volume wiring. The IaC must also set
 **IMDS `HttpPutResponseHopLimit: 2`** so the container can reach the instance
 role's credentials (see S3 cache section).
 
-## CI isolation (builds scoped to their own folders)
+## CI isolation (builds scoped to what changed)
 
 The hard requirement: a change in one area must not trigger unrelated builds.
 
 | Workflow | Triggers on | Produces |
 | -------- | ----------- | -------- |
 | `build-prefer.yml` (existing) | `docker/prefer/**` | container image → GHCR |
-| `build-ami.yml` (new) | `aws/packer/**`, `aws/boot/**`, self | public AMI (us-east-1 + us-east-2) + `ami-map` artifact |
-| `build-cdk.yml` (new) | `aws/cdk/**`, self, **build-ami finished** | `cdk synth` + `template-latest` release |
+| `build-aws.yml` (new) | `aws/**`, self | public AMI (us-east-1 + us-east-2) and/or `template-latest` release |
 
 The key decoupler: **the container is pulled at boot, not baked**, so the
-container build and the AMI build never need to trigger each other.
+container build and the AMI build never need to trigger each other — that's why
+the container stays in its own workflow.
 
-The one *intended* dependency is `build-ami → build-cdk`: a new AMI must refresh
-the RegionMap in the released template, so build-cdk runs on build-ami's
-`workflow_run` completion (as well as on its own `aws/cdk/**` changes). This is a
-deliberate one-way edge, not the accidental cross-triggering the rule forbids.
+Within `build-aws.yml`, the AMI and template *are* coupled (the template embeds
+the AMI ids), so they're **ordered jobs** rather than separate workflows: a
+paths-filter (`ami` = `aws/packer/**` + `aws/boot/**`) gates the costly AMI job,
+and the `cdk` job `needs:` it. This expresses the dependency natively — no
+cross-run `workflow_run`/artifact-polling — while still skipping the AMI build
+for CDK-only edits.
 
 - Edit a preset / Dockerfile → `build-prefer.yml` only → new image in GHCR →
   picked up on the next instance **start** (no AMI rebuild).
-- Edit boot scripts / Packer → `build-ami.yml` → then `build-cdk.yml` auto-runs
-  to re-release the template with the new AMI ids.
-- Edit IaC → `build-cdk.yml` only (re-synths + re-releases the template).
+- Edit boot scripts / Packer → `build-aws.yml`: `ami` job builds, then `cdk` job
+  re-releases the template with the new AMI ids.
+- Edit IaC → `build-aws.yml`: `ami` job skipped, `cdk` job re-synths and
+  re-releases, reusing the AMI map from the last release.
 
 The baked image in the AMI is a stale-but-present offline fallback; it never
 gates correctness, so the two image-producing pipelines stay independent.

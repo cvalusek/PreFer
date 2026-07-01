@@ -1,0 +1,213 @@
+name: Build PreFer AWS
+
+# One workflow for the EC2 deploy path: build the public AMI (Packer) and release
+# the CloudFormation template (CDK synth) that embeds the region -> AMI RegionMap.
+# The two are coupled (the template needs the AMI ids), so they're ordered jobs
+# with `needs:` instead of separate workflows coordinating across runs.
+#
+# A paths filter gates the expensive AMI job: a CDK-only change re-synths and
+# re-releases the template WITHOUT rebuilding the AMI (it reuses the map from the
+# last release). The container build (build-prefer.yml) stays separate — it's
+# pulled at boot, never baked, so it never needs to trigger an AMI rebuild.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'aws/packer/**'
+      - 'aws/boot/**'
+      - 'aws/cdk/**'
+      - '.github/workflows/build-aws.yml'
+  pull_request:
+    paths:
+      - 'aws/cdk/**'
+      - '.github/workflows/build-aws.yml'
+  workflow_dispatch:
+    inputs:
+      region:
+        description: Region to build the AMI in
+        default: us-east-1
+      copy_regions:
+        description: Comma-separated regions to copy the AMI into (public copies)
+        default: us-east-2
+      prefer_image:
+        description: Container image to bake as offline fallback (blank = ghcr.io/<repo>:latest)
+        default: ''
+
+permissions:
+  contents: read
+
+# Serialize so two runs can't clobber the template-latest release at once (newest
+# wins; uploads are idempotent via --clobber). Never cancel an in-flight AMI build.
+concurrency:
+  group: build-aws
+  cancel-in-progress: false
+
+jobs:
+  # Which area changed? Gates the AMI job so CDK-only edits skip the costly build.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      ami: ${{ steps.filter.outputs.ami }}
+      cdk: ${{ steps.filter.outputs.cdk }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ami:
+              - 'aws/packer/**'
+              - 'aws/boot/**'
+            cdk:
+              - 'aws/cdk/**'
+              - '.github/workflows/build-aws.yml'
+
+  # Build the public AMI (us-east-1 + copies) and hand its region -> AMI map to
+  # the cdk job as a same-run artifact. Skipped on PRs and on CDK-only pushes.
+  ami:
+    needs: changes
+    if: ${{ (github.event_name == 'push' && needs.changes.outputs.ami == 'true') || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # OIDC for AWS auth
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-packer@v3
+        with:
+          version: latest
+
+      # Requires an IAM role for GitHub OIDC with EC2 image-build permissions,
+      # stored as the AWS_PACKER_ROLE_ARN repo secret.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PACKER_ROLE_ARN }}
+          aws-region: ${{ github.event.inputs.region || 'us-east-1' }}
+
+      # GHCR image names must be lowercase, but github.repository is cvalusek/PreFer.
+      - name: Resolve container image
+        id: img
+        run: |
+          if [ -n "${{ github.event.inputs.prefer_image }}" ]; then
+            echo "image=${{ github.event.inputs.prefer_image }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "image=ghcr.io/${GITHUB_REPOSITORY,,}:latest" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Packer list vars take a JSON array via PKR_VAR_*; turn the comma-separated
+      # workflow input into ["us-east-2", ...]. Empty input -> [] (build region only).
+      - name: Resolve copy regions
+        id: regions
+        run: |
+          raw="${{ github.event.inputs.copy_regions }}"
+          raw="${raw:-us-east-2}"
+          json=$(echo "$raw" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -v '^$' \
+            | awk 'BEGIN{printf "["} {printf "%s\"%s\"", sep, $0; sep=","} END{printf "]"}')
+          echo "json=$json" >> "$GITHUB_OUTPUT"
+
+      - name: packer init
+        working-directory: aws/packer
+        run: packer init prefer-ami.pkr.hcl
+
+      - name: packer build
+        working-directory: aws/packer
+        env:
+          PKR_VAR_region: ${{ github.event.inputs.region || 'us-east-1' }}
+          PKR_VAR_copy_regions: ${{ steps.regions.outputs.json }}
+          PKR_VAR_prefer_image: ${{ steps.img.outputs.image }}
+        run: packer build prefer-ami.pkr.hcl
+
+      # Turn Packer's manifest into a region -> ami-id map for the cdk job.
+      # artifact_id looks like "us-east-1:ami-abc,us-east-2:ami-def".
+      - name: Build region -> AMI map
+        working-directory: aws/packer
+        run: |
+          jq -r '.builds[-1].artifact_id' packer-manifest.json \
+            | jq -R 'split(",") | map(split(":") | {(.[0]): .[1]}) | add' \
+            > ami-map.json
+          echo "ami-map.json:"; cat ami-map.json
+
+      - name: Upload AMI map
+        uses: actions/upload-artifact@v4
+        with:
+          name: ami-map
+          path: aws/packer/ami-map.json
+
+  # Synthesize the template with the current RegionMap baked in and publish it to
+  # the template-latest release. Runs when CDK changed, when a new AMI was built,
+  # or on dispatch. PRs synth-and-validate only (no release).
+  cdk:
+    needs: [changes, ami]
+    if: ${{ always() && needs.ami.result != 'failure' && needs.ami.result != 'cancelled' && (needs.changes.outputs.cdk == 'true' || needs.ami.result == 'success' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # publish/refresh the template-latest release
+      actions: read      # download the same-run ami-map artifact
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: aws/cdk/package-lock.json
+
+      - name: Install deps
+        working-directory: aws/cdk
+        run: npm ci
+
+      # Map source: if the AMI job ran in THIS workflow, use its same-run artifact
+      # (freshest ids). Otherwise reuse the map from the last release — the durable
+      # source of truth, since the AMI rarely changes and artifacts expire.
+      - name: Download map from this run's AMI build
+        if: ${{ needs.ami.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ami-map
+          path: aws/cdk
+
+      - name: Reuse map from the last release
+        if: ${{ needs.ami.result != 'success' }}
+        continue-on-error: true   # no release yet -> bin/prefer.ts uses a placeholder
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release download template-latest -p ami-map.json -D aws/cdk
+          echo "Reused ami-map.json from template-latest:"; cat aws/cdk/ami-map.json
+
+      - name: Synthesize template
+        working-directory: aws/cdk
+        run: |
+          npx cdk synth --quiet
+          mkdir -p dist
+          cp cdk.out/PreferEc2.template.json dist/prefer-ec2.template.json
+          # Keep the map next to the template so the next CDK-only run can reuse it.
+          cp ami-map.json dist/ami-map.json 2>/dev/null || true
+
+      - name: Upload template artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prefer-ec2-cloudformation
+          path: aws/cdk/dist/prefer-ec2.template.json
+
+      # Release only on non-PR events. Rolling template-latest release; both the
+      # template and the map it embeds are replaced in place with --clobber.
+      - name: Publish template release
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view template-latest >/dev/null 2>&1 || \
+            gh release create template-latest \
+              --title "PreFer CloudFormation template (latest)" \
+              --notes "Deployable CloudFormation template with the current region -> AMI RegionMap baked in. Auto-published by build-aws."
+          assets="aws/cdk/dist/prefer-ec2.template.json"
+          [ -f aws/cdk/dist/ami-map.json ] && assets="$assets aws/cdk/dist/ami-map.json"
+          gh release upload template-latest $assets --clobber
