@@ -1,7 +1,12 @@
 import unittest
 
 from prefer_bench.contract import parse_preset
-from prefer_bench.diagnostics import classify_runtime_failure, manifest_failure_code, reason_category
+from prefer_bench.diagnostics import (
+    classify_runtime_failure,
+    linux_amd64_manifest_digests,
+    manifest_failure_code,
+    reason_category,
+)
 from prefer_bench.local import LANES
 from prefer_bench.paths import PRESETS_ROOT, REPO_ROOT
 
@@ -42,13 +47,31 @@ class DiagnosticAndCompatibilityTests(unittest.TestCase):
         candidate = LANES["b9982"]
         self.assertEqual(candidate["source_commit"], "99f3dc32296f825fec94f202da1e9fede1e78cf9")
         self.assertEqual(candidate["manifest_digest"], "sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76")
-        self.assertIn("server-cuda-b9982@sha256:", candidate["base_image"])
+        self.assertEqual(
+            candidate["base_image"],
+            "ghcr.io/ggml-org/llama.cpp@sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76",
+        )
         self.assertNotIn("b9990", LANES)
 
     def test_manifest_failures_are_not_collapsed_into_build_failures(self) -> None:
         self.assertEqual(manifest_failure_code("manifest unknown"), "image_manifest_unavailable")
         self.assertEqual(manifest_failure_code("dial tcp: timeout"), "image_manifest_check_failed")
         self.assertEqual(reason_category("image_manifest_unavailable"), "image_manifest_unavailable")
+        payload = [
+            {
+                "Descriptor": {
+                    "digest": "sha256:" + "a" * 64,
+                    "platform": {"os": "linux", "architecture": "amd64"},
+                }
+            },
+            {
+                "Descriptor": {
+                    "digest": "sha256:" + "b" * 64,
+                    "platform": {"os": "linux", "architecture": "arm64"},
+                }
+            },
+        ]
+        self.assertEqual(linux_amd64_manifest_digests(payload), {"sha256:" + "a" * 64})
 
     def test_pascal_tile_cache_and_generic_load_diagnostics_are_distinct(self) -> None:
         tile = classify_runtime_failure(

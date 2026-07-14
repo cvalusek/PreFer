@@ -13,7 +13,7 @@ import uuid
 from typing import Any
 
 from .contract import load_contract, load_corpus, model_record
-from .diagnostics import classify_runtime_failure, manifest_failure_code
+from .diagnostics import classify_runtime_failure, linux_amd64_manifest_digests, manifest_failure_code
 from .http_client import ClientTimeout, TransportError, request_json
 from .memory import gpu_inventory
 from .paths import COMPOSE_PATH, REPO_ROOT
@@ -25,7 +25,7 @@ from .runner import LiveConfig, run_live_suite
 LANES = {
     "current": {
         "base_image_tag": "ghcr.io/ggml-org/llama.cpp:server-cuda-b9843",
-        "base_image": "ghcr.io/ggml-org/llama.cpp:server-cuda-b9843@sha256:3af9b6f556151848ce221c63a63f87c04832d6666361babca20ee6295255f1c6",
+        "base_image": "ghcr.io/ggml-org/llama.cpp@sha256:3af9b6f556151848ce221c63a63f87c04832d6666361babca20ee6295255f1c6",
         "image": "prefer-bench:b9843",
         "revision": "b9843",
         "manifest_digest": "sha256:3af9b6f556151848ce221c63a63f87c04832d6666361babca20ee6295255f1c6",
@@ -35,7 +35,7 @@ LANES = {
     },
     "b9982": {
         "base_image_tag": "ghcr.io/ggml-org/llama.cpp:server-cuda-b9982",
-        "base_image": "ghcr.io/ggml-org/llama.cpp:server-cuda-b9982@sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76",
+        "base_image": "ghcr.io/ggml-org/llama.cpp@sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76",
         "image": "prefer-bench:b9982",
         "revision": "b9982",
         "manifest_digest": "sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76",
@@ -243,18 +243,35 @@ def _image_id(image: str) -> str:
 
 
 def _preflight_manifest(lane: dict[str, Any]) -> None:
-    completed = run_command(["docker", "manifest", "inspect", lane["base_image"]], check=False, timeout=90)
-    if completed.returncode == 0:
-        return
-    output = _scrub_local_paths(completed.stdout + completed.stderr)
-    lines = [line.strip() for line in output.splitlines() if line.strip()]
-    diagnostic = " | ".join(lines[-4:])[:600] or "registry returned no diagnostic text"
-    code = manifest_failure_code(output)
-    raise EnvironmentSkip(
-        code,
-        f"GHCR manifest preflight failed for {lane['base_image_tag']} (expected {lane['manifest_digest']}, "
-        f"source {lane['source_commit']}): {diagnostic}",
+    completed = run_command(
+        ["docker", "manifest", "inspect", "--verbose", lane["base_image_tag"]],
+        check=False,
+        timeout=90,
     )
+    if completed.returncode != 0:
+        output = _scrub_local_paths(completed.stdout + completed.stderr)
+        lines = [line.strip() for line in output.splitlines() if line.strip()]
+        diagnostic = " | ".join(lines[-4:])[:600] or "registry returned no diagnostic text"
+        code = manifest_failure_code(output)
+        raise EnvironmentSkip(
+            code,
+            f"GHCR manifest preflight failed for {lane['base_image_tag']} (expected {lane['manifest_digest']}, "
+            f"source {lane['source_commit']}): {diagnostic}",
+        )
+    try:
+        digests = linux_amd64_manifest_digests(json.loads(completed.stdout))
+    except json.JSONDecodeError as exc:
+        raise EnvironmentSkip(
+            "image_manifest_check_failed",
+            f"GHCR returned unparseable manifest metadata for {lane['base_image_tag']}.",
+        ) from exc
+    if lane["manifest_digest"] not in digests:
+        observed = ", ".join(sorted(digests)) or "none"
+        raise EnvironmentSkip(
+            "image_manifest_digest_mismatch",
+            f"GHCR tag {lane['base_image_tag']} did not resolve to the pinned linux/amd64 digest "
+            f"{lane['manifest_digest']} (observed: {observed}).",
+        )
 
 
 def _ensure_source_volume(name: str) -> None:

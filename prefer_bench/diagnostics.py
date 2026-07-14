@@ -33,6 +33,7 @@ ENVIRONMENT_CODES = {
     "image_build_failed",
     "image_build_timeout",
     "image_manifest_check_failed",
+    "image_manifest_digest_mismatch",
     "invalid_cache_volume",
     "no_benchmark_port",
     "readiness_timeout",
@@ -68,6 +69,24 @@ def manifest_failure_code(output: str) -> str:
         "name unknown",
     )
     return "image_manifest_unavailable" if any(marker in lowered for marker in unavailable_markers) else "image_manifest_check_failed"
+
+
+def linux_amd64_manifest_digests(payload: Any) -> set[str]:
+    records = payload if isinstance(payload, list) else [payload]
+    digests: set[str] = set()
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        descriptor = record.get("Descriptor")
+        if not isinstance(descriptor, dict):
+            continue
+        platform = descriptor.get("platform")
+        if not isinstance(platform, dict):
+            continue
+        digest = descriptor.get("digest")
+        if platform.get("os") == "linux" and platform.get("architecture") == "amd64" and isinstance(digest, str):
+            digests.add(digest)
+    return digests
 
 
 def classify_runtime_failure(
