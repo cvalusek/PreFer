@@ -14,6 +14,8 @@ def gpu_inventory() -> dict[str, Any]:
             check=True,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=10,
         )
     except (FileNotFoundError, subprocess.SubprocessError):
@@ -43,6 +45,8 @@ class NvidiaMemorySampler(AbstractContextManager["NvidiaMemorySampler"]):
                 check=True,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=5,
             )
             values = [int(line.strip()) for line in completed.stdout.splitlines() if line.strip()]

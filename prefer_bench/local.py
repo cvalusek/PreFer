@@ -132,6 +132,8 @@ def run_command(
         env=_safe_environment(environment),
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=timeout,
     )
     if check and completed.returncode != 0:

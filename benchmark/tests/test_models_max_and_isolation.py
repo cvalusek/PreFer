@@ -1,9 +1,10 @@
 import os
 from pathlib import Path
+import sys
 import unittest
 
 from prefer_bench.contract import inspect_models_max
-from prefer_bench.local import _free_port, _safe_environment, _scrub_runtime_logs
+from prefer_bench.local import _free_port, _safe_environment, _scrub_runtime_logs, run_command
 from prefer_bench.paths import COMPOSE_PATH, REPO_ROOT
 
 
@@ -58,6 +59,13 @@ class ModelsMaxAndIsolationTests(unittest.TestCase):
         self.assertIn("0x<addr>", scrubbed)
         self.assertNotIn("51649", scrubbed)
         self.assertNotIn("7ef479432ae9", scrubbed)
+
+    def test_subprocess_output_replaces_non_utf8_bytes(self) -> None:
+        completed = run_command(
+            [sys.executable, "-c", "import sys; sys.stdout.buffer.write(bytes([0x81]))"],
+            timeout=10,
+        )
+        self.assertEqual(completed.stdout, "�")
 
 
 if __name__ == "__main__":
