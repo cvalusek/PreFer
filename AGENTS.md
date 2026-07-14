@@ -370,6 +370,14 @@ or tune DRY further before doing so.
   documented command and not independently verified for E2B/E4B, but the
   drafter files themselves are confirmed present.
 
+  **Measured 2026-07-14 on b9843 / Titan X Pascal:** E2B loaded and passed the
+  contract, strict structured cases, tools, and calibrated 8K retrieval. E4B
+  failed on both `models-max=1` and `4` at llama.cpp's CUDA flash-attention tile
+  assertion (`fattn-tile.cuh:1321`). This is a VERIFY item, not a preset change:
+  disabling flash attention on the 12 GB preset still conflicts with its q4_0 V
+  cache. Reproduce on another GPU/build before choosing a fix. Scrubbed evidence
+  is under `benchmark/baselines/`.
+
 ## S3 model cache (`S3_BUCKET_NAME`)
 
 `download-models.sh` has an optional S3 layer gated on `S3_BUCKET_NAME`: per-repo

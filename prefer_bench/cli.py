@@ -9,7 +9,7 @@ import sys
 from .contract import inspect_models_max, load_contract, load_corpus, preset_contract_diff
 from .local import CACHE_MODELS, LANES, LocalOptions, default_output_path, run_local, write_local_outputs
 from .mock_server import contract_mock_server
-from .paths import REPO_ROOT
+from .paths import BASELINES_ROOT, REPO_ROOT
 from .replay import replay_contract
 from .report import write_report
 from .results import validate_result
@@ -97,9 +97,10 @@ def main(argv: list[str] | None = None) -> int:
         if differences:
             print(json.dumps({"preset_contract_differences": differences}, indent=2))
             return 1
-        for result_path in args.result:
+        result_paths = args.result or sorted(BASELINES_ROOT.glob("*.json"))
+        for result_path in result_paths:
             validate_result(json.loads(result_path.read_text(encoding="utf-8")))
-        print("contract, corpus, preset aliases, and requested results are valid")
+        print(f"contract, corpus, preset aliases, and {len(result_paths)} benchmark results are valid")
         return 0
     if args.command == "models-max":
         print(json.dumps(inspect_models_max(REPO_ROOT), indent=2))

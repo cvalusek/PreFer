@@ -24,18 +24,17 @@ def render_markdown(result: dict[str, Any]) -> str:
         f"{' (dirty working tree)' if run['source_dirty'] else ''} with `{backend['base_image']}` "
         f"({backend['revision']}) on preset `{run['preset']}` and `models-max={run['models_max']}`.",
         "",
-        f"Started: `{run['started_at']}`  ",
-        f"Duration: `{run['duration_ms'] / 1000:.3f}s`  ",
-        f"Contract: `{run['contract_version']}`; evaluation corpus: `{run['eval_version']}`  ",
-        f"Hardware tier: `{run['hardware'].get('tier', 'unknown')}`",
+        f"Started: `{run['started_at']}`; duration: `{run['duration_ms'] / 1000:.3f}s`; "
+        f"contract: `{run['contract_version']}`; evaluation corpus: `{run['eval_version']}`; "
+        f"hardware tier: `{run['hardware'].get('tier', 'unknown')}`.",
         "",
         "## Outcome",
         "",
-        f"Schema-contract pass rate: **{_rate(summary['schema_contract_pass_rate'])}** "
-        f"across `{summary['schema_contract_attempts']}` attempted structured responses  ",
-        f"Semantic anomaly rate: **{_rate(summary['semantic_anomaly_rate'])}** "
-        f"across `{summary['semantic_evaluations']}` evaluated response documents  ",
-        f"Cell status counts: `{json.dumps(summary['cell_counts'], sort_keys=True)}`",
+        f"- Schema-contract pass rate: **{_rate(summary['schema_contract_pass_rate'])}** "
+        f"across `{summary['schema_contract_attempts']}` attempted structured responses",
+        f"- Semantic anomaly rate: **{_rate(summary['semantic_anomaly_rate'])}** "
+        f"across `{summary['semantic_evaluations']}` evaluated response documents",
+        f"- Cell status counts: `{json.dumps(summary['cell_counts'], sort_keys=True)}`",
         "",
         "Schema validity and semantic correctness are intentionally separate; a schema-valid response can still contain an impossible date or omit required plan content.",
         "",
@@ -72,9 +71,14 @@ def render_markdown(result: dict[str, Any]) -> str:
     skipped = [cell for cell in result["cells"] if cell["status"] in {"skipped", "unsupported"}]
     if skipped:
         lines.extend(["", "## Skipped or unsupported", ""])
+        grouped: dict[tuple[str, str], list[str]] = {}
         for cell in skipped:
             reason = cell.get("skip", cell.get("error", {"code": "unspecified", "detail": ""}))
-            lines.append(f"- `{cell['id']}` — `{reason.get('code')}`: {reason.get('detail', '')}")
+            key = (reason.get("code", "unspecified"), reason.get("detail", ""))
+            grouped.setdefault(key, []).append(cell["id"])
+        for (code, detail), cell_ids in grouped.items():
+            rendered_ids = ", ".join(f"`{cell_id}`" for cell_id in cell_ids)
+            lines.append(f"- `{code}`: {detail} Cells: {rendered_ids}.")
 
     cleanup = run.get("cleanup", {})
     if cleanup:

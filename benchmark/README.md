@@ -154,6 +154,47 @@ python -m prefer_bench local --lane current --cache-source-volume prefer-model-c
 python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb.ini --models-max 1 --contexts 8k --no-build
 ```
 
+## Pinned local evidence (2026-07-14)
+
+The scrubbed [b9843 max-1 report](baselines/2026-07-14-titan-x-b9843-max1-e2b-e4b-8k.md)
+and [machine result](baselines/2026-07-14-titan-x-b9843-max1-e2b-e4b-8k.json),
+[b9843 max-4 report](baselines/2026-07-14-titan-x-b9843-max4-e2b-e4b.md)
+and [machine result](baselines/2026-07-14-titan-x-b9843-max4-e2b-e4b.json),
+and [b9990 availability report](baselines/2026-07-14-b9990-build-skip.md)
+and [machine result](baselines/2026-07-14-b9990-build-skip.json) were all
+captured from clean source `cc90b09ff81664b47463cc0b91c84369ec7f1f99` on
+one NVIDIA TITAN X (Pascal), 12,288 MiB, with driver 582.53. These are single
+runs, not distributions.
+
+Measured b9843 (`version: 9843 (86b94708f)`) facts:
+
+- At `models-max=1`, cold service start through readiness was 2,007.9 ms. E2B
+  first load was 48,603.5 ms (11,271.4 ms prefill, 70.6 ms decode, 5,116 MiB
+  observed peak); its next warm request was 198.4 ms. Streaming TTFT was
+  186.4 ms. Two-request concurrency took 531.4 ms wall time, with 339.0 ms p50
+  and 425.2 ms p95 individual latency.
+- Both strict synthetic structured cases and the 8K retrieval case passed
+  schema validation. All three evaluated documents had zero semantic anomalies:
+  the dates were possible and exact, all required Cedar planning content was
+  present, and all three long-context codes were recovered in order. The 8K
+  generator produced 8,000 observed prompt tokens, 4,617.5 ms prefill, and
+  589.8 ms decode. Tool call plus tool-result replay passed in 536.6 ms total.
+- E4B failed to load at the same CUDA flash-attention tile assertion in both
+  runs. With `models-max=1`, the attempt peaked at 7,292 MiB, evicted E2B, and
+  the A return required a 10,373.4 ms reload. With `models-max=4`, the failed
+  attempt peaked at 10,977 MiB, E2B remained loaded, and the A return took
+  207.0 ms. `/v1/models` still showed only one loaded model, so this does not
+  establish successful multi-model retention or settle the production policy.
+- Every run removed its generated container, network, and volume; retained the
+  operator `prefer` container in its prior exited state; retained NeurOn in its
+  prior running state; mounted the source cache read-only; and did not use host
+  port 8080.
+
+The opt-in b9990 comparison was attempted but not run: the referenced
+`server-cuda-b9990` tag returned `manifest unknown` during the isolated image
+build. Every benchmark cell is therefore a structured skip, not a comparison
+number. The default/production b9843 pin was not changed.
+
 ## Opt-in revision comparison
 
 `b9990` is the one bounded, source-backed candidate lane referenced by the July

@@ -3,6 +3,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BENCHMARK_ROOT = REPO_ROOT / "benchmark"
+BASELINES_ROOT = BENCHMARK_ROOT / "baselines"
 CONTRACT_ROOT = BENCHMARK_ROOT / "contract" / "v1"
 CONTRACT_PATH = CONTRACT_ROOT / "contract.json"
 CONTRACT_SCHEMA_PATH = CONTRACT_ROOT / "contract.schema.json"

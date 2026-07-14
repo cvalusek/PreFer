@@ -1,5 +1,7 @@
+import json
 import unittest
 
+from prefer_bench.paths import BASELINES_ROOT
 from prefer_bench.report import render_markdown
 from prefer_bench.results import empty_cell, summarize, validate_result
 from prefer_bench.runner import _percentile
@@ -77,6 +79,18 @@ class ResultTests(unittest.TestCase):
         self.assertIn("Semantic anomaly rate: **50.0%**", report)
         self.assertIn("impossible_date", report)
         self.assertIn("No architecture choice", report)
+
+    def test_pinned_reports_match_valid_machine_results(self) -> None:
+        json_paths = sorted(BASELINES_ROOT.glob("*.json"))
+        self.assertGreaterEqual(len(json_paths), 3)
+        for json_path in json_paths:
+            result = json.loads(json_path.read_text(encoding="utf-8"))
+            validate_result(result)
+            self.assertEqual(
+                json_path.with_suffix(".md").read_text(encoding="utf-8"),
+                render_markdown(result),
+                json_path.name,
+            )
 
 
 if __name__ == "__main__":

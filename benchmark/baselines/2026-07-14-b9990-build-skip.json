@@ -1,0 +1,549 @@
+{
+  "schema_version": "prefer.benchmark-result.v1",
+  "run": {
+    "run_id": "b9990-f0046b4bc0",
+    "started_at": "2026-07-14T03:06:20.009Z",
+    "duration_ms": 3290.394,
+    "source_revision": "cc90b09ff81664b47463cc0b91c84369ec7f1f99",
+    "source_dirty": false,
+    "backend": {
+      "name": "llama.cpp",
+      "base_image": "ghcr.io/ggml-org/llama.cpp:server-cuda-b9990",
+      "image_id": null,
+      "revision": "b9990",
+      "comparison_lane": true
+    },
+    "contract_version": "1.0.0",
+    "eval_version": "1.0.0",
+    "hardware": {
+      "tier": "12gb",
+      "gpus": [
+        {
+          "name": "NVIDIA TITAN X (Pascal)",
+          "memory_total_mib": 12288,
+          "driver_version": "582.53"
+        }
+      ],
+      "memory_evidence": "nvidia-smi"
+    },
+    "preset": "12gb.ini",
+    "models_max": 1,
+    "command": [
+      "python",
+      "-m",
+      "prefer_bench",
+      "local",
+      "--lane",
+      "b9990",
+      "--cache-source-volume",
+      "prefer-model-cache",
+      "--models",
+      "gemma-4-e2b,gemma-4-e4b",
+      "--preset",
+      "12gb.ini",
+      "--models-max",
+      "1",
+      "--contexts",
+      "8k",
+      "--timeout-seconds",
+      "240",
+      "--readiness-timeout-seconds",
+      "120",
+      "--output",
+      "benchmark/artifacts/baseline-b9990-e2b-e4b-max1-8k.json"
+    ],
+    "cleanup": {
+      "temporary_containers_absent": true,
+      "temporary_networks_absent": true,
+      "temporary_volume_absent": true,
+      "compose_down": true,
+      "operator_prefer_unchanged": true,
+      "operator_prefer_status_before": "exited",
+      "operator_prefer_status_after": "exited",
+      "neuron_unchanged": true,
+      "neuron_status_before": "running",
+      "neuron_status_after": "running",
+      "source_cache_mount": "not_mounted",
+      "operator_port_8080_used": false
+    }
+  },
+  "cells": [
+    {
+      "id": "environment",
+      "kind": "environment",
+      "status": "skipped",
+      "model": null,
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "models-discovery",
+      "kind": "models_discovery",
+      "status": "skipped",
+      "model": null,
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "configured-identity-route-a",
+      "kind": "models_discovery",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "first-load-a-router-id",
+      "kind": "first_model_load",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "warm-a",
+      "kind": "warm_request",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "stream-a",
+      "kind": "streaming",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "stream-cancel-a",
+      "kind": "cancellation",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "concurrency-2-a",
+      "kind": "concurrency",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "structured-aurora-facts-v1",
+      "kind": "structured_output",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "structured-cedar-plan-v1",
+      "kind": "structured_output",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "tools-a",
+      "kind": "tools",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "swap-a-to-b",
+      "kind": "model_swap",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e4b",
+        "canonical_id": "unsloth/gemma-4-E4B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E4B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e4b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "swap-b-to-a",
+      "kind": "model_swap",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "models-max",
+      "kind": "models_max",
+      "status": "skipped",
+      "model": null,
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "idle-unload",
+      "kind": "idle_unload",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "long-context-8k",
+      "kind": "long_context",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "long-context-32k",
+      "kind": "long_context",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    },
+    {
+      "id": "long-context-128k",
+      "kind": "long_context",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "code": "image_build_failed",
+        "detail": "Could not build the selected b9990 lane: Step 1/19 : ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843 | Step 2/19 : FROM ${LLAMA_CPP_BASE_IMAGE} | time=\"2026-07-13T22:06:20-05:00\" level=warning msg=\"Docker Compose requires buildx plugin to be installed\" | Image prefer-bench:b9990 Building | Image prefer-bench:b9990 Building | manifest unknown"
+      }
+    }
+  ],
+  "summary": {
+    "cell_counts": {
+      "skipped": 18
+    },
+    "schema_contract_attempts": 0,
+    "schema_contract_pass_rate": null,
+    "semantic_evaluations": 0,
+    "semantic_anomaly_rate": null
+  }
+}
