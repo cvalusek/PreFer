@@ -225,6 +225,51 @@ Measured b9843 (`version: 9843 (86b94708f)`) facts:
   prior running state; mounted the source cache read-only; and did not use host
   port 8080.
 
+The focused remediation evidence is pinned separately so the b9843
+compatibility override is not confused with the normal preset or the candidate
+revision:
+
+- [b9843 Pascal max-1 report](baselines/2026-07-14-titan-x-b9843-pascal-max1-e2b-e4b-8k-32k.md)
+  and [machine result](baselines/2026-07-14-titan-x-b9843-pascal-max1-e2b-e4b-8k-32k.json)
+- [b9843 Pascal max-4 report](baselines/2026-07-14-titan-x-b9843-pascal-max4-e2b-e4b.md)
+  and [machine result](baselines/2026-07-14-titan-x-b9843-pascal-max4-e2b-e4b.json)
+- [b9982 E2B 8K report](baselines/2026-07-14-titan-x-b9982-e2b-max1-8k.md)
+  and [machine result](baselines/2026-07-14-titan-x-b9982-e2b-max1-8k.json)
+- [b9982 E2B/E4B swap report](baselines/2026-07-14-titan-x-b9982-e2b-e4b-max1.md)
+  and [machine result](baselines/2026-07-14-titan-x-b9982-e2b-e4b-max1.json)
+
+Measured remediation facts, again from single runs rather than distributions:
+
+- With b9843, `12gb-pascal.ini`, and `models-max=1`, E2B stayed healthy and E4B
+  loaded without its MTP draft in 12,203.8 ms. E2B was evicted as expected and
+  returned in 7,950.8 ms. The observed peak was 6,663 MiB. All four attempted
+  schema cells passed and all four evaluated documents had zero semantic
+  anomalies.
+- With the same b9843 override and `models-max=4`, E4B loaded in 11,810.8 ms,
+  both E2B and E4B remained loaded, and the E2B return was warm at 231.7 ms.
+  The observed peak was 10,348 MiB. This proves two-model retention on this
+  12 GB host; it does not choose the 96 GB production `models-max` policy.
+- E2B's bounded 32K cell observed 32,576 prompt tokens, 40,683.5 ms prefill,
+  742.0 ms decode, and a 5,217 MiB peak while recovering all required codes in
+  order with valid schema and no semantic anomaly. The 128K cell stayed an
+  explicit `not_selected` skip: the roughly 9x prefill increase from 8K to 32K
+  did not make a bounded 128K run clearly safe or informative for this pass.
+  The 1,800-second idle cell likewise remains an explicit skip.
+- On normal `12gb.ini`, b9982 passed the E2B 8K contract lane: 226.9 ms warm,
+  187.1 ms streaming TTFT, 4,637.3 ms 8K prefill, 545.5 ms decode, 5,217 MiB
+  observed peak, three of three schema cells, and zero of three semantic
+  anomalies. Its E4B MTP swap also passed on Pascal in 15,884.0 ms, followed by
+  a max-1 E2B reload in 14,069.0 ms. This confirms the upstream fix on the
+  cached models; it is not evidence to change the production pin.
+- The matching b9843 and b9982 E2B lanes had similar warm, concurrency, and 8K
+  prefill measurements. b9982's 51-token 8K decode was faster in this one run
+  (545.5 vs 797.1 ms), while load and cold-start values varied across repeated
+  local runs. No performance or architecture selection claim follows without a
+  distribution.
+- Every focused run again recorded successful isolated cleanup, a read-only
+  source cache mount, unchanged operator `prefer` and NeurOn container states,
+  and no use of host port 8080.
+
 The earlier b9990 comparison was attempted before its GHCR image was published:
 `server-cuda-b9990` returned `manifest unknown`, so its preserved historical
 artifact contains structured skips only. The active comparison assumption has

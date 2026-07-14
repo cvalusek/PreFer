@@ -1,0 +1,869 @@
+{
+  "schema_version": "prefer.benchmark-result.v1",
+  "run": {
+    "run_id": "b9982-8719ac0129",
+    "started_at": "2026-07-14T03:55:58.092Z",
+    "duration_ms": 180559.053,
+    "source_revision": "caa927332af42b611aaf2444bab2d47129d29934",
+    "source_dirty": false,
+    "backend": {
+      "name": "llama.cpp",
+      "base_image": "ghcr.io/ggml-org/llama.cpp@sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76",
+      "base_image_tag": "ghcr.io/ggml-org/llama.cpp:server-cuda-b9982",
+      "manifest_digest": "sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76",
+      "manifest_status": "verified",
+      "image_id": "sha256:80c122fbc1e5aded4b54e1434754d13a2d9574873ac1b08bb7714b8ca96f0971",
+      "revision": "version: 9982 (99f3dc322)",
+      "source_commit": "99f3dc32296f825fec94f202da1e9fede1e78cf9",
+      "release_url": "https://github.com/ggml-org/llama.cpp/releases/tag/b9982",
+      "comparison_lane": true
+    },
+    "contract_version": "1.0.0",
+    "eval_version": "1.0.0",
+    "hardware": {
+      "tier": "12gb",
+      "gpus": [
+        {
+          "name": "NVIDIA TITAN X (Pascal)",
+          "memory_total_mib": 12288,
+          "driver_version": "582.53"
+        }
+      ],
+      "memory_evidence": "nvidia-smi"
+    },
+    "preset": "12gb.ini",
+    "models_max": 1,
+    "command": [
+      "python",
+      "-m",
+      "prefer_bench",
+      "local",
+      "--lane",
+      "b9982",
+      "--cache-source-volume",
+      "prefer-model-cache",
+      "--models",
+      "gemma-4-e2b",
+      "--preset",
+      "12gb.ini",
+      "--models-max",
+      "1",
+      "--contexts",
+      "8k",
+      "--timeout-seconds",
+      "300",
+      "--readiness-timeout-seconds",
+      "120",
+      "--output",
+      "benchmark/artifacts/2026-07-14-b9982-e2b-max1-8k.json"
+    ],
+    "cleanup": {
+      "temporary_containers_absent": true,
+      "temporary_networks_absent": true,
+      "temporary_volume_absent": true,
+      "compose_down": true,
+      "operator_prefer_unchanged": true,
+      "operator_prefer_status_before": "exited",
+      "operator_prefer_status_after": "exited",
+      "neuron_unchanged": true,
+      "neuron_status_before": "running",
+      "neuron_status_after": "running",
+      "source_cache_mount": "read_only",
+      "operator_port_8080_used": false
+    }
+  },
+  "cells": [
+    {
+      "id": "cold-readiness",
+      "kind": "cold_readiness",
+      "status": "passed",
+      "model": null,
+      "context": null,
+      "measurements": {
+        "total_ms": 1682.017,
+        "compose_up_ms": 1103.28,
+        "readiness_poll_ms": 578.727
+      },
+      "contract": {
+        "pass": true,
+        "checks": [
+          {
+            "name": "models_ready",
+            "pass": true
+          }
+        ]
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "evidence": {
+        "definition": "compose service start through first successful GET /v1/models",
+        "endpoint": "/v1/models",
+        "operator_port_8080_used": false
+      }
+    },
+    {
+      "id": "models-discovery",
+      "kind": "models_discovery",
+      "status": "passed",
+      "model": null,
+      "context": null,
+      "measurements": {
+        "model_count": 8
+      },
+      "contract": {
+        "pass": true,
+        "checks": [
+          {
+            "name": "minimal_envelope",
+            "pass": true,
+            "errors": []
+          },
+          {
+            "name": "selected_discovery_ids",
+            "pass": true,
+            "missing": []
+          }
+        ]
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "evidence": {
+        "statuses": {
+          "default": "unloaded",
+          "unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF:Q6_K_XL": "unloaded",
+          "unsloth/Qwen3.6-27B-MTP-GGUF:Q6_K_XL": "unloaded",
+          "unsloth/Qwen3.6-35B-A3B-MTP-GGUF-1m:Q6_K_XL": "unloaded",
+          "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:Q6_K_XL": "unloaded",
+          "unsloth/gemma-4-26B-A4B-it-qat-GGUF:Q4_K_XL": "unloaded",
+          "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL": "unloaded",
+          "unsloth/gemma-4-E4B-it-qat-GGUF:Q4_K_XL": "unloaded"
+        }
+      }
+    },
+    {
+      "id": "configured-identity-route-a",
+      "kind": "models_discovery",
+      "status": "passed",
+      "model": {
+        "requested_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": null,
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {
+        "total_ms": 28.198
+      },
+      "contract": {
+        "pass": true,
+        "checks": [
+          {
+            "name": "bounded_success_or_error_envelope",
+            "pass": true,
+            "errors": []
+          }
+        ]
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "evidence": {
+        "http_status": 400,
+        "behavior": "rejected_not_promised_route"
+      }
+    },
+    {
+      "id": "first-load-a-router-id",
+      "kind": "first_model_load",
+      "status": "passed",
+      "model": {
+        "requested_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": null,
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {
+        "total_ms": 49729.518,
+        "memory": {
+          "source": "nvidia-smi",
+          "samples": 163,
+          "start_used_mib": 1517,
+          "end_used_mib": 5189,
+          "peak_used_mib": 5189
+        },
+        "prefill_ms": 11270.239,
+        "decode_ms": 65.203,
+        "prompt_tokens": 17,
+        "decode_tokens": 5,
+        "prefill_tokens_per_second": 1.508397470541663,
+        "decode_tokens_per_second": 76.68358817845804
+      },
+      "contract": {
+        "pass": true,
+        "checks": [
+          {
+            "name": "chat_envelope",
+            "pass": true,
+            "errors": []
+          }
+        ]
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "evidence": {
+        "http_status": 200,
+        "finish_reason": "stop"
+      }
+    },
+    {
+      "id": "warm-a",
+      "kind": "warm_request",
+      "status": "passed",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {
+        "total_ms": 226.888,
+        "memory": {
+          "source": "nvidia-smi",
+          "samples": 3,
+          "start_used_mib": 5189,
+          "end_used_mib": 5189,
+          "peak_used_mib": 5189
+        },
+        "prefill_ms": 50.948,
+        "decode_ms": 32.386,
+        "prompt_tokens": 15,
+        "decode_tokens": 4,
+        "prefill_tokens_per_second": 294.41783779539924,
+        "decode_tokens_per_second": 123.51015871055394
+      },
+      "contract": {
+        "pass": true,
+        "checks": [
+          {
+            "name": "chat_envelope",
+            "pass": true,
+            "errors": []
+          }
+        ]
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "evidence": {
+        "http_status": 200,
+        "finish_reason": "stop"
+      }
+    },
+    {
+      "id": "stream-a",
+      "kind": "streaming",
+      "status": "passed",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {
+        "total_ms": 352.578,
+        "ttft_ms": 187.089,
+        "stream_events": 15,
+        "memory": {
+          "source": "nvidia-smi",
+          "samples": 4,
+          "start_used_mib": 5189,
+          "end_used_mib": 5189,
+          "peak_used_mib": 5189
+        }
+      },
+      "contract": {
+        "pass": true,
+        "checks": [
+          {
+            "name": "content_type",
+            "pass": true,
+            "actual": "text/event-stream"
+          },
+          {
+            "name": "chunk_count",
+            "pass": true,
+            "actual": 15
+          },
+          {
+            "name": "done_termination",
+            "pass": true
+          }
+        ]
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "evidence": {
+        "content_characters": 69,
+        "done": true
+      }
+    },
+    {
+      "id": "stream-cancel-a",
+      "kind": "cancellation",
+      "status": "passed",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {
+        "total_ms": 213.517,
+        "events_before_close": 1
+      },
+      "contract": {
+        "pass": true,
+        "checks": [
+          {
+            "name": "client_closed_after_event",
+            "pass": true
+          },
+          {
+            "name": "bounded_return",
+            "pass": true
+          }
+        ]
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "evidence": {
+        "backend_work_cancelled": "not_observed_and_not_promised"
+      }
+    },
+    {
+      "id": "concurrency-2-a",
+      "kind": "concurrency",
+      "status": "passed",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {
+        "total_ms": 531.57,
+        "request_count": 2,
+        "individual_ms": [
+          246.655,
+          436.624
+        ],
+        "p50_ms": 341.64,
+        "p95_ms": 427.126,
+        "memory": {
+          "source": "nvidia-smi",
+          "samples": 4,
+          "start_used_mib": 5189,
+          "end_used_mib": 5189,
+          "peak_used_mib": 5189
+        }
+      },
+      "contract": {
+        "pass": true,
+        "checks": [
+          {
+            "name": "all_responses",
+            "pass": true,
+            "responses": [
+              {
+                "status": 200,
+                "duration_ms": 246.6551999677904,
+                "errors": []
+              },
+              {
+                "status": 200,
+                "duration_ms": 436.62439996842295,
+                "errors": []
+              }
+            ]
+          }
+        ]
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      }
+    },
+    {
+      "id": "structured-aurora-facts-v1",
+      "kind": "structured_output",
+      "status": "passed",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {
+        "total_ms": 1005.429,
+        "memory": {
+          "source": "nvidia-smi",
+          "samples": 6,
+          "start_used_mib": 5189,
+          "end_used_mib": 5197,
+          "peak_used_mib": 5197
+        },
+        "prefill_ms": 97.179,
+        "decode_ms": 767.346,
+        "prompt_tokens": 96,
+        "decode_tokens": 88,
+        "prefill_tokens_per_second": 987.8677492050751,
+        "decode_tokens_per_second": 114.68099136504263
+      },
+      "contract": {
+        "pass": true,
+        "checks": [
+          {
+            "name": "chat_envelope",
+            "pass": true,
+            "errors": []
+          },
+          {
+            "name": "strict_json_schema",
+            "pass": true,
+            "errors": []
+          }
+        ]
+      },
+      "quality": {
+        "schema_valid": true,
+        "semantic_evaluated": true,
+        "semantic_anomalies": []
+      },
+      "evidence": {
+        "case_id": "aurora-facts-v1",
+        "json_valid": true,
+        "http_status": 200,
+        "synthetic_response_document": {
+          "project": "Project Aurora",
+          "review_date": "2026-08-14",
+          "owner": "Mira Chen",
+          "required_action": "submit the risk register",
+          "due_date": "2026-08-12",
+          "launch_state": "paused"
+        }
+      }
+    },
+    {
+      "id": "structured-cedar-plan-v1",
+      "kind": "structured_output",
+      "status": "passed",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {
+        "total_ms": 4640.058,
+        "memory": {
+          "source": "nvidia-smi",
+          "samples": 18,
+          "start_used_mib": 5197,
+          "end_used_mib": 5201,
+          "peak_used_mib": 5201
+        },
+        "prefill_ms": 128.912,
+        "decode_ms": 4368.814,
+        "prompt_tokens": 158,
+        "decode_tokens": 248,
+        "prefill_tokens_per_second": 1225.642298622316,
+        "decode_tokens_per_second": 56.76597813502703
+      },
+      "contract": {
+        "pass": true,
+        "checks": [
+          {
+            "name": "chat_envelope",
+            "pass": true,
+            "errors": []
+          },
+          {
+            "name": "strict_json_schema",
+            "pass": true,
+            "errors": []
+          }
+        ]
+      },
+      "quality": {
+        "schema_valid": true,
+        "semantic_evaluated": true,
+        "semantic_anomalies": []
+      },
+      "evidence": {
+        "case_id": "cedar-plan-v1",
+        "json_valid": true,
+        "http_status": 200,
+        "synthetic_response_document": {
+          "plan_title": "Project Cedar Execution Plan",
+          "steps": [
+            {
+              "sequence": 1,
+              "action": "Imani Rao validates the backup",
+              "owner": "Imani Rao",
+              "due_date": "2026-09-03",
+              "evidence": "restore log"
+            },
+            {
+              "sequence": 2,
+              "action": "Theo Park runs the failover drill",
+              "owner": "Theo Park",
+              "due_date": "2026-09-05",
+              "evidence": "drill transcript"
+            },
+            {
+              "sequence": 3,
+              "action": "Imani Rao signs the release checklist",
+              "owner": "Imani Rao",
+              "due_date": "2026-09-06",
+              "evidence": "signed checklist"
+            }
+          ],
+          "release_freeze_date": "2026-09-07"
+        }
+      }
+    },
+    {
+      "id": "tools-a",
+      "kind": "tools",
+      "status": "passed",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {
+        "total_ms": 571.298,
+        "memory": {
+          "source": "not_sampled",
+          "samples": 0
+        },
+        "prefill_ms": 82.088,
+        "decode_ms": 145.898,
+        "prompt_tokens": 80,
+        "decode_tokens": 20,
+        "prefill_tokens_per_second": 974.5638826625086,
+        "decode_tokens_per_second": 137.0820710359292,
+        "tool_call_ms": 371.394,
+        "tool_result_ms": 199.905
+      },
+      "contract": {
+        "pass": true,
+        "checks": [
+          {
+            "name": "chat_envelope",
+            "pass": true,
+            "errors": []
+          },
+          {
+            "name": "tool_call_envelope",
+            "pass": true,
+            "errors": []
+          },
+          {
+            "name": "tool_result_message_accepted",
+            "pass": true,
+            "errors": []
+          }
+        ]
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      }
+    },
+    {
+      "id": "swap-a-to-b",
+      "kind": "model_swap",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "category": "structured_skip",
+        "code": "second_model_not_selected",
+        "detail": "A\u2192B\u2192A requires a second cached model."
+      }
+    },
+    {
+      "id": "models-max-1",
+      "kind": "models_max",
+      "status": "passed",
+      "model": null,
+      "context": null,
+      "measurements": {
+        "loaded_models": 1
+      },
+      "contract": {
+        "pass": true,
+        "checks": [
+          {
+            "name": "models_envelope",
+            "pass": true,
+            "errors": []
+          },
+          {
+            "name": "loaded_count_within_limit",
+            "pass": true,
+            "loaded_count": 1,
+            "configured_limit": 1
+          }
+        ]
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "evidence": {
+        "loaded_canonical_ids": [
+          "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL"
+        ],
+        "statuses": {
+          "default": "unloaded",
+          "unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF:Q6_K_XL": "unloaded",
+          "unsloth/Qwen3.6-27B-MTP-GGUF:Q6_K_XL": "unloaded",
+          "unsloth/Qwen3.6-35B-A3B-MTP-GGUF-1m:Q6_K_XL": "unloaded",
+          "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:Q6_K_XL": "unloaded",
+          "unsloth/gemma-4-26B-A4B-it-qat-GGUF:Q4_K_XL": "unloaded",
+          "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL": "loaded",
+          "unsloth/gemma-4-E4B-it-qat-GGUF:Q4_K_XL": "unloaded"
+        }
+      }
+    },
+    {
+      "id": "idle-unload",
+      "kind": "idle_unload",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": null,
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "category": "structured_skip",
+        "code": "wait_not_selected",
+        "detail": "Preset idle sleep is 1800s; use --idle-wait-seconds 1805 to measure it."
+      }
+    },
+    {
+      "id": "long-context-8k",
+      "kind": "long_context",
+      "status": "passed",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": {
+        "target_tokens": 8192,
+        "observed_prompt_tokens": 8000,
+        "request_bytes": 52103
+      },
+      "measurements": {
+        "total_ms": 5341.923,
+        "memory": {
+          "source": "nvidia-smi",
+          "samples": 20,
+          "start_used_mib": 5201,
+          "end_used_mib": 5217,
+          "peak_used_mib": 5217
+        },
+        "prefill_ms": 4637.305,
+        "decode_ms": 545.464,
+        "prompt_tokens": 8000,
+        "decode_tokens": 51,
+        "prefill_tokens_per_second": 1725.139925021106,
+        "decode_tokens_per_second": 93.49837936142438
+      },
+      "contract": {
+        "pass": true,
+        "checks": [
+          {
+            "name": "chat_envelope",
+            "pass": true,
+            "errors": []
+          },
+          {
+            "name": "strict_json_schema",
+            "pass": true,
+            "errors": []
+          },
+          {
+            "name": "observed_prompt_within_target_window",
+            "pass": true,
+            "target": 8192,
+            "observed": 8000,
+            "tolerance": 819
+          }
+        ]
+      },
+      "quality": {
+        "schema_valid": true,
+        "semantic_evaluated": true,
+        "semantic_anomalies": []
+      },
+      "evidence": {
+        "generator": "neutral-synthetic-filler-v2",
+        "http_status": 200,
+        "synthetic_response_document": {
+          "codes": [
+            "AURORA-1842",
+            "CEDAR-7351",
+            "EMBER-9264"
+          ]
+        }
+      }
+    },
+    {
+      "id": "long-context-32k",
+      "kind": "long_context",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": {
+        "target_tokens": 32768,
+        "observed_prompt_tokens": null
+      },
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "category": "structured_skip",
+        "code": "not_selected",
+        "detail": "Use --contexts to opt into the 32768-token cell."
+      }
+    },
+    {
+      "id": "long-context-128k",
+      "kind": "long_context",
+      "status": "skipped",
+      "model": {
+        "requested_id": "gemma-4-e2b",
+        "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+        "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+        "alias": "gemma-4-e2b",
+        "quantization": "UD-Q4_K_XL"
+      },
+      "context": {
+        "target_tokens": 131072,
+        "observed_prompt_tokens": null
+      },
+      "measurements": {},
+      "contract": {
+        "pass": null,
+        "checks": []
+      },
+      "quality": {
+        "schema_valid": null,
+        "semantic_evaluated": false,
+        "semantic_anomalies": []
+      },
+      "skip": {
+        "category": "structured_skip",
+        "code": "not_selected",
+        "detail": "Use --contexts to opt into the 131072-token cell."
+      }
+    }
+  ],
+  "summary": {
+    "cell_counts": {
+      "passed": 13,
+      "skipped": 4
+    },
+    "schema_contract_attempts": 3,
+    "schema_contract_pass_rate": 1.0,
+    "semantic_evaluations": 3,
+    "semantic_anomaly_rate": 0.0
+  }
+}
