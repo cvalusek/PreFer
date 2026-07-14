@@ -23,6 +23,11 @@ mode, with models downloaded from Hugging Face on first start.
   expose short aliases for clients (e.g. `gemma-4`, `qwen-3.6`,
   `glm-4.7-flash`). Include context in an alias only when the section uses a
   non-native explicit context, such as `qwen-3.6-35b-a3b-1m`.
+  The v1 client contract distinguishes these configured section identities
+  from b9843's normalized `/v1/models`/request IDs: for example E2B is
+  configured as `:UD-Q4_K_XL`, but b9843 advertises and accepts `:Q4_K_XL`
+  (plus `gemma-4-e2b`) and rejects the UD form as a route. Do not infer request
+  compatibility from the preset header alone.
 - **Shared defaults use `[*]`**, not per-section duplication. A per-section
   "common defaults" convention (duplicating `[*]`'s values into every model
   section, with `[*]` commented out as documentation) was tried and
@@ -41,6 +46,28 @@ mode, with models downloaded from Hugging Face on first start.
   storage (see the large-presets section).
 - `sleep-idle-seconds = 1800` is set on `12gb.ini`/`8gb.ini` only.
   `96gb.ini` deliberately omits it (not needed with that much headroom).
+
+## `models-max` precedence and policy
+
+The effective normal Compose default is **1**, including for `96gb.ini`:
+`docker-compose.yml` passes
+`LLAMA_ARG_MODELS_MAX=${LLAMA_ARG_MODELS_MAX:-1}`, and `.env.example` also
+sets 1. An explicit `--models-max` command-line argument wins, followed by an
+existing `LLAMA_ARG_MODELS_MAX` value. If neither exists and the preset is
+auto-detected, `detect-preset.sh` assigns 1 when that preset contains no
+`load-on-startup` entry. None of the current 8/12/96 GB tier presets contains
+one, so direct auto-detection also resolves to 1.
+
+The subtle fallback case is an explicitly selected preset outside the normal
+Compose path: preset detection is skipped, so with no CLI/environment value
+llama.cpp uses its router default of 4. The named presets have one model each,
+so that fallback does not make them multi-model hosts.
+
+An older operator README row said 96 GB used the upstream default 4. That was
+documentation drift, now corrected; the operational default was deliberately
+left at 1. Whether 96 GB should later retain more models is an owner policy
+decision gated on the checked-in `models-max=1` versus `4` benchmark dimension,
+not something to infer from upstream defaults.
 
 ## Base image
 
@@ -85,8 +112,9 @@ auto-detectable: `detect-preset.sh` reads only the *first* GPU's VRAM
 pool and would wrongly pick `96gb.ini`. Each preset holds a single model and is
 meant to own the whole host (one model at a time — that was the design goal), so
 each sets `load-on-startup = true`: the one model loads at boot rather than
-lazily on first request (with `LLAMA_ARG_MODELS_MAX=1` there's nothing to evict
-it for anyway).
+lazily on first request. The normal Compose path passes
+`LLAMA_ARG_MODELS_MAX=1`; an explicit non-Compose launch can fall through to
+llama.cpp's default 4, but either way there is only one configured model.
 `download-models.sh`'s default `PRESTAGE_MODELS` is **preset-aware**: when one
 of these named presets is selected, the default stages only that one model
 (the preset basename equals the download key), instead of the small-model
@@ -250,13 +278,15 @@ via research:
    is applied uniformly via `[*]` for simplicity, and the speed argument
    applies to all three regardless.
 
-96gb has no VRAM pressure (unlike 12gb/8gb), so there's no real downside to
-trade off here — **except** that f16 KV cache is ~4x q4_0's size, and 96gb
-now has 5 `load-on-startup` models (the original 3 plus E2B/E4B). This
-change has not yet been tested for OOM with all 5 loaded — if it doesn't
-fit, q8_0 would be the fallback for gemma at minimum (still better than
-q4_0's KL 1.088, though q8_0's 0.377 isn't great either) while keeping f16
-for Qwen/GLM if their headroom allows.
+96gb has no VRAM pressure for the normal one-loaded-model path (unlike
+12gb/8gb), so there's no real downside to trade off there. The caveat is that
+f16 KV cache is ~4x q4_0's size if an operator raises `models-max` and retains
+several models. None of the tier entries uses `load-on-startup`; the normal
+Compose/auto-detected default is 1, so the current path does not hold every
+configured model at once. A 96 GB `models-max=4` run remains unmeasured. If it
+doesn't fit, q8_0 would be the fallback for gemma at minimum (still better than
+q4_0's KL 1.088, though q8_0's 0.377 isn't great either) while keeping f16 for
+Qwen/GLM if their headroom allows.
 
 ## Qwen sampling: `presence-penalty`
 
@@ -369,9 +399,24 @@ dlami-nvme, `--restart no`) without reading `aws/DESIGN.md` first.
 
 ## Testing
 
-There's no automated test suite — all verification so far has been manual,
-on actual GPU hardware (a Blackwell-class ~96GB card and a Titan X Pascal
-12GB card). Useful manual checks:
+The measurement-first harness under `benchmark/` and `prefer_bench/` has a
+dependency-free automated suite for schemas, fixtures, parsers, aliases,
+reports, semantic anomaly classification, negative contract cases, and Compose
+isolation. Ordinary CI never launches a GPU server or downloads a model.
+
+Run the deterministic suite and mock replay:
+
+- `python -m unittest discover -s benchmark/tests -v`
+- `python -m prefer_bench validate`
+- `python -m prefer_bench contract --mock`
+
+Live verification remains hardware-dependent. The isolated command creates a
+generated Compose project, loopback port other than 8080, network, and cloned
+model volume, then removes all of them while leaving operator `prefer` and
+NeurOn state alone. See `benchmark/README.md` for current b9843, `models-max`,
+long-context, idle, and opt-in b9990 commands.
+
+Other useful manual checks:
 
 - `docker compose config` — verify env var resolution (especially
   `LLAMA_ARG_MODELS_PRESET`/`LLAMA_ARG_MODELS_MAX`) before `up`.
@@ -380,6 +425,5 @@ on actual GPU hardware (a Blackwell-class ~96GB card and a Titan X Pascal
 - `GET /v1/models` and a minimal `POST /v1/chat/completions` per model id —
   confirm a preset's models load and respond.
 
-If adding an automated smoke test, it would need to run on a GPU host (no
-CPU-only fallback is practical given model sizes) — not currently set up in
-CI.
+Any future live smoke job still needs a GPU host; no CPU-only fallback is
+practical for the normal model tiers.

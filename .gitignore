@@ -26,3 +26,9 @@ node_modules/
 **/node_modules/
 dist/
 **/dist/
+
+# Reproducible benchmark outputs are local by default. Deliberately scrubbed,
+# reviewed baselines live in benchmark/baselines/ and remain tracked.
+benchmark/artifacts/
+__pycache__/
+*.py[cod]

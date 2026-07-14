@@ -1,0 +1,32 @@
+name: ${PREFER_BENCH_PROJECT:?PREFER_BENCH_PROJECT must be a unique prefer-bench-* name}
+
+services:
+  router:
+    build:
+      context: ../docker/prefer
+      dockerfile: Dockerfile
+      args:
+        LLAMA_CPP_BASE_IMAGE: ${PREFER_BENCH_BASE_IMAGE:-ghcr.io/ggml-org/llama.cpp:server-cuda-b9843}
+    image: ${PREFER_BENCH_IMAGE:-prefer-bench:b9843}
+    ports:
+      - "127.0.0.1:${PREFER_BENCH_PORT:?PREFER_BENCH_PORT must be a free non-8080 port}:8080"
+    volumes:
+      - models:/models:ro
+    environment:
+      PRESTAGE_MODELS: none
+      HF_HUB_OFFLINE: "1"
+      LLAMA_ARG_OFFLINE: "1"
+      LLAMA_ARG_MODELS_PRESET: /presets/${PREFER_BENCH_PRESET:-12gb.ini}
+      LLAMA_ARG_MODELS_MAX: ${PREFER_BENCH_MODELS_MAX:-1}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  models:
+    name: ${PREFER_BENCH_VOLUME:?PREFER_BENCH_VOLUME must be a unique prefer-bench-* volume}
+    external: true

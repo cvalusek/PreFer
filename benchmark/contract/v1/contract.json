@@ -1,0 +1,175 @@
+{
+  "schema_version": "prefer.client-contract.v1",
+  "contract_version": "1.0.0",
+  "title": "PreFer narrow llama.cpp router client contract",
+  "scope": {
+    "promised": [
+      "GET /v1/models minimal discovery envelope",
+      "POST /v1/chat/completions non-streaming minimal envelope",
+      "POST /v1/chat/completions SSE streaming chunks terminated by data: [DONE]",
+      "OpenAI nested json_schema request form used by Ground Control",
+      "conditional OpenAI function-tool call envelope and role=tool result message",
+      "versioned configured model identities plus measured router/discovery identifiers and aliases listed in this fixture",
+      "OpenAI-shaped error envelope for rejected contract requests"
+    ],
+    "not_promised": [
+      "full OpenAI API compatibility",
+      "endpoints other than /v1/models and /v1/chat/completions",
+      "Anthropic translation or /v1/messages",
+      "built-in /tools endpoints",
+      "parallel tool calls or tool-choice quality",
+      "a fixed server-side request-byte limit",
+      "server-side cancellation after a client closes a stream",
+      "exact HTTP error codes, error messages, timing extensions, or router metadata"
+    ]
+  },
+  "endpoints": {
+    "models": {
+      "method": "GET",
+      "path": "/v1/models",
+      "success_status": 200,
+      "required_response": {
+        "type": "object",
+        "data": "array of objects containing a non-empty string id"
+      }
+    },
+    "chat_completions": {
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "required_request": ["model", "messages"],
+      "non_streaming": {
+        "required_response": ["id", "object", "created", "model", "choices"],
+        "choice_required": ["index", "message", "finish_reason"],
+        "message_required": ["role", "content"]
+      },
+      "streaming": {
+        "content_type": "text/event-stream",
+        "event_prefix": "data:",
+        "chunk_object": "chat.completion.chunk",
+        "termination": "data: [DONE]"
+      }
+    }
+  },
+  "structured_output": {
+    "request_shape": {
+      "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+          "name": "non-empty identifier",
+          "strict": true,
+          "schema": "JSON Schema object"
+        }
+      }
+    },
+    "response_rule": "choices[0].message.content is a JSON string that validates against the supplied schema",
+    "semantic_rule": "schema validity and semantic anomaly classification are separate results"
+  },
+  "tools": {
+    "status": "conditional-envelope-only",
+    "request": "OpenAI tools array with function definitions; tool result messages use role=tool and tool_call_id",
+    "response": "When a model emits tool_calls, each call has id, type=function, function.name, and JSON-string function.arguments",
+    "not_promised": [
+      "that a model chooses a tool",
+      "parallel_tool_calls",
+      "tool execution",
+      "tool semantic correctness"
+    ]
+  },
+  "errors_and_limits": {
+    "rejections_tested": [
+      "malformed JSON",
+      "missing model",
+      "unknown model id or alias",
+      "malformed structured-output request",
+      "malformed tool definition"
+    ],
+    "error_envelope": {
+      "required": ["error"],
+      "error_required": ["message", "type"]
+    },
+    "timeout": "The harness always applies a client deadline and records timeout; PreFer does not promise a server deadline.",
+    "cancellation": "The harness closes the client SSE connection and records bounded return; backend work cancellation is not promised.",
+    "request_size": "PreFer configures no stable byte limit. The harness caps generated payloads for safety and records backend rejection if tested.",
+    "context_limit": "Context limits are preset/model dimensions. Unsupported or unrun 8K/32K/128K cells are explicit skipped or unsupported results."
+  },
+  "model_identity_rule": "canonical_id is the configured cross-system/preset identity. On b9843, discovery_id is the normalized ID returned by /v1/models and accepted for routing; listed aliases are also accepted. When canonical_id and discovery_id differ, canonical_id is not promised as a PreFer request route.",
+  "models": [
+    {
+      "canonical_id": "unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL",
+      "discovery_id": "unsloth/gemma-4-26B-A4B-it-qat-GGUF:Q4_K_XL",
+      "aliases": ["gemma-4", "gemma-4-26b-a4b"],
+      "quantization": "UD-Q4_K_XL",
+      "presets": ["8gb.ini", "12gb.ini", "96gb.ini"]
+    },
+    {
+      "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+      "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
+      "aliases": ["gemma-4-e2b"],
+      "quantization": "UD-Q4_K_XL",
+      "presets": ["8gb.ini", "12gb.ini", "96gb.ini"]
+    },
+    {
+      "canonical_id": "unsloth/gemma-4-E4B-it-qat-GGUF:UD-Q4_K_XL",
+      "discovery_id": "unsloth/gemma-4-E4B-it-qat-GGUF:Q4_K_XL",
+      "aliases": ["gemma-4-e4b"],
+      "quantization": "UD-Q4_K_XL",
+      "presets": ["8gb.ini", "12gb.ini", "96gb.ini"]
+    },
+    {
+      "canonical_id": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL",
+      "discovery_id": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:Q6_K_XL",
+      "aliases": ["qwen-3.6", "qwen-3.6-35b-a3b"],
+      "quantization": "UD-Q6_K_XL",
+      "presets": ["8gb.ini", "12gb.ini", "96gb.ini"]
+    },
+    {
+      "canonical_id": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF-1m:UD-Q6_K_XL",
+      "discovery_id": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF-1m:Q6_K_XL",
+      "aliases": ["qwen-3.6-35b-a3b-1m"],
+      "quantization": "UD-Q6_K_XL",
+      "presets": ["8gb.ini", "12gb.ini", "96gb.ini"]
+    },
+    {
+      "canonical_id": "unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q6_K_XL",
+      "discovery_id": "unsloth/Qwen3.6-27B-MTP-GGUF:Q6_K_XL",
+      "aliases": ["qwen-3.6-27b"],
+      "quantization": "UD-Q6_K_XL",
+      "presets": ["8gb.ini", "12gb.ini", "96gb.ini"]
+    },
+    {
+      "canonical_id": "unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF:UD-Q6_K_XL",
+      "discovery_id": "unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF:Q6_K_XL",
+      "aliases": ["glm-4.7-flash"],
+      "quantization": "UD-Q6_K_XL",
+      "presets": ["8gb.ini", "12gb.ini", "96gb.ini"]
+    },
+    {
+      "canonical_id": "antirez/deepseek-v4-gguf:Q4KExperts",
+      "discovery_id": "antirez/deepseek-v4-gguf:Q4KExperts",
+      "aliases": ["deepseek-v4-flash"],
+      "quantization": "Q4KExperts",
+      "presets": ["deepseek-v4-flash.ini"]
+    },
+    {
+      "canonical_id": "unsloth/GLM-5.2-GGUF:UD-Q4_K_XL",
+      "discovery_id": "unsloth/GLM-5.2-GGUF:Q4_K_XL",
+      "aliases": ["glm-5.2"],
+      "quantization": "UD-Q4_K_XL",
+      "presets": ["glm-5.2.ini"]
+    },
+    {
+      "canonical_id": "0xSero/GLM-5.2-REAP-504B-GGUF:Q4_K_XL",
+      "discovery_id": "0xSero/GLM-5.2-REAP-504B-GGUF:Q4_K_XL",
+      "aliases": ["glm-5.2-reap"],
+      "quantization": "Q4_K_XL",
+      "presets": ["glm-5.2-reap.ini"]
+    },
+    {
+      "canonical_id": "unsloth/SmolLM2-135M-Instruct-GGUF:Q8_0",
+      "discovery_id": "unsloth/SmolLM2-135M-Instruct-GGUF:Q8_0",
+      "aliases": ["smol", "smollm2-135m"],
+      "quantization": "Q8_0",
+      "presets": ["smol.ini"]
+    }
+  ]
+}

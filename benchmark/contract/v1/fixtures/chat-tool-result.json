@@ -1,0 +1,13 @@
+{
+  "id": "chatcmpl-tool-result-fixture",
+  "object": "chat.completion",
+  "created": 1783987200,
+  "model": "gemma-4-e2b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {"role": "assistant", "content": "Synthetic record SYN-42 is ready."},
+      "finish_reason": "stop"
+    }
+  ]
+}

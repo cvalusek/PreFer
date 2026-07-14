@@ -1,0 +1,16 @@
+{
+  "id": "chatcmpl-structured-fixture",
+  "object": "chat.completion",
+  "created": 1783987200,
+  "model": "gemma-4-e2b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"project\":\"Project Aurora\",\"review_date\":\"2026-08-14\",\"owner\":\"Mira Chen\",\"required_action\":\"submit the risk register\",\"due_date\":\"2026-08-12\",\"launch_state\":\"paused\"}"
+      },
+      "finish_reason": "stop"
+    }
+  ]
+}

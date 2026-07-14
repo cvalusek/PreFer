@@ -1,0 +1,59 @@
+name: Test PreFer contract and benchmark harness
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'prefer_bench/**'
+      - 'benchmark/**'
+      - 'docker/prefer/**'
+      - 'docker-compose.yml'
+      - '.env.example'
+      - 'README.md'
+      - 'AGENTS.md'
+      - '.github/workflows/test-prefer.yml'
+  pull_request:
+    paths:
+      - 'prefer_bench/**'
+      - 'benchmark/**'
+      - 'docker/prefer/**'
+      - 'docker-compose.yml'
+      - '.env.example'
+      - 'README.md'
+      - 'AGENTS.md'
+      - '.github/workflows/test-prefer.yml'
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Unit and negative tests
+        run: python -m unittest discover -s benchmark/tests -v
+
+      - name: Validate versioned schemas, fixtures, corpus, and preset aliases
+        run: python -m prefer_bench validate
+
+      - name: Replay narrow contract against deterministic fake
+        run: python -m prefer_bench contract --mock --output benchmark/artifacts/contract-replay.json
+
+      - name: Validate isolated Compose rendering without starting a GPU service
+        env:
+          COMPOSE_DISABLE_ENV_FILE: '1'
+          PREFER_BENCH_PROJECT: prefer-bench-ci
+          PREFER_BENCH_VOLUME: prefer-bench-ci-models
+          PREFER_BENCH_PORT: '18081'
+          PREFER_BENCH_PRESET: 12gb.ini
+          PREFER_BENCH_MODELS_MAX: '1'
+        run: docker compose --project-name prefer-bench-ci -f benchmark/docker-compose.yml config --quiet
+
+      - name: Confirm no live GPU benchmark is part of CI
+        run: test ! -e benchmark/artifacts/live-result.json

@@ -1,0 +1,15 @@
+{
+  "id": "chatcmpl-fixture",
+  "object": "chat.completion",
+  "created": 1783987200,
+  "model": "gemma-4-e2b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {"role": "assistant", "content": "pong"},
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {"prompt_tokens": 4, "completion_tokens": 1, "total_tokens": 5},
+  "timings": {"prompt_n": 4, "prompt_ms": 2.0, "predicted_n": 1, "predicted_ms": 1.0}
+}

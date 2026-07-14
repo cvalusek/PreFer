@@ -1,0 +1,23 @@
+{
+  "id": "chatcmpl-tool-fixture",
+  "object": "chat.completion",
+  "created": 1783987200,
+  "model": "gemma-4-e2b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_fixture_1",
+            "type": "function",
+            "function": {"name": "lookup_fixture", "arguments": "{\"record_id\":\"SYN-42\"}"}
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ]
+}

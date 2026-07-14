@@ -2,7 +2,8 @@
 # DeepSeek V4 (PR #24162, landed b9840), covering all the large presets. The
 # server-cuda image lags the git tag slightly -- if a --pull 404s the build is
 # still in flight, just wait. See AGENTS.md "Base image".
-FROM ghcr.io/ggml-org/llama.cpp:server-cuda-b9843
+ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843
+FROM ${LLAMA_CPP_BASE_IMAGE}
 
 # huggingface-cli is deprecated; the `hf` command (from huggingface_hub) replaces it.
 RUN apt-get update \

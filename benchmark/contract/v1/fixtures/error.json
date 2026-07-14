@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": 400,
+    "message": "fixture request rejected",
+    "type": "invalid_request_error"
+  }
+}

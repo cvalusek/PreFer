@@ -2,7 +2,8 @@
 
 A llama.cpp router container hosting Gemma 4, Qwen3.6, and GLM-4.7-Flash.
 On first start it downloads the models from Hugging Face, then serves them
-via `llama-server`'s router mode (OpenAI-compatible API on port 8080).
+via `llama-server`'s router mode (the repository's narrow tested OpenAI-style
+contract on port 8080; see [`benchmark/README.md`](../../benchmark/README.md)).
 
 Base image: pinned to `ghcr.io/ggml-org/llama.cpp:server-cuda-b9843` (we track
 latest). This has both GLM MoE DSA (`glm-5.2` presets) and DeepSeek V4
@@ -20,13 +21,33 @@ smallest tier if VRAM is below all of them. Override with
 
 | Preset | VRAM tier | Models | `models-max` | Notes |
 | ------ | --------- | ------ | ------------- | ----- |
-| `96gb.ini` | ~96GB | Gemma 4 26B/E2B/E4B, Qwen3.6 35B + 1M, Qwen3.6 27B, GLM-4.7-Flash | default (4) | `n-cpu-moe = 0` - everything stays on GPU |
+| `96gb.ini` | ~96GB | Gemma 4 26B/E2B/E4B, Qwen3.6 35B + 1M, Qwen3.6 27B, GLM-4.7-Flash | `1` on normal Compose/auto-detect paths | `n-cpu-moe = 0`; models load on demand |
 | `12gb.ini` | ~12GB | Same model ids as `96gb.ini`, swap-on-demand | `1` | Per-model `n-cpu-moe` (12-26), `mmap = false`, `sleep-idle-seconds = 1800` |
 | `8gb.ini` | ~8GB | Same model ids as `96gb.ini`, swap-on-demand | `1` | Higher `n-cpu-moe` (18-32), same `mmap`/sleep settings |
 
 All presets share `dry-multiplier = 0.8`, `dry-base = 1.75`,
 `dry-allowed-length = 24` (DRY sampling) as a mitigation against repetition
 loops, particularly relevant to Gemma 4's tool-calling.
+
+### `models-max` precedence
+
+The normal checked-in Compose service passes
+`LLAMA_ARG_MODELS_MAX=${LLAMA_ARG_MODELS_MAX:-1}`, so its effective default is
+`1` for every selected preset, including `96gb.ini`. The example environment
+also sets `1`.
+
+Outside Compose, an explicit `--models-max` argument wins, then an existing
+`LLAMA_ARG_MODELS_MAX` value. With neither set, auto-detection assigns `1` to a
+tier preset that has no `load-on-startup` entry; all current 8/12/96 GB tier
+presets meet that condition. If a preset is selected explicitly outside
+Compose, detection leaves the setting alone and llama.cpp's router default of
+`4` applies. The named presets each contain one model, so `4` does not make
+them multi-model hosts.
+
+The prior claim that 96 GB normally used `4` was inaccurate documentation. No
+operational default was changed. Whether 96 GB should intentionally move from
+`1` to a larger value remains a benchmarked owner decision; the harness exposes
+`--models-max` as a run dimension.
 
 ### Large multi-GPU presets (named, not auto-detected)
 
@@ -100,6 +121,14 @@ layout means multiple presets/services can safely share one volume.
 Full per-model sampling params and shared defaults live in the corresponding
 `presets/<N>gb.ini` (or the named preset for the large multi-GPU models).
 
+The bracketed preset section is the configured cross-system/model identity. On
+b9843, `/v1/models` normalizes Unsloth quantization tags (for example the E2B
+configured ID ends in `:UD-Q4_K_XL`, while discovery reports `:Q4_K_XL`). The
+normalized discovery ID and short alias route PreFer requests; measured b9843
+rejects the configured UD identity as a request model. These roles are
+versioned separately in the client contract, and aliases are not promised as
+`/v1/models` entries.
+
 ## Running
 
 From the repo root:
@@ -113,8 +142,9 @@ root; on Windows, prefer a `.env` file for path-shaped values like
 `LLAMA_ARG_MODELS_PRESET`, since Git Bash mangles leading-`/` paths passed as
 shell env vars):
 
-- `LLM_MODEL_VOLUME` - Docker volume mounted at `/models` (default `prefer-model-cache`)
 - `LLM_PORT` - host port mapped to the container's 8080 (default `8080`)
+- `PREFER_MODEL_VOLUME` - Docker volume mounted at `/models` (default
+  `prefer-model-cache`)
 - `HF_TOKEN` - optional, helps with Hugging Face rate limits
 - `PRESTAGE_MODELS` - optional comma-separated subset of model keys to download
 - `S3_BUCKET_NAME` - optional. When set, `download-models.sh` syncs each model
@@ -125,9 +155,8 @@ shell env vars):
 - `LLAMA_ARG_MODELS_PRESET` / `LLAMA_ARG_MODELS_MAX` - optional, force a
   specific preset instead of auto-detection
 
-On `96gb.ini`, models with `load-on-startup = true` download tens of GB and
-load into VRAM before the server is ready. On `12gb.ini`/`8gb.ini`, nothing
-loads until first requested.
+On every tier preset (`96gb.ini`, `12gb.ini`, and `8gb.ini`), models load on
+first request. Only the named single-model presets use `load-on-startup`.
 
 Once running, `GET /v1/models` lists the available router model ids, and
 `POST /v1/chat/completions` with `"model": "<id>"` routes to (and
@@ -154,3 +183,11 @@ at runtime without rebuilding by setting `command:` on the service in
 The presets already expose short aliases such as `gemma-4`,
 `qwen-3.6`, `qwen-3.6-35b-a3b-1m`, and `glm-4.7-flash`; an external routing
 layer can usually target those directly.
+
+## Contract and isolated benchmark
+
+The versioned client fixture, synthetic evaluation corpus, reproducible result
+schema, isolated local Compose lane, and exact commands live under
+[`benchmark/`](../../benchmark/README.md). The benchmark never uses the
+operator container name `prefer`, never binds host port 8080, never downloads
+models, and never runs as a live GPU job in ordinary CI.

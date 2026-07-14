@@ -1,0 +1,7 @@
+data: {"id":"chatcmpl-stream-fixture","object":"chat.completion.chunk","created":1783987200,"model":"gemma-4-e2b","choices":[{"index":0,"delta":{"role":"assistant","content":"po"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-stream-fixture","object":"chat.completion.chunk","created":1783987200,"model":"gemma-4-e2b","choices":[{"index":0,"delta":{"content":"ng"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-stream-fixture","object":"chat.completion.chunk","created":1783987200,"model":"gemma-4-e2b","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
