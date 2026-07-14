@@ -16,12 +16,13 @@ def _rate(value: float | None) -> str:
 def render_markdown(result: dict[str, Any]) -> str:
     run = result["run"]
     backend = run["backend"]
+    displayed_image = backend.get("base_image_tag", backend["base_image"])
     summary = result["summary"]
     lines = [
         "# PreFer benchmark report",
         "",
         f"Run `{run['run_id']}` used source `{run['source_revision']}`"
-        f"{' (dirty working tree)' if run['source_dirty'] else ''} with `{backend['base_image']}` "
+        f"{' (dirty working tree)' if run['source_dirty'] else ''} with `{displayed_image}` "
         f"({backend['revision']}) on preset `{run['preset']}` and `models-max={run['models_max']}`.",
         "",
         f"Started: `{run['started_at']}`; duration: `{run['duration_ms'] / 1000:.3f}s`; "
@@ -71,14 +72,36 @@ def render_markdown(result: dict[str, Any]) -> str:
     skipped = [cell for cell in result["cells"] if cell["status"] in {"skipped", "unsupported"}]
     if skipped:
         lines.extend(["", "## Skipped or unsupported", ""])
-        grouped: dict[tuple[str, str], list[str]] = {}
+        grouped: dict[tuple[str | None, str, str], list[str]] = {}
         for cell in skipped:
             reason = cell.get("skip", cell.get("error", {"code": "unspecified", "detail": ""}))
-            key = (reason.get("code", "unspecified"), reason.get("detail", ""))
+            key = (reason.get("category"), reason.get("code", "unspecified"), reason.get("detail", ""))
             grouped.setdefault(key, []).append(cell["id"])
-        for (code, detail), cell_ids in grouped.items():
+        for (category, code, detail), cell_ids in grouped.items():
             rendered_ids = ", ".join(f"`{cell_id}`" for cell_id in cell_ids)
-            lines.append(f"- `{code}`: {detail} Cells: {rendered_ids}.")
+            prefix = f"`{category}` / " if category else ""
+            lines.append(f"- {prefix}`{code}`: {detail} Cells: {rendered_ids}.")
+
+    diagnostics = [(cell["id"], cell["diagnostic"]) for cell in result["cells"] if "diagnostic" in cell]
+    if diagnostics:
+        lines.extend(["", "## Runtime diagnostics", ""])
+        for cell_id, diagnostic in diagnostics:
+            lines.append(
+                f"- `{cell_id}` — `{diagnostic['category']}` / `{diagnostic['code']}`: "
+                f"{diagnostic['detail']} Action: {diagnostic.get('action', 'No action recorded.')}"
+            )
+
+    if backend.get("manifest_digest"):
+        lines.extend([
+            "",
+            "## Backend provenance",
+            "",
+            f"- Published tag: `{backend.get('base_image_tag')}`",
+            f"- Immutable linux/amd64 manifest: `{backend['manifest_digest']}`",
+            f"- Source commit: `{backend.get('source_commit')}`",
+            f"- Manifest check: `{backend.get('manifest_status')}`",
+            f"- Release: {backend.get('release_url')}",
+        ])
 
     cleanup = run.get("cleanup", {})
     if cleanup:

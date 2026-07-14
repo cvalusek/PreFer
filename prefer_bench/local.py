@@ -13,6 +13,7 @@ import uuid
 from typing import Any
 
 from .contract import load_contract, load_corpus, model_record
+from .diagnostics import classify_runtime_failure, manifest_failure_code
 from .http_client import ClientTimeout, TransportError, request_json
 from .memory import gpu_inventory
 from .paths import COMPOSE_PATH, REPO_ROOT
@@ -23,15 +24,23 @@ from .runner import LiveConfig, run_live_suite
 
 LANES = {
     "current": {
-        "base_image": "ghcr.io/ggml-org/llama.cpp:server-cuda-b9843",
+        "base_image_tag": "ghcr.io/ggml-org/llama.cpp:server-cuda-b9843",
+        "base_image": "ghcr.io/ggml-org/llama.cpp:server-cuda-b9843@sha256:3af9b6f556151848ce221c63a63f87c04832d6666361babca20ee6295255f1c6",
         "image": "prefer-bench:b9843",
         "revision": "b9843",
+        "manifest_digest": "sha256:3af9b6f556151848ce221c63a63f87c04832d6666361babca20ee6295255f1c6",
+        "source_commit": "86b94708f22478f900b76ca02e316f4f3418faff",
+        "release_url": "https://github.com/ggml-org/llama.cpp/releases/tag/b9843",
         "comparison_lane": False,
     },
-    "b9990": {
-        "base_image": "ghcr.io/ggml-org/llama.cpp:server-cuda-b9990",
-        "image": "prefer-bench:b9990",
-        "revision": "b9990",
+    "b9982": {
+        "base_image_tag": "ghcr.io/ggml-org/llama.cpp:server-cuda-b9982",
+        "base_image": "ghcr.io/ggml-org/llama.cpp:server-cuda-b9982@sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76",
+        "image": "prefer-bench:b9982",
+        "revision": "b9982",
+        "manifest_digest": "sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76",
+        "source_commit": "99f3dc32296f825fec94f202da1e9fede1e78cf9",
+        "release_url": "https://github.com/ggml-org/llama.cpp/releases/tag/b9982",
         "comparison_lane": True,
     },
 }
@@ -233,6 +242,21 @@ def _image_id(image: str) -> str:
     return run_command(["docker", "image", "inspect", "--format", "{{.Id}}", image], timeout=30).stdout.strip()
 
 
+def _preflight_manifest(lane: dict[str, Any]) -> None:
+    completed = run_command(["docker", "manifest", "inspect", lane["base_image"]], check=False, timeout=90)
+    if completed.returncode == 0:
+        return
+    output = _scrub_local_paths(completed.stdout + completed.stderr)
+    lines = [line.strip() for line in output.splitlines() if line.strip()]
+    diagnostic = " | ".join(lines[-4:])[:600] or "registry returned no diagnostic text"
+    code = manifest_failure_code(output)
+    raise EnvironmentSkip(
+        code,
+        f"GHCR manifest preflight failed for {lane['base_image_tag']} (expected {lane['manifest_digest']}, "
+        f"source {lane['source_commit']}): {diagnostic}",
+    )
+
+
 def _ensure_source_volume(name: str) -> None:
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]+", name):
         raise EnvironmentSkip("invalid_cache_volume", "Cache source volume name contains unsupported characters.")
@@ -383,8 +407,13 @@ def run_local(options: LocalOptions) -> dict[str, Any]:
             "backend": {
                 "name": "llama.cpp",
                 "base_image": lane["base_image"],
+                "base_image_tag": lane["base_image_tag"],
+                "manifest_digest": lane["manifest_digest"],
+                "manifest_status": "not_checked",
                 "image_id": None,
                 "revision": lane["revision"],
+                "source_commit": lane["source_commit"],
+                "release_url": lane["release_url"],
                 "comparison_lane": lane["comparison_lane"],
             },
             "contract_version": contract["contract_version"],
@@ -411,6 +440,10 @@ def run_local(options: LocalOptions) -> dict[str, Any]:
     print(f"[prefer-bench] isolated project={project} port={port} lane={options.lane}", flush=True)
     try:
         if options.build:
+            phase = "image_manifest_preflight"
+            print(f"[prefer-bench] verifying immutable manifest {lane['base_image_tag']}@{lane['manifest_digest']}", flush=True)
+            _preflight_manifest(lane)
+            result["run"]["backend"]["manifest_status"] = "verified"
             phase = "image_build"
             print(f"[prefer-bench] building {lane['image']} from {lane['base_image']}", flush=True)
             try:
@@ -428,6 +461,7 @@ def run_local(options: LocalOptions) -> dict[str, Any]:
                 ) from exc
         else:
             phase = "image_check"
+            result["run"]["backend"]["manifest_status"] = "pinned_not_checked_cached_image"
             available = run_command(["docker", "image", "inspect", lane["image"]], check=False, timeout=30)
             if available.returncode != 0:
                 raise EnvironmentSkip("benchmark_image_missing", f"{lane['image']} is not cached; rerun without --no-build.")
@@ -461,7 +495,7 @@ def run_local(options: LocalOptions) -> dict[str, Any]:
         cold["contract"] = {"pass": ready, "checks": [{"name": "models_ready", "pass": ready}]}
         cold["status"] = "passed" if ready else "failed"
         if not ready:
-            cold["error"] = {"code": "readiness_timeout", "detail": f"Router did not return /v1/models within {options.readiness_timeout_seconds}s."}
+            cold["error"] = {"category": "environment_unavailable", "code": "readiness_timeout", "detail": f"Router did not return /v1/models within {options.readiness_timeout_seconds}s."}
         result["cells"].append(cold)
         if ready:
             print("[prefer-bench] router ready; running contract, swap, quality, concurrency, and selected context cells", flush=True)
@@ -514,6 +548,34 @@ def run_local(options: LocalOptions) -> dict[str, Any]:
             if excerpt:
                 for cell in failed_cells:
                     cell.setdefault("evidence", {})["runtime_log_excerpt"] = excerpt
+                    error = cell.get("error", {})
+                    error_detail = str(error.get("detail", ""))
+                    use_log_excerpt = len(failed_cells) == 1 or cell["kind"] in {
+                        "cold_readiness",
+                        "first_model_load",
+                        "model_swap",
+                        "long_context",
+                    }
+                    diagnostic = classify_runtime_failure(
+                        excerpt if use_log_excerpt else "",
+                        error_detail=error_detail,
+                        preset=options.preset,
+                        backend_revision=str(result["run"]["backend"]["revision"]),
+                    )
+                    if diagnostic:
+                        cell["diagnostic"] = diagnostic
+                        if diagnostic["category"] == "unsupported_combination":
+                            original_error = cell.pop("error", None)
+                            if original_error:
+                                cell.setdefault("evidence", {})["original_error"] = original_error
+                            cell["status"] = "unsupported"
+                            cell["skip"] = {
+                                "category": diagnostic["category"],
+                                "code": diagnostic["code"],
+                                "detail": diagnostic["detail"],
+                            }
+                        elif "error" in cell:
+                            cell["error"]["category"] = diagnostic["category"]
         down = run_command(
             _compose_args(project, "down", "--volumes", "--remove-orphans"),
             environment=compose_environment,

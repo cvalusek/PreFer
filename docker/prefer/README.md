@@ -23,11 +23,29 @@ smallest tier if VRAM is below all of them. Override with
 | ------ | --------- | ------ | ------------- | ----- |
 | `96gb.ini` | ~96GB | Gemma 4 26B/E2B/E4B, Qwen3.6 35B + 1M, Qwen3.6 27B, GLM-4.7-Flash | `1` on normal Compose/auto-detect paths | `n-cpu-moe = 0`; models load on demand |
 | `12gb.ini` | ~12GB | Same model ids as `96gb.ini`, swap-on-demand | `1` | Per-model `n-cpu-moe` (12-26), `mmap = false`, `sleep-idle-seconds = 1800` |
+| `12gb-pascal.ini` | ~12GB Pascal compatibility | Same model ids as `12gb.ini`, swap-on-demand | `1` on normal Compose when explicitly selected | Identical to `12gb.ini` except E4B MTP is disabled; never auto-detected |
 | `8gb.ini` | ~8GB | Same model ids as `96gb.ini`, swap-on-demand | `1` | Higher `n-cpu-moe` (18-32), same `mmap`/sleep settings |
 
 All presets share `dry-multiplier = 0.8`, `dry-base = 1.75`,
 `dry-allowed-length = 24` (DRY sampling) as a mitigation against repetition
 loops, particularly relevant to Gemma 4's tool-calling.
+
+### 12 GB Pascal compatibility
+
+The production/default b9843 CUDA image predates llama.cpp PR #25148. Gemma
+E4B's main GGUF uses a supported GQA ratio of 4, but its MTP draft uses
+512-wide K/V heads at GQA ratio 2. Pascal selects b9843's generic
+FlashAttention tile kernel, which aborts for that exact draft shape. E2B's MTP
+draft is ratio 4 and remains healthy.
+
+Select `LLAMA_ARG_MODELS_PRESET=/presets/12gb-pascal.ini` explicitly on a
+12 GB Pascal host. The preset preserves q4_0 K/V cache, FlashAttention, model
+identity, aliases, context, and every non-E4B setting; it removes only E4B's
+`model-draft` and `spec-*` keys. The cost is lower E4B throughput from losing
+speculative decoding. `12gb.ini`, `8gb.ini`, and `96gb.ini` are unchanged, and
+the compatibility preset is deliberately outside the `<N>gb.ini` auto-detect
+glob. Turning FlashAttention off is not an equivalent workaround because the
+12 GB preset's quantized V cache requires it.
 
 ### `models-max` precedence
 
@@ -106,13 +124,13 @@ layout means multiple presets/services can safely share one volume.
 
 | Alias | Context | Presets |
 | ----- | ------- | ------- |
-| `gemma-4`, `gemma-4-26b-a4b` | native | `96gb.ini`, `12gb.ini`, `8gb.ini` |
-| `gemma-4-e2b` | native | `96gb.ini`, `12gb.ini`, `8gb.ini` |
-| `gemma-4-e4b` | native | `96gb.ini`, `12gb.ini`, `8gb.ini` |
-| `qwen-3.6`, `qwen-3.6-35b-a3b` | native | `96gb.ini`, `12gb.ini`, `8gb.ini` |
-| `qwen-3.6-35b-a3b-1m` | 1048576 | `96gb.ini`, `12gb.ini`, `8gb.ini` |
-| `qwen-3.6-27b` | native | `96gb.ini`, `12gb.ini`, `8gb.ini` |
-| `glm-4.7-flash` | native | `96gb.ini`, `12gb.ini`, `8gb.ini` |
+| `gemma-4`, `gemma-4-26b-a4b` | native | `96gb.ini`, `12gb.ini`, `12gb-pascal.ini`, `8gb.ini` |
+| `gemma-4-e2b` | native | `96gb.ini`, `12gb.ini`, `12gb-pascal.ini`, `8gb.ini` |
+| `gemma-4-e4b` | native | `96gb.ini`, `12gb.ini`, `12gb-pascal.ini`, `8gb.ini` |
+| `qwen-3.6`, `qwen-3.6-35b-a3b` | native | `96gb.ini`, `12gb.ini`, `12gb-pascal.ini`, `8gb.ini` |
+| `qwen-3.6-35b-a3b-1m` | 1048576 | `96gb.ini`, `12gb.ini`, `12gb-pascal.ini`, `8gb.ini` |
+| `qwen-3.6-27b` | native | `96gb.ini`, `12gb.ini`, `12gb-pascal.ini`, `8gb.ini` |
+| `glm-4.7-flash` | native | `96gb.ini`, `12gb.ini`, `12gb-pascal.ini`, `8gb.ini` |
 | `deepseek-v4-flash` | 393216 | `deepseek-v4-flash.ini` |
 | `glm-5.2` | 262144 | `glm-5.2.ini` |
 | `glm-5.2-reap` | 262144 | `glm-5.2-reap.ini` |
@@ -155,8 +173,9 @@ shell env vars):
 - `LLAMA_ARG_MODELS_PRESET` / `LLAMA_ARG_MODELS_MAX` - optional, force a
   specific preset instead of auto-detection
 
-On every tier preset (`96gb.ini`, `12gb.ini`, and `8gb.ini`), models load on
-first request. Only the named single-model presets use `load-on-startup`.
+On every tier preset (`96gb.ini`, `12gb.ini`, and `8gb.ini`) and the named
+`12gb-pascal.ini` compatibility preset, models load on first request. Only the
+named single-model presets use `load-on-startup`.
 
 Once running, `GET /v1/models` lists the available router model ids, and
 `POST /v1/chat/completions` with `"model": "<id>"` routes to (and

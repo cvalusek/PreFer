@@ -89,10 +89,11 @@ python -m prefer_bench contract --mock
 ```
 
 Run the current b9843 lane against only the already-cached Gemma E2B/E4B files
-on a 12 GB local tier:
+on a 12 GB Pascal tier (the explicit compatibility preset keeps E2B MTP and
+disables only E4B MTP):
 
 ```bash
-python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb.ini --models-max 1 --contexts 8k
+python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb-pascal.ini --models-max 1 --contexts 8k,32k
 ```
 
 The local command uses a generated Compose project, free loopback port (never
@@ -102,8 +103,8 @@ removes every temporary container/network/volume afterward. It never manages
 provider capacity or touches the operator `prefer` container.
 
 See [benchmark/README.md](benchmark/README.md) for the result format, optional
-32K/128K and idle cells, the `models-max=4` comparison, and the opt-in b9990
-revision lane. No live GPU benchmark runs in ordinary CI.
+128K and idle cells, the `models-max=4` comparison, and the immutable opt-in
+b9982 revision lane. No live GPU benchmark runs in ordinary CI.
 
 ## Netskope / Corporate TLS
 

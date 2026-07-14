@@ -205,6 +205,9 @@ def parse_preset(path: Path) -> list[dict[str, Any]]:
             "canonical_id": section,
             "aliases": aliases,
             "model_path": values.get("model"),
+            "model_draft_path": values.get("model-draft"),
+            "spec_type": values.get("spec-type"),
+            "spec_draft_n_max": values.get("spec-draft-n-max"),
             "load_on_startup": values.get("load-on-startup", "false").strip().lower() == "true",
         })
 

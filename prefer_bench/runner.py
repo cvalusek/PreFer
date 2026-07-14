@@ -15,6 +15,7 @@ from .contract import (
     validate_models_response,
     validate_tool_calls,
 )
+from .diagnostics import reason_category
 from .evaluate import evaluate_content
 from .http_client import ClientTimeout, TransportError, request_json, stream_chat
 from .memory import NvidiaMemorySampler
@@ -106,7 +107,12 @@ def _nonstream_cell(cell_id: str, kind: str, base_url: str, model: str, prompt: 
             message = str(error_payload.get("message", "request rejected"))[:500]
             cell["status"] = "failed"
             cell["contract"] = {"pass": False, "checks": [{"name": "http_success", "pass": False}, {"name": "error_envelope", "pass": not error_errors}]}
-            cell["error"] = {"code": "http_rejection", "detail": f"HTTP {response.status}: {message}"}
+            category_code = "model_load_failure" if "failed to load" in message.casefold() else "http_rejection"
+            cell["error"] = {
+                "category": reason_category(category_code),
+                "code": "http_rejection",
+                "detail": f"HTTP {response.status}: {message}",
+            }
             cell["measurements"] = {"total_ms": response.duration_ms, "memory": sampler.evidence()}
             cell["evidence"] = {
                 "http_status": response.status,
@@ -314,7 +320,11 @@ def _structured_cells(config: LiveConfig) -> list[dict[str, Any]]:
                 }
                 cell["quality"] = {"schema_valid": False, "semantic_evaluated": False, "semantic_anomalies": []}
                 cell["measurements"] = {"total_ms": response.duration_ms, "memory": sampler.evidence()}
-                cell["error"] = {"code": "http_rejection", "detail": f"HTTP {response.status}: {message}"}
+                cell["error"] = {
+                    "category": reason_category("http_rejection"),
+                    "code": "http_rejection",
+                    "detail": f"HTTP {response.status}: {message}",
+                }
                 cell["evidence"] = {
                     "case_id": case["id"],
                     "http_status": response.status,
@@ -389,7 +399,11 @@ def _tools_cell(config: LiveConfig) -> dict[str, Any]:
             cell["status"] = "failed"
             cell["contract"] = {"pass": False, "checks": [{"name": "tool_request_accepted", "pass": False}, {"name": "error_envelope", "pass": not errors}]}
             cell["measurements"] = {"total_ms": response.duration_ms}
-            cell["error"] = {"code": "tool_request_rejected", "detail": f"HTTP {response.status}"}
+            cell["error"] = {
+                "category": reason_category("tool_request_rejected"),
+                "code": "tool_request_rejected",
+                "detail": f"HTTP {response.status}",
+            }
             return cell
         envelope_errors = validate_chat_response(payload)
         message = payload.get("choices", [{}])[0].get("message", {})
@@ -397,7 +411,11 @@ def _tools_cell(config: LiveConfig) -> dict[str, Any]:
         if calls is None:
             cell["status"] = "unsupported"
             cell["contract"] = {"pass": None, "checks": [{"name": "conditional_tool_call", "pass": None}]}
-            cell["skip"] = {"code": "model_did_not_emit_tool_call", "detail": "Tool selection quality is outside the stable contract."}
+            cell["skip"] = {
+                "category": reason_category("model_did_not_emit_tool_call"),
+                "code": "model_did_not_emit_tool_call",
+                "detail": "Tool selection quality is outside the stable contract.",
+            }
             cell["measurements"] = _timings(payload, response.duration_ms, {"source": "not_sampled", "samples": 0})
             return cell
         tool_errors = validate_tool_calls(calls)
@@ -489,7 +507,11 @@ def _long_context_cells(config: LiveConfig) -> list[dict[str, Any]]:
                 error_errors = validate_error_response(payload)
                 cell["status"] = "unsupported"
                 cell["contract"] = {"pass": None, "checks": [{"name": "error_envelope", "pass": not error_errors, "errors": error_errors}]}
-                cell["skip"] = {"code": "backend_rejected_context", "detail": f"HTTP {response.status}; no context success inferred."}
+                cell["skip"] = {
+                    "category": "unsupported_combination",
+                    "code": "backend_rejected_context",
+                    "detail": f"HTTP {response.status}; no context success inferred.",
+                }
                 cell["measurements"] = {"total_ms": response.duration_ms, "memory": sampler.evidence()}
                 cells.append(cell)
                 continue

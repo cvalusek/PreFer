@@ -23,9 +23,9 @@ The harness resolves repository-local contract, identity, and `models-max`
 facts. It deliberately leaves these measurements as VERIFY items: 96 GB
 retention at `models-max=4`, the full 1800-second idle/unload cycle, 32K and
 128K quality on each supported light model, models other than already-cached
-Gemma E2B/E4B, the opt-in b9990 comparison, and whether E4B's observed loader
-failure reproduces on another GPU/build. None of those gaps licenses a backend
-migration or a production-default change.
+Gemma E2B/E4B, and whether the measured b9982 comparison generalizes beyond
+the local Pascal host. None of those gaps licenses a backend migration or a
+production-default change.
 
 ## Stable client contract
 
@@ -106,7 +106,7 @@ the operator overrides it**. The old README statement that 96 GB normally used
 
 ```bash
 python -m prefer_bench models-max
-python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb.ini --models-max 4 --contexts 8k
+python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb-pascal.ini --models-max 4 --contexts 8k
 ```
 
 The remaining policy choice is whether the normal 96 GB path should continue
@@ -118,11 +118,17 @@ harness does not guess it.
 
 The default baseline builds the production-pinned b9843 Dockerfile, never
 downloads models, and copies only selected files from an existing Docker cache
-into a generated run volume:
+into a generated run volume. On the measured Pascal host, select the explicit
+compatibility preset:
 
 ```bash
-python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb.ini --models-max 1 --contexts 8k
+python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb-pascal.ini --models-max 1 --contexts 8k,32k
 ```
+
+Use `12gb.ini` on a non-Pascal 12 GB GPU. The compatibility preset is never
+auto-detected and differs only by omitting E4B's MTP draft; model identity,
+aliases, quantization, q4_0 K/V cache, FlashAttention, and E2B MTP remain the
+same.
 
 The command records cold router startup/readiness (Compose service start through
 the first successful `/v1/models`, excluding image build and cache clone), first model load, warm request,
@@ -144,15 +150,44 @@ failures.
 Optional extensions:
 
 ```bash
-# Run all bounded context cells. This can take substantial time and memory.
-python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b --preset 12gb.ini --models-max 1 --contexts all
+# Run the measured-safe 8K and 32K cells. Keep 128K a separate opt-in decision.
+python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b --preset 12gb-pascal.ini --models-max 1 --contexts 8k,32k
+
+# Explicit 128K attempt; a skip or backend rejection is not converted to success.
+python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b --preset 12gb-pascal.ini --models-max 1 --contexts 128k
 
 # Wait past the 12 GB preset's actual 1800-second idle threshold.
-python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b --preset 12gb.ini --models-max 1 --contexts none --idle-wait-seconds 1805
+python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b --preset 12gb-pascal.ini --models-max 1 --contexts none --idle-wait-seconds 1805
 
 # Reuse an already-built benchmark image without pulling or building.
-python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb.ini --models-max 1 --contexts 8k --no-build
+python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb-pascal.ini --models-max 1 --contexts 8k,32k --no-build
 ```
+
+## E4B Pascal diagnosis and bounded fallback
+
+The cached E4B files are intact and identify the concrete incompatibility:
+
+- Main E4B: Gemma 4, 131,072 native context, 512-wide K/V heads, 8 query
+  heads / 2 KV heads (GQA ratio 4).
+- E4B MTP draft: `gemma4-assistant`, 512-wide K/V heads, 4 query heads / 2 KV
+  heads (GQA ratio 2).
+- E2B MTP draft: the same 512-wide shape but 4 query heads / 1 KV head (ratio
+  4), which explains why E2B succeeds on the same host and settings.
+
+On compute capability 6.1 Pascal, b9843 selects its generic CUDA
+FlashAttention tile kernel. Its 512-wide path has ratio-4/8 specializations
+but no ratio-2 specialization, then aborts at `fattn-tile.cuh:1321`. Upstream
+llama.cpp PR #25148 is explicitly titled “fix Gemma E4B MTP FlashAttention”
+and adds the missing ratio-2 specialization. `flash-attn=off` is not a usable
+12 GB substitution while `cache-type-v=q4_0`, because llama.cpp requires
+FlashAttention for a quantized V cache.
+
+`12gb-pascal.ini` is therefore a narrow b9843 compatibility override: it is an
+exact copy of `12gb.ini` with only E4B's three draft keys omitted. It is named
+so `detect-preset.sh` cannot auto-select it. Tests enforce that exact delta and
+that the normal 8/12/96 GB presets retain E4B MTP. The remaining cost is E4B
+throughput without speculative drafting; it is not a model identity or quality
+substitution.
 
 ## Pinned local evidence (2026-07-14)
 
@@ -190,23 +225,30 @@ Measured b9843 (`version: 9843 (86b94708f)`) facts:
   prior running state; mounted the source cache read-only; and did not use host
   port 8080.
 
-The opt-in b9990 comparison was attempted but not run: the referenced
-`server-cuda-b9990` tag returned `manifest unknown` during the isolated image
-build. Every benchmark cell is therefore a structured skip, not a comparison
-number. The default/production b9843 pin was not changed.
+The earlier b9990 comparison was attempted before its GHCR image was published:
+`server-cuda-b9990` returned `manifest unknown`, so its preserved historical
+artifact contains structured skips only. The active comparison assumption has
+been replaced by b9982, the newest published CUDA image found during this pass;
+the harness now checks the immutable manifest before building and distinguishes
+`image_manifest_unavailable` from an image build failure.
 
 ## Opt-in revision comparison
 
-`b9990` is the one bounded, source-backed candidate lane referenced by the July
-2026 observatory audit. It is opt-in and does not change either Dockerfile's
-default b9843 pin:
+`b9982` is the bounded, published candidate lane. It is pinned to llama.cpp
+source `99f3dc32296f825fec94f202da1e9fede1e78cf9` and linux/amd64 GHCR manifest
+`sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76`.
+It contains upstream E4B MTP fix #25148. The lane is opt-in and does not change
+either Dockerfile's default b9843 pin:
 
 ```bash
-python -m prefer_bench local --lane b9990 --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb.ini --models-max 1 --contexts 8k
+python -m prefer_bench local --lane b9982 --cache-source-volume prefer-model-cache --models gemma-4-e2b --preset 12gb.ini --models-max 1 --contexts 8k
 ```
 
-If the image is unpublished, unavailable, incompatible, or cannot build, the
-result records a structured skip. Preparing this lane is not an upgrade claim.
+The harness records tag, manifest digest, source commit, release URL, and
+manifest-check state in JSON and Markdown. A missing manifest fails before the
+multi-layer image build with a structured `image_manifest_unavailable` skip;
+registry transport failures and build failures have separate codes. Running
+this lane is an experiment, not an upgrade claim.
 
 ## Isolation and CI
 

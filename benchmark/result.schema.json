@@ -34,8 +34,15 @@
           "properties": {
             "name": {"const": "llama.cpp"},
             "base_image": {"type": "string", "minLength": 1},
+            "base_image_tag": {"type": "string", "minLength": 1},
+            "manifest_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+            "manifest_status": {
+              "enum": ["not_checked", "verified", "pinned_not_checked_cached_image"]
+            },
             "image_id": {"type": ["string", "null"]},
             "revision": {"type": "string", "minLength": 1},
+            "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+            "release_url": {"type": "string", "minLength": 1},
             "comparison_lane": {"type": "boolean"}
           },
           "additionalProperties": false
@@ -97,6 +104,29 @@
           },
           "skip": {"type": "object"},
           "error": {"type": "object"},
+          "diagnostic": {
+            "type": "object",
+            "required": ["category", "code", "detail"],
+            "properties": {
+              "category": {
+                "enum": [
+                  "unsupported_combination",
+                  "image_manifest_unavailable",
+                  "model_load_failure",
+                  "resource_limit",
+                  "structured_skip",
+                  "environment_unavailable",
+                  "contract_failure",
+                  "runtime_failure"
+                ]
+              },
+              "code": {"type": "string", "minLength": 1},
+              "detail": {"type": "string", "minLength": 1},
+              "action": {"type": "string"},
+              "facts": {"type": "object"}
+            },
+            "additionalProperties": false
+          },
           "evidence": {"type": "object"}
         },
         "additionalProperties": false

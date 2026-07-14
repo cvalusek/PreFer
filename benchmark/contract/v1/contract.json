@@ -99,49 +99,49 @@
       "discovery_id": "unsloth/gemma-4-26B-A4B-it-qat-GGUF:Q4_K_XL",
       "aliases": ["gemma-4", "gemma-4-26b-a4b"],
       "quantization": "UD-Q4_K_XL",
-      "presets": ["8gb.ini", "12gb.ini", "96gb.ini"]
+      "presets": ["8gb.ini", "12gb.ini", "12gb-pascal.ini", "96gb.ini"]
     },
     {
       "canonical_id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
       "discovery_id": "unsloth/gemma-4-E2B-it-qat-GGUF:Q4_K_XL",
       "aliases": ["gemma-4-e2b"],
       "quantization": "UD-Q4_K_XL",
-      "presets": ["8gb.ini", "12gb.ini", "96gb.ini"]
+      "presets": ["8gb.ini", "12gb.ini", "12gb-pascal.ini", "96gb.ini"]
     },
     {
       "canonical_id": "unsloth/gemma-4-E4B-it-qat-GGUF:UD-Q4_K_XL",
       "discovery_id": "unsloth/gemma-4-E4B-it-qat-GGUF:Q4_K_XL",
       "aliases": ["gemma-4-e4b"],
       "quantization": "UD-Q4_K_XL",
-      "presets": ["8gb.ini", "12gb.ini", "96gb.ini"]
+      "presets": ["8gb.ini", "12gb.ini", "12gb-pascal.ini", "96gb.ini"]
     },
     {
       "canonical_id": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL",
       "discovery_id": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:Q6_K_XL",
       "aliases": ["qwen-3.6", "qwen-3.6-35b-a3b"],
       "quantization": "UD-Q6_K_XL",
-      "presets": ["8gb.ini", "12gb.ini", "96gb.ini"]
+      "presets": ["8gb.ini", "12gb.ini", "12gb-pascal.ini", "96gb.ini"]
     },
     {
       "canonical_id": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF-1m:UD-Q6_K_XL",
       "discovery_id": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF-1m:Q6_K_XL",
       "aliases": ["qwen-3.6-35b-a3b-1m"],
       "quantization": "UD-Q6_K_XL",
-      "presets": ["8gb.ini", "12gb.ini", "96gb.ini"]
+      "presets": ["8gb.ini", "12gb.ini", "12gb-pascal.ini", "96gb.ini"]
     },
     {
       "canonical_id": "unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q6_K_XL",
       "discovery_id": "unsloth/Qwen3.6-27B-MTP-GGUF:Q6_K_XL",
       "aliases": ["qwen-3.6-27b"],
       "quantization": "UD-Q6_K_XL",
-      "presets": ["8gb.ini", "12gb.ini", "96gb.ini"]
+      "presets": ["8gb.ini", "12gb.ini", "12gb-pascal.ini", "96gb.ini"]
     },
     {
       "canonical_id": "unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF:UD-Q6_K_XL",
       "discovery_id": "unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF:Q6_K_XL",
       "aliases": ["glm-4.7-flash"],
       "quantization": "UD-Q6_K_XL",
-      "presets": ["8gb.ini", "12gb.ini", "96gb.ini"]
+      "presets": ["8gb.ini", "12gb.ini", "12gb-pascal.ini", "96gb.ini"]
     },
     {
       "canonical_id": "antirez/deepseek-v4-gguf:Q4KExperts",

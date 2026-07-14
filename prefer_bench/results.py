@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .diagnostics import reason_category
 from .paths import RESULT_SCHEMA_PATH
 from .schema import assert_valid
 
@@ -25,13 +26,13 @@ def empty_cell(cell_id: str, kind: str, status: str = "passed", model: dict[str,
 
 def skip_cell(cell_id: str, kind: str, code: str, detail: str, model: dict[str, Any] | None = None) -> dict[str, Any]:
     cell = empty_cell(cell_id, kind, "skipped", model)
-    cell["skip"] = {"code": code, "detail": detail}
+    cell["skip"] = {"category": reason_category(code), "code": code, "detail": detail}
     return cell
 
 
 def error_cell(cell_id: str, kind: str, code: str, detail: str, model: dict[str, Any] | None = None) -> dict[str, Any]:
     cell = empty_cell(cell_id, kind, "error", model)
-    cell["error"] = {"code": code, "detail": detail}
+    cell["error"] = {"category": reason_category(code), "code": code, "detail": detail}
     cell["contract"]["pass"] = False
     return cell
 

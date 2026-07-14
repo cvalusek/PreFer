@@ -17,7 +17,9 @@ mode, with models downloaded from Hugging Face on first start.
   `detect-preset.sh` picks the largest tier that fits the detected GPU's
   total VRAM (falling back to the smallest tier if VRAM is below all of
   them). Adding a new tier (e.g. `16gb.ini`) requires no changes to the
-  detection script.
+  detection script. `12gb-pascal.ini` is an intentional named compatibility
+  preset and is never auto-detected; select it explicitly only for the b9843
+  Gemma E4B MTP issue described below.
 - **Router model id naming**: use llama.cpp's HF-style section ids for the
   primary sections (e.g. `unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL`) and
   expose short aliases for clients (e.g. `gemma-4`, `qwen-3.6`,
@@ -87,6 +89,14 @@ b9843 covers both large-preset architectures:
 Note the `server-cuda-b9843` image is published a bit behind the git tag (the
 ggml image matrix lags the source tag); if a `--pull` 404s, the build is still
 in flight — wait for it rather than pinning lower.
+
+The benchmark-only comparison lane is pinned separately to published
+`server-cuda-b9982` linux/amd64 manifest
+`sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76`
+(source `99f3dc32296f825fec94f202da1e9fede1e78cf9`). It contains upstream
+llama.cpp PR #25148 / commit `e495d1e`, which fixes the E4B MTP 512-wide,
+GQA-ratio-2 CUDA FlashAttention specialization. This is an opt-in experiment,
+not the production/default pin.
 
 ## Tiny preset (smol)
 
@@ -205,6 +215,17 @@ check on first boot:
 
 ## Known upstream llama.cpp issues (not fixable via our config)
 
+- **#25148 (fixed after b9843)** — Gemma E4B's MTP draft has 512-wide K/V
+  heads and GQA ratio 2. On Pascal, b9843 selects the generic CUDA
+  FlashAttention tile kernel, whose 512-wide specialization only compiled GQA
+  ratios 4 and above; it aborts at `fattn-tile.cuh:1321`. E2B's draft is ratio
+  4 and works. `flash-attn = off` is not a drop-in workaround on the 8/12 GB
+  presets because their quantized V cache requires FlashAttention. The explicit
+  `12gb-pascal.ini` compatibility preset keeps q4_0 K/V, FlashAttention, model
+  identity, and all other 12 GB settings but omits only E4B's `model-draft` /
+  `spec-*` keys. Cost: E4B loses MTP speculative throughput on that preset.
+  `12gb.ini`, `8gb.ini`, and `96gb.ini` retain E4B MTP unchanged. Prefer an
+  isolated newer-revision comparison over expanding this workaround.
 - **#22364** — router synthesizes a phantom `"default"` model entry in
   `/v1/models` regardless of whether `[*]`/`default-model` are used.
   Apparently cosmetic (`status: unloaded`), but if real models stop loading
@@ -368,15 +389,19 @@ or tune DRY further before doing so.
   (from `[*]`), same as 26B-A4B's confirmed-working MTP + flash-attn=on
   combination. `spec-draft-n-max = 4` is carried over from unsloth's
   documented command and not independently verified for E2B/E4B, but the
-  drafter files themselves are confirmed present.
+  drafter files themselves are confirmed present. The only exception is the
+  explicit `12gb-pascal.ini` compatibility preset, which disables E4B's draft
+  to avoid b9843's upstream ratio-2 tile crash; E2B still uses MTP there.
 
   **Measured 2026-07-14 on b9843 / Titan X Pascal:** E2B loaded and passed the
   contract, strict structured cases, tools, and calibrated 8K retrieval. E4B
   failed on both `models-max=1` and `4` at llama.cpp's CUDA flash-attention tile
-  assertion (`fattn-tile.cuh:1321`). This is a VERIFY item, not a preset change:
-  disabling flash attention on the 12 GB preset still conflicts with its q4_0 V
-  cache. Reproduce on another GPU/build before choosing a fix. Scrubbed evidence
-  is under `benchmark/baselines/`.
+  assertion (`fattn-tile.cuh:1321`). Exact GGUF metadata and a b9843 source
+  trace identified the E4B draft's 512-wide GQA-ratio-2 specialization as the
+  cause; upstream PR #25148 confirms and fixes that exact case. Disabling flash
+  attention on the 12 GB preset still conflicts with its q4_0 V cache, so the
+  explicit no-E4B-draft compatibility preset is the b9843/Pascal fallback.
+  Scrubbed evidence is under `benchmark/baselines/`.
 
 ## S3 model cache (`S3_BUCKET_NAME`)
 
@@ -421,8 +446,9 @@ Run the deterministic suite and mock replay:
 Live verification remains hardware-dependent. The isolated command creates a
 generated Compose project, loopback port other than 8080, network, and cloned
 model volume, then removes all of them while leaving operator `prefer` and
-NeurOn state alone. See `benchmark/README.md` for current b9843, `models-max`,
-long-context, idle, and opt-in b9990 commands.
+NeurOn state alone. See `benchmark/README.md` for current b9843, the explicit
+Pascal compatibility preset, `models-max`, long-context, idle, and immutable
+opt-in b9982 commands.
 
 Other useful manual checks:
 
