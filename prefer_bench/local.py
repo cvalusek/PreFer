@@ -143,8 +143,20 @@ def _free_port() -> int:
     raise EnvironmentSkip("no_benchmark_port", "No free loopback port was found in 18080-18999.")
 
 
+def _scrub_local_paths(output: str) -> str:
+    candidates = {str(REPO_ROOT), str(Path.home())}
+    for key in ("USERPROFILE", "HOME", "TEMP", "TMP", "TMPDIR"):
+        value = os.environ.get(key)
+        if value:
+            candidates.add(value)
+    scrubbed = output
+    for path in sorted((value for value in candidates if value), key=len, reverse=True):
+        scrubbed = scrubbed.replace(path, "<local-path>")
+    return scrubbed
+
+
 def _scrub_command_output(output: str, project: str, volume: str, port: int) -> str:
-    scrubbed = output.replace(str(REPO_ROOT), "<repo>")
+    scrubbed = _scrub_local_paths(output)
     scrubbed = scrubbed.replace(project, "<project>").replace(volume, "<run-volume>")
     scrubbed = scrubbed.replace(str(port), "<port>")
     lines = [line.strip() for line in scrubbed.splitlines() if line.strip()]
@@ -152,9 +164,11 @@ def _scrub_command_output(output: str, project: str, volume: str, port: int) -> 
 
 
 def _scrub_runtime_logs(output: str, project: str, volume: str, port: int) -> str:
-    scrubbed = output.replace(str(REPO_ROOT), "<repo>")
+    scrubbed = _scrub_local_paths(output)
     scrubbed = scrubbed.replace(project, "<project>").replace(volume, "<run-volume>")
     scrubbed = scrubbed.replace(str(port), "<port>")
+    scrubbed = re.sub(r"\[[0-9]+\]", "[pid]", scrubbed)
+    scrubbed = re.sub(r"0x[0-9a-fA-F]+", "0x<addr>", scrubbed)
     lines = [line.strip() for line in scrubbed.splitlines() if line.strip()]
     keywords = ("error", "failed", "cuda", "memory", "exception", "oom", "alloc", "assert", "fatal")
     selected = [line for line in lines if any(keyword in line.casefold() for keyword in keywords)]
@@ -401,8 +415,17 @@ def run_local(options: LocalOptions) -> dict[str, Any]:
             print(f"[prefer-bench] building {lane['image']} from {lane['base_image']}", flush=True)
             try:
                 run_command(_compose_args(project, "build", "router"), environment=compose_environment, timeout=3600)
-            except (CommandError, subprocess.TimeoutExpired) as exc:
-                raise EnvironmentSkip("image_build_failed", f"Could not build the selected {options.lane} lane: {type(exc).__name__}") from exc
+            except CommandError as exc:
+                diagnostic = _scrub_command_output(exc.output, project, volume, port)
+                raise EnvironmentSkip(
+                    "image_build_failed",
+                    f"Could not build the selected {options.lane} lane: {diagnostic}",
+                ) from exc
+            except subprocess.TimeoutExpired as exc:
+                raise EnvironmentSkip(
+                    "image_build_timeout",
+                    f"Building the selected {options.lane} lane exceeded the 3600-second harness deadline.",
+                ) from exc
         else:
             phase = "image_check"
             available = run_command(["docker", "image", "inspect", lane["image"]], check=False, timeout=30)

@@ -3,7 +3,7 @@ from pathlib import Path
 import unittest
 
 from prefer_bench.contract import inspect_models_max
-from prefer_bench.local import _free_port, _safe_environment
+from prefer_bench.local import _free_port, _safe_environment, _scrub_runtime_logs
 from prefer_bench.paths import COMPOSE_PATH, REPO_ROOT
 
 
@@ -46,6 +46,18 @@ class ModelsMaxAndIsolationTests(unittest.TestCase):
         self.assertGreaterEqual(port, 18080)
         self.assertLess(port, 19000)
         self.assertNotEqual(port, 8080)
+
+    def test_runtime_log_scrubbing_removes_transient_machine_identifiers(self) -> None:
+        scrubbed = _scrub_runtime_logs(
+            "router | [51649] fatal CUDA frame at 0x7ef479432ae9",
+            "prefer-bench-test",
+            "prefer-bench-test-models",
+            18080,
+        )
+        self.assertIn("[pid]", scrubbed)
+        self.assertIn("0x<addr>", scrubbed)
+        self.assertNotIn("51649", scrubbed)
+        self.assertNotIn("7ef479432ae9", scrubbed)
 
 
 if __name__ == "__main__":
