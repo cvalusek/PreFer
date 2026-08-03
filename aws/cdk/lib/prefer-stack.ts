@@ -134,16 +134,23 @@ export class PreferStack extends cdk.Stack {
       'ssh',
     );
 
-    // ---- User data: inject per-deployment config, then (re)start the unit ----
-    // S3_BUCKET_NAME is a write-once value, so first-boot user-data is the right
-    // place; the systemd unit re-reads the env file on every later start.
+    // ---- User data: write the deployment config exactly once ----
+    // prefer-boot.service orders itself after cloud-final.service, then reads
+    // this file after the baked defaults. Do not start/restart the unit here:
+    // doing so races the AMI's multi-user target and can launch two presets.
     const userData = ec2.UserData.forLinux();
     userData.addCommands(
       'set -euo pipefail',
-      `echo "S3_BUCKET_NAME=${bucket.bucketName}" >> /opt/prefer/prefer-boot.env`,
-      `echo "LLAMA_ARG_MODELS_PRESET=${modelsPresetParam.valueAsString}" >> /opt/prefer/prefer-boot.env`,
-      `echo "PRESTAGE_MODELS=${prestageModelsParam.valueAsString}" >> /opt/prefer/prefer-boot.env`,
-      'systemctl restart prefer-boot.service',
+      'umask 077',
+      "cat > /opt/prefer/deployment.env.tmp <<'PREFER_DEPLOYMENT_ENV'",
+      `AWS_REGION=${cdk.Aws.REGION}`,
+      `S3_BUCKET_NAME=${bucket.bucketName}`,
+      `LLAMA_ARG_MODELS_PRESET=${modelsPresetParam.valueAsString}`,
+      'LLAMA_ARG_MODELS_MAX=1',
+      `PRESTAGE_MODELS=${prestageModelsParam.valueAsString}`,
+      'PREFER_DEPLOYMENT_ENV',
+      'chmod 0600 /opt/prefer/deployment.env.tmp',
+      'mv /opt/prefer/deployment.env.tmp /opt/prefer/deployment.env',
     );
 
     // AMI is resolved from the RegionMap (or the override param), so wrap the

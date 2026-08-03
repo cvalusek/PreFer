@@ -30,6 +30,9 @@ the rationale behind the operational choices.
   once per instance lifetime, but we stop/start and NVMe must be rebuilt every
   start). The host job shrinks to **prep NVMe + `docker run`** — all S3 logic
   lives in the image.
+- First boot is explicitly ordered: cloud-init writes a separate deployment
+  environment, exits, and only then may systemd launch PreFer. User-data never
+  starts or restarts the service.
 - The container is **pulled at boot**, not frozen into the AMI, so the
   container build and the AMI build stay fully decoupled in CI.
 
@@ -64,7 +67,7 @@ aws/                          all EC2 deployment lives here (parallels docker/)
     prefer-boot.service      systemd unit, runs every boot
     10-prep-nvme.sh          ensure instance-store NVMe at /opt/dlami/nvme (dlami-nvme + fallback)
     20-run-container.sh      docker pull (pinned tag) + docker run with /models on NVMe
-    prefer-boot.env          tunables (container tag, S3 bucket, model set)
+    prefer-boot.env          immutable AMI defaults (image, paths, router limit)
   cdk/                       thin wrapper: instance + IAM + IMDS + S3/endpoint wiring
 docker/prefer/
   preset-catalog.json        model/artifact/revision source of truth
@@ -107,8 +110,15 @@ account).
 
 ## Boot sequence (systemd, every start)
 
-Host side — `prefer-boot.service` (`After=docker.service`,
-`WantedBy=multi-user.target`):
+Host side — `prefer-boot.service` (`After=cloud-final.service` and
+`docker.service`, `WantedBy=multi-user.target`):
+
+0. **Resolve deployment configuration**: first-boot cloud-init writes
+   `/opt/prefer/deployment.env` and exits. The unit reads immutable
+   `/opt/prefer/prefer-boot.env` first and the optional deployment file second,
+   so deployment values override defaults without editing or appending to the
+   baked file. `LLAMA_ARG_MODELS_MAX=1` is a safe default in both the AMI and
+   generated deployment configuration.
 
 1. **Prep NVMe** (`10-prep-nvme.sh`): the DLAMI's `dlami-nvme` service already
    formats/mounts the instance store at `/opt/dlami/nvme` each boot (the unit
@@ -174,15 +184,41 @@ Because we stop/start one long-lived instance rather than churning instances,
 the stack primarily **provisions once** (instance + profile + endpoint). It can
 also emit a launch template for anyone who *does* want to relaunch fresh.
 
-**Per-deployment config** (the bucket name, selected preset, and any prestage override) is *not* baked
-into the AMI. The AMI ships `/opt/prefer/prefer-boot.env` with defaults; the IaC
-injects deployment values via **user-data on first boot**, e.g.
-`echo "S3_BUCKET_NAME=my-prefer-models" >> /opt/prefer/prefer-boot.env`. The
-same user-data writes `LLAMA_ARG_MODELS_PRESET`; an empty `PRESTAGE_MODELS`
-lets the selected preset's sibling `.prestage` manifest choose exact catalog
-artifacts. These
-are write-once values, so user-data's run-once nature is fine — the systemd unit
-re-reads the file (`EnvironmentFile=`) on every subsequent start.
+**Per-deployment config** (region, bucket name, selected preset, router limit,
+and optional prestage override) is *not* baked into the AMI. The AMI ships
+immutable `/opt/prefer/prefer-boot.env` defaults. First-boot user-data writes a
+complete `/opt/prefer/deployment.env` with mode `0600`; it never edits the baked
+file and never controls the service. `prefer-boot.service` requires a successful
+`cloud-final.service`, then loads the deployment file after the defaults and
+launches exactly once. A cloud-init failure therefore blocks PreFer instead of
+silently launching the auto-detected preset. An empty `PRESTAGE_MODELS` lets
+the selected preset's sibling `.prestage` manifest choose exact catalog
+artifacts. Both files persist on the root volume and are re-read on later
+starts.
+
+For a direct EC2 launch outside CDK, ordinary shell user-data is sufficient on
+an AMI containing this boot contract:
+
+```bash
+#!/bin/bash
+set -eu
+umask 077
+
+cat > /opt/prefer/deployment.env.tmp <<'PREFER_DEPLOYMENT_ENV'
+AWS_REGION=us-east-2
+S3_BUCKET_NAME=YOUR_BUCKET_NAME
+LLAMA_ARG_MODELS_PRESET=/presets/aws/g6/xlarge/general.ini
+LLAMA_ARG_MODELS_MAX=1
+PRESTAGE_MODELS=
+PREFER_DEPLOYMENT_ENV
+chmod 0600 /opt/prefer/deployment.env.tmp
+mv /opt/prefer/deployment.env.tmp /opt/prefer/deployment.env
+```
+
+Do not add `systemctl start` or `systemctl restart` to that script. The service
+is already enabled, waits for cloud-init to finish, and owns the only container
+launch. A missing deployment file intentionally falls back to the baked
+auto-detection behavior.
 
 **IAM**: instance profile needs `s3:GetObject`/`s3:ListBucket` (and
 `s3:PutObject` for the self-populating upload) scoped to the cache bucket, and

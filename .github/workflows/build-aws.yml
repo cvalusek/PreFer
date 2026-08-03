@@ -16,10 +16,14 @@ on:
       - 'aws/packer/**'
       - 'aws/boot/**'
       - 'aws/cdk/**'
+      - 'aws/tests/**'
       - '.github/workflows/build-aws.yml'
   pull_request:
     paths:
+      - 'aws/packer/**'
+      - 'aws/boot/**'
       - 'aws/cdk/**'
+      - 'aws/tests/**'
       - '.github/workflows/build-aws.yml'
   workflow_dispatch:
     inputs:
@@ -54,6 +58,8 @@ jobs:
       cdk: ${{ steps.filter.outputs.cdk }}
     steps:
       - uses: actions/checkout@v4
+      - name: Verify AWS boot contract
+        run: python -m unittest discover -s aws/tests -v
       - uses: dorny/paths-filter@v3
         id: filter
         with:

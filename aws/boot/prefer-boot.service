@@ -1,15 +1,17 @@
 [Unit]
 Description=PreFer llama.cpp inference (stage NVMe + run container)
-# Needs the Docker daemon, outbound network (S3 / Hugging Face / registry), and
-# the DLAMI NVMe mount (dlami-nvme formats/mounts the instance store on boot).
-After=docker.service network-online.target dlami-nvme.service
+# cloud-final writes the deployment environment on first boot. Ordering after it
+# prevents the baked defaults from launching a competing container first.
+# The unit also needs Docker, outbound network, and the DLAMI NVMe mount.
+After=cloud-final.service docker.service network-online.target dlami-nvme.service
 Wants=network-online.target dlami-nvme.service
-Requires=docker.service
+Requires=cloud-final.service docker.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 EnvironmentFile=/opt/prefer/prefer-boot.env
+EnvironmentFile=-/opt/prefer/deployment.env
 ExecStart=/opt/prefer/10-prep-nvme.sh
 ExecStart=/opt/prefer/20-run-container.sh
 ExecStop=/usr/bin/docker stop prefer

@@ -83,6 +83,9 @@ Useful knobs:
 - `LLAMA_ARG_MODELS_MAX` controls how many routed models may be loaded at once.
   The normal Compose path defaults to `1`; see the exact
   [override precedence](benchmark/README.md#models-max-facts-and-open-policy).
+- On the AWS AMI, first-boot user-data writes deployment values to
+  `/opt/prefer/deployment.env`; see the race-free
+  [manual launch contract](aws/DESIGN.md#iac-layer-cdk-distributed-as-cloudformation).
 - `PREFER_MODEL_VOLUME` names the persistent Docker volume for `/models`.
 - `LLM_PORT` sets the host port.
 

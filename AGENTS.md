@@ -65,8 +65,11 @@ one, so direct auto-detection also resolves to 1.
 
 The subtle fallback case is an explicitly selected preset outside the normal
 Compose path: preset detection is skipped, so with no CLI/environment value
-llama.cpp uses its router default of 4. The named presets have one model each,
-so that fallback does not make them multi-model hosts.
+llama.cpp uses its router default of 4. Legacy named presets contain one model,
+but generated AWS presets can contain several. The AWS AMI therefore also
+bakes `LLAMA_ARG_MODELS_MAX=1`, and its deployment environment repeats that
+value explicitly. Any other direct launcher selecting a generated AWS preset
+must set the limit rather than relying on llama.cpp's fallback.
 
 An older operator README row said 96 GB used the upstream default 4. That was
 documentation drift, now corrected; the operational default was deliberately
@@ -466,6 +469,15 @@ into the template's RegionMap and publishes the `template-latest` release. A
 CDK-only change skips the AMI build and reuses the last release's map; nothing is
 committed back. Don't reopen the settled calls there (S3-over-EBS, AMI base,
 dlami-nvme, `--restart no`) without reading `aws/DESIGN.md` first.
+
+The AMI boot contract deliberately separates immutable defaults from
+deployment values. `/opt/prefer/prefer-boot.env` is baked and must not be
+mutated by user-data; cloud-init writes `/opt/prefer/deployment.env` instead.
+`prefer-boot.service` is ordered after `cloud-final.service`, reads the
+deployment file second, and launches the container once. User-data must never
+start or restart `prefer-boot.service`: doing so reintroduces the first-boot
+default-preset race. Normal shell user-data may write the deployment file and
+exit; the service owns startup afterward.
 
 ## Testing
 

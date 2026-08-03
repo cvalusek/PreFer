@@ -13,8 +13,14 @@ CloudFormation template, so the public can deploy with no CDK/Node toolchain.
 - An **IAM instance profile** scoped to that bucket, plus SSM Session Manager.
 - A **GPU EC2 instance** from the PreFer AMI, with:
   - **IMDS hop limit = 2** (so the container can read the role's creds),
-  - user-data injecting `S3_BUCKET_NAME`, `LLAMA_ARG_MODELS_PRESET`, and any
-    explicit prestage override into `/opt/prefer/prefer-boot.env`.
+  - user-data atomically writing `S3_BUCKET_NAME`,
+    `LLAMA_ARG_MODELS_PRESET`, `LLAMA_ARG_MODELS_MAX=1`, and any explicit
+    prestage override to `/opt/prefer/deployment.env`.
+
+The AMI's systemd unit waits for `cloud-final.service`, then reads the
+deployment file after its baked defaults. User-data never starts or restarts
+PreFer, so first boot cannot briefly launch the auto-detected preset before the
+deployment settings exist.
 
 ## Parameters
 
