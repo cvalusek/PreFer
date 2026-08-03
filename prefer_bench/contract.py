@@ -11,6 +11,8 @@ from .paths import (
     CORPUS_PATH,
     CORPUS_SCHEMA_PATH,
     PRESETS_ROOT,
+    preset_paths,
+    preset_relative,
 )
 from .schema import assert_valid
 
@@ -230,12 +232,13 @@ def preset_contract_diff(contract: dict[str, Any] | None = None) -> list[str]:
     contract = contract or load_contract()
     expected: dict[str, dict[str, Any]] = {model["canonical_id"]: model for model in contract["models"]}
     actual: dict[str, dict[str, Any]] = {}
-    for preset_path in sorted(PRESETS_ROOT.glob("*.ini")):
+    for preset_path in preset_paths():
+        relative = preset_relative(preset_path)
         for model in parse_preset(preset_path):
             record = actual.setdefault(model["canonical_id"], {"aliases": model["aliases"], "presets": []})
             if record["aliases"] != model["aliases"]:
-                record.setdefault("alias_conflicts", []).append({preset_path.name: model["aliases"]})
-            record["presets"].append(preset_path.name)
+                record.setdefault("alias_conflicts", []).append({relative: model["aliases"]})
+            record["presets"].append(relative)
 
     differences: list[str] = []
     for canonical_id in sorted(set(expected) | set(actual)):
@@ -268,8 +271,8 @@ def inspect_models_max(repo_root: Path) -> dict[str, Any]:
     compose_match = re.search(r"LLAMA_ARG_MODELS_MAX=\$\{LLAMA_ARG_MODELS_MAX:-([0-9]+)\}", compose)
     example_match = re.search(r"^LLAMA_ARG_MODELS_MAX=([0-9]+)$", env_example, re.MULTILINE)
     preset_load = {
-        path.name: any(model["load_on_startup"] for model in parse_preset(path))
-        for path in sorted(PRESETS_ROOT.glob("*.ini"))
+        preset_relative(path): any(model["load_on_startup"] for model in parse_preset(path))
+        for path in preset_paths()
     }
     return {
         "compose_default": int(compose_match.group(1)) if compose_match else None,

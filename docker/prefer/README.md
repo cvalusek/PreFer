@@ -1,15 +1,15 @@
 # PreFer Container
 
-A llama.cpp router container hosting Gemma 4, Qwen3.6, and GLM-4.7-Flash.
+A llama.cpp router container hosting Gemma 4, Qwen3.5/Qwen3.6, GLM, and
+DeepSeek V4.
 On first start it downloads the models from Hugging Face, then serves them
 via `llama-server`'s router mode (the repository's narrow tested OpenAI-style
 contract on port 8080; see [`benchmark/README.md`](../../benchmark/README.md)).
 
-Base image: pinned to `ghcr.io/ggml-org/llama.cpp:server-cuda-b9843` (we track
-latest). This has both GLM MoE DSA (`glm-5.2` presets) and DeepSeek V4
-(`deepseek-v4-flash`). The `server-cuda` image lags the git tag slightly; if a
-`--pull` 404s, the build is still in flight — wait for it (see AGENTS.md "Base
-image").
+Base image: pinned to
+`ghcr.io/ggml-org/llama.cpp:server-cuda-b10236@sha256:fd68d13013141833e8214ecad6e1fbefb532db6a00b980cdecfe33603dbf2675`
+(source `1464c62d88f699ec9700c8010bbfdbc603a9efd6`). It includes DeepSeek V4
+MTP/DSpark PR #25784 and the Gemma E4B MTP fix. See AGENTS.md "Base image".
 
 ## Presets
 
@@ -19,6 +19,18 @@ smallest tier if VRAM is below all of them. Override with
 `LLAMA_ARG_MODELS_PRESET=/presets/<name>.ini` (and optionally
 `LLAMA_ARG_MODELS_MAX`) to force a specific preset.
 
+AWS scenario presets are generated under `presets/aws/` and are always
+selected explicitly. Edit `preset-catalog.json` for model/artifact facts and
+`preset-scenarios/aws.json` for deployment shape, then run:
+
+```bash
+python docker/prefer/generate-presets.py
+python docker/prefer/generate-presets.py --check
+```
+
+Do not hand-edit generated `.ini`, `.prestage`, or
+`model-downloads.generated.sh` files.
+
 | Preset | VRAM tier | Models | `models-max` | Notes |
 | ------ | --------- | ------ | ------------- | ----- |
 | `96gb.ini` | ~96GB | Gemma 4 26B/E2B/E4B, Qwen3.6 35B + 1M, Qwen3.6 27B, GLM-4.7-Flash | `1` on normal Compose/auto-detect paths | `n-cpu-moe = 0`; models load on demand |
@@ -26,20 +38,39 @@ smallest tier if VRAM is below all of them. Override with
 | `12gb-pascal.ini` | ~12GB Pascal compatibility | Same model ids as `12gb.ini`, swap-on-demand | `1` on normal Compose when explicitly selected | Identical to `12gb.ini` except E4B MTP is disabled; never auto-detected |
 | `8gb.ini` | ~8GB | Same model ids as `96gb.ini`, swap-on-demand | `1` | Higher `n-cpu-moe` (18-32), same `mmap`/sleep settings |
 
+### Generated AWS scenarios
+
+`ctx-size` is a total cache divided across `parallel` slots. Every normal AWS
+route therefore keeps at least 128K per request, and every AWS scenario uses
+f16 K and f16 V.
+
+| Preset | Instance | Models | Per-request context / concurrency |
+| ------ | -------- | ------ | --------------------------------- |
+| `aws/g6/xlarge/general.ini` | `g6.xlarge`, L4 24 GB | Gemma E2B, E4B, 12B; Qwen3.5-9B | E2B/12B 128K ×4; E4B/Qwen9 128K ×2 |
+| `aws/g6e/xlarge/gemma.ini` | `g6e.xlarge`, L40S 48 GB | Gemma 26B-A4B, 31B | 26B 128K ×4; 31B 256K ×1 |
+| `aws/g7e/2xlarge/general.ini` | `g7e.2xlarge`, RTX PRO 6000 96 GB | Qwen3.6 35B/27B, GLM-4.7-Flash | normal 128K ×4; Qwen35 long alias 1M ×1 |
+| `aws/g7e/12xlarge/deepseek-v4-flash-0731.ini` | `g7e.12xlarge`, 2× RTX PRO 6000 96 GB | DeepSeek V4 Flash 0731 | 256K ×1, DSpark enabled |
+
+The four running hosts use 4 + 4 + 8 + 48 = 64 vCPUs. Each generated preset
+has a sibling `.prestage` manifest; selecting the preset stages exactly its
+model keys unless `PRESTAGE_MODELS` is set to a nonblank override.
+
 All presets share `dry-multiplier = 0.8`, `dry-base = 1.75`,
 `dry-allowed-length = 24` (DRY sampling) as a mitigation against repetition
 loops, particularly relevant to Gemma 4's tool-calling.
 
-### 12 GB Pascal compatibility
+### Historical 12 GB Pascal compatibility
 
-The production/default b9843 CUDA image predates llama.cpp PR #25148. Gemma
+The old b9843 CUDA image predates llama.cpp PR #25148. Gemma
 E4B's main GGUF uses a supported GQA ratio of 4, but its MTP draft uses
 512-wide K/V heads at GQA ratio 2. Pascal selects b9843's generic
 FlashAttention tile kernel, which aborts for that exact draft shape. E2B's MTP
 draft is ratio 4 and remains healthy.
 
-Select `LLAMA_ARG_MODELS_PRESET=/presets/12gb-pascal.ini` explicitly on a
-12 GB Pascal host. The preset preserves q4_0 K/V cache, FlashAttention, model
+Current b10236 contains the fix. Keep
+`LLAMA_ARG_MODELS_PRESET=/presets/12gb-pascal.ini` only as a rollback or old
+result reproduction lane until a b10236 Pascal smoke is recorded. The preset
+preserves q4_0 K/V cache, FlashAttention, model
 identity, aliases, context, and every non-E4B setting; it removes only E4B's
 `model-draft` and `spec-*` keys. The cost is lower E4B throughput from losing
 speculative decoding. `12gb.ini`, `8gb.ini`, and `96gb.ini` are unchanged, and
@@ -75,17 +106,20 @@ first GPU — so you select one explicitly with
 `LLAMA_ARG_MODELS_PRESET=/presets/<name>.ini`. Staging is automatic: when one of
 these is the selected preset, `download-models.sh` defaults `PRESTAGE_MODELS` to
 just that model, so you don't also need to set it (an explicit `PRESTAGE_MODELS`
-still overrides). Sizes assume 96 GB/card (RTX PRO 6000 Blackwell).
+value still overrides when it is nonblank). Sizes assume 96 GB/card (RTX PRO
+6000 Blackwell).
 
 | Preset | Model | On-disk | GPUs | Alias |
 | ------ | ----- | ------- | ---- | ----- |
 | `deepseek-v4-flash.ini` | DeepSeek-V4-Flash (antirez Q4 experts) | ~153 GB | 2× 96 GB | `deepseek-v4-flash` |
+| `aws/g7e/12xlarge/deepseek-v4-flash-0731.ini` | DeepSeek-V4-Flash-0731 `UD-Q4_K_XL` + Q8_0 DSpark | ~166 GB | 2× 96 GB | `deepseek-v4-flash-0731` |
 | `glm-5.2.ini` | GLM-5.2 full `UD-Q4_K_XL` (11 shards) | ~467 GB | 6× 96 GB | `glm-5.2` |
 | `glm-5.2-reap.ini` | GLM-5.2 REAP-504B `Q4_K_XL` (8 shards) | ~308 GB | 4× 96 GB | `glm-5.2-reap` |
 
-All three run on the `b9843` base image. Settings are **untested on hardware** —
-see AGENTS.md for the per-preset risk notes (context sizing, `flash-attn`,
-DeepSeek sampling, GPU split).
+All run on the `b10236` base image. The generated 0731+DSpark and GLM 5.2
+routes are **untested on their target hardware**; the Preview-era DeepSeek
+route has earlier load/context measurements. See AGENTS.md for the per-preset
+risk notes (context sizing, `flash-attn`, DeepSeek sampling, GPU split).
 
 ### Tiny preset (named, not auto-detected)
 
@@ -112,10 +146,14 @@ layout means multiple presets/services can safely share one volume.
 | [unsloth/gemma-4-26B-A4B-it-qat-GGUF](https://huggingface.co/unsloth/gemma-4-26B-A4B-it-qat-GGUF) | `UD-Q4_K_XL` | Includes `mtp-gemma-4-26B-A4B-it.gguf` and `mmproj-F16.gguf` in the same repo |
 | [unsloth/gemma-4-E2B-it-qat-GGUF](https://huggingface.co/unsloth/gemma-4-E2B-it-qat-GGUF) | `UD-Q4_K_XL` | Includes `mtp-gemma-4-E2B-it.gguf` and `mmproj-F16.gguf` in the same repo |
 | [unsloth/gemma-4-E4B-it-qat-GGUF](https://huggingface.co/unsloth/gemma-4-E4B-it-qat-GGUF) | `UD-Q4_K_XL` | Includes `mtp-gemma-4-E4B-it.gguf` and `mmproj-F16.gguf` in the same repo |
+| [unsloth/gemma-4-12B-it-qat-GGUF](https://huggingface.co/unsloth/gemma-4-12B-it-qat-GGUF) | `UD-Q4_K_XL` | Revision-pinned QAT target + same-repo Q4_0 MTP + F16 projector; AWS g6 |
+| [unsloth/gemma-4-31B-it-qat-GGUF](https://huggingface.co/unsloth/gemma-4-31B-it-qat-GGUF) | `UD-Q4_K_XL` | Revision-pinned QAT target + same-repo Q4_0 MTP + F16 projector; AWS g6e |
+| [unsloth/Qwen3.5-9B-GGUF](https://huggingface.co/unsloth/Qwen3.5-9B-GGUF) | `UD-Q4_K_XL` | Revision-pinned target + F16 projector; embedded MTP; AWS g6 |
 | [unsloth/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF) | `UD-Q6_K_XL` | MTP draft is built into the main GGUF, no separate `model-draft` |
 | [unsloth/Qwen3.6-27B-MTP-GGUF](https://huggingface.co/unsloth/Qwen3.6-27B-MTP-GGUF) | `UD-Q6_K_XL` | MTP draft is built into the main GGUF, no separate `model-draft` |
 | [unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF](https://huggingface.co/unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF) | `UD-Q6_K_XL` | No speculative decoding |
-| [antirez/deepseek-v4-gguf](https://huggingface.co/antirez/deepseek-v4-gguf) | `Q4KExperts...imatrix` | `deepseek-v4-flash` preset only; MTP draft not wired (b9843 lacks the arch). unsloth ships no V4-Flash GGUF |
+| [antirez/deepseek-v4-gguf](https://huggingface.co/antirez/deepseek-v4-gguf) | `Q4KExperts...imatrix` | Preserved Preview-era target-only route |
+| [unsloth/DeepSeek-V4-Flash-0731-GGUF](https://huggingface.co/unsloth/DeepSeek-V4-Flash-0731-GGUF) | `UD-Q4_K_XL` | Five pinned target shards + pinned Q8_0 DSpark companion; AWS 2×96 GB |
 | [unsloth/GLM-5.2-GGUF](https://huggingface.co/unsloth/GLM-5.2-GGUF) | `UD-Q4_K_XL` | `glm-5.2` preset only; full (non-pruned), 11 shards |
 | [0xSero/GLM-5.2-REAP-504B-GGUF](https://huggingface.co/0xSero/GLM-5.2-REAP-504B-GGUF) | `Q4_K_XL` | `glm-5.2-reap` preset only; 34%-pruned, 8 shards |
 | [unsloth/SmolLM2-135M-Instruct-GGUF](https://huggingface.co/unsloth/SmolLM2-135M-Instruct-GGUF) | `Q8_0` | `smol` preset only; 135M dense, no draft/mmproj, ~145 MB |
@@ -127,11 +165,15 @@ layout means multiple presets/services can safely share one volume.
 | `gemma-4`, `gemma-4-26b-a4b` | native | `96gb.ini`, `12gb.ini`, `12gb-pascal.ini`, `8gb.ini` |
 | `gemma-4-e2b` | native | `96gb.ini`, `12gb.ini`, `12gb-pascal.ini`, `8gb.ini` |
 | `gemma-4-e4b` | native | `96gb.ini`, `12gb.ini`, `12gb-pascal.ini`, `8gb.ini` |
+| `gemma-4-12b` | 128K per slot (4 slots) | `aws/g6/xlarge/general.ini` |
+| `gemma-4-31b` | 256K | `aws/g6e/xlarge/gemma.ini` |
+| `qwen-3.5`, `qwen-3.5-9b` | 128K per slot (2 slots) | `aws/g6/xlarge/general.ini` |
 | `qwen-3.6`, `qwen-3.6-35b-a3b` | native | `96gb.ini`, `12gb.ini`, `12gb-pascal.ini`, `8gb.ini` |
 | `qwen-3.6-35b-a3b-1m` | 1048576 | `96gb.ini`, `12gb.ini`, `12gb-pascal.ini`, `8gb.ini` |
 | `qwen-3.6-27b` | native | `96gb.ini`, `12gb.ini`, `12gb-pascal.ini`, `8gb.ini` |
 | `glm-4.7-flash` | native | `96gb.ini`, `12gb.ini`, `12gb-pascal.ini`, `8gb.ini` |
 | `deepseek-v4-flash` | 393216 | `deepseek-v4-flash.ini` |
+| `deepseek-v4-flash`, `deepseek-v4-flash-0731` | 262144 | `aws/g7e/12xlarge/deepseek-v4-flash-0731.ini` |
 | `glm-5.2` | 262144 | `glm-5.2.ini` |
 | `glm-5.2-reap` | 262144 | `glm-5.2-reap.ini` |
 | `smol`, `smollm2-135m` | 8192 | `smol.ini` |
@@ -140,11 +182,12 @@ Full per-model sampling params and shared defaults live in the corresponding
 `presets/<N>gb.ini` (or the named preset for the large multi-GPU models).
 
 The bracketed preset section is the configured cross-system/model identity. On
-b9843, `/v1/models` normalizes Unsloth quantization tags (for example the E2B
+measured b9843, `/v1/models` normalized Unsloth quantization tags (for example the E2B
 configured ID ends in `:UD-Q4_K_XL`, while discovery reports `:Q4_K_XL`). The
-normalized discovery ID and short alias route PreFer requests; measured b9843
-rejects the configured UD identity as a request model. These roles are
-versioned separately in the client contract, and aliases are not promised as
+normalized discovery ID and short alias routed PreFer requests; b9843 rejected
+the configured UD identity as a request model. b10236 is current, but its exact
+identity behavior remains a live verification item. These roles are versioned
+separately in the client contract, and aliases are not promised as
 `/v1/models` entries.
 
 ## Running
@@ -164,12 +207,17 @@ shell env vars):
 - `PREFER_MODEL_VOLUME` - Docker volume mounted at `/models` (default
   `prefer-model-cache`)
 - `HF_TOKEN` - optional, helps with Hugging Face rate limits
-- `PRESTAGE_MODELS` - optional comma-separated subset of model keys to download
-- `S3_BUCKET_NAME` - optional. When set, `download-models.sh` syncs each model
-  down from `s3://<bucket>/<hf-repo>/` before hitting Hugging Face, and syncs
-  newly downloaded files back up (in the background) to warm the cache. Unset =
-  Hugging Face only. On EC2, supply the bucket via an instance role rather than
-  static keys (the container reads IMDS; the instance needs IMDS hop limit 2).
+- `PRESTAGE_MODELS` - optional comma-separated override. If unset or blank, a
+  generated preset uses its sibling `.prestage` manifest; legacy presets
+  retain their existing defaults. Use `none` for an intentional no-download
+  run
+- `S3_BUCKET_NAME` - optional for the AWS launcher or a direct `docker run`.
+  When passed, `download-models.sh` syncs each model down from
+  `s3://<bucket>/<hf-repo>/` before hitting Hugging Face, then syncs new files
+  back up in the background. The checked-in local Compose service deliberately
+  does not pass this variable and remains Hugging Face-only. On EC2, supply the
+  bucket through an instance role rather than static keys (the container reads
+  IMDS; the instance needs IMDS hop limit 2).
 - `LLAMA_ARG_MODELS_PRESET` / `LLAMA_ARG_MODELS_MAX` - optional, force a
   specific preset instead of auto-detection
 

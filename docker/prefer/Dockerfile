@@ -1,8 +1,6 @@
-# Track latest; bump freely. b9843 has both GLM MoE DSA (PR #19460) and
-# DeepSeek V4 (PR #24162, landed b9840), covering all the large presets. The
-# server-cuda image lags the git tag slightly -- if a --pull 404s the build is
-# still in flight, just wait. See AGENTS.md "Base image".
-ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b9843
+# b10236 includes DeepSeek V4 MTP/DSpark support from PR #25784. Pin the
+# published multi-platform manifest, not the moving server-cuda tag.
+ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b10236@sha256:fd68d13013141833e8214ecad6e1fbefb532db6a00b980cdecfe33603dbf2675
 FROM ${LLAMA_CPP_BASE_IMAGE}
 
 # huggingface-cli is deprecated; the `hf` command (from huggingface_hub) replaces it.
@@ -40,11 +38,13 @@ ENV LLAMA_CACHE=/models
 ENV LD_LIBRARY_PATH=/app
 
 COPY presets/ /presets/
+COPY preset-catalog.json /preset-catalog.json
+COPY model-downloads.generated.sh /model-downloads.generated.sh
 COPY detect-preset.sh /detect-preset.sh
 COPY download-models.sh /download-models.sh
 COPY entrypoint.sh /entrypoint.sh
-RUN sed -i 's/\r$//' /detect-preset.sh /download-models.sh /entrypoint.sh \
-    && chmod +x /detect-preset.sh /download-models.sh /entrypoint.sh
+RUN sed -i 's/\r$//' /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh \
+    && chmod +x /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh
 
 EXPOSE 8080
 

@@ -1,0 +1,67 @@
+import json
+from pathlib import Path
+import subprocess
+import sys
+import unittest
+
+from prefer_bench.contract import parse_preset
+from prefer_bench.paths import REPO_ROOT
+
+
+PREFER_ROOT = REPO_ROOT / "docker" / "prefer"
+SCENARIOS_PATH = PREFER_ROOT / "preset-scenarios" / "aws.json"
+
+
+class GeneratedPresetTests(unittest.TestCase):
+    def test_generated_outputs_are_current(self) -> None:
+        completed = subprocess.run(
+            [sys.executable, str(PREFER_ROOT / "generate-presets.py"), "--check"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+
+    def test_aws_sidecars_exactly_match_scenario_model_keys(self) -> None:
+        source = json.loads(SCENARIOS_PATH.read_text(encoding="utf-8"))
+        for scenario in source["scenarios"]:
+            expected = list(dict.fromkeys(entry["key"] for entry in scenario["models"]))
+            ini_path = PREFER_ROOT / "presets" / scenario["path"]
+            sidecar = ini_path.with_suffix(".prestage").read_text(encoding="utf-8").strip().split(",")
+            self.assertEqual(sidecar, expected, scenario["path"])
+            self.assertTrue(parse_preset(ini_path), scenario["path"])
+
+    def test_every_aws_route_has_at_least_128k_context_per_slot_and_f16_kv(self) -> None:
+        source = json.loads(SCENARIOS_PATH.read_text(encoding="utf-8"))
+        for scenario in source["scenarios"]:
+            defaults = scenario.get("defaults", {})
+            for entry in scenario["models"]:
+                settings = {**defaults, **entry.get("overrides", {})}
+                self.assertEqual(settings["cache-type-k"], "f16", scenario["path"])
+                self.assertEqual(settings["cache-type-v"], "f16", scenario["path"])
+                self.assertGreaterEqual(
+                    int(settings["ctx-size"]) // int(settings["parallel"]),
+                    131072,
+                    f"{scenario['path']}:{entry['key']}",
+                )
+
+    def test_deepseek_0731_is_quality_quant_with_dspark(self) -> None:
+        preset = (PREFER_ROOT / "presets" / "aws" / "g7e" / "12xlarge" / "deepseek-v4-flash-0731.ini").read_text(encoding="utf-8")
+        self.assertIn("UD-Q4_K_XL", preset)
+        self.assertIn("spec-type = draft-dspark", preset)
+        self.assertIn("spec-draft-n-max = 5", preset)
+        self.assertNotIn("IQ1", preset)
+        self.assertNotIn("IQ2", preset)
+
+    def test_blank_prestage_uses_selected_preset_sidecar(self) -> None:
+        downloader = (PREFER_ROOT / "download-models.sh").read_text(encoding="utf-8")
+        example_env = (REPO_ROOT / ".env.example").read_text(encoding="utf-8")
+        self.assertIn('if [ -z "${PRESTAGE_MODELS:-}" ]; then', downloader)
+        self.assertIn('PRESTAGE_FILE="${PRESET_PATH%.ini}.prestage"', downloader)
+        self.assertIn('[ "$model_key" = "none" ]', downloader)
+        self.assertIn("\nPRESTAGE_MODELS=\n", f"\n{example_env}")
+
+
+if __name__ == "__main__":
+    unittest.main()

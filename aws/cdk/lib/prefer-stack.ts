@@ -25,9 +25,16 @@ export class PreferStack extends cdk.Stack {
     // ---- Parameters (filled in the CloudFormation console / CLI) ----
     const instanceTypeParam = new cdk.CfnParameter(this, 'InstanceType', {
       type: 'String',
-      default: 'g6e.12xlarge',
+      default: 'g7e.2xlarge',
       description:
         'GPU instance type with local NVMe instance store (the models run off NVMe).',
+    });
+
+    const modelsPresetParam = new cdk.CfnParameter(this, 'ModelsPreset', {
+      type: 'String',
+      default: '/presets/aws/g7e/2xlarge/general.ini',
+      description:
+        'Absolute in-container preset path. Use the generated AWS preset matching InstanceType.',
     });
 
     // AMI resolution: a RegionMap baked into the template (region -> ami id)
@@ -75,7 +82,7 @@ export class PreferStack extends cdk.Stack {
     const prestageModelsParam = new cdk.CfnParameter(this, 'PrestageModels', {
       type: 'String',
       default: '',
-      description: 'Comma-separated model keys to pre-stage on boot (blank = all). Set one small model, e.g. gemma-4-e2b, for a cheap first test.',
+      description: 'Optional comma-separated override. Blank uses the selected preset sibling .prestage manifest.',
     });
 
     // ---- Network: single-AZ public VPC, no NAT, free S3 gateway endpoint ----
@@ -134,6 +141,7 @@ export class PreferStack extends cdk.Stack {
     userData.addCommands(
       'set -euo pipefail',
       `echo "S3_BUCKET_NAME=${bucket.bucketName}" >> /opt/prefer/prefer-boot.env`,
+      `echo "LLAMA_ARG_MODELS_PRESET=${modelsPresetParam.valueAsString}" >> /opt/prefer/prefer-boot.env`,
       `echo "PRESTAGE_MODELS=${prestageModelsParam.valueAsString}" >> /opt/prefer/prefer-boot.env`,
       'systemctl restart prefer-boot.service',
     );

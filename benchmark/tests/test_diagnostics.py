@@ -41,9 +41,10 @@ class DiagnosticAndCompatibilityTests(unittest.TestCase):
         self.assertNotIn("12gb-pascal.ini", detected_tier_names)
         self.assertIn("12gb.ini", detected_tier_names)
         dockerfile = (REPO_ROOT / "docker" / "prefer" / "Dockerfile").read_text(encoding="utf-8")
-        self.assertIn("server-cuda-b9843", dockerfile)
+        self.assertIn("server-cuda-b10236", dockerfile)
+        self.assertIn("sha256:fd68d13013141833e8214ecad6e1fbefb532db6a00b980cdecfe33603dbf2675", dockerfile)
 
-    def test_candidate_lane_is_published_immutable_b9982(self) -> None:
+    def test_historical_lane_is_published_immutable_b9982(self) -> None:
         candidate = LANES["b9982"]
         self.assertEqual(candidate["source_commit"], "99f3dc32296f825fec94f202da1e9fede1e78cf9")
         self.assertEqual(candidate["manifest_digest"], "sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76")
@@ -52,6 +53,12 @@ class DiagnosticAndCompatibilityTests(unittest.TestCase):
             "ghcr.io/ggml-org/llama.cpp@sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76",
         )
         self.assertNotIn("b9990", LANES)
+
+    def test_current_lane_is_published_immutable_b10236(self) -> None:
+        current = LANES["current"]
+        self.assertEqual(current["revision"], "b10236")
+        self.assertEqual(current["source_commit"], "1464c62d88f699ec9700c8010bbfdbc603a9efd6")
+        self.assertEqual(current["manifest_digest"], "sha256:fd68d13013141833e8214ecad6e1fbefb532db6a00b980cdecfe33603dbf2675")
 
     def test_manifest_failures_are_not_collapsed_into_build_failures(self) -> None:
         self.assertEqual(manifest_failure_code("manifest unknown"), "image_manifest_unavailable")

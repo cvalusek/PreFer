@@ -13,17 +13,38 @@ CloudFormation template, so the public can deploy with no CDK/Node toolchain.
 - An **IAM instance profile** scoped to that bucket, plus SSM Session Manager.
 - A **GPU EC2 instance** from the PreFer AMI, with:
   - **IMDS hop limit = 2** (so the container can read the role's creds),
-  - user-data injecting `S3_BUCKET_NAME` into `/opt/prefer/prefer-boot.env`.
+  - user-data injecting `S3_BUCKET_NAME`, `LLAMA_ARG_MODELS_PRESET`, and any
+    explicit prestage override into `/opt/prefer/prefer-boot.env`.
 
 ## Parameters
 
 | Parameter | Default | Notes |
 | --------- | ------- | ----- |
-| `InstanceType` | `g6e.12xlarge` | GPU family with local NVMe instance store |
+| `InstanceType` | `g7e.2xlarge` | GPU instance type with local NVMe instance store |
+| `ModelsPreset` | `/presets/aws/g7e/2xlarge/general.ini` | Must match the intended generated AWS scenario |
+| `PrestageModels` | `` (blank) | Blank uses the preset's sibling `.prestage`; nonblank is an explicit override |
 | `AmiId` | `` (blank) | Optional override; blank uses the built-in RegionMap for the deploy region. Set an `ami-xxxx` only to pin a specific AMI |
 | `KeyName` | — | Existing EC2 key pair (SSH; SSM also enabled) |
 | `AllowedCidr` | `0.0.0.0/0` | Narrow this to your IP |
 | `RootVolumeGb` | `100` | OS + container image only; models live on NVMe |
+
+## AWS scenario matrix
+
+Deploy one stack per independently managed model-family host, overriding both
+`InstanceType` and `ModelsPreset` together:
+
+| Instance | vCPU | Local NVMe | Preset |
+| -------- | ---: | ---------- | ------ |
+| `g6.xlarge` | 4 | 250 GB | `/presets/aws/g6/xlarge/general.ini` |
+| `g6e.xlarge` | 4 | 250 GB | `/presets/aws/g6e/xlarge/gemma.ini` |
+| `g7e.2xlarge` | 8 | 1.9 TB | `/presets/aws/g7e/2xlarge/general.ini` |
+| `g7e.12xlarge` | 48 | 3.8 TB | `/presets/aws/g7e/12xlarge/deepseek-v4-flash-0731.ini` |
+
+The complete set consumes exactly 64 vCPUs while all four instances are
+running. Pending, stopping, stopped, and hibernated On-Demand instances do not
+count toward the running On-Demand vCPU quota; unused Capacity Reservations do.
+NeurOn can therefore stop inactive family hosts without changing their
+selected preset or S3 inventory.
 
 ## Deploy as plain CloudFormation (no CDK needed)
 
@@ -38,6 +59,14 @@ aws cloudformation deploy \
   --stack-name prefer-ec2 \
   --capabilities CAPABILITY_IAM \
   --parameter-overrides KeyName=my-key AllowedCidr=1.2.3.4/32
+```
+
+For example, a DeepSeek stack adds:
+
+```bash
+--parameter-overrides \
+  InstanceType=g7e.12xlarge \
+  ModelsPreset=/presets/aws/g7e/12xlarge/deepseek-v4-flash-0731.ini
 ```
 
 `AmiId` is optional — leave it blank and the template's built-in RegionMap

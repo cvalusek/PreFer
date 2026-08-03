@@ -16,7 +16,7 @@ from .contract import load_contract, load_corpus, model_record
 from .diagnostics import classify_runtime_failure, linux_amd64_manifest_digests, manifest_failure_code
 from .http_client import ClientTimeout, TransportError, request_json
 from .memory import gpu_inventory
-from .paths import COMPOSE_PATH, REPO_ROOT
+from .paths import COMPOSE_PATH, REPO_ROOT, preset_relative, resolve_preset
 from .report import write_report
 from .results import empty_cell, finish_result, skip_cell, utc_now, write_json
 from .runner import LiveConfig, run_live_suite
@@ -24,13 +24,13 @@ from .runner import LiveConfig, run_live_suite
 
 LANES = {
     "current": {
-        "base_image_tag": "ghcr.io/ggml-org/llama.cpp:server-cuda-b9843",
-        "base_image": "ghcr.io/ggml-org/llama.cpp@sha256:3af9b6f556151848ce221c63a63f87c04832d6666361babca20ee6295255f1c6",
-        "image": "prefer-bench:b9843",
-        "revision": "b9843",
-        "manifest_digest": "sha256:3af9b6f556151848ce221c63a63f87c04832d6666361babca20ee6295255f1c6",
-        "source_commit": "86b94708f22478f900b76ca02e316f4f3418faff",
-        "release_url": "https://github.com/ggml-org/llama.cpp/releases/tag/b9843",
+        "base_image_tag": "ghcr.io/ggml-org/llama.cpp:server-cuda-b10236",
+        "base_image": "ghcr.io/ggml-org/llama.cpp@sha256:fd68d13013141833e8214ecad6e1fbefb532db6a00b980cdecfe33603dbf2675",
+        "image": "prefer-bench:b10236",
+        "revision": "b10236",
+        "manifest_digest": "sha256:fd68d13013141833e8214ecad6e1fbefb532db6a00b980cdecfe33603dbf2675",
+        "source_commit": "1464c62d88f699ec9700c8010bbfdbc603a9efd6",
+        "release_url": "https://github.com/ggml-org/llama.cpp/releases/tag/b10236",
         "comparison_lane": False,
     },
     "b9982": {
@@ -61,6 +61,40 @@ CACHE_MODELS = {
             "unsloth/gemma-4-E4B-it-qat-GGUF/gemma-4-E4B-it-qat-UD-Q4_K_XL.gguf",
             "unsloth/gemma-4-E4B-it-qat-GGUF/mtp-gemma-4-E4B-it.gguf",
             "unsloth/gemma-4-E4B-it-qat-GGUF/mmproj-F16.gguf",
+        ],
+    },
+    "gemma-4-12b": {
+        "request_id": "gemma-4-12b",
+        "files": [
+            "unsloth/gemma-4-12B-it-qat-GGUF/gemma-4-12B-it-qat-UD-Q4_K_XL.gguf",
+            "unsloth/gemma-4-12B-it-qat-GGUF/MTP/mtp-gemma-4-12B-it-Q4_0.gguf",
+            "unsloth/gemma-4-12B-it-qat-GGUF/mmproj-F16.gguf",
+        ],
+    },
+    "gemma-4-31b": {
+        "request_id": "gemma-4-31b",
+        "files": [
+            "unsloth/gemma-4-31B-it-qat-GGUF/gemma-4-31B-it-qat-UD-Q4_K_XL.gguf",
+            "unsloth/gemma-4-31B-it-qat-GGUF/MTP/mtp-gemma-4-31B-it-Q4_0.gguf",
+            "unsloth/gemma-4-31B-it-qat-GGUF/mmproj-F16.gguf",
+        ],
+    },
+    "qwen-3.5-9b": {
+        "request_id": "qwen-3.5-9b",
+        "files": [
+            "unsloth/Qwen3.5-9B-GGUF/Qwen3.5-9B-UD-Q4_K_XL.gguf",
+            "unsloth/Qwen3.5-9B-GGUF/mmproj-F16.gguf",
+        ],
+    },
+    "deepseek-v4-flash-0731": {
+        "request_id": "deepseek-v4-flash-0731",
+        "files": [
+            "unsloth/DeepSeek-V4-Flash-0731-GGUF/UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00001-of-00005.gguf",
+            "unsloth/DeepSeek-V4-Flash-0731-GGUF/UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00002-of-00005.gguf",
+            "unsloth/DeepSeek-V4-Flash-0731-GGUF/UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00003-of-00005.gguf",
+            "unsloth/DeepSeek-V4-Flash-0731-GGUF/UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00004-of-00005.gguf",
+            "unsloth/DeepSeek-V4-Flash-0731-GGUF/UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00005-of-00005.gguf",
+            "unsloth/DeepSeek-V4-Flash-0731-GGUF/dspark/dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf",
         ],
     },
     "smol": {
@@ -398,8 +432,7 @@ def run_local(options: LocalOptions) -> dict[str, Any]:
         raise ValueError(f"unknown lane: {options.lane}")
     if not options.model_keys or any(key not in CACHE_MODELS for key in options.model_keys):
         raise ValueError(f"models must be selected from {sorted(CACHE_MODELS)}")
-    if options.preset not in {path.name for path in (REPO_ROOT / "docker" / "prefer" / "presets").glob("*.ini")}:
-        raise ValueError(f"unknown preset: {options.preset}")
+    options.preset = preset_relative(resolve_preset(options.preset))
     lane = LANES[options.lane]
     suffix = uuid.uuid4().hex[:10]
     project = f"prefer-bench-{suffix}"

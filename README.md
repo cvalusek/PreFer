@@ -6,7 +6,8 @@ PreFer is a set of practical llama.cpp inference presets for self-hosted LLMs.
 It packages known-good model mixes, VRAM-aware router configs, and download
 scripts into containers that are easy to run locally or on RunPod.
 
-The current PreFer container serves Gemma 4, Qwen3.6, and GLM-4.7-Flash
+The current PreFer container serves Gemma 4, Qwen3.5/Qwen3.6, GLM, and
+DeepSeek V4
 through `llama-server` router mode with an
 OpenAI-style API on port `8080`. PreFer deliberately promises only its
 [versioned narrow client contract](benchmark/README.md#stable-client-contract),
@@ -30,6 +31,9 @@ container can do the boring parts reliably:
 ```text
 docker/
   prefer/             PreFer's llama.cpp router image
+    preset-catalog.json       model/artifact source of truth
+    preset-scenarios/         deployment shapes
+    generate-presets.py       deterministic preset/downloader generator
 aws/                  EC2 deployment (AMI + boot scripts + CDK); see aws/DESIGN.md
 .github/workflows/    Build workflows (container, AMI, and IaC build independently)
 ```
@@ -68,9 +72,12 @@ curl http://localhost:8080/v1/models
 Most local configuration lives in `.env`; see [.env.example](.env.example).
 Useful knobs:
 
-- `PRESTAGE_MODELS` limits which Hugging Face repos are downloaded.
-- `S3_BUCKET_NAME` enables an optional S3 model cache (sync down before
-  Hugging Face, sync new files back up); unset means Hugging Face only.
+- A nonblank `PRESTAGE_MODELS` optionally overrides which catalog models are
+  downloaded; when unset or blank, generated presets use their sibling
+  `.prestage` manifests. Use `none` for an intentional no-download run.
+- `S3_BUCKET_NAME` enables an optional S3 model cache when it is passed by the
+  AWS launcher or a direct `docker run`. The checked-in local Compose service
+  intentionally does not pass it and remains Hugging Face-only.
 - `HF_TOKEN` improves Hugging Face rate limits.
 - `LLAMA_ARG_MODELS_PRESET` forces a specific preset instead of VRAM detection.
 - `LLAMA_ARG_MODELS_MAX` controls how many routed models may be loaded at once.
@@ -88,12 +95,12 @@ live model:
 python -m prefer_bench contract --mock
 ```
 
-Run the current b9843 lane against only the already-cached Gemma E2B/E4B files
-on a 12 GB Pascal tier (the explicit compatibility preset keeps E2B MTP and
-disables only E4B MTP):
+Run the current b10236 lane against only the already-cached Gemma E2B/E4B
+files. The Pascal preset remains available to reproduce the old b9843
+workaround, but current b10236 includes its upstream fix:
 
 ```bash
-python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb-pascal.ini --models-max 1 --contexts 8k,32k
+python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb.ini --models-max 1 --contexts 8k,32k
 ```
 
 The local command uses a generated Compose project, free loopback port (never
@@ -103,8 +110,8 @@ removes every temporary container/network/volume afterward. It never manages
 provider capacity or touches the operator `prefer` container.
 
 See [benchmark/README.md](benchmark/README.md) for the result format, optional
-128K and idle cells, the `models-max=4` comparison, and the immutable opt-in
-b9982 revision lane. No live GPU benchmark runs in ordinary CI.
+128K and idle cells, the `models-max=4` comparison, and historical b9843/b9982
+evidence. No live GPU benchmark runs in ordinary CI.
 
 ## Netskope / Corporate TLS
 
@@ -121,8 +128,9 @@ Certificate files under `docker/certs/` are ignored by git.
 
 ## Images
 
-GitHub Actions build the PreFer image. Additional model sets can be added
-under `docker/<name>/` as the preset library grows.
+GitHub Actions build the PreFer image. Additional models and deployment shapes
+belong in `preset-catalog.json` and `preset-scenarios/`; regenerate and commit
+their deterministic outputs.
 
 See [docker/prefer/README.md](docker/prefer/README.md) for model
 details, preset tiers, aliases, and operational notes.

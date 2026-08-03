@@ -44,7 +44,7 @@ The promised surface is intentionally narrow:
 - Configured cross-system identities, normalized router IDs, and aliases in the
   versioned fixture. Ground Control's NeurOn/control-plane identity is
   `unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL`; its PreFer alias is
-  `gemma-4-e2b`. b9843 returns and accepts the normalized router ID ending
+  `gemma-4-e2b`. Measured b9843 returned and accepted the normalized router ID ending
   `:Q4_K_XL`. It rejects the configured UD identity as a PreFer route, so the
   fixture intentionally does not conflate these roles or promise that every
   preset section name is a request target.
@@ -116,19 +116,19 @@ harness does not guess it.
 
 ## Isolated current-backend baseline
 
-The default baseline builds the production-pinned b9843 Dockerfile, never
+The default baseline builds the production-pinned b10236 Dockerfile, never
 downloads models, and copies only selected files from an existing Docker cache
-into a generated run volume. On the measured Pascal host, select the explicit
-compatibility preset:
+into a generated run volume. Current b10236 includes the upstream E4B Pascal
+MTP fix, so use the normal preset for a new run:
 
 ```bash
-python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb-pascal.ini --models-max 1 --contexts 8k,32k
+python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb.ini --models-max 1 --contexts 8k,32k
 ```
 
-Use `12gb.ini` on a non-Pascal 12 GB GPU. The compatibility preset is never
-auto-detected and differs only by omitting E4B's MTP draft; model identity,
-aliases, quantization, q4_0 K/V cache, FlashAttention, and E2B MTP remain the
-same.
+`12gb-pascal.ini` is retained to reproduce or roll back the old b9843 failure.
+It is never auto-detected and differs only by omitting E4B's MTP draft; model
+identity, aliases, quantization, q4_0 K/V cache, FlashAttention, and E2B MTP
+remain the same.
 
 The command records cold router startup/readiness (Compose service start through
 the first successful `/v1/models`, excluding image build and cache clone), first model load, warm request,
@@ -272,18 +272,18 @@ Measured remediation facts, again from single runs rather than distributions:
 
 The earlier b9990 comparison was attempted before its GHCR image was published:
 `server-cuda-b9990` returned `manifest unknown`, so its preserved historical
-artifact contains structured skips only. The active comparison assumption has
-been replaced by b9982, the newest published CUDA image found during this pass;
-the harness now checks the immutable manifest before building and distinguishes
+artifact contains structured skips only. That historical comparison was later
+replaced by b9982 during the Pascal investigation. The harness checks the
+immutable manifest before building and distinguishes
 `image_manifest_unavailable` from an image build failure.
 
-## Opt-in revision comparison
+## Historical opt-in revision comparison
 
-`b9982` is the bounded, published candidate lane. It is pinned to llama.cpp
+`b9982` is retained as the bounded, published historical lane. It is pinned to llama.cpp
 source `99f3dc32296f825fec94f202da1e9fede1e78cf9` and linux/amd64 GHCR manifest
 `sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76`.
-It contains upstream E4B MTP fix #25148. The lane is opt-in and does not change
-either Dockerfile's default b9843 pin:
+It contains upstream E4B MTP fix #25148. The lane is opt-in; both Dockerfiles
+now default to b10236:
 
 ```bash
 python -m prefer_bench local --lane b9982 --cache-source-volume prefer-model-cache --models gemma-4-e2b --preset 12gb.ini --models-max 1 --contexts 8k

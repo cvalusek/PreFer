@@ -1,0 +1,294 @@
+{
+  "schema_version": 1,
+  "runtime": {
+    "llama_cpp_tag": "b10236",
+    "source_revision": "1464c62d88f699ec9700c8010bbfdbc603a9efd6",
+    "image": "ghcr.io/ggml-org/llama.cpp:server-cuda-b10236",
+    "manifest_digest": "sha256:fd68d13013141833e8214ecad6e1fbefb532db6a00b980cdecfe33603dbf2675"
+  },
+  "legacy_default_prestage": [
+    "gemma-4-26b-a4b",
+    "gemma-4-e2b",
+    "gemma-4-e4b",
+    "qwen-3.6-35b-a3b",
+    "qwen-3.6-27b",
+    "glm-4.7-flash"
+  ],
+  "models": {
+    "gemma-4-26b-a4b": {
+      "section": "unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL",
+      "aliases": ["gemma-4", "gemma-4-26b-a4b"],
+      "settings": {
+        "model": "/models/unsloth/gemma-4-26B-A4B-it-qat-GGUF/gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf",
+        "model-draft": "/models/unsloth/gemma-4-26B-A4B-it-qat-GGUF/mtp-gemma-4-26B-A4B-it.gguf",
+        "mmproj": "/models/unsloth/gemma-4-26B-A4B-it-qat-GGUF/mmproj-F16.gguf",
+        "spec-type": "draft-mtp",
+        "spec-draft-n-max": 4,
+        "top-k": 64
+      },
+      "downloads": [
+        {
+          "repo": "unsloth/gemma-4-26B-A4B-it-qat-GGUF",
+          "revision": null,
+          "include": ["*UD-Q4_K_XL*", "*mtp-gemma*", "mmproj-F16.gguf"]
+        }
+      ],
+      "artifacts": [
+        {"role": "model", "repo": "unsloth/gemma-4-26B-A4B-it-qat-GGUF", "path": "gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf"},
+        {"role": "draft", "repo": "unsloth/gemma-4-26B-A4B-it-qat-GGUF", "path": "mtp-gemma-4-26B-A4B-it.gguf"},
+        {"role": "projector", "repo": "unsloth/gemma-4-26B-A4B-it-qat-GGUF", "path": "mmproj-F16.gguf"}
+      ]
+    },
+    "gemma-4-e2b": {
+      "section": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+      "aliases": ["gemma-4-e2b"],
+      "settings": {
+        "model": "/models/unsloth/gemma-4-E2B-it-qat-GGUF/gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf",
+        "model-draft": "/models/unsloth/gemma-4-E2B-it-qat-GGUF/mtp-gemma-4-E2B-it.gguf",
+        "mmproj": "/models/unsloth/gemma-4-E2B-it-qat-GGUF/mmproj-F16.gguf",
+        "spec-type": "draft-mtp",
+        "spec-draft-n-max": 4,
+        "flash-attn": "off",
+        "top-k": 64
+      },
+      "downloads": [
+        {
+          "repo": "unsloth/gemma-4-E2B-it-qat-GGUF",
+          "revision": null,
+          "include": ["*UD-Q4_K_XL*", "*mtp-gemma*", "mmproj-F16.gguf"]
+        }
+      ],
+      "artifacts": [
+        {"role": "model", "repo": "unsloth/gemma-4-E2B-it-qat-GGUF", "path": "gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf"},
+        {"role": "draft", "repo": "unsloth/gemma-4-E2B-it-qat-GGUF", "path": "mtp-gemma-4-E2B-it.gguf"},
+        {"role": "projector", "repo": "unsloth/gemma-4-E2B-it-qat-GGUF", "path": "mmproj-F16.gguf"}
+      ]
+    },
+    "gemma-4-e4b": {
+      "section": "unsloth/gemma-4-E4B-it-qat-GGUF:UD-Q4_K_XL",
+      "aliases": ["gemma-4-e4b"],
+      "settings": {
+        "model": "/models/unsloth/gemma-4-E4B-it-qat-GGUF/gemma-4-E4B-it-qat-UD-Q4_K_XL.gguf",
+        "model-draft": "/models/unsloth/gemma-4-E4B-it-qat-GGUF/mtp-gemma-4-E4B-it.gguf",
+        "mmproj": "/models/unsloth/gemma-4-E4B-it-qat-GGUF/mmproj-F16.gguf",
+        "spec-type": "draft-mtp",
+        "spec-draft-n-max": 4,
+        "flash-attn": "off",
+        "top-k": 64
+      },
+      "downloads": [
+        {
+          "repo": "unsloth/gemma-4-E4B-it-qat-GGUF",
+          "revision": null,
+          "include": ["*UD-Q4_K_XL*", "*mtp-gemma*", "mmproj-F16.gguf"]
+        }
+      ],
+      "artifacts": [
+        {"role": "model", "repo": "unsloth/gemma-4-E4B-it-qat-GGUF", "path": "gemma-4-E4B-it-qat-UD-Q4_K_XL.gguf"},
+        {"role": "draft", "repo": "unsloth/gemma-4-E4B-it-qat-GGUF", "path": "mtp-gemma-4-E4B-it.gguf"},
+        {"role": "projector", "repo": "unsloth/gemma-4-E4B-it-qat-GGUF", "path": "mmproj-F16.gguf"}
+      ]
+    },
+    "gemma-4-12b": {
+      "section": "unsloth/gemma-4-12B-it-qat-GGUF:UD-Q4_K_XL",
+      "aliases": ["gemma-4-12b"],
+      "settings": {
+        "model": "/models/unsloth/gemma-4-12B-it-qat-GGUF/gemma-4-12B-it-qat-UD-Q4_K_XL.gguf",
+        "model-draft": "/models/unsloth/gemma-4-12B-it-qat-GGUF/MTP/mtp-gemma-4-12B-it-Q4_0.gguf",
+        "mmproj": "/models/unsloth/gemma-4-12B-it-qat-GGUF/mmproj-F16.gguf",
+        "spec-type": "draft-mtp",
+        "spec-draft-n-max": 4,
+        "top-k": 64
+      },
+      "downloads": [
+        {
+          "repo": "unsloth/gemma-4-12B-it-qat-GGUF",
+          "revision": "980b060c40a8539ac159e0501a3e0f66a6365af3",
+          "include": ["gemma-4-12B-it-qat-UD-Q4_K_XL.gguf", "MTP/mtp-gemma-4-12B-it-Q4_0.gguf", "mmproj-F16.gguf"]
+        }
+      ],
+      "artifacts": [
+        {"role": "model", "repo": "unsloth/gemma-4-12B-it-qat-GGUF", "path": "gemma-4-12B-it-qat-UD-Q4_K_XL.gguf", "size": 6716356800, "sha256": "90fd44e29e0d7cffeb0fd00dc73cfdab9ed0b0e95306ecf7821ea634c940c370"},
+        {"role": "draft", "repo": "unsloth/gemma-4-12B-it-qat-GGUF", "path": "MTP/mtp-gemma-4-12B-it-Q4_0.gguf", "size": 253708800, "sha256": "fcb35dea42c71333db904cee11baac525c9ef872818ee3753f6cb156f3c6f4f6"},
+        {"role": "projector", "repo": "unsloth/gemma-4-12B-it-qat-GGUF", "path": "mmproj-F16.gguf", "size": 175115840, "sha256": "ecc4e93128da8363b7dbf2193eab98cf1142353f52ceaa0c95c0872997aaadd3"}
+      ]
+    },
+    "gemma-4-31b": {
+      "section": "unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL",
+      "aliases": ["gemma-4-31b"],
+      "settings": {
+        "model": "/models/unsloth/gemma-4-31B-it-qat-GGUF/gemma-4-31B-it-qat-UD-Q4_K_XL.gguf",
+        "model-draft": "/models/unsloth/gemma-4-31B-it-qat-GGUF/MTP/mtp-gemma-4-31B-it-Q4_0.gguf",
+        "mmproj": "/models/unsloth/gemma-4-31B-it-qat-GGUF/mmproj-F16.gguf",
+        "spec-type": "draft-mtp",
+        "spec-draft-n-max": 4,
+        "top-k": 64
+      },
+      "downloads": [
+        {
+          "repo": "unsloth/gemma-4-31B-it-qat-GGUF",
+          "revision": "43cc1aeb31adf47ec06a854507ce552cd9862e6f",
+          "include": ["gemma-4-31B-it-qat-UD-Q4_K_XL.gguf", "MTP/mtp-gemma-4-31B-it-Q4_0.gguf", "mmproj-F16.gguf"]
+        }
+      ],
+      "artifacts": [
+        {"role": "model", "repo": "unsloth/gemma-4-31B-it-qat-GGUF", "path": "gemma-4-31B-it-qat-UD-Q4_K_XL.gguf", "size": 17287670048, "sha256": "00b5a7c497f0c8934033088c10a7fa9a4c015e46ee6d89e9c6890650ba5d0e71"},
+        {"role": "draft", "repo": "unsloth/gemma-4-31B-it-qat-GGUF", "path": "MTP/mtp-gemma-4-31B-it-Q4_0.gguf", "size": 279955968, "sha256": "3a5e99fd8d0b23afb1fccd1ee0c9ebd1f571d00399c2dae2292d217feeec0f6b"},
+        {"role": "projector", "repo": "unsloth/gemma-4-31B-it-qat-GGUF", "path": "mmproj-F16.gguf", "size": 1198957024, "sha256": "4775e1bf6ef6f8df94caed2d672c74432f0722565e5225a170c72949ebe4cf23"}
+      ]
+    },
+    "qwen-3.5-9b": {
+      "section": "unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL",
+      "aliases": ["qwen-3.5", "qwen-3.5-9b"],
+      "settings": {
+        "model": "/models/unsloth/Qwen3.5-9B-GGUF/Qwen3.5-9B-UD-Q4_K_XL.gguf",
+        "mmproj": "/models/unsloth/Qwen3.5-9B-GGUF/mmproj-F16.gguf",
+        "spec-type": "draft-mtp",
+        "spec-draft-n-max": 2,
+        "top-k": 20,
+        "min-p": 0.0
+      },
+      "downloads": [
+        {
+          "repo": "unsloth/Qwen3.5-9B-GGUF",
+          "revision": "3885219b6810b007914f3a7950a8d1b469d598a5",
+          "include": ["Qwen3.5-9B-UD-Q4_K_XL.gguf", "mmproj-F16.gguf"]
+        }
+      ],
+      "artifacts": [
+        {"role": "model", "repo": "unsloth/Qwen3.5-9B-GGUF", "path": "Qwen3.5-9B-UD-Q4_K_XL.gguf", "size": 5966095584, "sha256": "6f5d30666c2d8ae16a306e616d95341dcf3cc46810df84d7e6f5a7d1e4c1b293"},
+        {"role": "projector", "repo": "unsloth/Qwen3.5-9B-GGUF", "path": "mmproj-F16.gguf", "size": 918166080, "sha256": "f70dc3509053962b0d0d3ee8a7eacebf5d60aa560cad78254ae8698516ae029f"}
+      ]
+    },
+    "qwen-3.6-35b-a3b": {
+      "section": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL",
+      "aliases": ["qwen-3.6", "qwen-3.6-35b-a3b"],
+      "settings": {
+        "model": "/models/unsloth/Qwen3.6-35B-A3B-MTP-GGUF/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf",
+        "spec-type": "draft-mtp",
+        "spec-draft-n-max": 2,
+        "top-k": 20,
+        "min-p": 0.0
+      },
+      "downloads": [
+        {"repo": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF", "revision": null, "include": ["*UD-Q6_K_XL*"]}
+      ],
+      "artifacts": [
+        {"role": "model", "repo": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF", "path": "Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf"}
+      ]
+    },
+    "qwen-3.6-27b": {
+      "section": "unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q6_K_XL",
+      "aliases": ["qwen-3.6-27b"],
+      "settings": {
+        "model": "/models/unsloth/Qwen3.6-27B-MTP-GGUF/Qwen3.6-27B-UD-Q6_K_XL.gguf",
+        "spec-type": "draft-mtp",
+        "spec-draft-n-max": 2,
+        "top-k": 20,
+        "min-p": 0.0
+      },
+      "downloads": [
+        {"repo": "unsloth/Qwen3.6-27B-MTP-GGUF", "revision": null, "include": ["*UD-Q6_K_XL*"]}
+      ],
+      "artifacts": [
+        {"role": "model", "repo": "unsloth/Qwen3.6-27B-MTP-GGUF", "path": "Qwen3.6-27B-UD-Q6_K_XL.gguf"}
+      ]
+    },
+    "glm-4.7-flash": {
+      "section": "unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF:UD-Q6_K_XL",
+      "aliases": ["glm-4.7-flash"],
+      "settings": {
+        "model": "/models/unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF/GLM-4.7-Flash-REAP-23B-A3B-UD-Q6_K_XL.gguf",
+        "temp": 0.7,
+        "top-k": 0
+      },
+      "downloads": [
+        {"repo": "unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF", "revision": null, "include": ["*UD-Q6_K_XL*"]}
+      ],
+      "artifacts": [
+        {"role": "model", "repo": "unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF", "path": "GLM-4.7-Flash-REAP-23B-A3B-UD-Q6_K_XL.gguf"}
+      ]
+    },
+    "deepseek-v4-flash": {
+      "section": "antirez/deepseek-v4-gguf:Q4KExperts",
+      "aliases": ["deepseek-v4-flash"],
+      "settings": {
+        "model": "/models/antirez/deepseek-v4-gguf/DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf"
+      },
+      "downloads": [
+        {"repo": "antirez/deepseek-v4-gguf", "revision": null, "include": ["*Q4KExperts-F16HC*imatrix*"]}
+      ],
+      "artifacts": [
+        {"role": "model", "repo": "antirez/deepseek-v4-gguf", "path": "DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf"}
+      ]
+    },
+    "deepseek-v4-flash-0731": {
+      "section": "unsloth/DeepSeek-V4-Flash-0731-GGUF:UD-Q4_K_XL",
+      "aliases": ["deepseek-v4-flash", "deepseek-v4-flash-0731"],
+      "lineage": {
+        "repo": "deepseek-ai/DeepSeek-V4-Flash-0731",
+        "revision": "9e165c30e2704aec5d9d593cce3eebd58bbef1cb"
+      },
+      "settings": {
+        "model": "/models/unsloth/DeepSeek-V4-Flash-0731-GGUF/UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00001-of-00005.gguf",
+        "model-draft": "/models/unsloth/DeepSeek-V4-Flash-0731-GGUF/dspark/dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf",
+        "spec-type": "draft-dspark",
+        "spec-draft-n-max": 5
+      },
+      "downloads": [
+        {
+          "repo": "unsloth/DeepSeek-V4-Flash-0731-GGUF",
+          "revision": "57326b941c4603e24d1a5e71c22520c66e086eb8",
+          "include": ["UD-Q4_K_XL/*", "dspark/dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf"]
+        }
+      ],
+      "artifacts": [
+        {"role": "model", "repo": "unsloth/DeepSeek-V4-Flash-0731-GGUF", "path": "UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00001-of-00005.gguf", "size": 5257408, "sha256": "d13ce8f90855547bdaebe7312f531a1f2c4f822178d3103951f27fe884395cfa"},
+        {"role": "model-shard", "repo": "unsloth/DeepSeek-V4-Flash-0731-GGUF", "path": "UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00002-of-00005.gguf", "size": 48935523072, "sha256": "d5b61668950f4743aacd677675d7fcf7507dbe1db6d304e8ff97ed1f00827bee"},
+        {"role": "model-shard", "repo": "unsloth/DeepSeek-V4-Flash-0731-GGUF", "path": "UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00003-of-00005.gguf", "size": 48980787136, "sha256": "9705db7e589f360685ca7bd48100b270d78d228d4f5aa980508f3b2778af5494"},
+        {"role": "model-shard", "repo": "unsloth/DeepSeek-V4-Flash-0731-GGUF", "path": "UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00004-of-00005.gguf", "size": 49999168416, "sha256": "7f13a68e3ca64208454c4ba32cc2757c0cbe78e3e5576c3142bf7007ca97da42"},
+        {"role": "model-shard", "repo": "unsloth/DeepSeek-V4-Flash-0731-GGUF", "path": "UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00005-of-00005.gguf", "size": 7174505088, "sha256": "ed0d93164d3784968d6ce40d6d201ba98337f16e7db1b31fe495b2b0f334cc09"},
+        {"role": "draft", "repo": "unsloth/DeepSeek-V4-Flash-0731-GGUF", "path": "dspark/dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf", "size": 10896057440, "sha256": "2c7ac54b0b64a99df1f139a9f1371a00198265e1d6a614b77597d20a655a4249"}
+      ]
+    },
+    "glm-5.2": {
+      "section": "unsloth/GLM-5.2-GGUF:UD-Q4_K_XL",
+      "aliases": ["glm-5.2"],
+      "settings": {
+        "model": "/models/unsloth/GLM-5.2-GGUF/UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00001-of-00011.gguf"
+      },
+      "downloads": [
+        {"repo": "unsloth/GLM-5.2-GGUF", "revision": null, "include": ["UD-Q4_K_XL/*"]}
+      ],
+      "artifacts": [
+        {"role": "model", "repo": "unsloth/GLM-5.2-GGUF", "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00001-of-00011.gguf"}
+      ]
+    },
+    "glm-5.2-reap": {
+      "section": "0xSero/GLM-5.2-REAP-504B-GGUF:Q4_K_XL",
+      "aliases": ["glm-5.2-reap"],
+      "settings": {
+        "model": "/models/0xSero/GLM-5.2-REAP-504B-GGUF/GLM-5.2-REAP-504B-Q4_K_XL-00001-of-00008.gguf"
+      },
+      "downloads": [
+        {"repo": "0xSero/GLM-5.2-REAP-504B-GGUF", "revision": null, "include": ["*Q4_K_XL*"]}
+      ],
+      "artifacts": [
+        {"role": "model", "repo": "0xSero/GLM-5.2-REAP-504B-GGUF", "path": "GLM-5.2-REAP-504B-Q4_K_XL-00001-of-00008.gguf"}
+      ]
+    },
+    "smol": {
+      "section": "unsloth/SmolLM2-135M-Instruct-GGUF:Q8_0",
+      "aliases": ["smol", "smollm2-135m"],
+      "settings": {
+        "model": "/models/unsloth/SmolLM2-135M-Instruct-GGUF/SmolLM2-135M-Instruct-Q8_0.gguf"
+      },
+      "downloads": [
+        {"repo": "unsloth/SmolLM2-135M-Instruct-GGUF", "revision": null, "include": ["*Q8_0.gguf"]}
+      ],
+      "artifacts": [
+        {"role": "model", "repo": "unsloth/SmolLM2-135M-Instruct-GGUF", "path": "SmolLM2-135M-Instruct-Q8_0.gguf"}
+      ]
+    }
+  }
+}

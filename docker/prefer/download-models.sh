@@ -4,40 +4,38 @@ set -euo pipefail
 MODELS_DIR="/models"
 mkdir -p "$MODELS_DIR"
 
+source /model-downloads.generated.sh
+
 # Comma-separated list of model keys to pre-stage. presets use local `model =`
 # paths (not HF-direct `hf =` loading; that was tried and reverted, see
 # AGENTS.md), so anything not pre-staged here simply won't be available to load.
-# Available keys: gemma-4-26b-a4b, gemma-4-e2b, gemma-4-e4b, qwen-3.6-35b-a3b,
-# qwen-3.6-27b, glm-4.7-flash, deepseek-v4-flash, glm-5.2, glm-5.2-reap, smol
+# Available keys are generated from preset-catalog.json into
+# model-downloads.generated.sh.
 #
-# The default is preset-aware. Some presets own their host and want exactly one
-# model staged, not the full small-model lineup: the big multi-GPU presets
-# (deepseek-v4-flash, glm-5.2, glm-5.2-reap), and the tiny single-model `smol`
-# preset (companion-app smoke tests). When one of those is the selected preset,
-# the default is to stage ONLY that one model. The preset comes from
-# LLAMA_ARG_MODELS_PRESET, which entrypoint.sh resolves (via detect-preset.sh)
-# and exports into the environment before running this script; its basename
-# matches the download key one-to-one. Any other preset (the `<N>gb.ini` tiers)
-# defaults to the full small-model set.
+# The default is preset-aware. Generated deployment presets have a sibling
+# `.prestage` file with the exact catalog keys needed by that preset. Named
+# legacy single-model presets still use their basename as the key. Numeric
+# legacy tiers retain the historical small-model default.
 #
-# An explicit PRESTAGE_MODELS always wins — set it to stage a subset, or to
-# stage a big model when pre-warming directly (e.g.
+# A non-empty PRESTAGE_MODELS always wins — set it to stage a subset, to
+# `none` for an intentional no-download run, or to stage a big model when
+# pre-warming directly (e.g.
 # `docker compose run --rm prefer /download-models.sh`) without the preset env
 # var set.
-SMALL_MODELS="gemma-4-26b-a4b,gemma-4-e2b,gemma-4-e4b,qwen-3.6-35b-a3b,qwen-3.6-27b,glm-4.7-flash"
-PRESET_NAME="$(basename "${LLAMA_ARG_MODELS_PRESET:-}" .ini)"
-case "$PRESET_NAME" in
-  deepseek-v4-flash|glm-5.2|glm-5.2-reap|smol) DEFAULT_PRESTAGE="$PRESET_NAME" ;;
-  *)                                           DEFAULT_PRESTAGE="$SMALL_MODELS" ;;
-esac
-PRESTAGE_MODELS="${PRESTAGE_MODELS:-$DEFAULT_PRESTAGE}"
-
-wanted() {
-  case ",$PRESTAGE_MODELS," in
-    *",$1,"*) return 0 ;;
-    *) return 1 ;;
-  esac
-}
+if [ -z "${PRESTAGE_MODELS:-}" ]; then
+  PRESET_PATH="${LLAMA_ARG_MODELS_PRESET:-}"
+  PRESTAGE_FILE="${PRESET_PATH%.ini}.prestage"
+  PRESET_NAME="$(basename "$PRESET_PATH" .ini)"
+  if [ -n "$PRESET_PATH" ] && [ -f "$PRESTAGE_FILE" ]; then
+    IFS= read -r PRESTAGE_MODELS < "$PRESTAGE_FILE" || true
+    PRESTAGE_MODELS="${PRESTAGE_MODELS%$'\r'}"
+  else
+    case ",$GENERATED_MODEL_KEYS," in
+      *",$PRESET_NAME,"*) PRESTAGE_MODELS="$PRESET_NAME" ;;
+      *)                  PRESTAGE_MODELS="$LEGACY_SMALL_MODELS" ;;
+    esac
+  fi
+fi
 
 # Optional S3 model cache. When S3_BUCKET_NAME is set (e.g. on EC2 with an
 # instance role granting access to the bucket), each model is synced down from
@@ -53,7 +51,7 @@ if [ -n "$S3_BUCKET_NAME" ]; then
   echo "[download-models] S3 cache enabled: s3://$S3_BUCKET_NAME"
 fi
 
-# download <hf-repo> [extra hf-download args...]
+# download <hf-repo> <revision-or-empty> [extra hf-download args...]
 # Always invokes `hf download` rather than checking for existing files first —
 # `hf download` already hashes/resumes incomplete or partial downloads itself,
 # which a simple "does a .gguf exist" presence check can't do safely. That
@@ -63,9 +61,15 @@ fi
 # partway through (a real, reported failure mode for downloads this size).
 download() {
   local repo="$1"
-  shift
+  local revision="$2"
+  shift 2
   local dest="$MODELS_DIR/$repo"
+  local revision_args=()
   mkdir -p "$dest"
+
+  if [ -n "$revision" ]; then
+    revision_args=(--revision "$revision")
+  fi
 
   # Cache sync-down: pull this repo's cached files first so `hf download` only
   # fetches what's missing. `|| true` because s5cmd errors when the prefix is
@@ -76,7 +80,7 @@ download() {
   fi
 
   echo "[download-models] $repo: syncing to $dest"
-  hf download "$repo" --local-dir "$dest" "$@"
+  hf download "$repo" "${revision_args[@]}" --local-dir "$dest" "$@"
 
   # hf_xet keeps a chunk/shard cache (under $HF_HOME/xet) to speed up
   # re-downloads and dedup across repos. On a space-constrained volume this
@@ -100,61 +104,16 @@ download() {
   fi
 }
 
-if wanted gemma-4-26b-a4b; then
-  download unsloth/gemma-4-26B-A4B-it-qat-GGUF \
-    --include "*UD-Q4_K_XL*" \
-    --include "*mtp-gemma*" \
-    --include "mmproj-F16.gguf"
-fi
-
-if wanted gemma-4-e2b; then
-  download unsloth/gemma-4-E2B-it-qat-GGUF \
-    --include "*UD-Q4_K_XL*" \
-    --include "*mtp-gemma*" \
-    --include "mmproj-F16.gguf"
-fi
-
-if wanted gemma-4-e4b; then
-  download unsloth/gemma-4-E4B-it-qat-GGUF \
-    --include "*UD-Q4_K_XL*" \
-    --include "*mtp-gemma*" \
-    --include "mmproj-F16.gguf"
-fi
-
-if wanted qwen-3.6-35b-a3b; then
-  download unsloth/Qwen3.6-35B-A3B-MTP-GGUF \
-    --include "*UD-Q6_K_XL*"
-fi
-
-if wanted qwen-3.6-27b; then
-  download unsloth/Qwen3.6-27B-MTP-GGUF \
-    --include "*UD-Q6_K_XL*"
-fi
-
-if wanted glm-4.7-flash; then
-  download unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF \
-    --include "*UD-Q6_K_XL*"
-fi
-
-if wanted deepseek-v4-flash; then
-  download antirez/deepseek-v4-gguf \
-    --include "*Q4KExperts-F16HC*imatrix*"
-fi
-
-if wanted glm-5.2; then
-  download unsloth/GLM-5.2-GGUF \
-    --include "UD-Q4_K_XL/*"
-fi
-
-if wanted glm-5.2-reap; then
-  download 0xSero/GLM-5.2-REAP-504B-GGUF \
-    --include "*Q4_K_XL*"
-fi
-
-if wanted smol; then
-  download unsloth/SmolLM2-135M-Instruct-GGUF \
-    --include "*Q8_0.gguf"
-fi
+declare -A SEEN_MODEL_KEYS=()
+IFS=',' read -ra REQUESTED_MODEL_KEYS <<< "$PRESTAGE_MODELS"
+for model_key in "${REQUESTED_MODEL_KEYS[@]}"; do
+  model_key="${model_key//[[:space:]]/}"
+  if [ -z "$model_key" ] || [ "$model_key" = "none" ] || [ -n "${SEEN_MODEL_KEYS[$model_key]:-}" ]; then
+    continue
+  fi
+  SEEN_MODEL_KEYS[$model_key]=1
+  download_model_key "$model_key"
+done
 
 if [ -n "$S3_BUCKET_NAME" ]; then
   echo "[download-models] done (pre-staged: ${PRESTAGE_MODELS:-none}; S3 cache: s3://$S3_BUCKET_NAME, uploads finishing in background)"

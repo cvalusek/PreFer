@@ -1,12 +1,12 @@
-# PreFer on AWS EC2 — design draft
+# PreFer on AWS EC2 — design and operations
 
 Goal: make launching the PreFer container on EC2 with GPU support close to
 one click, and shareable with other accounts. IaC is **CDK**, but the
 distributed artifact is the **synthesized CloudFormation template**, so the
 public can deploy with no CDK/Node toolchain.
 
-This is a design draft, not implemented code. It captures the architecture and
-the rationale behind each choice so the actual scaffolding can follow.
+This documents the implemented AMI, boot, S3-cache, and CDK architecture plus
+the rationale behind the operational choices.
 
 ## TL;DR of the decisions
 
@@ -52,7 +52,7 @@ the rationale behind each choice so the actual scaffolding can follow.
   resident set reads a GGUF fresh from disk. From NVMe that's seconds. All
   swappable models must therefore be staged on NVMe.
 
-## Repo layout (additions)
+## Repo layout
 
 ```text
 aws/                          all EC2 deployment lives here (parallels docker/)
@@ -67,10 +67,13 @@ aws/                          all EC2 deployment lives here (parallels docker/)
     prefer-boot.env          tunables (container tag, S3 bucket, model set)
   cdk/                       thin wrapper: instance + IAM + IMDS + S3/endpoint wiring
 docker/prefer/
-  download-models.sh         GAINS the S3 sync-down/up block (gated on S3_BUCKET_NAME)
+  preset-catalog.json        model/artifact/revision source of truth
+  preset-scenarios/aws.json  AWS deployment shapes
+  generate-presets.py        emits presets, prestage sidecars, downloader cases
+  download-models.sh         S3 sync + preset-aware catalog downloads
 .github/workflows/
-  build-prefer.yml           (existing) container image -> GHCR  [docker/prefer/** only]
-  build-aws.yml              NEW: ami job (Packer, path-gated) -> cdk job (synth + release) [aws/**]
+  build-prefer.yml           container image -> GHCR  [docker/prefer/** only]
+  build-aws.yml              ami job (Packer, path-gated) -> cdk job (synth + release) [aws/**]
 ```
 
 The synthesized CloudFormation template is not committed — `build-aws.yml`'s
@@ -153,9 +156,10 @@ exactly as today — HF only.
 
 ## IaC layer (CDK, distributed as CloudFormation)
 
-Inputs (CFN parameters): instance type, S3 bucket name, key pair, allowed
-ingress CIDR, and an *optional* AMI id override (blank uses the baked-in
-RegionMap). Outputs the instance + IAM profile + S3 gateway endpoint.
+Inputs (CFN parameters): instance type, generated model preset path, optional
+prestage override, key pair, allowed ingress CIDR, and an *optional* AMI id
+override (blank uses the baked-in RegionMap). Outputs the instance + IAM
+profile + S3 gateway endpoint.
 
 **Distribution**: CDK is the authoring tool, but the *public artifact* is the
 **synthesized CloudFormation template** (`cdk synth`), published to the
@@ -170,10 +174,13 @@ Because we stop/start one long-lived instance rather than churning instances,
 the stack primarily **provisions once** (instance + profile + endpoint). It can
 also emit a launch template for anyone who *does* want to relaunch fresh.
 
-**Per-deployment config** (the bucket name, any preset overrides) is *not* baked
+**Per-deployment config** (the bucket name, selected preset, and any prestage override) is *not* baked
 into the AMI. The AMI ships `/opt/prefer/prefer-boot.env` with defaults; the IaC
 injects deployment values via **user-data on first boot**, e.g.
-`echo "S3_BUCKET_NAME=my-prefer-models" >> /opt/prefer/prefer-boot.env`. These
+`echo "S3_BUCKET_NAME=my-prefer-models" >> /opt/prefer/prefer-boot.env`. The
+same user-data writes `LLAMA_ARG_MODELS_PRESET`; an empty `PRESTAGE_MODELS`
+lets the selected preset's sibling `.prestage` manifest choose exact catalog
+artifacts. These
 are write-once values, so user-data's run-once nature is fine — the systemd unit
 re-reads the file (`EnvironmentFile=`) on every subsequent start.
 
