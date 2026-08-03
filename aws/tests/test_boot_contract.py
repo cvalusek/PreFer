@@ -15,6 +15,8 @@ class AwsBootContractTest(unittest.TestCase):
 
         self.assertRegex(service, r"(?m)^After=.*\bcloud-final\.service\b")
         self.assertRegex(service, r"(?m)^Requires=.*\bcloud-final\.service\b")
+        self.assertRegex(service, r"(?m)^WantedBy=cloud-init\.target$")
+        self.assertNotRegex(service, r"(?m)^WantedBy=multi-user\.target$")
 
         defaults = "EnvironmentFile=/opt/prefer/prefer-boot.env"
         deployment = "EnvironmentFile=-/opt/prefer/deployment.env"

@@ -135,9 +135,10 @@ export class PreferStack extends cdk.Stack {
     );
 
     // ---- User data: write the deployment config exactly once ----
-    // prefer-boot.service orders itself after cloud-final.service, then reads
-    // this file after the baked defaults. Do not start/restart the unit here:
-    // doing so races the AMI's multi-user target and can launch two presets.
+    // prefer-boot.service is enabled under cloud-init.target, orders itself
+    // after cloud-final.service, then reads this file after the baked defaults.
+    // Do not start/restart the unit here: doing so can race the boot-owned unit
+    // and launch two presets.
     const userData = ec2.UserData.forLinux();
     userData.addCommands(
       'set -euo pipefail',

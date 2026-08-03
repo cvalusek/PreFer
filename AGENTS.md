@@ -474,7 +474,10 @@ The AMI boot contract deliberately separates immutable defaults from
 deployment values. `/opt/prefer/prefer-boot.env` is baked and must not be
 mutated by user-data; cloud-init writes `/opt/prefer/deployment.env` instead.
 `prefer-boot.service` is ordered after `cloud-final.service`, reads the
-deployment file second, and launches the container once. User-data must never
+deployment file second, and is enabled under `cloud-init.target` rather than
+`multi-user.target`: the DLAMI orders `cloud-final` after `multi-user`, so the
+latter would form a dependency cycle and systemd would drop the PreFer start
+job. The unit launches the container once. User-data must never
 start or restart `prefer-boot.service`: doing so reintroduces the first-boot
 default-preset race. Normal shell user-data may write the deployment file and
 exit; the service owns startup afterward.

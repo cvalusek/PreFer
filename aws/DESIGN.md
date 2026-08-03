@@ -111,7 +111,14 @@ account).
 ## Boot sequence (systemd, every start)
 
 Host side — `prefer-boot.service` (`After=cloud-final.service` and
-`docker.service`, `WantedBy=multi-user.target`):
+`docker.service`, `WantedBy=cloud-init.target`):
+
+`cloud-final.service` itself is ordered after `multi-user.target` on the DLAMI.
+Enabling PreFer under `multi-user.target` would therefore create the cycle
+`multi-user → prefer-boot → cloud-final → multi-user`; systemd breaks that
+cycle by dropping the PreFer start job. Enabling it under `cloud-init.target`
+keeps cloud-init as the boot owner and starts PreFer after the final stage
+without a user-data `systemctl start` race.
 
 0. **Resolve deployment configuration**: first-boot cloud-init writes
    `/opt/prefer/deployment.env` and exits. The unit reads immutable
