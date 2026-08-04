@@ -6,8 +6,8 @@ services:
       context: ../docker/prefer
       dockerfile: Dockerfile
       args:
-        LLAMA_CPP_BASE_IMAGE: ${PREFER_BENCH_BASE_IMAGE:-ghcr.io/ggml-org/llama.cpp:server-cuda-b10236@sha256:fd68d13013141833e8214ecad6e1fbefb532db6a00b980cdecfe33603dbf2675}
-    image: ${PREFER_BENCH_IMAGE:-prefer-bench:b10236}
+        LLAMA_CPP_BASE_IMAGE: ${PREFER_BENCH_BASE_IMAGE:-ghcr.io/ggml-org/llama.cpp:server-cuda-b10257@sha256:37dd122824e58af9ec861955242abdeeade5a1dcf0ad768bf2b37f903c2805c6}
+    image: ${PREFER_BENCH_IMAGE:-prefer-bench:b10257}
     ports:
       - "127.0.0.1:${PREFER_BENCH_PORT:?PREFER_BENCH_PORT must be a free non-8080 port}:8080"
     volumes:

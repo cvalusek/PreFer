@@ -92,7 +92,7 @@
     "request_size": "PreFer configures no stable byte limit. The harness caps generated payloads for safety and records backend rejection if tested.",
     "context_limit": "Context limits are preset/model dimensions. Unsupported or unrun 8K/32K/128K cells are explicit skipped or unsupported results."
   },
-  "model_identity_rule": "canonical_id is the configured cross-system/preset identity. discovery_id is the normalized /v1/models and request identity measured on b9843 and expected on b10236; listed aliases are configured request routes. When canonical_id and discovery_id differ, canonical_id is not promised as a PreFer request route until measured on that runtime.",
+  "model_identity_rule": "canonical_id is the configured cross-system/preset identity. discovery_id is the normalized /v1/models and request identity measured on b9843 and expected on b10257; listed aliases are configured request routes. When canonical_id and discovery_id differ, canonical_id is not promised as a PreFer request route until measured on that runtime.",
   "models": [
     {
       "canonical_id": "unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL",

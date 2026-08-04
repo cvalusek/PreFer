@@ -116,9 +116,9 @@ harness does not guess it.
 
 ## Isolated current-backend baseline
 
-The default baseline builds the production-pinned b10236 Dockerfile, never
+The default baseline builds the production-pinned b10257 Dockerfile, never
 downloads models, and copies only selected files from an existing Docker cache
-into a generated run volume. Current b10236 includes the upstream E4B Pascal
+into a generated run volume. Current b10257 includes the upstream E4B Pascal
 MTP fix, so use the normal preset for a new run:
 
 ```bash
@@ -283,7 +283,7 @@ immutable manifest before building and distinguishes
 source `99f3dc32296f825fec94f202da1e9fede1e78cf9` and linux/amd64 GHCR manifest
 `sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76`.
 It contains upstream E4B MTP fix #25148. The lane is opt-in; both Dockerfiles
-now default to b10236:
+now default to b10257:
 
 ```bash
 python -m prefer_bench local --lane b9982 --cache-source-volume prefer-model-cache --models gemma-4-e2b --preset 12gb.ini --models-max 1 --contexts 8k

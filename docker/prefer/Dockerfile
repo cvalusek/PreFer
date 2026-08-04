@@ -1,6 +1,7 @@
-# b10236 includes DeepSeek V4 MTP/DSpark support from PR #25784. Pin the
-# published multi-platform manifest, not the moving server-cuda tag.
-ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b10236@sha256:fd68d13013141833e8214ecad6e1fbefb532db6a00b980cdecfe33603dbf2675
+# b10257 includes DeepSeek V4 MTP/DSpark support from PR #25784 and dynamic
+# split-graph input allocation from PR #22789. Pin the published multi-platform
+# manifest, not the moving server-cuda tag.
+ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b10257@sha256:37dd122824e58af9ec861955242abdeeade5a1dcf0ad768bf2b37f903c2805c6
 FROM ${LLAMA_CPP_BASE_IMAGE}
 
 # huggingface-cli is deprecated; the `hf` command (from huggingface_hub) replaces it.

@@ -98,9 +98,9 @@ live model:
 python -m prefer_bench contract --mock
 ```
 
-Run the current b10236 lane against only the already-cached Gemma E2B/E4B
+Run the current b10257 lane against only the already-cached Gemma E2B/E4B
 files. The Pascal preset remains available to reproduce the old b9843
-workaround, but current b10236 includes its upstream fix:
+workaround, but current b10257 includes its upstream fix:
 
 ```bash
 python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb.ini --models-max 1 --contexts 8k,32k

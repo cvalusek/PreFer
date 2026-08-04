@@ -7,9 +7,10 @@ via `llama-server`'s router mode (the repository's narrow tested OpenAI-style
 contract on port 8080; see [`benchmark/README.md`](../../benchmark/README.md)).
 
 Base image: pinned to
-`ghcr.io/ggml-org/llama.cpp:server-cuda-b10236@sha256:fd68d13013141833e8214ecad6e1fbefb532db6a00b980cdecfe33603dbf2675`
-(source `1464c62d88f699ec9700c8010bbfdbc603a9efd6`). It includes DeepSeek V4
-MTP/DSpark PR #25784 and the Gemma E4B MTP fix. See AGENTS.md "Base image".
+`ghcr.io/ggml-org/llama.cpp:server-cuda-b10257@sha256:37dd122824e58af9ec861955242abdeeade5a1dcf0ad768bf2b37f903c2805c6`
+(source `22dc605c4ead20e36f447cc67b55ef87e523bd55`). It includes DeepSeek V4
+MTP/DSpark PR #25784, dynamic split-graph input allocation from PR #22789,
+and the Gemma E4B MTP fix. See AGENTS.md "Base image".
 
 ## Presets
 
@@ -67,9 +68,9 @@ E4B's main GGUF uses a supported GQA ratio of 4, but its MTP draft uses
 FlashAttention tile kernel, which aborts for that exact draft shape. E2B's MTP
 draft is ratio 4 and remains healthy.
 
-Current b10236 contains the fix. Keep
+Current b10257 contains the fix. Keep
 `LLAMA_ARG_MODELS_PRESET=/presets/12gb-pascal.ini` only as a rollback or old
-result reproduction lane until a b10236 Pascal smoke is recorded. The preset
+result reproduction lane until a b10257 Pascal smoke is recorded. The preset
 preserves q4_0 K/V cache, FlashAttention, model
 identity, aliases, context, and every non-E4B setting; it removes only E4B's
 `model-draft` and `spec-*` keys. The cost is lower E4B throughput from losing
@@ -116,7 +117,7 @@ value still overrides when it is nonblank). Sizes assume 96 GB/card (RTX PRO
 | `glm-5.2.ini` | GLM-5.2 full `UD-Q4_K_XL` (11 shards) | ~467 GB | 6× 96 GB | `glm-5.2` |
 | `glm-5.2-reap.ini` | GLM-5.2 REAP-504B `Q4_K_XL` (8 shards) | ~308 GB | 4× 96 GB | `glm-5.2-reap` |
 
-All run on the `b10236` base image. The generated 0731+DSpark and GLM 5.2
+All run on the `b10257` base image. The generated 0731+DSpark and GLM 5.2
 routes are **untested on their target hardware**; the Preview-era DeepSeek
 route has earlier load/context measurements. See AGENTS.md for the per-preset
 risk notes (context sizing, `flash-attn`, DeepSeek sampling, GPU split).
@@ -185,7 +186,7 @@ The bracketed preset section is the configured cross-system/model identity. On
 measured b9843, `/v1/models` normalized Unsloth quantization tags (for example the E2B
 configured ID ends in `:UD-Q4_K_XL`, while discovery reports `:Q4_K_XL`). The
 normalized discovery ID and short alias routed PreFer requests; b9843 rejected
-the configured UD identity as a request model. b10236 is current, but its exact
+the configured UD identity as a request model. b10257 is current, but its exact
 identity behavior remains a live verification item. These roles are versioned
 separately in the client contract, and aliases are not promised as
 `/v1/models` entries.

@@ -29,7 +29,7 @@ downloaded from Hugging Face on first start.
   The v1 client contract distinguishes these configured section identities
   from normalized `/v1/models`/request IDs. On measured b9843, for example,
   E2B was configured as `:UD-Q4_K_XL` but advertised and accepted as
-  `:Q4_K_XL` (plus `gemma-4-e2b`). b10236 is now the production pin; keep the
+  `:Q4_K_XL` (plus `gemma-4-e2b`). b10257 is now the production pin; keep the
   distinction until its exact discovery behavior is measured. Do not infer
   request compatibility from the preset header alone.
 - **Shared defaults use `[*]`**, not per-section duplication. A per-section
@@ -80,17 +80,19 @@ not something to infer from upstream defaults.
 ## Base image
 
 Pinned to
-`ghcr.io/ggml-org/llama.cpp:server-cuda-b10236@sha256:fd68d13013141833e8214ecad6e1fbefb532db6a00b980cdecfe33603dbf2675`
-(source `1464c62d88f699ec9700c8010bbfdbc603a9efd6`). The digest is the official
+`ghcr.io/ggml-org/llama.cpp:server-cuda-b10257@sha256:37dd122824e58af9ec861955242abdeeade5a1dcf0ad768bf2b37f903c2805c6`
+(source `22dc605c4ead20e36f447cc67b55ef87e523bd55`). The digest is the official
 multi-platform manifest containing linux/amd64 and linux/arm64. Keep
 `Dockerfile.netskope` in lockstep. Policy remains "track latest," but a bump
 must resolve and pin the published manifest rather than use the moving
 `server-cuda` tag.
 
-b10236 includes GLM MoE DSA, DeepSeek V4 base support, the Gemma E4B MTP
+b10257 includes GLM MoE DSA, DeepSeek V4 base support, the Gemma E4B MTP
 FlashAttention fix from PR #25148, and DeepSeek V4 MTP/DSpark support from
-PR #25784. The historical b9843 and b9982 lanes remain in benchmark data for
-reproducing old Pascal results; `current` now means b10236.
+PR #25784. It also includes PR #22789's dynamic split-graph input allocation,
+which removes the fixed scheduler-input cap hit by DeepSeek V4 across two GPUs.
+The historical b9843 and b9982 lanes remain in benchmark data for reproducing
+old Pascal results; `current` now means b10257.
 
 ## Generated AWS deployment presets
 
@@ -202,7 +204,7 @@ one-model-per-host boxes.
 | Preset | GGUF | On-disk | Fits | Notes |
 | ------ | ---- | ------- | ---- | ----- |
 | `deepseek-v4-flash` | [antirez/deepseek-v4-gguf](https://huggingface.co/antirez/deepseek-v4-gguf) `Q4KExperts...imatrix` | ~153 GB | 2× 96 GB | Preserved Preview-era target-only route. Q4 experts / F16 attn+indexer / Q8 shared+out; no draft is configured. |
-| `aws/g7e/12xlarge/deepseek-v4-flash-0731` | [unsloth/DeepSeek-V4-Flash-0731-GGUF](https://huggingface.co/unsloth/DeepSeek-V4-Flash-0731-GGUF) `UD-Q4_K_XL` + Q8_0 DSpark | ~166 GB | 2× 96 GB | Quality-credible 0731 successor; b10236 `draft-dspark`, max 5, f16 K/V, 256K initial context. |
+| `aws/g7e/12xlarge/deepseek-v4-flash-0731` | [unsloth/DeepSeek-V4-Flash-0731-GGUF](https://huggingface.co/unsloth/DeepSeek-V4-Flash-0731-GGUF) `UD-Q4_K_XL` + Q8_0 DSpark | ~166 GB | 2× 96 GB | Quality-credible 0731 successor; b10257 `draft-dspark`, max 5, f16 K/V, 256K initial context. |
 | `glm-5.2` | [unsloth/GLM-5.2-GGUF](https://huggingface.co/unsloth/GLM-5.2-GGUF) `UD-Q4_K_XL` | ~467 GB (11 shards) | 6× 96 GB (5× very tight) | Full, non-pruned GLM-5.2. Best quality, no REAP loop tax. |
 | `glm-5.2-reap` | [0xSero/GLM-5.2-REAP-504B-GGUF](https://huggingface.co/0xSero/GLM-5.2-REAP-504B-GGUF) `Q4_K_XL` | ~308 GB (8 shards) | 4× 96 GB | REAP 34%-expert-pruned. Fits in 4 cards, but per the card the loop rate roughly doubles (3.6%→7.2%) and the DSA indexer tensors are faked (duplicated from the nearest full layer) to load — no DSA speedup. Prefer `glm-5.2` if you have the 6th card. |
 
@@ -237,7 +239,7 @@ below:
   issues"), dropping temp toward 0.6 is the known lever.
 - The preserved Preview-era DeepSeek preset remains target-only. The generated
   0731 route is separate and uses the checkpoint's DSpark head with
-  `spec-type = draft-dspark`; do not relabel it as MTP. b10236 contains the
+  `spec-type = draft-dspark`; do not relabel it as MTP. b10257 contains the
   required PR #25784 support. Its Q8_0 companion adds about 10.9 GB, which is
   why the initial context is 256K rather than carrying the old target-only
   route's 384K allocation forward blindly.
@@ -254,7 +256,13 @@ below:
 
 ## Known upstream llama.cpp issues (not fixable via our config)
 
-- **#25148 (fixed in current b10236)** — Gemma E4B's MTP draft has 512-wide K/V
+- **#22789 (fixed in current b10257)** — DeepSeek V4 0731 plus DSpark could
+  exceed llama.cpp's fixed 30 split-graph input slots during multi-GPU graph
+  reservation and abort at `GGML_SCHED_MAX_SPLIT_INPUTS`. PR #22789 replaces
+  the fixed arrays with dynamic allocation. This is an upstream scheduler
+  defect: context, batching, tensor split, and GPU count are not reliable
+  configuration workarounds.
+- **#25148 (fixed in current b10257)** — Gemma E4B's MTP draft has 512-wide K/V
   heads and GQA ratio 2. On Pascal, b9843 selects the generic CUDA
   FlashAttention tile kernel, whose 512-wide specialization only compiled GQA
   ratios 4 and above; it aborts at `fattn-tile.cuh:1321`. E2B's draft is ratio
@@ -264,8 +272,8 @@ below:
   identity, and all other 12 GB settings but omits only E4B's `model-draft` /
   `spec-*` keys. Cost: E4B loses MTP speculative throughput on that preset.
   `12gb.ini`, `8gb.ini`, and `96gb.ini` retain E4B MTP unchanged. Current
-  b10236 contains the upstream fix, so the compatibility preset is now only a
-  rollback/reproduction lane pending a measured Pascal smoke on b10236.
+  b10257 contains the upstream fix, so the compatibility preset is now only a
+  rollback/reproduction lane pending a measured Pascal smoke on b10257.
 - **#22364** — router synthesizes a phantom `"default"` model entry in
   `/v1/models` regardless of whether `[*]`/`default-model` are used.
   Apparently cosmetic (`status: unloaded`), but if real models stop loading
@@ -498,7 +506,7 @@ Run the deterministic suite and mock replay:
 Live verification remains hardware-dependent. The isolated command creates a
 generated Compose project, loopback port other than 8080, network, and cloned
 model volume, then removes all of them while leaving operator `prefer` and
-NeurOn state alone. See `benchmark/README.md` for current b10236, the historical
+NeurOn state alone. See `benchmark/README.md` for current b10257, the historical
 Pascal compatibility preset, `models-max`, long-context, idle, and historical
 b9843/b9982 evidence.
 
