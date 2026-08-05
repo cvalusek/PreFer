@@ -213,12 +213,21 @@ shell env vars):
   retain their existing defaults. Use `none` for an intentional no-download
   run
 - `S3_BUCKET_NAME` - optional for the AWS launcher or a direct `docker run`.
-  When passed, `download-models.sh` syncs each model down from
-  `s3://<bucket>/<hf-repo>/` before hitting Hugging Face, then syncs new files
-  back up in the background. The checked-in local Compose service deliberately
-  does not pass this variable and remains Hugging Face-only. On EC2, supply the
-  bucket through an instance role rather than static keys (the container reads
-  IMDS; the instance needs IMDS hop limit 2).
+  When passed, `download-models.sh` stages only catalog-listed artifacts from
+  `s3://<bucket>/<hf-repo>/`. A fresh per-model completion marker skips the
+  Hugging Face verification pass; a missing, stale, or mismatched marker falls
+  back to `hf download` and repairs the cache. The checked-in local Compose
+  service deliberately does not pass this variable and remains Hugging
+  Face-only. On EC2, supply the bucket through an instance role rather than
+  static keys (the container reads IMDS; the instance needs IMDS hop limit 2).
+- `MODEL_CACHE_RECHECK_DAYS` - S3 marker lifetime (default `7`). When it
+  expires, staging re-runs `hf download` so moving model repos can refresh.
+  Set `0` to force a recheck on every launch, or delete
+  `s3://<bucket>/.prefer-cache/downloads-v1/<model-key>.complete` to refresh one
+  model on its next launch.
+- `MODEL_DOWNLOAD_JOBS` - maximum independent model keys staged concurrently
+  (default `4` with S3, `1` without S3). All foreground jobs join before
+  `llama-server` starts.
 - `LLAMA_ARG_MODELS_PRESET` / `LLAMA_ARG_MODELS_MAX` - optional, force a
   specific preset instead of auto-detection
 

@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -61,6 +62,31 @@ class GeneratedPresetTests(unittest.TestCase):
         self.assertIn('PRESTAGE_FILE="${PRESET_PATH%.ini}.prestage"', downloader)
         self.assertIn('[ "$model_key" = "none" ]', downloader)
         self.assertIn("\nPRESTAGE_MODELS=\n", f"\n{example_env}")
+
+    def test_generated_downloader_has_catalog_fingerprints_and_exact_artifacts(self) -> None:
+        catalog = json.loads((PREFER_ROOT / "preset-catalog.json").read_text(encoding="utf-8"))
+        generated = (PREFER_ROOT / "model-downloads.generated.sh").read_text(encoding="utf-8")
+        for key, model in catalog["models"].items():
+            payload = {
+                "schema_version": 1,
+                "key": key,
+                "downloads": model["downloads"],
+                "artifacts": model["artifacts"],
+            }
+            fingerprint = hashlib.sha256(
+                json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            ).hexdigest()
+            self.assertIn(fingerprint, generated, key)
+            for artifact in model["artifacts"]:
+                self.assertIn(f"{artifact['repo']}/{artifact['path']}", generated, key)
+
+    def test_s3_staging_uses_ttl_markers_bounded_jobs_and_cache_filters(self) -> None:
+        downloader = (PREFER_ROOT / "download-models.sh").read_text(encoding="utf-8")
+        self.assertIn('MODEL_CACHE_RECHECK_DAYS="${MODEL_CACHE_RECHECK_DAYS:-7}"', downloader)
+        self.assertIn('DEFAULT_MODEL_DOWNLOAD_JOBS=4', downloader)
+        self.assertIn('MODEL_CACHE_MARKER_DIR="$MODELS_DIR/.prefer-cache/downloads-v1"', downloader)
+        self.assertIn('s3_filters=(--exclude ".cache/*")', downloader)
+        self.assertIn('run_model_batch "${MODEL_BATCH[@]}"', downloader)
 
 
 if __name__ == "__main__":

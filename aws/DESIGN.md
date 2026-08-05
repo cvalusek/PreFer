@@ -17,10 +17,11 @@ the rationale behind the operational choices.
   lazy-load penalty.
 - Models live in a **regional S3 bucket** acting as the model cache. **All
   model-fetching stays inside the container's `download-models.sh`** (not the
-  host): **sync down from S3 → `hf download` for misses → sync up to S3**, gated
-  on a `S3_BUCKET_NAME` env var so local/RunPod behavior is unchanged when it's
-  unset. S3 has no single-volume throughput ceiling (unlike gp3's 1 GB/s cap),
-  so on a high-bandwidth GPU instance the pull is NIC-bound at multiple GB/s.
+  host): **parallel filtered sync from S3 → marker validation → `hf download`
+  for stale/missing data → sync up to S3**, gated on a `S3_BUCKET_NAME` env var
+  so local/RunPod behavior is unchanged when it's unset. S3 has no single-volume
+  throughput ceiling (unlike gp3's 1 GB/s cap), so on a high-bandwidth GPU
+  instance the pull is NIC-bound at multiple GB/s.
 - **Instance-store NVMe** is the runtime `/models` mount, repopulated on
   **every start** (NVMe is wiped on stop). This is what makes router model swaps
   (`models-max`) fast.
@@ -141,12 +142,16 @@ Container side — existing `entrypoint.sh` → `detect-preset.sh` →
 `download-models.sh`, with `download-models.sh` gaining an S3 block when
 `S3_BUCKET_NAME` is set:
 
-1. **Sync down** `s3://$BUCKET` → `/models` (parallel `s5cmd`, NIC-bound).
-2. **`hf download`** for any misses (existing logic, unchanged — no-ops on a
-   cache hit since the files are already present).
-3. **Sync up** `/models` → `s3://$BUCKET` **in the background** (`&`) so it warms
-   the cache for next boot without delaying `exec llama-server`. Usually a no-op
-   on cache hits; only does real work the first time a model is fetched from HF.
+1. Fetch each model key's small completion marker, then stage only the catalog's
+   include patterns from `s3://$BUCKET/<hf-repo>/` to `/models`. Independent
+   model keys run concurrently (four jobs by default) and join before startup.
+2. A marker whose catalog fingerprint, bucket, age, artifact list, and observed
+   byte sizes all match skips `hf download`. Missing/invalid markers fall back
+   to Hugging Face; markers expire after seven days by default so moving repos
+   are periodically checked again.
+3. Sync exact catalog artifacts back to S3 **in the background**, then publish
+   the completion marker last. Hugging Face `.cache`, locks, and xet data are
+   never uploaded and are removed locally after the foreground jobs join.
 
 When `S3_BUCKET_NAME` is unset (local / RunPod), `download-models.sh` behaves
 exactly as today — HF only.
@@ -168,6 +173,10 @@ exactly as today — HF only.
   `HttpPutResponseHopLimit: 2`.
 - Layout mirrors the container's `/models/<hf-org>/<hf-repo>/...` so objects map
   1:1 to on-disk paths and multiple presets share one bucket.
+- Completion markers live at
+  `.prefer-cache/downloads-v1/<model-key>.complete`. Set
+  `MODEL_CACHE_RECHECK_DAYS=0` for an every-launch recheck, or delete one marker
+  to force only that model key through Hugging Face on its next launch.
 - At rest ~$2.30/mo per 100GB (S3 Standard). Replicate cross-region with bucket
   replication if the shareable artifact needs to launch elsewhere.
 
@@ -273,9 +282,6 @@ gates correctness, so the two image-producing pipelines stay independent.
 
 ## Open questions before scaffolding
 
-- **First-model-priority populate**: worth the extra complexity, or is a flat
-  parallel `s5cmd` pull already fast enough on these NICs? (Likely flat is fine
-  for 100GB; revisit for the much-bigger model sets.)
 - **Bucket bootstrap**: warm the cache lazily on first boot (HF→S3 fallback
   path) vs a one-time explicit upload job. Lazy is simpler and self-healing.
 - **Region set** for AMI publication + whether S3 cross-region replication is

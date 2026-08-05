@@ -453,14 +453,29 @@ or tune DRY further before doing so.
 
 ## S3 model cache (`S3_BUCKET_NAME`)
 
-`download-models.sh` has an optional S3 layer gated on `S3_BUCKET_NAME`: per-repo
-sync **down** from `s3://$BUCKET/<hf-repo>/` before `hf download`, then a
-background sync **up** of new files. Unset (local / RunPod) = HF-only, unchanged.
-Sync is per-repo (not a blanket `/models` sync) on purpose: `HF_HOME=/models`
-holds cache cruft (xet, `.cache`) that shouldn't reach the bucket. Needs `s5cmd`
-(installed in the Dockerfile); creds come from the AWS chain (env / instance
-role). S3 was chosen over a persistent EBS volume because a single EBS volume
-caps at 1 GB/s while S3 via s5cmd is NIC-bound at multiple GB/s.
+`download-models.sh` has an optional S3 layer gated on `S3_BUCKET_NAME`.
+Independent catalog model keys stage concurrently (`MODEL_DOWNLOAD_JOBS`, four
+by default with S3) and all foreground jobs join before `llama-server` starts.
+Per-model completion markers under
+`s3://$BUCKET/.prefer-cache/downloads-v1/` carry the generated catalog
+fingerprint, bucket, last-check epoch, and observed exact-artifact sizes. A
+fresh marker skips Hugging Face's large-file verification after the filtered S3
+copy validates those sizes; missing, stale, mismatched, or incomplete markers
+fall back to `hf download` and self-repair. The default seven-day TTL is
+`MODEL_CACHE_RECHECK_DAYS=7`; zero forces every-launch revalidation, and deleting
+one marker forces just that model key. Catalog changes invalidate markers
+immediately through their fingerprint.
+
+S3 sync uses the catalog include patterns and excludes `.cache`; background
+upload sends exact catalog artifacts and publishes the marker last. Stale locks
+are removed before HF, then `/models/xet` and S3-mode per-repo `.cache`
+directories are removed after the foreground join. Old remote `.cache` objects
+are intentionally not deleted automatically, but filters make them inert.
+Unset `S3_BUCKET_NAME` (local / RunPod) remains HF-only and sequential by
+default. Needs `s5cmd` (installed in the Dockerfile); credentials come from the
+AWS chain (env / instance role). S3 was chosen over a persistent EBS volume
+because a single EBS volume caps at 1 GB/s while S3 via s5cmd is NIC-bound at
+multiple GB/s.
 
 ## EC2 deployment (`aws/`)
 

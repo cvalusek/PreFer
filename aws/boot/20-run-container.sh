@@ -24,7 +24,7 @@ docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
 # Pass through only env vars that are actually set, so unset ones fall back to
 # the container's own defaults (detect-preset, HF-only download, etc.).
 ENV_ARGS=()
-for v in S3_BUCKET_NAME HF_TOKEN PRESTAGE_MODELS LLAMA_ARG_MODELS_PRESET LLAMA_ARG_MODELS_MAX AWS_REGION; do
+for v in S3_BUCKET_NAME HF_TOKEN PRESTAGE_MODELS MODEL_CACHE_RECHECK_DAYS MODEL_DOWNLOAD_JOBS LLAMA_ARG_MODELS_PRESET LLAMA_ARG_MODELS_MAX AWS_REGION; do
   if [ -n "${!v:-}" ]; then
     ENV_ARGS+=(-e "$v=${!v}")
   fi

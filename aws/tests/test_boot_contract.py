@@ -28,6 +28,11 @@ class AwsBootContractTest(unittest.TestCase):
         defaults = self.read("aws/boot/prefer-boot.env")
         self.assertRegex(defaults, r"(?m)^LLAMA_ARG_MODELS_MAX=1$")
 
+    def test_baked_s3_staging_defaults_are_bounded_and_periodic(self) -> None:
+        defaults = self.read("aws/boot/prefer-boot.env")
+        self.assertRegex(defaults, r"(?m)^MODEL_CACHE_RECHECK_DAYS=7$")
+        self.assertRegex(defaults, r"(?m)^MODEL_DOWNLOAD_JOBS=4$")
+
     def test_cdk_writes_deployment_file_without_controlling_the_service(self) -> None:
         stack = self.read("aws/cdk/lib/prefer-stack.ts")
 
@@ -44,6 +49,8 @@ class AwsBootContractTest(unittest.TestCase):
         passthrough = re.search(r"for v in (?P<variables>[^;]+); do", runner)
         self.assertIsNotNone(passthrough)
         self.assertIn("LLAMA_ARG_MODELS_MAX", passthrough.group("variables"))
+        self.assertIn("MODEL_CACHE_RECHECK_DAYS", passthrough.group("variables"))
+        self.assertIn("MODEL_DOWNLOAD_JOBS", passthrough.group("variables"))
 
 
 if __name__ == "__main__":

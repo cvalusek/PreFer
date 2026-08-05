@@ -37,74 +37,277 @@ if [ -z "${PRESTAGE_MODELS:-}" ]; then
   fi
 fi
 
-# Optional S3 model cache. When S3_BUCKET_NAME is set (e.g. on EC2 with an
-# instance role granting access to the bucket), each model is synced down from
-# s3://$S3_BUCKET_NAME/<hf-repo>/ before hitting Hugging Face, and any newly
-# downloaded files are synced back up afterwards so the bucket warms itself.
-# Unset (local / RunPod) means HF-only — exactly the prior behavior.
-#
-# Sync is per-repo (inside download() below), not a blanket sync of /models,
-# because HF_HOME=/models also holds HF cache cruft (xet, .cache, locks) that
-# we don't want in the bucket. Per-repo dirs contain only the model files.
+# Optional S3 model cache. S3-backed staging uses catalog fingerprints as
+# completion markers, stages independent model keys concurrently, and excludes
+# Hugging Face cache bookkeeping from both directions. Unset (local / RunPod)
+# remains HF-only and sequential by default.
 S3_BUCKET_NAME="${S3_BUCKET_NAME:-}"
 if [ -n "$S3_BUCKET_NAME" ]; then
   echo "[download-models] S3 cache enabled: s3://$S3_BUCKET_NAME"
+  DEFAULT_MODEL_DOWNLOAD_JOBS=4
+else
+  DEFAULT_MODEL_DOWNLOAD_JOBS=1
 fi
 
+MODEL_CACHE_RECHECK_DAYS="${MODEL_CACHE_RECHECK_DAYS:-7}"
+MODEL_DOWNLOAD_JOBS="${MODEL_DOWNLOAD_JOBS:-$DEFAULT_MODEL_DOWNLOAD_JOBS}"
+MODEL_CACHE_MARKER_DIR="$MODELS_DIR/.prefer-cache/downloads-v1"
+
+if [[ ! "$MODEL_CACHE_RECHECK_DAYS" =~ ^[0-9]+$ ]]; then
+  echo "[download-models] MODEL_CACHE_RECHECK_DAYS must be a non-negative integer" >&2
+  exit 2
+fi
+if [[ ! "$MODEL_DOWNLOAD_JOBS" =~ ^[1-9][0-9]*$ ]]; then
+  echo "[download-models] MODEL_DOWNLOAD_JOBS must be a positive integer" >&2
+  exit 2
+fi
+
+MODEL_SKIP_HF=0
+MODEL_SKIP_S3=0
+
 # download <hf-repo> <revision-or-empty> [extra hf-download args...]
-# Always invokes `hf download` rather than checking for existing files first —
-# `hf download` already hashes/resumes incomplete or partial downloads itself,
-# which a simple "does a .gguf exist" presence check can't do safely. That
-# matters for large multi-shard repos (e.g. Kimi K2.7, GLM 5.2): a presence
-# check would see the first completed shard and wrongly skip re-running the
-# whole download, leaving the rest of the shards missing if a prior run died
-# partway through (a real, reported failure mode for downloads this size).
+# Unless a fresh completion marker is being validated, always invokes
+# `hf download` rather than using a simple presence check. hf already
+# hashes/resumes incomplete downloads; the marker path separately validates
+# every exact catalog artifact and observed size, including every model shard.
 download() {
   local repo="$1"
   local revision="$2"
   shift 2
   local dest="$MODELS_DIR/$repo"
+  local download_args=("$@")
   local revision_args=()
+  local s3_filters=(--exclude ".cache/*")
+  local index=0
   mkdir -p "$dest"
 
   if [ -n "$revision" ]; then
     revision_args=(--revision "$revision")
   fi
 
+  # Reuse the catalog's include list for S3 so broad repo prefixes do not pull
+  # unused quantizations or historical cache objects onto the NVMe volume.
+  while [ "$index" -lt "${#download_args[@]}" ]; do
+    if [ "${download_args[$index]}" = "--include" ] && [ $((index + 1)) -lt "${#download_args[@]}" ]; then
+      s3_filters+=(--include "${download_args[$((index + 1))]}")
+      index=$((index + 2))
+    else
+      index=$((index + 1))
+    fi
+  done
+
   # Cache sync-down: pull this repo's cached files first so `hf download` only
   # fetches what's missing. `|| true` because s5cmd errors when the prefix is
   # empty (first-ever boot, cold cache), which is not a failure here.
-  if [ -n "$S3_BUCKET_NAME" ]; then
+  if [ -n "$S3_BUCKET_NAME" ] && [ "$MODEL_SKIP_S3" != "1" ]; then
     echo "[download-models] $repo: sync down from s3://$S3_BUCKET_NAME/$repo"
-    s5cmd sync "s3://$S3_BUCKET_NAME/$repo/*" "$dest/" || true
+    s5cmd sync "${s3_filters[@]}" "s3://$S3_BUCKET_NAME/$repo/*" "$dest/" || true
+  fi
+
+  # Old buckets may contain Hugging Face lock files from the original broad
+  # sync. They are never useful on a new machine and can make hf wait forever.
+  find "$dest/.cache" -type f -name '*.lock' -delete 2>/dev/null || true
+
+  if [ "$MODEL_SKIP_HF" = "1" ]; then
+    echo "[download-models] $repo: fresh cache marker; skipping Hugging Face verification"
+    return
   fi
 
   echo "[download-models] $repo: syncing to $dest"
-  hf download "$repo" "${revision_args[@]}" --local-dir "$dest" "$@"
+  hf download "$repo" "${revision_args[@]}" --local-dir "$dest" "${download_args[@]}"
+}
 
-  # hf_xet keeps a chunk/shard cache (under $HF_HOME/xet) to speed up
-  # re-downloads and dedup across repos. On a space-constrained volume this
-  # competes with the models themselves for room, and we don't need fast
-  # re-downloads badly enough to keep it around — clear it after each model
-  # so disk usage doesn't accumulate across the whole download run.
-  if [ -d "$MODELS_DIR/xet" ]; then
-    rm -rf "$MODELS_DIR/xet"
+MARKER_REASON=""
+
+marker_metadata_is_fresh() {
+  local model_key="$1"
+  local marker="$2"
+  local schema=""
+  local bucket=""
+  local fingerprint=""
+  local checked_epoch=""
+  local expected_fingerprint=""
+  local now_epoch=""
+  local age_seconds=0
+  local max_age_seconds=0
+
+  if [ ! -s "$marker" ]; then
+    MARKER_REASON="missing"
+    return 1
+  fi
+  IFS=$'\t' read -r schema bucket fingerprint checked_epoch < "$marker" || true
+  expected_fingerprint="$(model_key_fingerprint "$model_key")"
+  if [ "$schema" != "v1" ]; then
+    MARKER_REASON="schema changed"
+    return 1
+  fi
+  if [ "$bucket" != "$S3_BUCKET_NAME" ]; then
+    MARKER_REASON="bucket changed"
+    return 1
+  fi
+  if [ "$fingerprint" != "$expected_fingerprint" ]; then
+    MARKER_REASON="catalog changed"
+    return 1
+  fi
+  if [[ ! "$checked_epoch" =~ ^[0-9]+$ ]]; then
+    MARKER_REASON="invalid timestamp"
+    return 1
+  fi
+  if [ "$MODEL_CACHE_RECHECK_DAYS" = "0" ]; then
+    MARKER_REASON="forced recheck"
+    return 1
   fi
 
-  # Cache sync-up: push newly downloaded files back to the bucket in the
-  # background (fire-and-forget) so warming the cache doesn't delay
-  # `exec llama-server`. On a cache hit there's nothing new to upload, so this
-  # is a fast no-op; on a miss it warms the bucket for the next boot. If it
-  # fails, the next boot just re-uploads — self-healing. Excludes hf's per-dir
-  # `.cache` bookkeeping so only model files land in S3.
-  if [ -n "$S3_BUCKET_NAME" ]; then
-    echo "[download-models] $repo: sync up to s3://$S3_BUCKET_NAME/$repo (background)"
-    nohup s5cmd sync --exclude ".cache/*" "$dest/" "s3://$S3_BUCKET_NAME/$repo/" \
-      >>/var/log/prefer-s3-sync.log 2>&1 &
+  now_epoch="$(date +%s)"
+  if [ "$now_epoch" -gt "$checked_epoch" ]; then
+    age_seconds=$((now_epoch - checked_epoch))
   fi
+  max_age_seconds=$((MODEL_CACHE_RECHECK_DAYS * 86400))
+  if [ "$age_seconds" -ge "$max_age_seconds" ]; then
+    MARKER_REASON="older than ${MODEL_CACHE_RECHECK_DAYS}d"
+    return 1
+  fi
+  MARKER_REASON="fresh"
+}
+
+marker_artifacts_match() {
+  local model_key="$1"
+  local marker="$2"
+  local line_number=0
+  local recorded_size=""
+  local artifact=""
+  local actual_size=""
+  declare -A recorded_sizes=()
+
+  while IFS=$'\t' read -r recorded_size artifact; do
+    line_number=$((line_number + 1))
+    if [ "$line_number" -eq 1 ]; then
+      continue
+    fi
+    if [[ ! "$recorded_size" =~ ^[0-9]+$ ]] || [ -z "$artifact" ]; then
+      MARKER_REASON="invalid artifact record"
+      return 1
+    fi
+    recorded_sizes["$artifact"]="$recorded_size"
+  done < "$marker"
+
+  while IFS= read -r artifact; do
+    recorded_size="${recorded_sizes[$artifact]:-}"
+    if [ -z "$recorded_size" ] || [ ! -f "$MODELS_DIR/$artifact" ]; then
+      MARKER_REASON="missing artifact: $artifact"
+      return 1
+    fi
+    actual_size="$(stat -c '%s' "$MODELS_DIR/$artifact")"
+    if [ "$actual_size" != "$recorded_size" ]; then
+      MARKER_REASON="size mismatch: $artifact"
+      return 1
+    fi
+  done < <(model_key_artifacts "$model_key")
+  MARKER_REASON="fresh and complete"
+}
+
+write_model_marker() {
+  local model_key="$1"
+  local marker="$MODEL_CACHE_MARKER_DIR/$model_key.complete"
+  local temp_marker=""
+  local artifact=""
+  local actual_size=""
+  local fingerprint=""
+
+  mkdir -p "$MODEL_CACHE_MARKER_DIR"
+  fingerprint="$(model_key_fingerprint "$model_key")"
+  temp_marker="$(mktemp "$MODEL_CACHE_MARKER_DIR/.$model_key.XXXXXX")"
+  printf 'v1\t%s\t%s\t%s\n' "$S3_BUCKET_NAME" "$fingerprint" "$(date +%s)" > "$temp_marker"
+  while IFS= read -r artifact; do
+    if [ ! -f "$MODELS_DIR/$artifact" ]; then
+      echo "[download-models] $model_key: required artifact missing after download: $artifact" >&2
+      rm -f "$temp_marker"
+      return 1
+    fi
+    actual_size="$(stat -c '%s' "$MODELS_DIR/$artifact")"
+    printf '%s\t%s\n' "$actual_size" "$artifact" >> "$temp_marker"
+  done < <(model_key_artifacts "$model_key")
+  mv -f "$temp_marker" "$marker"
+}
+
+fetch_s3_marker() {
+  local model_key="$1"
+  local marker="$MODEL_CACHE_MARKER_DIR/$model_key.complete"
+  local candidate=""
+
+  mkdir -p "$MODEL_CACHE_MARKER_DIR"
+  candidate="$(mktemp "$MODEL_CACHE_MARKER_DIR/.$model_key.s3.XXXXXX")"
+  if s5cmd cp "s3://$S3_BUCKET_NAME/.prefer-cache/downloads-v1/$model_key.complete" "$candidate" >/dev/null 2>&1; then
+    mv -f "$candidate" "$marker"
+    return 0
+  fi
+  rm -f "$candidate"
+  return 1
+}
+
+start_model_upload() {
+  local model_key="$1"
+  local marker="$MODEL_CACHE_MARKER_DIR/$model_key.complete"
+  local artifacts=()
+  mapfile -t artifacts < <(model_key_artifacts "$model_key")
+
+  echo "[download-models] $model_key: syncing catalog artifacts and marker to S3 (background)"
+  nohup bash -c '
+    set -euo pipefail
+    marker="$1"
+    bucket="$2"
+    model_key="$3"
+    shift 3
+    for artifact in "$@"; do
+      s5cmd sync "/models/$artifact" "s3://$bucket/${artifact%/*}/"
+    done
+    s5cmd cp "$marker" "s3://$bucket/.prefer-cache/downloads-v1/$model_key.complete"
+  ' _ "$marker" "$S3_BUCKET_NAME" "$model_key" "${artifacts[@]}" \
+    >>/var/log/prefer-s3-sync.log 2>&1 &
+}
+
+stage_model_key() {
+  local model_key="$1"
+  local marker="$MODEL_CACHE_MARKER_DIR/$model_key.complete"
+
+  if [ -z "$S3_BUCKET_NAME" ]; then
+    download_model_key "$model_key"
+    return
+  fi
+
+  # Persistent volumes can use the local marker without touching S3 at all.
+  if marker_metadata_is_fresh "$model_key" "$marker" && marker_artifacts_match "$model_key" "$marker"; then
+    echo "[download-models] $model_key: local cache marker hit; skipping rescan"
+    return
+  fi
+
+  # Fresh EC2 NVMe has no local marker. Fetch the tiny S3 marker first, then
+  # trust only catalog artifact sizes after the filtered S3 copies finish.
+  fetch_s3_marker "$model_key" || true
+  if marker_metadata_is_fresh "$model_key" "$marker"; then
+    MODEL_SKIP_HF=1
+    MODEL_SKIP_S3=0
+    download_model_key "$model_key"
+    if marker_artifacts_match "$model_key" "$marker"; then
+      echo "[download-models] $model_key: S3 cache marker hit; skipped Hugging Face rescan"
+      return
+    fi
+    echo "[download-models] $model_key: marker validation failed ($MARKER_REASON); repairing via Hugging Face"
+    MODEL_SKIP_HF=0
+    MODEL_SKIP_S3=1
+  else
+    echo "[download-models] $model_key: refreshing cache marker ($MARKER_REASON)"
+    MODEL_SKIP_HF=0
+    MODEL_SKIP_S3=0
+  fi
+
+  download_model_key "$model_key"
+  write_model_marker "$model_key"
+  start_model_upload "$model_key"
 }
 
 declare -A SEEN_MODEL_KEYS=()
+MODEL_KEYS=()
 IFS=',' read -ra REQUESTED_MODEL_KEYS <<< "$PRESTAGE_MODELS"
 for model_key in "${REQUESTED_MODEL_KEYS[@]}"; do
   model_key="${model_key//[[:space:]]/}"
@@ -112,11 +315,56 @@ for model_key in "${REQUESTED_MODEL_KEYS[@]}"; do
     continue
   fi
   SEEN_MODEL_KEYS[$model_key]=1
-  download_model_key "$model_key"
+  MODEL_KEYS+=("$model_key")
 done
 
+run_model_batch() {
+  local model_key=""
+  local index=0
+  local failed=0
+  local pids=()
+  local keys=()
+
+  for model_key in "$@"; do
+    echo "[download-models] $model_key: staging started"
+    (stage_model_key "$model_key") &
+    pids+=("$!")
+    keys+=("$model_key")
+  done
+  while [ "$index" -lt "${#pids[@]}" ]; do
+    if ! wait "${pids[$index]}"; then
+      echo "[download-models] ${keys[$index]}: staging failed" >&2
+      failed=1
+    fi
+    index=$((index + 1))
+  done
+  return "$failed"
+}
+
+MODEL_BATCH=()
+for model_key in "${MODEL_KEYS[@]}"; do
+  MODEL_BATCH+=("$model_key")
+  if [ "${#MODEL_BATCH[@]}" -ge "$MODEL_DOWNLOAD_JOBS" ]; then
+    run_model_batch "${MODEL_BATCH[@]}"
+    MODEL_BATCH=()
+  fi
+done
+if [ "${#MODEL_BATCH[@]}" -gt 0 ]; then
+  run_model_batch "${MODEL_BATCH[@]}"
+fi
+
+# hf_xet's shared chunk cache cannot be removed while parallel downloads are
+# active. Clear it once all foreground staging jobs have joined. S3 mode also
+# removes per-repo HF metadata; cache markers replace it between AWS boots.
+if [ -d "$MODELS_DIR/xet" ]; then
+  rm -rf "$MODELS_DIR/xet"
+fi
 if [ -n "$S3_BUCKET_NAME" ]; then
-  echo "[download-models] done (pre-staged: ${PRESTAGE_MODELS:-none}; S3 cache: s3://$S3_BUCKET_NAME, uploads finishing in background)"
+  find "$MODELS_DIR" -type d -name .cache -prune -exec rm -rf '{}' '+'
+fi
+
+if [ -n "$S3_BUCKET_NAME" ]; then
+  echo "[download-models] done (pre-staged: ${PRESTAGE_MODELS:-none}; jobs: $MODEL_DOWNLOAD_JOBS; marker recheck: ${MODEL_CACHE_RECHECK_DAYS}d; S3 uploads finishing in background)"
 else
   echo "[download-models] done (pre-staged: ${PRESTAGE_MODELS:-none})"
 fi

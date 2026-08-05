@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import hashlib
 import json
 import re
 import shlex
@@ -51,6 +52,8 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
         raise CatalogError("catalog models must be a non-empty object")
 
     for key, model in models.items():
+        if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", key):
+            raise CatalogError(f"unsafe model key: {key!r}")
         if not model.get("section"):
             raise CatalogError(f"{key}: section is required")
         settings = model.get("settings", {})
@@ -83,6 +86,9 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
         for artifact in artifacts:
             if not artifact.get("repo") or not artifact.get("path") or not artifact.get("role"):
                 raise CatalogError(f"{key}: artifact repo, path, and role are required")
+            relative_path = PurePosixPath(artifact["repo"]) / PurePosixPath(artifact["path"])
+            if relative_path.is_absolute() or ".." in relative_path.parts:
+                raise CatalogError(f"{key}: unsafe artifact path: {relative_path}")
             matching_downloads = [
                 download
                 for download in downloads
@@ -99,6 +105,23 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
                     raise CatalogError(f"{key}: pinned artifact needs a positive byte size: {artifact['path']}")
                 if not re.fullmatch(r"[0-9a-fA-F]{64}", str(artifact.get("sha256", ""))):
                     raise CatalogError(f"{key}: pinned artifact needs a SHA-256 digest: {artifact['path']}")
+
+        artifact_paths = {(artifact["repo"], artifact["path"]) for artifact in artifacts}
+        for artifact in artifacts:
+            shard = re.fullmatch(r"(?P<prefix>.+)-00001-of-(?P<count>[0-9]{5})\.gguf", artifact["path"])
+            if not shard:
+                continue
+            shard_count = int(shard.group("count"))
+            expected = {
+                (
+                    artifact["repo"],
+                    f"{shard.group('prefix')}-{index:05d}-of-{shard_count:05d}.gguf",
+                )
+                for index in range(1, shard_count + 1)
+            }
+            missing = sorted(path for path in expected if path not in artifact_paths)
+            if missing:
+                raise CatalogError(f"{key}: sharded model artifact list is incomplete: {missing[0][1]}")
 
     legacy = catalog.get("legacy_default_prestage", [])
     unknown = sorted(set(legacy) - set(models))
@@ -155,6 +178,17 @@ def validate_output_path(value: str) -> Path:
     return ROOT / "presets" / Path(*posix.parts)
 
 
+def model_download_fingerprint(key: str, model: dict[str, Any]) -> str:
+    payload = {
+        "schema_version": 1,
+        "key": key,
+        "downloads": model["downloads"],
+        "artifacts": model["artifacts"],
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def render_downloads(catalog: dict[str, Any]) -> str:
     lines = [
         "#!/bin/bash",
@@ -162,9 +196,50 @@ def render_downloads(catalog: dict[str, Any]) -> str:
         f"GENERATED_MODEL_KEYS={shlex.quote(','.join(catalog['models']))}",
         f"LEGACY_SMALL_MODELS={shlex.quote(','.join(catalog['legacy_default_prestage']))}",
         "",
-        "download_model_key() {",
+        "model_key_fingerprint() {",
         "  case \"$1\" in",
     ]
+    for key, model in catalog["models"].items():
+        fingerprint = model_download_fingerprint(key, model)
+        lines.extend(
+            [
+                f"    {shlex.quote(key)})",
+                f"      printf '%s\\n' {shlex.quote(fingerprint)}",
+                "      ;;",
+            ]
+        )
+    lines.extend(
+        [
+            "    *)",
+            "      echo \"[download-models] unknown model key: $1\" >&2",
+            "      return 2",
+            "      ;;",
+            "  esac",
+            "}",
+            "",
+            "model_key_artifacts() {",
+            "  case \"$1\" in",
+        ]
+    )
+    for key, model in catalog["models"].items():
+        lines.append(f"    {shlex.quote(key)})")
+        for artifact in model["artifacts"]:
+            relative_path = f"{artifact['repo']}/{artifact['path']}"
+            lines.append(f"      printf '%s\\n' {shlex.quote(relative_path)}")
+        lines.append("      ;;")
+    lines.extend(
+        [
+            "    *)",
+            "      echo \"[download-models] unknown model key: $1\" >&2",
+            "      return 2",
+            "      ;;",
+            "  esac",
+            "}",
+            "",
+            "download_model_key() {",
+            "  case \"$1\" in",
+        ]
+    )
     for key, model in catalog["models"].items():
         lines.append(f"    {shlex.quote(key)})")
         for download in model["downloads"]:

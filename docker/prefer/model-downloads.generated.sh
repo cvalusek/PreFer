@@ -3,16 +3,151 @@
 GENERATED_MODEL_KEYS=gemma-4-26b-a4b,gemma-4-e2b,gemma-4-e4b,gemma-4-12b,gemma-4-31b,qwen-3.5-9b,qwen-3.6-35b-a3b,qwen-3.6-27b,glm-4.7-flash,deepseek-v4-flash,deepseek-v4-flash-0731,glm-5.2,glm-5.2-reap,smol
 LEGACY_SMALL_MODELS=gemma-4-26b-a4b,gemma-4-e2b,gemma-4-e4b,qwen-3.6-35b-a3b,qwen-3.6-27b,glm-4.7-flash
 
+model_key_fingerprint() {
+  case "$1" in
+    gemma-4-26b-a4b)
+      printf '%s\n' 2def8e2819f818dd2f63e0343e5040146a65c672483177a40122e8a0f7e4b2bf
+      ;;
+    gemma-4-e2b)
+      printf '%s\n' c53273b607b1bebcf5527b10e694b590a3f52b7b54f3dd917e3f94e0e2d1254f
+      ;;
+    gemma-4-e4b)
+      printf '%s\n' b9758b8b8dfb9bf7dc62555abacf9a2444a2c2a1c215828fc6bb6104de9f2e85
+      ;;
+    gemma-4-12b)
+      printf '%s\n' 60fa9b4137d028b0e824697e3ca724492307a80c7b191b687ab51eca72729b56
+      ;;
+    gemma-4-31b)
+      printf '%s\n' 6ba538f39b09d5048123c7cf2d06717cfafdad74c19cd9f52cf78c36bad81e71
+      ;;
+    qwen-3.5-9b)
+      printf '%s\n' 85d1ce4eec814b1d211fd1e580945faa1a44365b1e38d36ded6a89a9c9bc41dd
+      ;;
+    qwen-3.6-35b-a3b)
+      printf '%s\n' 220a53029da9bdb364aa09b04649484bc13c9e3eb7ed6e0bfc023c527673bd53
+      ;;
+    qwen-3.6-27b)
+      printf '%s\n' 1514df7c1af4d10b15c0c6cf61d0e2c58e975032523af4a3476b3664d0074fd3
+      ;;
+    glm-4.7-flash)
+      printf '%s\n' c8e2db8d593fbe6228799cff2d52d476c1f3303e43a557f5de1fa8bdd0610b3e
+      ;;
+    deepseek-v4-flash)
+      printf '%s\n' e9db7f2356e4e4b16a414ed2d528b0b9b8732ecdbd8788af361fc98b973f4aba
+      ;;
+    deepseek-v4-flash-0731)
+      printf '%s\n' b5a28890c23ff40fd3d48c7eaedb86e1a9dd3fefa16e244573f6e4b68407825b
+      ;;
+    glm-5.2)
+      printf '%s\n' ba6b4d5d8b0fec075e5cb86086318c19c5f153a920fcc617c9b0b86ae9843e88
+      ;;
+    glm-5.2-reap)
+      printf '%s\n' a256996375a232966ebabbbee1c5c835ec7261e3e1e0bf41bcf4ab9c4ce607dc
+      ;;
+    smol)
+      printf '%s\n' ae59c9b29bfd1119440ca63fd0debd2d345e8454df12d19bd8ce68b323b41323
+      ;;
+    *)
+      echo "[download-models] unknown model key: $1" >&2
+      return 2
+      ;;
+  esac
+}
+
+model_key_artifacts() {
+  case "$1" in
+    gemma-4-26b-a4b)
+      printf '%s\n' unsloth/gemma-4-26B-A4B-it-qat-GGUF/gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf
+      printf '%s\n' unsloth/gemma-4-26B-A4B-it-qat-GGUF/mtp-gemma-4-26B-A4B-it.gguf
+      printf '%s\n' unsloth/gemma-4-26B-A4B-it-qat-GGUF/mmproj-F16.gguf
+      ;;
+    gemma-4-e2b)
+      printf '%s\n' unsloth/gemma-4-E2B-it-qat-GGUF/gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf
+      printf '%s\n' unsloth/gemma-4-E2B-it-qat-GGUF/mtp-gemma-4-E2B-it.gguf
+      printf '%s\n' unsloth/gemma-4-E2B-it-qat-GGUF/mmproj-F16.gguf
+      ;;
+    gemma-4-e4b)
+      printf '%s\n' unsloth/gemma-4-E4B-it-qat-GGUF/gemma-4-E4B-it-qat-UD-Q4_K_XL.gguf
+      printf '%s\n' unsloth/gemma-4-E4B-it-qat-GGUF/mtp-gemma-4-E4B-it.gguf
+      printf '%s\n' unsloth/gemma-4-E4B-it-qat-GGUF/mmproj-F16.gguf
+      ;;
+    gemma-4-12b)
+      printf '%s\n' unsloth/gemma-4-12B-it-qat-GGUF/gemma-4-12B-it-qat-UD-Q4_K_XL.gguf
+      printf '%s\n' unsloth/gemma-4-12B-it-qat-GGUF/MTP/mtp-gemma-4-12B-it-Q4_0.gguf
+      printf '%s\n' unsloth/gemma-4-12B-it-qat-GGUF/mmproj-F16.gguf
+      ;;
+    gemma-4-31b)
+      printf '%s\n' unsloth/gemma-4-31B-it-qat-GGUF/gemma-4-31B-it-qat-UD-Q4_K_XL.gguf
+      printf '%s\n' unsloth/gemma-4-31B-it-qat-GGUF/MTP/mtp-gemma-4-31B-it-Q4_0.gguf
+      printf '%s\n' unsloth/gemma-4-31B-it-qat-GGUF/mmproj-F16.gguf
+      ;;
+    qwen-3.5-9b)
+      printf '%s\n' unsloth/Qwen3.5-9B-GGUF/Qwen3.5-9B-UD-Q4_K_XL.gguf
+      printf '%s\n' unsloth/Qwen3.5-9B-GGUF/mmproj-F16.gguf
+      ;;
+    qwen-3.6-35b-a3b)
+      printf '%s\n' unsloth/Qwen3.6-35B-A3B-MTP-GGUF/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf
+      ;;
+    qwen-3.6-27b)
+      printf '%s\n' unsloth/Qwen3.6-27B-MTP-GGUF/Qwen3.6-27B-UD-Q6_K_XL.gguf
+      ;;
+    glm-4.7-flash)
+      printf '%s\n' unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF/GLM-4.7-Flash-REAP-23B-A3B-UD-Q6_K_XL.gguf
+      ;;
+    deepseek-v4-flash)
+      printf '%s\n' antirez/deepseek-v4-gguf/DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf
+      ;;
+    deepseek-v4-flash-0731)
+      printf '%s\n' unsloth/DeepSeek-V4-Flash-0731-GGUF/UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00001-of-00005.gguf
+      printf '%s\n' unsloth/DeepSeek-V4-Flash-0731-GGUF/UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00002-of-00005.gguf
+      printf '%s\n' unsloth/DeepSeek-V4-Flash-0731-GGUF/UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00003-of-00005.gguf
+      printf '%s\n' unsloth/DeepSeek-V4-Flash-0731-GGUF/UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00004-of-00005.gguf
+      printf '%s\n' unsloth/DeepSeek-V4-Flash-0731-GGUF/UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00005-of-00005.gguf
+      printf '%s\n' unsloth/DeepSeek-V4-Flash-0731-GGUF/dspark/dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf
+      ;;
+    glm-5.2)
+      printf '%s\n' unsloth/GLM-5.2-GGUF/UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00001-of-00011.gguf
+      printf '%s\n' unsloth/GLM-5.2-GGUF/UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00002-of-00011.gguf
+      printf '%s\n' unsloth/GLM-5.2-GGUF/UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00003-of-00011.gguf
+      printf '%s\n' unsloth/GLM-5.2-GGUF/UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00004-of-00011.gguf
+      printf '%s\n' unsloth/GLM-5.2-GGUF/UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00005-of-00011.gguf
+      printf '%s\n' unsloth/GLM-5.2-GGUF/UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00006-of-00011.gguf
+      printf '%s\n' unsloth/GLM-5.2-GGUF/UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00007-of-00011.gguf
+      printf '%s\n' unsloth/GLM-5.2-GGUF/UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00008-of-00011.gguf
+      printf '%s\n' unsloth/GLM-5.2-GGUF/UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00009-of-00011.gguf
+      printf '%s\n' unsloth/GLM-5.2-GGUF/UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00010-of-00011.gguf
+      printf '%s\n' unsloth/GLM-5.2-GGUF/UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00011-of-00011.gguf
+      ;;
+    glm-5.2-reap)
+      printf '%s\n' 0xSero/GLM-5.2-REAP-504B-GGUF/GLM-5.2-REAP-504B-Q4_K_XL-00001-of-00008.gguf
+      printf '%s\n' 0xSero/GLM-5.2-REAP-504B-GGUF/GLM-5.2-REAP-504B-Q4_K_XL-00002-of-00008.gguf
+      printf '%s\n' 0xSero/GLM-5.2-REAP-504B-GGUF/GLM-5.2-REAP-504B-Q4_K_XL-00003-of-00008.gguf
+      printf '%s\n' 0xSero/GLM-5.2-REAP-504B-GGUF/GLM-5.2-REAP-504B-Q4_K_XL-00004-of-00008.gguf
+      printf '%s\n' 0xSero/GLM-5.2-REAP-504B-GGUF/GLM-5.2-REAP-504B-Q4_K_XL-00005-of-00008.gguf
+      printf '%s\n' 0xSero/GLM-5.2-REAP-504B-GGUF/GLM-5.2-REAP-504B-Q4_K_XL-00006-of-00008.gguf
+      printf '%s\n' 0xSero/GLM-5.2-REAP-504B-GGUF/GLM-5.2-REAP-504B-Q4_K_XL-00007-of-00008.gguf
+      printf '%s\n' 0xSero/GLM-5.2-REAP-504B-GGUF/GLM-5.2-REAP-504B-Q4_K_XL-00008-of-00008.gguf
+      ;;
+    smol)
+      printf '%s\n' unsloth/SmolLM2-135M-Instruct-GGUF/SmolLM2-135M-Instruct-Q8_0.gguf
+      ;;
+    *)
+      echo "[download-models] unknown model key: $1" >&2
+      return 2
+      ;;
+  esac
+}
+
 download_model_key() {
   case "$1" in
     gemma-4-26b-a4b)
-      download unsloth/gemma-4-26B-A4B-it-qat-GGUF '' --include '*UD-Q4_K_XL*' --include '*mtp-gemma*' --include mmproj-F16.gguf
+      download unsloth/gemma-4-26B-A4B-it-qat-GGUF '' --include '*UD-Q4_K_XL*' --include mtp-gemma-4-26B-A4B-it.gguf --include mmproj-F16.gguf
       ;;
     gemma-4-e2b)
-      download unsloth/gemma-4-E2B-it-qat-GGUF '' --include '*UD-Q4_K_XL*' --include '*mtp-gemma*' --include mmproj-F16.gguf
+      download unsloth/gemma-4-E2B-it-qat-GGUF '' --include '*UD-Q4_K_XL*' --include mtp-gemma-4-E2B-it.gguf --include mmproj-F16.gguf
       ;;
     gemma-4-e4b)
-      download unsloth/gemma-4-E4B-it-qat-GGUF '' --include '*UD-Q4_K_XL*' --include '*mtp-gemma*' --include mmproj-F16.gguf
+      download unsloth/gemma-4-E4B-it-qat-GGUF '' --include '*UD-Q4_K_XL*' --include mtp-gemma-4-E4B-it.gguf --include mmproj-F16.gguf
       ;;
     gemma-4-12b)
       download unsloth/gemma-4-12B-it-qat-GGUF 980b060c40a8539ac159e0501a3e0f66a6365af3 --include gemma-4-12B-it-qat-UD-Q4_K_XL.gguf --include MTP/mtp-gemma-4-12B-it-Q4_0.gguf --include mmproj-F16.gguf

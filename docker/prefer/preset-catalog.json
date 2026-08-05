@@ -30,7 +30,7 @@
         {
           "repo": "unsloth/gemma-4-26B-A4B-it-qat-GGUF",
           "revision": null,
-          "include": ["*UD-Q4_K_XL*", "*mtp-gemma*", "mmproj-F16.gguf"]
+          "include": ["*UD-Q4_K_XL*", "mtp-gemma-4-26B-A4B-it.gguf", "mmproj-F16.gguf"]
         }
       ],
       "artifacts": [
@@ -55,7 +55,7 @@
         {
           "repo": "unsloth/gemma-4-E2B-it-qat-GGUF",
           "revision": null,
-          "include": ["*UD-Q4_K_XL*", "*mtp-gemma*", "mmproj-F16.gguf"]
+          "include": ["*UD-Q4_K_XL*", "mtp-gemma-4-E2B-it.gguf", "mmproj-F16.gguf"]
         }
       ],
       "artifacts": [
@@ -80,7 +80,7 @@
         {
           "repo": "unsloth/gemma-4-E4B-it-qat-GGUF",
           "revision": null,
-          "include": ["*UD-Q4_K_XL*", "*mtp-gemma*", "mmproj-F16.gguf"]
+          "include": ["*UD-Q4_K_XL*", "mtp-gemma-4-E4B-it.gguf", "mmproj-F16.gguf"]
         }
       ],
       "artifacts": [
@@ -261,7 +261,17 @@
         {"repo": "unsloth/GLM-5.2-GGUF", "revision": null, "include": ["UD-Q4_K_XL/*"]}
       ],
       "artifacts": [
-        {"role": "model", "repo": "unsloth/GLM-5.2-GGUF", "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00001-of-00011.gguf"}
+        {"role": "model", "repo": "unsloth/GLM-5.2-GGUF", "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00001-of-00011.gguf"},
+        {"role": "model-shard", "repo": "unsloth/GLM-5.2-GGUF", "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00002-of-00011.gguf"},
+        {"role": "model-shard", "repo": "unsloth/GLM-5.2-GGUF", "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00003-of-00011.gguf"},
+        {"role": "model-shard", "repo": "unsloth/GLM-5.2-GGUF", "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00004-of-00011.gguf"},
+        {"role": "model-shard", "repo": "unsloth/GLM-5.2-GGUF", "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00005-of-00011.gguf"},
+        {"role": "model-shard", "repo": "unsloth/GLM-5.2-GGUF", "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00006-of-00011.gguf"},
+        {"role": "model-shard", "repo": "unsloth/GLM-5.2-GGUF", "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00007-of-00011.gguf"},
+        {"role": "model-shard", "repo": "unsloth/GLM-5.2-GGUF", "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00008-of-00011.gguf"},
+        {"role": "model-shard", "repo": "unsloth/GLM-5.2-GGUF", "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00009-of-00011.gguf"},
+        {"role": "model-shard", "repo": "unsloth/GLM-5.2-GGUF", "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00010-of-00011.gguf"},
+        {"role": "model-shard", "repo": "unsloth/GLM-5.2-GGUF", "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00011-of-00011.gguf"}
       ]
     },
     "glm-5.2-reap": {
@@ -274,7 +284,14 @@
         {"repo": "0xSero/GLM-5.2-REAP-504B-GGUF", "revision": null, "include": ["*Q4_K_XL*"]}
       ],
       "artifacts": [
-        {"role": "model", "repo": "0xSero/GLM-5.2-REAP-504B-GGUF", "path": "GLM-5.2-REAP-504B-Q4_K_XL-00001-of-00008.gguf"}
+        {"role": "model", "repo": "0xSero/GLM-5.2-REAP-504B-GGUF", "path": "GLM-5.2-REAP-504B-Q4_K_XL-00001-of-00008.gguf"},
+        {"role": "model-shard", "repo": "0xSero/GLM-5.2-REAP-504B-GGUF", "path": "GLM-5.2-REAP-504B-Q4_K_XL-00002-of-00008.gguf"},
+        {"role": "model-shard", "repo": "0xSero/GLM-5.2-REAP-504B-GGUF", "path": "GLM-5.2-REAP-504B-Q4_K_XL-00003-of-00008.gguf"},
+        {"role": "model-shard", "repo": "0xSero/GLM-5.2-REAP-504B-GGUF", "path": "GLM-5.2-REAP-504B-Q4_K_XL-00004-of-00008.gguf"},
+        {"role": "model-shard", "repo": "0xSero/GLM-5.2-REAP-504B-GGUF", "path": "GLM-5.2-REAP-504B-Q4_K_XL-00005-of-00008.gguf"},
+        {"role": "model-shard", "repo": "0xSero/GLM-5.2-REAP-504B-GGUF", "path": "GLM-5.2-REAP-504B-Q4_K_XL-00006-of-00008.gguf"},
+        {"role": "model-shard", "repo": "0xSero/GLM-5.2-REAP-504B-GGUF", "path": "GLM-5.2-REAP-504B-Q4_K_XL-00007-of-00008.gguf"},
+        {"role": "model-shard", "repo": "0xSero/GLM-5.2-REAP-504B-GGUF", "path": "GLM-5.2-REAP-504B-Q4_K_XL-00008-of-00008.gguf"}
       ]
     },
     "smol": {
