@@ -64,6 +64,7 @@ fi
 
 MODEL_SKIP_HF=0
 MODEL_SKIP_S3=0
+MODEL_ACTIVE_KEY=""
 
 # download <hf-repo> <revision-or-empty> [extra hf-download args...]
 # Unless a fresh completion marker is being validated, always invokes
@@ -77,24 +78,30 @@ download() {
   local dest="$MODELS_DIR/$repo"
   local download_args=("$@")
   local revision_args=()
-  local s3_filters=(--exclude ".cache/*")
-  local index=0
+  local s3_filters=(--exclude ".cache/*" --exclude "*/.cache/*")
+  local artifact=""
+  local artifact_count=0
   mkdir -p "$dest"
 
   if [ -n "$revision" ]; then
     revision_args=(--revision "$revision")
   fi
 
-  # Reuse the catalog's include list for S3 so broad repo prefixes do not pull
-  # unused quantizations or historical cache objects onto the NVMe volume.
-  while [ "$index" -lt "${#download_args[@]}" ]; do
-    if [ "${download_args[$index]}" = "--include" ] && [ $((index + 1)) -lt "${#download_args[@]}" ]; then
-      s3_filters+=(--include "${download_args[$((index + 1))]}")
-      index=$((index + 2))
-    else
-      index=$((index + 1))
+  # S3 uses the exact generated artifact manifest rather than HF's sometimes
+  # broad include globs. This prevents old .cache metadata and other
+  # quantizations from matching filenames that happen to contain the target.
+  if [ -n "$S3_BUCKET_NAME" ]; then
+    while IFS= read -r artifact; do
+      if [[ "$artifact" == "$repo/"* ]]; then
+        s3_filters+=(--include "${artifact#"$repo/"}")
+        artifact_count=$((artifact_count + 1))
+      fi
+    done < <(model_key_artifacts "$MODEL_ACTIVE_KEY")
+    if [ "$artifact_count" -eq 0 ]; then
+      echo "[download-models] $MODEL_ACTIVE_KEY: no catalog artifacts found for $repo" >&2
+      return 2
     fi
-  done
+  fi
 
   # Cache sync-down: pull this repo's cached files first so `hf download` only
   # fetches what's missing. `|| true` because s5cmd errors when the prefix is
@@ -269,6 +276,7 @@ start_model_upload() {
 stage_model_key() {
   local model_key="$1"
   local marker="$MODEL_CACHE_MARKER_DIR/$model_key.complete"
+  MODEL_ACTIVE_KEY="$model_key"
 
   if [ -z "$S3_BUCKET_NAME" ]; then
     download_model_key "$model_key"

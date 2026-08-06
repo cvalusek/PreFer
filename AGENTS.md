@@ -130,8 +130,11 @@ dense-attention estimate. The 24 GB route is still a first-boot peak-VRAM gate,
 including the MTP assistant, projector, compute buffers, and allocator slack.
 
 Gemma 12B/31B use Unsloth's QAT-derived UD-Q4_K_XL targets, same-repository
-Q4_0 MTP assistants, and F16 projectors. Qwen3.5-9B uses UD-Q4_K_XL and its
-F16 projector. DeepSeek 0731 uses the five-shard UD-Q4_K_XL target plus the
+Q4_0 MTP assistants, and F16 projectors. Qwen3.5-9B uses the non-MTP
+UD-Q4_K_XL target plus its F16 projector, preserving the g6 route's two-way
+parallelism and vision support. Do not set `draft-mtp` on that GGUF: b10257
+rejects it because it contains no MTP layers. DeepSeek 0731 uses the five-shard
+UD-Q4_K_XL target plus the
 co-located Q8_0 DSpark companion; `spec-type` is `draft-dspark` and
 `spec-draft-n-max=5`. IQ1/IQ2 are intentionally absent.
 
@@ -405,6 +408,13 @@ or tune DRY further before doing so.
   `Qwen3.6-35B-A3B-MTP-GGUF`; the current presets/downloads use
   `Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf`. The MTP layer is embedded in this file
   (no separate `model-draft`).
+- Unsloth publishes separate `Qwen3.5-9B-GGUF` and `Qwen3.5-9B-MTP-GGUF`
+  repositories. The MTP repository's documented llama.cpp path does not yet
+  support `--parallel > 1` or `--mmproj`, so the AWS g6 route deliberately uses
+  the non-MTP repository without speculative settings to retain two-way
+  concurrency and vision. The prior combination of non-MTP GGUF plus
+  `draft-mtp` was measured on b10257 to abort with
+  `context type MTP requested but model doesn't contain MTP layers`.
 - Gemma's MTP draft (`mtp-gemma-4-26B-A4B-it.gguf`) downloads flat into the
   repo's root directory, not under an `MTP/` subfolder.
 - Gemma vision is enabled through `mmproj-F16.gguf` for all hosted Gemma

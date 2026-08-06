@@ -75,6 +75,15 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
         if "model" not in roles:
             raise CatalogError(f"{key}: a model artifact is required")
 
+        spec_type = settings.get("spec-type")
+        embedded_mtp = model.get("embedded_mtp", False)
+        if embedded_mtp and spec_type != "draft-mtp":
+            raise CatalogError(f"{key}: embedded_mtp requires spec-type draft-mtp")
+        if spec_type == "draft-mtp" and not settings.get("model-draft") and not embedded_mtp:
+            raise CatalogError(f"{key}: draft-mtp requires model-draft or embedded_mtp")
+        if embedded_mtp and settings.get("model-draft"):
+            raise CatalogError(f"{key}: embedded_mtp cannot also use model-draft")
+
         for setting, role in (("model", "model"), ("model-draft", "draft"), ("mmproj", "projector")):
             configured = settings.get(setting)
             if not configured:

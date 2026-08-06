@@ -55,6 +55,23 @@ class GeneratedPresetTests(unittest.TestCase):
         self.assertNotIn("IQ1", preset)
         self.assertNotIn("IQ2", preset)
 
+    def test_qwen_35_keeps_parallel_vision_without_mtp(self) -> None:
+        preset_path = PREFER_ROOT / "presets" / "aws" / "g6" / "xlarge" / "general.ini"
+        models = {model["canonical_id"]: model for model in parse_preset(preset_path)}
+        qwen = models["unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL"]
+        self.assertIsNone(qwen["spec_type"])
+        self.assertIsNone(qwen["spec_draft_n_max"])
+        preset = preset_path.read_text(encoding="utf-8")
+        self.assertIn("mmproj = /models/unsloth/Qwen3.5-9B-GGUF/mmproj-F16.gguf", preset)
+        self.assertNotIn("unsloth/Qwen3.5-9B-MTP-GGUF", preset)
+
+    def test_draft_mtp_models_declare_their_draft_source(self) -> None:
+        catalog = json.loads((PREFER_ROOT / "preset-catalog.json").read_text(encoding="utf-8"))
+        for key, model in catalog["models"].items():
+            settings = model["settings"]
+            if settings.get("spec-type") == "draft-mtp":
+                self.assertTrue(settings.get("model-draft") or model.get("embedded_mtp"), key)
+
     def test_blank_prestage_uses_selected_preset_sidecar(self) -> None:
         downloader = (PREFER_ROOT / "download-models.sh").read_text(encoding="utf-8")
         example_env = (REPO_ROOT / ".env.example").read_text(encoding="utf-8")
@@ -85,7 +102,8 @@ class GeneratedPresetTests(unittest.TestCase):
         self.assertIn('MODEL_CACHE_RECHECK_DAYS="${MODEL_CACHE_RECHECK_DAYS:-7}"', downloader)
         self.assertIn('DEFAULT_MODEL_DOWNLOAD_JOBS=4', downloader)
         self.assertIn('MODEL_CACHE_MARKER_DIR="$MODELS_DIR/.prefer-cache/downloads-v1"', downloader)
-        self.assertIn('s3_filters=(--exclude ".cache/*")', downloader)
+        self.assertIn('s3_filters=(--exclude ".cache/*" --exclude "*/.cache/*")', downloader)
+        self.assertIn('model_key_artifacts "$MODEL_ACTIVE_KEY"', downloader)
         self.assertIn('run_model_batch "${MODEL_BATCH[@]}"', downloader)
 
 
