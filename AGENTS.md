@@ -476,11 +476,12 @@ fall back to `hf download` and self-repair. The default seven-day TTL is
 one marker forces just that model key. Catalog changes invalidate markers
 immediately through their fingerprint.
 
-S3 sync uses the catalog include patterns and excludes `.cache`; background
-upload sends exact catalog artifacts and publishes the marker last. Stale locks
-are removed before HF, then `/models/xet` and S3-mode per-repo `.cache`
+S3 download copies each exact catalog artifact key directly rather than using
+include/exclude filters; background upload sends those same exact artifacts and
+publishes the marker last. Stale locks are removed before HF, then `/models/xet`
+and S3-mode per-repo `.cache`
 directories are removed after the foreground join. Old remote `.cache` objects
-are intentionally not deleted automatically, but filters make them inert.
+are intentionally not deleted automatically, but exact copies make them inert.
 Unset `S3_BUCKET_NAME` (local / RunPod) remains HF-only and sequential by
 default. Needs `s5cmd` (installed in the Dockerfile); credentials come from the
 AWS chain (env / instance role). S3 was chosen over a persistent EBS volume

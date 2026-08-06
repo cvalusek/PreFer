@@ -97,13 +97,14 @@ class GeneratedPresetTests(unittest.TestCase):
             for artifact in model["artifacts"]:
                 self.assertIn(f"{artifact['repo']}/{artifact['path']}", generated, key)
 
-    def test_s3_staging_uses_ttl_markers_bounded_jobs_and_cache_filters(self) -> None:
+    def test_s3_staging_uses_ttl_markers_bounded_jobs_and_exact_artifacts(self) -> None:
         downloader = (PREFER_ROOT / "download-models.sh").read_text(encoding="utf-8")
         self.assertIn('MODEL_CACHE_RECHECK_DAYS="${MODEL_CACHE_RECHECK_DAYS:-7}"', downloader)
         self.assertIn('DEFAULT_MODEL_DOWNLOAD_JOBS=4', downloader)
         self.assertIn('MODEL_CACHE_MARKER_DIR="$MODELS_DIR/.prefer-cache/downloads-v1"', downloader)
-        self.assertIn('s3_filters=(--exclude ".cache/*" --exclude "*/.cache/*")', downloader)
         self.assertIn('model_key_artifacts "$MODEL_ACTIVE_KEY"', downloader)
+        self.assertIn('s5cmd cp "s3://$S3_BUCKET_NAME/$artifact" "$MODELS_DIR/$artifact"', downloader)
+        self.assertNotIn('s5cmd sync "${s3_filters[@]}"', downloader)
         self.assertIn('run_model_batch "${MODEL_BATCH[@]}"', downloader)
 
 

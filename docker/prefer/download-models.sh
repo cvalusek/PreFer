@@ -78,26 +78,25 @@ download() {
   local dest="$MODELS_DIR/$repo"
   local download_args=("$@")
   local revision_args=()
-  local s3_filters=(--exclude ".cache/*" --exclude "*/.cache/*")
   local artifact=""
-  local artifact_count=0
+  local repo_artifacts=()
   mkdir -p "$dest"
 
   if [ -n "$revision" ]; then
     revision_args=(--revision "$revision")
   fi
 
-  # S3 uses the exact generated artifact manifest rather than HF's sometimes
-  # broad include globs. This prevents old .cache metadata and other
-  # quantizations from matching filenames that happen to contain the target.
+  # S3 uses the exact generated artifact manifest rather than filters over HF's
+  # sometimes broad include globs. Besides preventing old .cache metadata and
+  # other quantizations from matching, exact object copies avoid s5cmd's filter
+  # semantics varying from aws-cli's ordered include/exclude behavior.
   if [ -n "$S3_BUCKET_NAME" ]; then
     while IFS= read -r artifact; do
       if [[ "$artifact" == "$repo/"* ]]; then
-        s3_filters+=(--include "${artifact#"$repo/"}")
-        artifact_count=$((artifact_count + 1))
+        repo_artifacts+=("$artifact")
       fi
     done < <(model_key_artifacts "$MODEL_ACTIVE_KEY")
-    if [ "$artifact_count" -eq 0 ]; then
+    if [ "${#repo_artifacts[@]}" -eq 0 ]; then
       echo "[download-models] $MODEL_ACTIVE_KEY: no catalog artifacts found for $repo" >&2
       return 2
     fi
@@ -108,7 +107,10 @@ download() {
   # empty (first-ever boot, cold cache), which is not a failure here.
   if [ -n "$S3_BUCKET_NAME" ] && [ "$MODEL_SKIP_S3" != "1" ]; then
     echo "[download-models] $repo: sync down from s3://$S3_BUCKET_NAME/$repo"
-    s5cmd sync "${s3_filters[@]}" "s3://$S3_BUCKET_NAME/$repo/*" "$dest/" || true
+    for artifact in "${repo_artifacts[@]}"; do
+      mkdir -p "$(dirname "$MODELS_DIR/$artifact")"
+      s5cmd cp "s3://$S3_BUCKET_NAME/$artifact" "$MODELS_DIR/$artifact" || true
+    done
   fi
 
   # Old buckets may contain Hugging Face lock files from the original broad
