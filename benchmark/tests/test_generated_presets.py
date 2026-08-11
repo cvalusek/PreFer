@@ -13,6 +13,25 @@ PREFER_ROOT = REPO_ROOT / "docker" / "prefer"
 SCENARIOS_PATH = PREFER_ROOT / "preset-scenarios" / "aws.json"
 
 
+def effective_preset_settings(path: Path) -> dict[str, dict[str, str]]:
+    sections: dict[str, dict[str, str]] = {}
+    current: str | None = None
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("[") and line.endswith("]"):
+            current = line[1:-1]
+            sections[current] = {}
+            continue
+        if current is not None and "=" in line:
+            key, value = line.split("=", 1)
+            sections[current][key.strip()] = value.strip()
+
+    defaults = sections.pop("*", {})
+    return {section: {**defaults, **settings} for section, settings in sections.items()}
+
+
 class GeneratedPresetTests(unittest.TestCase):
     def test_generated_outputs_are_current(self) -> None:
         completed = subprocess.run(
@@ -55,6 +74,38 @@ class GeneratedPresetTests(unittest.TestCase):
         self.assertNotIn("IQ1", preset)
         self.assertNotIn("IQ2", preset)
 
+    def test_muse_presets_use_pinned_quality_lanes_with_dflash(self) -> None:
+        cases = [
+            ("aws/g6/xlarge/muse.ini", "muse-glimmer-30b-q4", "UD-Q4_K_XL", 131072, 1),
+            ("aws/g6e/xlarge/muse.ini", "muse-glimmer-30b-q6", "UD-Q6_K_XL", 262144, 2),
+            ("aws/g7e/2xlarge/muse.ini", "muse-glimmer-30b-q6", "UD-Q6_K_XL", 1048576, 4),
+        ]
+        for preset_name, prestage_key, quant, ctx_size, parallel in cases:
+            preset_path = PREFER_ROOT / "presets" / preset_name
+            sections = effective_preset_settings(preset_path)
+            self.assertEqual(len(sections), 1, preset_name)
+            settings = next(iter(sections.values()))
+            self.assertIn(quant, settings["model"], preset_name)
+            self.assertTrue(settings["model-draft"].endswith("/dflash-kquant.gguf"), preset_name)
+            self.assertTrue(settings["mmproj"].endswith("/mmproj-kquant.gguf"), preset_name)
+            self.assertEqual(settings["spec-type"], "draft-dflash", preset_name)
+            self.assertEqual(settings["spec-draft-n-max"], "15", preset_name)
+            self.assertEqual(settings["cache-type-k"], "f16", preset_name)
+            self.assertEqual(settings["cache-type-v"], "f16", preset_name)
+            self.assertEqual(settings["ctx-size"], str(ctx_size), preset_name)
+            self.assertEqual(settings["parallel"], str(parallel), preset_name)
+            self.assertEqual(settings["load-on-startup"], "true", preset_name)
+            self.assertEqual(preset_path.with_suffix(".prestage").read_text(encoding="utf-8").strip(), prestage_key)
+
+        catalog = json.loads((PREFER_ROOT / "preset-catalog.json").read_text(encoding="utf-8"))
+        for key in ("muse-glimmer-30b-q4", "muse-glimmer-30b-q6"):
+            model = catalog["models"][key]
+            self.assertEqual(model["lineage"]["revision"], "90625aaf7c8d5338df3779e3f2ef1b8c9e669252")
+            self.assertEqual(model["downloads"][0]["revision"], "faa5b025c584459c13febfa5c59883516710ae39")
+            self.assertEqual(model["runtime_requirement"]["llama_cpp_merge"], "62bf73d25c53b8161f8a22894d4f90c4aebbd7d0")
+            self.assertEqual(model["settings"]["top-k"], 64)
+            self.assertEqual(model["settings"]["min-p"], 0.0)
+
     def test_qwen_35_keeps_parallel_vision_without_mtp(self) -> None:
         preset_path = PREFER_ROOT / "presets" / "aws" / "g6" / "xlarge" / "general.ini"
         models = {model["canonical_id"]: model for model in parse_preset(preset_path)}
@@ -65,12 +116,51 @@ class GeneratedPresetTests(unittest.TestCase):
         self.assertIn("mmproj = /models/unsloth/Qwen3.5-9B-GGUF/mmproj-F16.gguf", preset)
         self.assertNotIn("unsloth/Qwen3.5-9B-MTP-GGUF", preset)
 
+    def test_single_model_aws_presets_match_their_bundle_routes(self) -> None:
+        cases = [
+            ("aws/g6/xlarge/general.ini", "aws/g6/xlarge/gemma-e2b.ini", "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL"),
+            ("aws/g6/xlarge/general.ini", "aws/g6/xlarge/gemma-e4b.ini", "unsloth/gemma-4-E4B-it-qat-GGUF:UD-Q4_K_XL"),
+            ("aws/g6/xlarge/general.ini", "aws/g6/xlarge/gemma-12b.ini", "unsloth/gemma-4-12B-it-qat-GGUF:UD-Q4_K_XL"),
+            ("aws/g6/xlarge/general.ini", "aws/g6/xlarge/qwen-9b.ini", "unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL"),
+            ("aws/g6e/xlarge/gemma.ini", "aws/g6e/xlarge/gemma-26b-a4b.ini", "unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL"),
+            ("aws/g6e/xlarge/gemma.ini", "aws/g6e/xlarge/gemma-31b.ini", "unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL"),
+            ("aws/g7e/2xlarge/qwen.ini", "aws/g7e/2xlarge/qwen-35b-a3b.ini", "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL"),
+            ("aws/g7e/2xlarge/qwen.ini", "aws/g7e/2xlarge/qwen-27b.ini", "unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q6_K_XL"),
+            ("aws/g7e/2xlarge/general.ini", "aws/g7e/2xlarge/glm-4.7-flash.ini", "unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF:UD-Q6_K_XL"),
+        ]
+        for bundle_name, single_name, section in cases:
+            bundle = effective_preset_settings(PREFER_ROOT / "presets" / bundle_name)
+            single_path = PREFER_ROOT / "presets" / single_name
+            single = effective_preset_settings(single_path)
+            self.assertEqual(list(single), [section], single_name)
+            self.assertEqual(single[section].pop("load-on-startup"), "true", single_name)
+            self.assertEqual(single[section], bundle[section], single_name)
+            self.assertNotIn("[*]", single_path.read_text(encoding="utf-8"), single_name)
+            self.assertNotIn(",", single_path.with_suffix(".prestage").read_text(encoding="utf-8"), single_name)
+
+    def test_removed_qwen_yarn_route_is_absent_from_active_presets(self) -> None:
+        source = json.loads(SCENARIOS_PATH.read_text(encoding="utf-8"))
+        for scenario in source["scenarios"]:
+            preset = (PREFER_ROOT / "presets" / scenario["path"]).read_text(encoding="utf-8")
+            self.assertNotIn("qwen-3.6-35b-a3b-1m", preset, scenario["path"])
+            self.assertNotIn("yarn-orig-ctx", preset, scenario["path"])
+
     def test_draft_mtp_models_declare_their_draft_source(self) -> None:
         catalog = json.loads((PREFER_ROOT / "preset-catalog.json").read_text(encoding="utf-8"))
         for key, model in catalog["models"].items():
             settings = model["settings"]
             if settings.get("spec-type") == "draft-mtp":
                 self.assertTrue(settings.get("model-draft") or model.get("embedded_mtp"), key)
+
+    def test_external_draft_models_have_exact_catalog_artifacts(self) -> None:
+        catalog = json.loads((PREFER_ROOT / "preset-catalog.json").read_text(encoding="utf-8"))
+        for key, model in catalog["models"].items():
+            settings = model["settings"]
+            if settings.get("spec-type") in {"draft-dflash", "draft-dspark", "draft-eagle3", "draft-simple"}:
+                draft_path = settings.get("model-draft")
+                self.assertIsNotNone(draft_path, key)
+                exact_paths = {f"/models/{artifact['repo']}/{artifact['path']}" for artifact in model["artifacts"] if artifact["role"] == "draft"}
+                self.assertIn(draft_path, exact_paths, key)
 
     def test_blank_prestage_uses_selected_preset_sidecar(self) -> None:
         downloader = (PREFER_ROOT / "download-models.sh").read_text(encoding="utf-8")

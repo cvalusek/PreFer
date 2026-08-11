@@ -47,6 +47,21 @@ def include_matches(path: str, pattern: str) -> bool:
 def validate_catalog(catalog: dict[str, Any]) -> None:
     if catalog.get("schema_version") != 1:
         raise CatalogError("preset-catalog.json must use schema_version 1")
+    runtime = catalog.get("runtime", {})
+    runtime_tag = str(runtime.get("llama_cpp_tag", ""))
+    if not re.fullmatch(r"b[0-9]+", runtime_tag):
+        raise CatalogError("catalog runtime needs a versioned llama_cpp_tag")
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", str(runtime.get("source_revision", ""))):
+        raise CatalogError("catalog runtime needs an immutable source_revision")
+    if runtime.get("image") != f"ghcr.io/ggml-org/llama.cpp:server-cuda-{runtime_tag}":
+        raise CatalogError("catalog runtime image must match its versioned llama_cpp_tag")
+    if not re.fullmatch(r"sha256:[0-9a-fA-F]{64}", str(runtime.get("manifest_digest", ""))):
+        raise CatalogError("catalog runtime needs an immutable OCI manifest digest")
+    platform_manifests = runtime.get("platform_manifests", {})
+    if set(platform_manifests) != {"linux/amd64", "linux/arm64"}:
+        raise CatalogError("catalog runtime must record linux/amd64 and linux/arm64 manifests")
+    if any(not re.fullmatch(r"sha256:[0-9a-fA-F]{64}", str(digest)) for digest in platform_manifests.values()):
+        raise CatalogError("catalog runtime platform manifests must be immutable SHA-256 digests")
     models = catalog.get("models")
     if not isinstance(models, dict) or not models:
         raise CatalogError("catalog models must be a non-empty object")
@@ -56,6 +71,16 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
             raise CatalogError(f"unsafe model key: {key!r}")
         if not model.get("section"):
             raise CatalogError(f"{key}: section is required")
+        lineage = model.get("lineage")
+        if lineage:
+            if not lineage.get("repo") or not re.fullmatch(r"[0-9a-fA-F]{40}", str(lineage.get("revision", ""))):
+                raise CatalogError(f"{key}: lineage requires a repo and immutable 40-character revision")
+        runtime_requirement = model.get("runtime_requirement")
+        if runtime_requirement:
+            if not re.fullmatch(r"[0-9a-fA-F]{40}", str(runtime_requirement.get("llama_cpp_merge", ""))):
+                raise CatalogError(f"{key}: runtime_requirement needs an immutable llama_cpp_merge revision")
+            if not runtime_requirement.get("feature"):
+                raise CatalogError(f"{key}: runtime_requirement feature is required")
         settings = model.get("settings", {})
         if not settings.get("model"):
             raise CatalogError(f"{key}: settings.model is required")
@@ -81,6 +106,8 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
             raise CatalogError(f"{key}: embedded_mtp requires spec-type draft-mtp")
         if spec_type == "draft-mtp" and not settings.get("model-draft") and not embedded_mtp:
             raise CatalogError(f"{key}: draft-mtp requires model-draft or embedded_mtp")
+        if spec_type in {"draft-dflash", "draft-dspark", "draft-eagle3", "draft-simple"} and not settings.get("model-draft"):
+            raise CatalogError(f"{key}: {spec_type} requires model-draft")
         if embedded_mtp and settings.get("model-draft"):
             raise CatalogError(f"{key}: embedded_mtp cannot also use model-draft")
 

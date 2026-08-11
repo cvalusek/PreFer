@@ -1,6 +1,6 @@
 # Pinned in lockstep with Dockerfile. This variant trusts a local
 # Netskope/corporate CA before Python package install.
-ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b10257@sha256:37dd122824e58af9ec861955242abdeeade5a1dcf0ad768bf2b37f903c2805c6
+ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b10362@sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c
 FROM ${LLAMA_CPP_BASE_IMAGE}
 
 COPY docker/certs/*.crt /usr/local/share/ca-certificates/

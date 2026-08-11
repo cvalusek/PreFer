@@ -24,13 +24,13 @@ from .runner import LiveConfig, run_live_suite
 
 LANES = {
     "current": {
-        "base_image_tag": "ghcr.io/ggml-org/llama.cpp:server-cuda-b10257",
-        "base_image": "ghcr.io/ggml-org/llama.cpp@sha256:37dd122824e58af9ec861955242abdeeade5a1dcf0ad768bf2b37f903c2805c6",
-        "image": "prefer-bench:b10257",
-        "revision": "b10257",
-        "manifest_digest": "sha256:37dd122824e58af9ec861955242abdeeade5a1dcf0ad768bf2b37f903c2805c6",
-        "source_commit": "22dc605c4ead20e36f447cc67b55ef87e523bd55",
-        "release_url": "https://github.com/ggml-org/llama.cpp/releases/tag/b10257",
+        "base_image_tag": "ghcr.io/ggml-org/llama.cpp:server-cuda-b10362",
+        "base_image": "ghcr.io/ggml-org/llama.cpp@sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c",
+        "image": "prefer-bench:b10362",
+        "revision": "b10362",
+        "manifest_digest": "sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c",
+        "source_commit": "4801e3c567d5131dd41b387df5f2d4b1370d92be",
+        "release_url": "https://github.com/ggml-org/llama.cpp/releases/tag/b10362",
         "comparison_lane": False,
     },
     "b9982": {

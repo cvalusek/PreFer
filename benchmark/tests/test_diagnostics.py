@@ -1,3 +1,4 @@
+import json
 import unittest
 
 from prefer_bench.contract import parse_preset
@@ -41,8 +42,8 @@ class DiagnosticAndCompatibilityTests(unittest.TestCase):
         self.assertNotIn("12gb-pascal.ini", detected_tier_names)
         self.assertIn("12gb.ini", detected_tier_names)
         dockerfile = (REPO_ROOT / "docker" / "prefer" / "Dockerfile").read_text(encoding="utf-8")
-        self.assertIn("server-cuda-b10257", dockerfile)
-        self.assertIn("sha256:37dd122824e58af9ec861955242abdeeade5a1dcf0ad768bf2b37f903c2805c6", dockerfile)
+        self.assertIn("server-cuda-b10362", dockerfile)
+        self.assertIn("sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c", dockerfile)
 
     def test_historical_lane_is_published_immutable_b9982(self) -> None:
         candidate = LANES["b9982"]
@@ -54,11 +55,20 @@ class DiagnosticAndCompatibilityTests(unittest.TestCase):
         )
         self.assertNotIn("b9990", LANES)
 
-    def test_current_lane_is_published_immutable_b10257(self) -> None:
+    def test_current_lane_is_published_immutable_b10362(self) -> None:
         current = LANES["current"]
-        self.assertEqual(current["revision"], "b10257")
-        self.assertEqual(current["source_commit"], "22dc605c4ead20e36f447cc67b55ef87e523bd55")
-        self.assertEqual(current["manifest_digest"], "sha256:37dd122824e58af9ec861955242abdeeade5a1dcf0ad768bf2b37f903c2805c6")
+        self.assertEqual(current["revision"], "b10362")
+        self.assertEqual(current["source_commit"], "4801e3c567d5131dd41b387df5f2d4b1370d92be")
+        self.assertEqual(current["manifest_digest"], "sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c")
+
+        catalog = json.loads((REPO_ROOT / "docker" / "prefer" / "preset-catalog.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            catalog["runtime"]["platform_manifests"],
+            {
+                "linux/amd64": "sha256:1caad187e691f18327d9050464f6884ae193fd7151b71f3a192f21213a59208f",
+                "linux/arm64": "sha256:ea625a2c5910867fbaff88f8f7cf87b0dbd9948743c13ec6db42036b32d50073",
+            },
+        )
 
     def test_manifest_failures_are_not_collapsed_into_build_failures(self) -> None:
         self.assertEqual(manifest_failure_code("manifest unknown"), "image_manifest_unavailable")

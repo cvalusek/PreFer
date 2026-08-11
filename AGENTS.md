@@ -8,7 +8,7 @@ read this before changing presets, the Dockerfile, or the detection scripts.
 
 PreFer: llama.cpp router containers for self-hosted LLM inference on local,
 RunPod, and AWS hardware. `docker/prefer/` hosts Gemma 4, Qwen3.5/Qwen3.6,
-GLM, and DeepSeek V4 routes via `llama-server` router mode, with models
+Muse Glimmer, GLM, and DeepSeek V4 routes via `llama-server` router mode, with models
 downloaded from Hugging Face on first start.
 
 ## Conventions
@@ -24,12 +24,14 @@ downloaded from Hugging Face on first start.
 - **Router model id naming**: use llama.cpp's HF-style section ids for the
   primary sections (e.g. `unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL`) and
   expose short aliases for clients (e.g. `gemma-4`, `qwen-3.6`,
-  `glm-4.7-flash`). Include context in an alias only when the section uses a
-  non-native explicit context, such as `qwen-3.6-35b-a3b-1m`.
+  `glm-4.7-flash`). Include context in an alias only when a separately usable
+  section intentionally exposes a non-native context. The former Qwen 35B
+  single-slot 1M YaRN section failed operationally and has been removed; do not
+  restore its `qwen-3.6-35b-a3b-1m` identity from historical baselines.
   The v1 client contract distinguishes these configured section identities
   from normalized `/v1/models`/request IDs. On measured b9843, for example,
   E2B was configured as `:UD-Q4_K_XL` but advertised and accepted as
-  `:Q4_K_XL` (plus `gemma-4-e2b`). b10257 is now the production pin; keep the
+  `:Q4_K_XL` (plus `gemma-4-e2b`). b10362 is now the production pin; keep the
   distinction until its exact discovery behavior is measured. Do not infer
   request compatibility from the preset header alone.
 - **Shared defaults use `[*]`**, not per-section duplication. A per-section
@@ -37,8 +39,8 @@ downloaded from Hugging Face on first start.
   section, with `[*]` commented out as documentation) was tried and
   reverted — it didn't avoid the phantom "default" model entry (see below)
   and added maintenance burden for no benefit. **Exception: single-model named
-  presets** (`smol.ini`, `deepseek-v4-flash.ini`, `glm-5.2*.ini`, and the
-  generated AWS DeepSeek 0731 preset) skip `[*]`
+  presets** (`smol.ini`, `deepseek-v4-flash.ini`, `glm-5.2*.ini`, and all
+  generated AWS single-model presets) skip `[*]`
   entirely and put every key in their one model section — with nothing to
   share, `[*]` would just be indirection.
 - **No comments inside `.ini` files** (deliberate preference). Rationale for
@@ -80,19 +82,37 @@ not something to infer from upstream defaults.
 ## Base image
 
 Pinned to
-`ghcr.io/ggml-org/llama.cpp:server-cuda-b10257@sha256:37dd122824e58af9ec861955242abdeeade5a1dcf0ad768bf2b37f903c2805c6`
-(source `22dc605c4ead20e36f447cc67b55ef87e523bd55`). The digest is the official
+`ghcr.io/ggml-org/llama.cpp:server-cuda-b10362@sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c`
+(source `4801e3c567d5131dd41b387df5f2d4b1370d92be`). The digest is the official
 multi-platform manifest containing linux/amd64 and linux/arm64. Keep
 `Dockerfile.netskope` in lockstep. Policy remains "track latest," but a bump
 must resolve and pin the published manifest rather than use the moving
 `server-cuda` tag.
 
-b10257 includes GLM MoE DSA, DeepSeek V4 base support, the Gemma E4B MTP
+Upstream source releases and CUDA container publication are asynchronous.
+Building every architecture normally takes several hours and can approach a
+day; occasionally a release-numbered container is skipped and the next higher
+build is the first image published. When waiting for a required merge, do not
+require the Docker tag matching the first signed source release and do not pin
+the moving tag. Inspect the moving OCI index only to discover its annotated
+build and source revision, then select the first available versioned
+`server-cuda-bNNNN` tag whose recorded source revision is a descendant of the
+required merge. Pin its immutable multi-platform digest only after both
+linux/amd64 and linux/arm64 manifests are present. A higher build number is a
+valid first consumable artifact when an intermediate image was never
+published.
+
+b10362 includes GLM MoE DSA, DeepSeek V4 base support, the Gemma E4B MTP
 FlashAttention fix from PR #25148, and DeepSeek V4 MTP/DSpark support from
 PR #25784. It also includes PR #22789's dynamic split-graph input allocation,
 which removes the fixed scheduler-input cap hit by DeepSeek V4 across two GPUs.
+Muse target, multimodal-projector, and DFlash support from PR #26841 is also
+included; source `4801e3c567d5131dd41b387df5f2d4b1370d92be` is 13 commits after
+the required merge `62bf73d25c53b8161f8a22894d4f90c4aebbd7d0`.
 The historical b9843 and b9982 lanes remain in benchmark data for reproducing
-old Pascal results; `current` now means b10257.
+old Pascal results; `current` now means b10362. The Muse presets are no longer
+runtime-gated, but their 24/48/96 GB shapes still require normal first-boot
+fit, contract, DFlash, projector, and concurrency verification on target GPUs.
 
 ## Generated AWS deployment presets
 
@@ -113,13 +133,36 @@ AWS deployment presets are generated, not hand-edited:
 | ------ | ---- | ------ | ---------------- |
 | `aws/g6/xlarge/general.ini` | 1× L4 24 GB, 4 vCPU | Gemma E2B/E4B/12B, Qwen3.5-9B | E2B + Gemma12: 4×128K; E4B + Qwen9: 2×128K |
 | `aws/g6e/xlarge/gemma.ini` | 1× L40S 48 GB, 4 vCPU | Gemma 26B-A4B/31B | 26B: 4×128K; 31B: 1×256K |
-| `aws/g7e/2xlarge/general.ini` | 1× RTX PRO 6000 96 GB, 8 vCPU | Qwen3.6 35B/27B, GLM-4.7-Flash | normal routes: 4×128K; Qwen35 long route: 1×1M |
+| `aws/g7e/2xlarge/general.ini` | 1× RTX PRO 6000 96 GB, 8 vCPU | Qwen3.6 35B-A3B/27B, GLM-4.7-Flash | 4×128K each |
+| `aws/g7e/2xlarge/qwen.ini` | 1× RTX PRO 6000 96 GB, 8 vCPU | Qwen3.6 35B-A3B/27B | 4×128K each |
 | `aws/g7e/12xlarge/deepseek-v4-flash-0731.ini` | 2× RTX PRO 6000 96 GB, 48 vCPU | DeepSeek V4 Flash 0731 Q4 + Q8 DSpark | 1×256K |
+| `aws/g6/xlarge/muse.ini` | 1× L4 24 GB, 4 vCPU | Muse Glimmer 30B Q4 + DFlash | 1×128K |
+| `aws/g6e/xlarge/muse.ini` | 1× L40S 48 GB, 4 vCPU | Muse Glimmer 30B Q6 + DFlash | 2×128K |
+| `aws/g7e/2xlarge/muse.ini` | 1× RTX PRO 6000 96 GB, 8 vCPU | Muse Glimmer 30B Q6 + DFlash | 4×256K |
 
 `ctx-size` is the total cache divided among `parallel` slots; the table shows
 the per-request allocation. All AWS scenarios deliberately use f16 K and V.
-The four hosts consume exactly 64 vCPUs when running together. G6/G6e xlarge
-have 250 GB local NVMe; G7e 2xlarge has 1.9 TB and G7e 12xlarge has 3.8 TB.
+The original four-host deployment shape consumes exactly 64 vCPUs when running
+together; `qwen.ini` is an alternative to the g7e `general.ini`, not a fifth
+simultaneous host. G6/G6e xlarge have 250 GB local NVMe; G7e 2xlarge has 1.9 TB
+and G7e 12xlarge has 3.8 TB.
+
+Every bundled AWS route also has a generated single-model alternative on the
+same instance type. These presets copy the bundle's effective context,
+parallelism, cache, sampling, model, projector, and speculative-decoding
+settings, but contain one section, stage one catalog key, and set
+`load-on-startup = true`:
+
+| Host | Single-model presets |
+| ---- | -------------------- |
+| `g6.xlarge` | `gemma-e2b.ini`, `gemma-e4b.ini`, `gemma-12b.ini`, `qwen-9b.ini`, `muse.ini` |
+| `g6e.xlarge` | `gemma-26b-a4b.ini`, `gemma-31b.ini`, `muse.ini` |
+| `g7e.2xlarge` | `qwen-35b-a3b.ini`, `qwen-27b.ini`, `glm-4.7-flash.ini`, `muse.ini` |
+
+The family bundles remain supported for flexible hosts. Prefer a single-model
+preset when NeurOn or another controller already knows which model owns the
+instance: unused router sections have shown undesirable startup overhead even
+when prestaging and `models-max` are bounded.
 
 The apparently aggressive Gemma 12B `4×128K` f16 cache is intentional. Its
 [published architecture](https://huggingface.co/google/gemma-4-12B/blob/main/config.json)
@@ -137,6 +180,32 @@ rejects it because it contains no MTP layers. DeepSeek 0731 uses the five-shard
 UD-Q4_K_XL target plus the
 co-located Q8_0 DSpark companion; `spec-type` is `draft-dspark` and
 `spec-draft-n-max=5`. IQ1/IQ2 are intentionally absent.
+
+Muse uses two immutable Unsloth lanes from
+`unsloth/Muse-Glimmer-30B-GGUF@faa5b025c584459c13febfa5c59883516710ae39`,
+both linked to the official
+`meta-models/Muse-Glimmer-30B@90625aaf7c8d5338df3779e3f2ef1b8c9e669252`
+snapshot. The derivative card declares that base repository but does not
+publish its exact conversion-input SHA; the serving artifacts themselves are
+fully pinned. The 24 GB preset uses `UD-Q4_K_XL`; the 48/96 GB presets use
+`UD-Q6_K_XL`. Both add the pinned `dflash-kquant.gguf` and
+`mmproj-kquant.gguf`, use `draft-dflash`, and draft 15 tokens from the
+model's trained 16-token block. Exact target + draft + projector bytes are
+18.91 GB for Q4 and 29.30 GB for Q6 before runtime/KV. The quantized projector
+is deliberate: BF16 would consume another 2.45 GB and make the 24 GB lane
+needlessly tight. Sampling follows the publisher's `temp=1.0`, `top_p=0.95`,
+`top_k=64`; `min_p=0` disables llama.cpp's additional unrequested filter.
+
+Muse's 52 layers repeat three 2K sliding-window layers then one global layer,
+with two KV heads, so its f16 cache grows much more slowly than a conventional
+52-layer dense-attention model. That makes 1×128K on 24 GB and 2×128K on
+48 GB credible starting points. The 96 GB shape allocates 4×256K without YaRN;
+the publisher describes 131,072+ context, so 256K remains an explicit first-boot
+quality/position gate rather than a proven operating point. For all three,
+verify full-GPU load, peak VRAM, image input, strict JSON/tools/SSE, per-slot
+context, DFlash acceptance and throughput before production use. If DFlash
+hurts concurrency or stability, record a target-only comparison; do not silently
+remove the companion from the canonical preset.
 
 ## Tiny preset (smol)
 
@@ -207,7 +276,7 @@ one-model-per-host boxes.
 | Preset | GGUF | On-disk | Fits | Notes |
 | ------ | ---- | ------- | ---- | ----- |
 | `deepseek-v4-flash` | [antirez/deepseek-v4-gguf](https://huggingface.co/antirez/deepseek-v4-gguf) `Q4KExperts...imatrix` | ~153 GB | 2× 96 GB | Preserved Preview-era target-only route. Q4 experts / F16 attn+indexer / Q8 shared+out; no draft is configured. |
-| `aws/g7e/12xlarge/deepseek-v4-flash-0731` | [unsloth/DeepSeek-V4-Flash-0731-GGUF](https://huggingface.co/unsloth/DeepSeek-V4-Flash-0731-GGUF) `UD-Q4_K_XL` + Q8_0 DSpark | ~166 GB | 2× 96 GB | Quality-credible 0731 successor; b10257 `draft-dspark`, max 5, f16 K/V, 256K initial context. |
+| `aws/g7e/12xlarge/deepseek-v4-flash-0731` | [unsloth/DeepSeek-V4-Flash-0731-GGUF](https://huggingface.co/unsloth/DeepSeek-V4-Flash-0731-GGUF) `UD-Q4_K_XL` + Q8_0 DSpark | ~166 GB | 2× 96 GB | Quality-credible 0731 successor; b10362 `draft-dspark`, max 5, f16 K/V, 256K initial context. |
 | `glm-5.2` | [unsloth/GLM-5.2-GGUF](https://huggingface.co/unsloth/GLM-5.2-GGUF) `UD-Q4_K_XL` | ~467 GB (11 shards) | 6× 96 GB (5× very tight) | Full, non-pruned GLM-5.2. Best quality, no REAP loop tax. |
 | `glm-5.2-reap` | [0xSero/GLM-5.2-REAP-504B-GGUF](https://huggingface.co/0xSero/GLM-5.2-REAP-504B-GGUF) `Q4_K_XL` | ~308 GB (8 shards) | 4× 96 GB | REAP 34%-expert-pruned. Fits in 4 cards, but per the card the loop rate roughly doubles (3.6%→7.2%) and the DSA indexer tensors are faked (duplicated from the nearest full layer) to load — no DSA speedup. Prefer `glm-5.2` if you have the 6th card. |
 
@@ -242,7 +311,7 @@ below:
   issues"), dropping temp toward 0.6 is the known lever.
 - The preserved Preview-era DeepSeek preset remains target-only. The generated
   0731 route is separate and uses the checkpoint's DSpark head with
-  `spec-type = draft-dspark`; do not relabel it as MTP. b10257 contains the
+  `spec-type = draft-dspark`; do not relabel it as MTP. b10362 contains the
   required PR #25784 support. Its Q8_0 companion adds about 10.9 GB, which is
   why the initial context is 256K rather than carrying the old target-only
   route's 384K allocation forward blindly.
@@ -259,13 +328,13 @@ below:
 
 ## Known upstream llama.cpp issues (not fixable via our config)
 
-- **#22789 (fixed in current b10257)** — DeepSeek V4 0731 plus DSpark could
+- **#22789 (fixed in current b10362)** — DeepSeek V4 0731 plus DSpark could
   exceed llama.cpp's fixed 30 split-graph input slots during multi-GPU graph
   reservation and abort at `GGML_SCHED_MAX_SPLIT_INPUTS`. PR #22789 replaces
   the fixed arrays with dynamic allocation. This is an upstream scheduler
   defect: context, batching, tensor split, and GPU count are not reliable
   configuration workarounds.
-- **#25148 (fixed in current b10257)** — Gemma E4B's MTP draft has 512-wide K/V
+- **#25148 (fixed in current b10362)** — Gemma E4B's MTP draft has 512-wide K/V
   heads and GQA ratio 2. On Pascal, b9843 selects the generic CUDA
   FlashAttention tile kernel, whose 512-wide specialization only compiled GQA
   ratios 4 and above; it aborts at `fattn-tile.cuh:1321`. E2B's draft is ratio
@@ -275,8 +344,8 @@ below:
   identity, and all other 12 GB settings but omits only E4B's `model-draft` /
   `spec-*` keys. Cost: E4B loses MTP speculative throughput on that preset.
   `12gb.ini`, `8gb.ini`, and `96gb.ini` retain E4B MTP unchanged. Current
-  b10257 contains the upstream fix, so the compatibility preset is now only a
-  rollback/reproduction lane pending a measured Pascal smoke on b10257.
+  b10362 contains the upstream fix, so the compatibility preset is now only a
+  rollback/reproduction lane pending a measured Pascal smoke on b10362.
 - **#22364** — router synthesizes a phantom `"default"` model entry in
   `/v1/models` regardless of whether `[*]`/`default-model` are used.
   Apparently cosmetic (`status: unloaded`), but if real models stop loading
@@ -381,8 +450,8 @@ or tune DRY further before doing so.
 - **`96gb.ini`**: `n-cpu-moe = 0` for all three models — confirmed working
   (all three load and generate correctly).
 - **`12gb.ini`**: the preset now mirrors the `96gb.ini`/`8gb.ini` router id
-  shape and uses `ctx-size = 0` for native context except the explicit Qwen
-  1M entry. Legacy 64k smoke tests on Titan X Pascal confirmed
+  shape and uses `ctx-size = 0` for native context. The failed Qwen 35B YaRN
+  1M section has been removed. Legacy 64k smoke tests on Titan X Pascal confirmed
   gemma-4-26B-A4B and GLM could load/generate, but the current native-context
   entries are still heuristic: gemma-4-26B-A4B uses `n-cpu-moe=20`, Qwen3.6
   35B uses `n-cpu-moe=26`, and GLM uses `n-cpu-moe=18`. Qwen3.6 27B is dense,
@@ -532,7 +601,7 @@ Run the deterministic suite and mock replay:
 Live verification remains hardware-dependent. The isolated command creates a
 generated Compose project, loopback port other than 8080, network, and cloned
 model volume, then removes all of them while leaving operator `prefer` and
-NeurOn state alone. See `benchmark/README.md` for current b10257, the historical
+NeurOn state alone. See `benchmark/README.md` for current b10362, the historical
 Pascal compatibility preset, `models-max`, long-context, idle, and historical
 b9843/b9982 evidence.
 

@@ -46,11 +46,29 @@ Deploy one stack per independently managed model-family host, overriding both
 | `g7e.2xlarge` | 8 | 1.9 TB | `/presets/aws/g7e/2xlarge/general.ini` |
 | `g7e.12xlarge` | 48 | 3.8 TB | `/presets/aws/g7e/12xlarge/deepseek-v4-flash-0731.ini` |
 
-The complete set consumes exactly 64 vCPUs while all four instances are
-running. Pending, stopping, stopped, and hibernated On-Demand instances do not
-count toward the running On-Demand vCPU quota; unused Capacity Reservations do.
-NeurOn can therefore stop inactive family hosts without changing their
-selected preset or S3 inventory.
+The original complete set consumes exactly 64 vCPUs while all four instances
+are running. Family bundles can be replaced by a dedicated one-model preset on
+the same instance type without changing its vCPU or NVMe shape:
+
+| Instance | Alternative presets |
+| -------- | ------------------- |
+| `g6.xlarge` | `/presets/aws/g6/xlarge/gemma-e2b.ini`, `gemma-e4b.ini`, `gemma-12b.ini`, `qwen-9b.ini`, `muse.ini` |
+| `g6e.xlarge` | `/presets/aws/g6e/xlarge/gemma-26b-a4b.ini`, `gemma-31b.ini`, `muse.ini` |
+| `g7e.2xlarge` | `/presets/aws/g7e/2xlarge/qwen.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `glm-4.7-flash.ini`, `muse.ini` |
+
+The abbreviated names after the first absolute path are siblings in that same
+directory. Dedicated presets stage one catalog key and load it at startup;
+bundles remain available for flexible hosts. Pending, stopping, stopped, and
+hibernated On-Demand instances do not count toward the running On-Demand vCPU
+quota; unused Capacity Reservations do. NeurOn can therefore stop inactive
+family hosts without changing their selected preset or S3 inventory.
+
+The three `muse.ini` alternatives are supported by the pinned b10362 image,
+whose source contains llama.cpp PR #26841. The shapes are Q4/128K×1 on
+`g6.xlarge`, Q6/128K×2 on `g6e.xlarge`, and Q6/256K×4 on `g7e.2xlarge`; each
+stages only its target, DFlash companion, and quantized projector. Treat their
+first launch as a fit, contract, DFlash, projector, and concurrency gate before
+production use.
 
 ## Deploy as plain CloudFormation (no CDK needed)
 

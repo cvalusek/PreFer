@@ -6,12 +6,17 @@ PreFer is a set of practical llama.cpp inference presets for self-hosted LLMs.
 It packages known-good model mixes, VRAM-aware router configs, and download
 scripts into containers that are easy to run locally or on RunPod.
 
-The current PreFer container serves Gemma 4, Qwen3.5/Qwen3.6, GLM, and
-DeepSeek V4
+The current PreFer catalog covers Gemma 4, Qwen3.5/Qwen3.6, Muse Glimmer,
+GLM, and DeepSeek V4
 through `llama-server` router mode with an
 OpenAI-style API on port `8080`. PreFer deliberately promises only its
 [versioned narrow client contract](benchmark/README.md#stable-client-contract),
 not broad drop-in OpenAI compatibility.
+
+Muse's generated AWS presets are supported by the pinned b10362 image, whose
+source includes llama.cpp PR #26841. The prepared 24/48/96 GB shapes still need
+their first-boot fit, contract, DFlash, projector, and concurrency gates on
+target GPUs before production use.
 
 ## Why PreFer
 
@@ -98,9 +103,9 @@ live model:
 python -m prefer_bench contract --mock
 ```
 
-Run the current b10257 lane against only the already-cached Gemma E2B/E4B
+Run the current b10362 lane against only the already-cached Gemma E2B/E4B
 files. The Pascal preset remains available to reproduce the old b9843
-workaround, but current b10257 includes its upstream fix:
+workaround, but current b10362 includes its upstream fix:
 
 ```bash
 python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb.ini --models-max 1 --contexts 8k,32k
