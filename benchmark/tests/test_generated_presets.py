@@ -67,18 +67,22 @@ class GeneratedPresetTests(unittest.TestCase):
                 )
 
     def test_deepseek_0731_is_quality_quant_with_dspark(self) -> None:
-        preset = (PREFER_ROOT / "presets" / "aws" / "g7e" / "12xlarge" / "deepseek-v4-flash-0731.ini").read_text(encoding="utf-8")
+        preset_path = PREFER_ROOT / "presets" / "aws" / "g7e" / "12xlarge" / "deepseek-v4-flash-0731.ini"
+        preset = preset_path.read_text(encoding="utf-8")
         self.assertIn("UD-Q4_K_XL", preset)
         self.assertIn("spec-type = draft-dspark", preset)
         self.assertIn("spec-draft-n-max = 5", preset)
         self.assertNotIn("IQ1", preset)
         self.assertNotIn("IQ2", preset)
+        settings = next(iter(effective_preset_settings(preset_path).values()))
+        self.assertEqual(settings["ctx-size"], "1572864")
+        self.assertEqual(settings["parallel"], "4")
 
     def test_muse_presets_use_pinned_quality_lanes_with_dflash(self) -> None:
         cases = [
             ("aws/g6/xlarge/muse.ini", "muse-glimmer-30b-q4", "UD-Q4_K_XL", 131072, 1),
             ("aws/g6e/xlarge/muse.ini", "muse-glimmer-30b-q6", "UD-Q6_K_XL", 262144, 2),
-            ("aws/g7e/2xlarge/muse.ini", "muse-glimmer-30b-q6", "UD-Q6_K_XL", 1048576, 4),
+            ("aws/g7e/2xlarge/muse.ini", "muse-glimmer-30b-q6", "UD-Q6_K_XL", 524288, 4),
         ]
         for preset_name, prestage_key, quant, ctx_size, parallel in cases:
             preset_path = PREFER_ROOT / "presets" / preset_name
@@ -124,8 +128,12 @@ class GeneratedPresetTests(unittest.TestCase):
             ("aws/g6/xlarge/general.ini", "aws/g6/xlarge/qwen-9b.ini", "unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL"),
             ("aws/g6e/xlarge/gemma.ini", "aws/g6e/xlarge/gemma-26b-a4b.ini", "unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL"),
             ("aws/g6e/xlarge/gemma.ini", "aws/g6e/xlarge/gemma-31b.ini", "unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL"),
+            ("aws/g6e/xlarge/qwen.ini", "aws/g6e/xlarge/qwen-35b-a3b.ini", "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL"),
+            ("aws/g6e/xlarge/qwen.ini", "aws/g6e/xlarge/qwen-27b.ini", "unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q6_K_XL"),
             ("aws/g7e/2xlarge/qwen.ini", "aws/g7e/2xlarge/qwen-35b-a3b.ini", "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL"),
             ("aws/g7e/2xlarge/qwen.ini", "aws/g7e/2xlarge/qwen-27b.ini", "unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q6_K_XL"),
+            ("aws/g7e/2xlarge/gemma.ini", "aws/g7e/2xlarge/gemma-26b-a4b.ini", "unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL"),
+            ("aws/g7e/2xlarge/gemma.ini", "aws/g7e/2xlarge/gemma-31b.ini", "unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL"),
             ("aws/g7e/2xlarge/general.ini", "aws/g7e/2xlarge/glm-4.7-flash.ini", "unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF:UD-Q6_K_XL"),
         ]
         for bundle_name, single_name, section in cases:
@@ -137,6 +145,59 @@ class GeneratedPresetTests(unittest.TestCase):
             self.assertEqual(single[section], bundle[section], single_name)
             self.assertNotIn("[*]", single_path.read_text(encoding="utf-8"), single_name)
             self.assertNotIn(",", single_path.with_suffix(".prestage").read_text(encoding="utf-8"), single_name)
+
+    def test_cumulative_general_presets_use_one_best_lane_per_model(self) -> None:
+        expected = {
+            "aws/g6/xlarge/general.ini": {
+                "gemma-4-e2b": (524288, 4),
+                "gemma-4-e4b": (524288, 4),
+                "gemma-4-12b": (524288, 4),
+                "qwen-3.5-9b": (262144, 2),
+                "muse-glimmer-30b-q4": (131072, 1),
+            },
+            "aws/g6e/xlarge/general.ini": {
+                "gemma-4-e2b": (524288, 4),
+                "gemma-4-e4b": (524288, 4),
+                "gemma-4-12b": (524288, 4),
+                "gemma-4-26b-a4b": (524288, 2),
+                "gemma-4-31b": (262144, 1),
+                "qwen-3.5-9b": (262144, 2),
+                "qwen-3.6-35b-a3b": (196608, 1),
+                "qwen-3.6-27b": (196608, 1),
+                "muse-glimmer-30b-q6": (262144, 2),
+            },
+            "aws/g7e/2xlarge/general.ini": {
+                "gemma-4-e2b": (524288, 4),
+                "gemma-4-e4b": (524288, 4),
+                "gemma-4-12b": (524288, 4),
+                "gemma-4-26b-a4b": (1048576, 4),
+                "gemma-4-31b": (524288, 2),
+                "qwen-3.5-9b": (262144, 2),
+                "qwen-3.6-35b-a3b": (1048576, 4),
+                "qwen-3.6-27b": (1048576, 4),
+                "glm-4.7-flash": (811008, 4),
+                "muse-glimmer-30b-q6": (524288, 4),
+            },
+        }
+        source = json.loads(SCENARIOS_PATH.read_text(encoding="utf-8"))
+        scenarios = {scenario["path"]: scenario for scenario in source["scenarios"]}
+        for path, model_shapes in expected.items():
+            scenario = scenarios[path]
+            actual = {
+                entry["key"]: (entry["overrides"]["ctx-size"], entry["overrides"]["parallel"])
+                for entry in scenario["models"]
+            }
+            self.assertEqual(actual, model_shapes, path)
+            keys = set(actual)
+            self.assertFalse({"muse-glimmer-30b-q4", "muse-glimmer-30b-q6"} <= keys, path)
+
+    def test_g6e_qwen_uses_q6_one_by_192k(self) -> None:
+        for name in ("qwen.ini", "qwen-27b.ini", "qwen-35b-a3b.ini"):
+            preset = PREFER_ROOT / "presets" / "aws" / "g6e" / "xlarge" / name
+            for settings in effective_preset_settings(preset).values():
+                self.assertIn("UD-Q6_K_XL", settings["model"], name)
+                self.assertEqual(settings["ctx-size"], "196608", name)
+                self.assertEqual(settings["parallel"], "1", name)
 
     def test_removed_qwen_yarn_route_is_absent_from_active_presets(self) -> None:
         source = json.loads(SCENARIOS_PATH.read_text(encoding="utf-8"))

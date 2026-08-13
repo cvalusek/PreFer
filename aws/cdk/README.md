@@ -42,19 +42,22 @@ Deploy one stack per independently managed model-family host, overriding both
 | Instance | vCPU | Local NVMe | Preset |
 | -------- | ---: | ---------- | ------ |
 | `g6.xlarge` | 4 | 250 GB | `/presets/aws/g6/xlarge/general.ini` |
-| `g6e.xlarge` | 4 | 250 GB | `/presets/aws/g6e/xlarge/gemma.ini` |
+| `g6e.xlarge` | 4 | 250 GB | `/presets/aws/g6e/xlarge/general.ini` |
 | `g7e.2xlarge` | 8 | 1.9 TB | `/presets/aws/g7e/2xlarge/general.ini` |
 | `g7e.12xlarge` | 48 | 3.8 TB | `/presets/aws/g7e/12xlarge/deepseek-v4-flash-0731.ini` |
 
 The original complete set consumes exactly 64 vCPUs while all four instances
-are running. Family bundles can be replaced by a dedicated one-model preset on
-the same instance type without changing its vCPU or NVMe shape:
+are running. Each `general.ini` is cumulative and stages the best
+host-appropriate lane for its tier and every lower tier; a model with multiple
+quants appears only once. Use a family or dedicated one-model preset when the
+full cumulative download and startup inventory is not wanted. These
+alternatives do not change the instance's vCPU or NVMe shape:
 
 | Instance | Alternative presets |
 | -------- | ------------------- |
 | `g6.xlarge` | `/presets/aws/g6/xlarge/gemma-e2b.ini`, `gemma-e4b.ini`, `gemma-12b.ini`, `qwen-9b.ini`, `muse.ini` |
-| `g6e.xlarge` | `/presets/aws/g6e/xlarge/gemma-26b-a4b.ini`, `gemma-31b.ini`, `muse.ini` |
-| `g7e.2xlarge` | `/presets/aws/g7e/2xlarge/qwen.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `glm-4.7-flash.ini`, `muse.ini` |
+| `g6e.xlarge` | `/presets/aws/g6e/xlarge/gemma.ini`, `qwen.ini`, `gemma-26b-a4b.ini`, `gemma-31b.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `muse.ini` |
+| `g7e.2xlarge` | `/presets/aws/g7e/2xlarge/gemma.ini`, `qwen.ini`, `gemma-26b-a4b.ini`, `gemma-31b.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `glm-4.7-flash.ini`, `muse.ini` |
 
 The abbreviated names after the first absolute path are siblings in that same
 directory. Dedicated presets stage one catalog key and load it at startup;
@@ -65,10 +68,14 @@ family hosts without changing their selected preset or S3 inventory.
 
 The three `muse.ini` alternatives are supported by the pinned b10362 image,
 whose source contains llama.cpp PR #26841. The shapes are Q4/128K×1 on
-`g6.xlarge`, Q6/128K×2 on `g6e.xlarge`, and Q6/256K×4 on `g7e.2xlarge`; each
+`g6.xlarge`, Q6/128K×2 on `g6e.xlarge`, and Q6/128K×4 on `g7e.2xlarge`; each
 stages only its target, DFlash companion, and quantized projector. Treat their
 first launch as a fit, contract, DFlash, projector, and concurrency gate before
 production use.
+
+The DeepSeek 0731 preset uses Q4 plus Q8 DSpark at 384K×4 on the two-GPU
+`g7e.12xlarge` shape. That context allocation has been verified with headroom;
+normal contract, template, and sustained-concurrency validation still applies.
 
 ## Deploy as plain CloudFormation (no CDK needed)
 

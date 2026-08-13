@@ -2,6 +2,9 @@
 
 A llama.cpp router container hosting Gemma 4, Qwen3.5/Qwen3.6, Muse Glimmer,
 GLM, and DeepSeek V4.
+
+Published hosted-model and preset changes are recorded by immutable container
+SHA in the repository [changelog](../../CHANGELOG.md).
 On first start it downloads the models from Hugging Face, then serves them
 via `llama-server`'s router mode (the repository's narrow tested OpenAI-style
 contract on port 8080; see [`benchmark/README.md`](../../benchmark/README.md)).
@@ -57,24 +60,48 @@ Do not hand-edit generated `.ini`, `.prestage`, or
 
 `ctx-size` is a total cache divided across `parallel` slots. Every normal AWS
 route therefore keeps at least 128K per request, and every AWS scenario uses
-f16 K and f16 V.
+f16 K and f16 V. Each `general.ini` is cumulative: it contains the best
+host-appropriate lane for models assigned to that instance tier and every
+lower tier. A model with multiple catalog quants appears only once; Muse, for
+example, uses Q4 on g6 and Q6 on g6e/g7e.
 
 | Preset | Instance | Models | Per-request context / concurrency |
 | ------ | -------- | ------ | --------------------------------- |
-| `aws/g6/xlarge/general.ini` | `g6.xlarge`, L4 24 GB | Gemma E2B, E4B, 12B; Qwen3.5-9B | E2B/12B 128K ×4; E4B/Qwen9 128K ×2 |
-| `aws/g6e/xlarge/gemma.ini` | `g6e.xlarge`, L40S 48 GB | Gemma 26B-A4B, 31B | 26B 128K ×4; 31B 256K ×1 |
-| `aws/g7e/2xlarge/general.ini` | `g7e.2xlarge`, RTX PRO 6000 96 GB | Qwen3.6 35B-A3B/27B, GLM-4.7-Flash | 128K ×4 each |
-| `aws/g7e/2xlarge/qwen.ini` | `g7e.2xlarge`, RTX PRO 6000 96 GB | Qwen3.6 35B-A3B/27B | 128K ×4 each |
-| `aws/g7e/12xlarge/deepseek-v4-flash-0731.ini` | `g7e.12xlarge`, 2× RTX PRO 6000 96 GB | DeepSeek V4 Flash 0731 | 256K ×1, DSpark enabled |
+| `aws/g6/xlarge/general.ini` | `g6.xlarge`, L4 24 GB | Gemma E2B/E4B/12B, Qwen3.5-9B, Muse Q4 | Gemmas 128K ×4; Qwen9 128K ×2; Muse 128K ×1 |
+| `aws/g6e/xlarge/general.ini` | `g6e.xlarge`, L40S 48 GB | All g6 routes plus Gemma 26B/31B, Qwen3.6 35B/27B, Muse Q6 | See the instance matrix below; 128K minimum |
+| `aws/g6e/xlarge/gemma.ini` | `g6e.xlarge`, L40S 48 GB | Gemma 26B-A4B, 31B | 26B 256K ×2; 31B 256K ×1 |
+| `aws/g6e/xlarge/qwen.ini` | `g6e.xlarge`, L40S 48 GB | Qwen3.6 35B-A3B/27B Q6 | 192K ×1 each |
+| `aws/g7e/2xlarge/general.ini` | `g7e.2xlarge`, RTX PRO 6000 96 GB | All g6e routes plus GLM-4.7-Flash | 26B/31B/Qwen3.6 at native context; GLM at max; smaller lanes inherited |
+| `aws/g7e/2xlarge/gemma.ini` | `g7e.2xlarge`, RTX PRO 6000 96 GB | Gemma 26B-A4B, 31B | 26B 256K ×4; 31B 256K ×2 |
+| `aws/g7e/2xlarge/qwen.ini` | `g7e.2xlarge`, RTX PRO 6000 96 GB | Qwen3.6 35B-A3B/27B | 256K ×4 each |
+| `aws/g7e/12xlarge/deepseek-v4-flash-0731.ini` | `g7e.12xlarge`, 2× RTX PRO 6000 96 GB | DeepSeek V4 Flash 0731 | 384K ×4, DSpark enabled |
 | `aws/g6/xlarge/muse.ini` | `g6.xlarge`, L4 24 GB | Muse Glimmer 30B `UD-Q4_K_XL` | 128K ×1, DFlash enabled |
 | `aws/g6e/xlarge/muse.ini` | `g6e.xlarge`, L40S 48 GB | Muse Glimmer 30B `UD-Q6_K_XL` | 128K ×2, DFlash enabled |
-| `aws/g7e/2xlarge/muse.ini` | `g7e.2xlarge`, RTX PRO 6000 96 GB | Muse Glimmer 30B `UD-Q6_K_XL` | 256K ×4, DFlash enabled |
+| `aws/g7e/2xlarge/muse.ini` | `g7e.2xlarge`, RTX PRO 6000 96 GB | Muse Glimmer 30B `UD-Q6_K_XL` | 128K ×4, DFlash enabled |
 
-The original four-host shape uses 4 + 4 + 8 + 48 = 64 vCPUs; `qwen.ini` is an
-alternative to the g7e `general.ini`, not another simultaneous host. Each
+The exact cumulative `general.ini` matrix is:
+
+| Model lane | g6 | g6e | g7e |
+| ---------- | -- | --- | ---- |
+| Gemma E2B QAT Q4 | 4×128K | 4×128K | 4×128K |
+| Gemma E4B QAT Q4 | 4×128K | 4×128K | 4×128K |
+| Gemma 12B QAT Q4 | 4×128K | 4×128K | 4×128K |
+| Gemma 26B-A4B QAT Q4 | — | 2×256K | 4×256K |
+| Gemma 31B QAT Q4 | — | 1×256K | 2×256K |
+| Qwen3.5-9B Q4 | 2×128K | 2×128K | 2×128K |
+| Qwen3.6-35B-A3B Q6 | — | 1×192K | 4×256K |
+| Qwen3.6-27B Q6 | — | 1×192K | 4×256K |
+| Muse Glimmer 30B | Q4 1×128K | Q6 2×128K | Q6 4×128K |
+| GLM-4.7-Flash Q6 | — | — | 4×202,752 |
+
+The original four-host shape uses 4 + 4 + 8 + 48 = 64 vCPUs. Family presets
+are alternatives to the corresponding cumulative `general.ini`, not extra
+simultaneous hosts. Each
 generated preset has a sibling `.prestage` manifest; selecting the preset
 stages exactly its model keys unless `PRESTAGE_MODELS` is set to a nonblank
-override.
+override. A cumulative `general.ini` therefore stages its complete inventory;
+use a family or single-model preset when that transfer and startup work is not
+wanted.
 
 For controller-owned hosts, each bundled route also has a dedicated preset.
 It preserves the bundle's effective model, context, parallelism, cache,
@@ -84,8 +111,8 @@ model section, staging one catalog key, and loading that model at startup.
 | Instance | Dedicated single-model presets |
 | -------- | ------------------------------ |
 | `g6.xlarge` | `gemma-e2b.ini`, `gemma-e4b.ini`, `gemma-12b.ini`, `qwen-9b.ini`, `muse.ini` |
-| `g6e.xlarge` | `gemma-26b-a4b.ini`, `gemma-31b.ini`, `muse.ini` |
-| `g7e.2xlarge` | `qwen-35b-a3b.ini`, `qwen-27b.ini`, `glm-4.7-flash.ini`, `muse.ini` |
+| `g6e.xlarge` | `gemma-26b-a4b.ini`, `gemma-31b.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `muse.ini` |
+| `g7e.2xlarge` | `gemma-26b-a4b.ini`, `gemma-31b.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `glm-4.7-flash.ini`, `muse.ini` |
 
 The family bundles remain supported. Prefer a dedicated preset when NeurOn or
 another controller already knows the model assigned to the instance; unused
@@ -98,9 +125,9 @@ The exact three-file payload is 18.91 GB for Q4 and 29.30 GB for Q6 before
 runtime/KV. `spec-draft-n-max = 15` matches the DFlash model's trained
 16-token block. Sampling is `temp=1.0`, `top_p=0.95`, `top_k=64`, with
 llama.cpp's extra `min_p` filter disabled. All three shapes use f16 K/V. The
-24/48 GB contexts are publisher-native 128K per request; the 96 GB 256K-per-slot
-shape is intentional but must pass a first-boot long-context gate because the
-publisher describes the supported length as 131,072+ rather than a fixed 256K.
+All three Muse shapes use the publisher-default 128K per request. The 96 GB
+route spends its additional memory on four concurrent slots instead of an
+extended 256K position range.
 
 All presets share `dry-multiplier = 0.8`, `dry-base = 1.75`,
 `dry-allowed-length = 24` (DRY sampling) as a mitigation against repetition
@@ -163,10 +190,11 @@ value still overrides when it is nonblank). Sizes assume 96 GB/card (RTX PRO
 | `glm-5.2.ini` | GLM-5.2 full `UD-Q4_K_XL` (11 shards) | ~467 GB | 6× 96 GB | `glm-5.2` |
 | `glm-5.2-reap.ini` | GLM-5.2 REAP-504B `Q4_K_XL` (8 shards) | ~308 GB | 4× 96 GB | `glm-5.2-reap` |
 
-All run on the `b10362` base image. The generated 0731+DSpark, Muse, and GLM 5.2
-routes are **untested on their target hardware**; the Preview-era DeepSeek
-route has earlier load/context measurements. See AGENTS.md for the per-preset
-risk notes (context sizing, `flash-attn`, DeepSeek sampling, GPU split).
+All run on the `b10362` base image. The generated 0731+DSpark route's 4×384K
+allocation has been verified with headroom on 2×96 GB, although its wider
+contract/template/DSpark concurrency gates remain. Muse and GLM 5.2 still need
+their documented target-hardware gates. See AGENTS.md for the per-preset risk
+notes (context sizing, `flash-attn`, DeepSeek sampling, GPU split).
 
 ### Tiny preset (named, not auto-detected)
 
@@ -210,18 +238,18 @@ layout means multiple presets/services can safely share one volume.
 
 | Alias | Context | Presets |
 | ----- | ------- | ------- |
-| `gemma-4`, `gemma-4-26b-a4b` | native in tiers; 128K ×4 on AWS | tier presets; `aws/g6e/xlarge/gemma.ini`, `gemma-26b-a4b.ini` |
-| `gemma-4-e2b` | native in tiers; 128K ×4 on AWS | tier presets; `aws/g6/xlarge/general.ini`, `gemma-e2b.ini` |
-| `gemma-4-e4b` | native in tiers; 128K ×2 on AWS | tier presets; `aws/g6/xlarge/general.ini`, `gemma-e4b.ini` |
-| `gemma-4-12b` | 128K ×4 | `aws/g6/xlarge/general.ini`, `gemma-12b.ini` |
-| `gemma-4-31b` | 256K ×1 | `aws/g6e/xlarge/gemma.ini`, `gemma-31b.ini` |
-| `qwen-3.5`, `qwen-3.5-9b` | 128K ×2 | `aws/g6/xlarge/general.ini`, `qwen-9b.ini` |
-| `qwen-3.6`, `qwen-3.6-35b-a3b` | native in tiers; 128K ×4 on AWS | tier presets; `aws/g7e/2xlarge/general.ini`, `qwen.ini`, `qwen-35b-a3b.ini` |
-| `qwen-3.6-27b` | native in tiers; 128K ×4 on AWS | tier presets; `aws/g7e/2xlarge/general.ini`, `qwen.ini`, `qwen-27b.ini` |
-| `muse-glimmer`, `muse-glimmer-30b` | Q4 128K ×1; Q6 128K ×2 or 256K ×4 | `aws/g6/xlarge/muse.ini`, `aws/g6e/xlarge/muse.ini`, `aws/g7e/2xlarge/muse.ini` |
-| `glm-4.7-flash` | native in tiers; 128K ×4 on AWS | tier presets; `aws/g7e/2xlarge/general.ini`, `glm-4.7-flash.ini` |
+| `gemma-4`, `gemma-4-26b-a4b` | g6e 256K ×2; g7e 256K ×4 | tier presets; g6e/g7e `general.ini`, `gemma.ini`, and `gemma-26b-a4b.ini` |
+| `gemma-4-e2b` | 128K ×4 | tier presets; g6/g6e/g7e `general.ini`; g6 `gemma-e2b.ini` |
+| `gemma-4-e4b` | 128K ×4 | tier presets; g6/g6e/g7e `general.ini`; g6 `gemma-e4b.ini` |
+| `gemma-4-12b` | 128K ×4 | g6/g6e/g7e `general.ini`; g6 `gemma-12b.ini` |
+| `gemma-4-31b` | g6e 256K ×1; g7e 256K ×2 | g6e/g7e `general.ini`, `gemma.ini`, and `gemma-31b.ini` |
+| `qwen-3.5`, `qwen-3.5-9b` | 128K ×2 | g6/g6e/g7e `general.ini`; g6 `qwen-9b.ini` |
+| `qwen-3.6`, `qwen-3.6-35b-a3b` | g6e 192K ×1; g7e 256K ×4 | tier presets; g6e/g7e `general.ini`, `qwen.ini`, and `qwen-35b-a3b.ini` |
+| `qwen-3.6-27b` | g6e 192K ×1; g7e 256K ×4 | tier presets; g6e/g7e `general.ini`, `qwen.ini`, and `qwen-27b.ini` |
+| `muse-glimmer`, `muse-glimmer-30b` | Q4 128K ×1; Q6 128K ×2 or ×4 | g6/g6e/g7e `general.ini` and `muse.ini` |
+| `glm-4.7-flash` | 202,752 ×4 on g7e | tier presets; g7e `general.ini` and `glm-4.7-flash.ini` |
 | `deepseek-v4-flash` | 393216 | `deepseek-v4-flash.ini` |
-| `deepseek-v4-flash`, `deepseek-v4-flash-0731` | 262144 | `aws/g7e/12xlarge/deepseek-v4-flash-0731.ini` |
+| `deepseek-v4-flash`, `deepseek-v4-flash-0731` | 393216 ×4 | `aws/g7e/12xlarge/deepseek-v4-flash-0731.ini` |
 | `glm-5.2` | 262144 | `glm-5.2.ini` |
 | `glm-5.2-reap` | 262144 | `glm-5.2-reap.ini` |
 | `smol`, `smollm2-135m` | 8192 | `smol.ini` |

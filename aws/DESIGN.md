@@ -210,7 +210,10 @@ launches exactly once. A cloud-init failure therefore blocks PreFer instead of
 silently launching the auto-detected preset. An empty `PRESTAGE_MODELS` lets
 the selected preset's sibling `.prestage` manifest choose exact catalog
 artifacts. Both files persist on the root volume and are re-read on later
-starts.
+starts. Generated `general.ini` presets are cumulative by instance tier, so
+their sidecars stage every best-quant route supported on that tier and lower
+tiers. Select a family or single-model preset when the complete cumulative
+transfer is not intended.
 
 For a direct EC2 launch outside CDK, ordinary shell user-data is sufficient on
 an AMI containing this boot contract:

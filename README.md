@@ -6,6 +6,9 @@ PreFer is a set of practical llama.cpp inference presets for self-hosted LLMs.
 It packages known-good model mixes, VRAM-aware router configs, and download
 scripts into containers that are easy to run locally or on RunPod.
 
+Published hosted-model and preset changes are recorded by immutable container
+SHA in the [PreFer changelog](CHANGELOG.md).
+
 The current PreFer catalog covers Gemma 4, Qwen3.5/Qwen3.6, Muse Glimmer,
 GLM, and DeepSeek V4
 through `llama-server` router mode with an

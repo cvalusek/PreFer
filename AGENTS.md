@@ -11,6 +11,18 @@ RunPod, and AWS hardware. `docker/prefer/` hosts Gemma 4, Qwen3.5/Qwen3.6,
 Muse Glimmer, GLM, and DeepSeek V4 routes via `llama-server` router mode, with models
 downloaded from Hugging Face on first start.
 
+## Published change reference
+
+The root `CHANGELOG.md` is the consumer-facing history for hosted models and
+presets. It has no `Unreleased` section and no independent PreFer calendar or
+semantic version. After a container build succeeds, add one entry keyed by its
+immutable `sha-<short-commit>` image tag, including the full source SHA, date,
+llama.cpp base pin, hosted-model/preset additions or removals, exact
+context/concurrency deltas, quant or speculative-decoding changes, prestaging
+impact, and compatibility notes. Make that final record in a root-only commit;
+the container workflow watches `docker/prefer/**`, so the changelog update does
+not create a replacement image whose SHA would invalidate the entry.
+
 ## Conventions
 
 - **Preset naming**: `presets/<N>gb.ini`, where `N` is a VRAM tier in GB.
@@ -131,21 +143,43 @@ AWS deployment presets are generated, not hand-edited:
 
 | Preset | Host | Routes | Cache allocation |
 | ------ | ---- | ------ | ---------------- |
-| `aws/g6/xlarge/general.ini` | 1× L4 24 GB, 4 vCPU | Gemma E2B/E4B/12B, Qwen3.5-9B | E2B + Gemma12: 4×128K; E4B + Qwen9: 2×128K |
-| `aws/g6e/xlarge/gemma.ini` | 1× L40S 48 GB, 4 vCPU | Gemma 26B-A4B/31B | 26B: 4×128K; 31B: 1×256K |
-| `aws/g7e/2xlarge/general.ini` | 1× RTX PRO 6000 96 GB, 8 vCPU | Qwen3.6 35B-A3B/27B, GLM-4.7-Flash | 4×128K each |
-| `aws/g7e/2xlarge/qwen.ini` | 1× RTX PRO 6000 96 GB, 8 vCPU | Qwen3.6 35B-A3B/27B | 4×128K each |
-| `aws/g7e/12xlarge/deepseek-v4-flash-0731.ini` | 2× RTX PRO 6000 96 GB, 48 vCPU | DeepSeek V4 Flash 0731 Q4 + Q8 DSpark | 1×256K |
+| `aws/g6/xlarge/general.ini` | 1× L4 24 GB, 4 vCPU | Gemma E2B/E4B/12B, Qwen3.5-9B, Muse Q4 | Gemmas: 4×128K; Qwen9: 2×128K; Muse: 1×128K |
+| `aws/g6e/xlarge/general.ini` | 1× L40S 48 GB, 4 vCPU | All g6 routes plus Gemma 26B/31B, Qwen3.6 35B/27B, Muse Q6 | See exact cumulative matrix below |
+| `aws/g6e/xlarge/gemma.ini` | 1× L40S 48 GB, 4 vCPU | Gemma 26B-A4B/31B | 26B: 2×256K; 31B: 1×256K |
+| `aws/g6e/xlarge/qwen.ini` | 1× L40S 48 GB, 4 vCPU | Qwen3.6 35B-A3B/27B Q6 | 1×192K each |
+| `aws/g7e/2xlarge/general.ini` | 1× RTX PRO 6000 96 GB, 8 vCPU | All g6e routes plus GLM-4.7-Flash | See exact cumulative matrix below |
+| `aws/g7e/2xlarge/gemma.ini` | 1× RTX PRO 6000 96 GB, 8 vCPU | Gemma 26B-A4B/31B | 26B: 4×256K; 31B: 2×256K |
+| `aws/g7e/2xlarge/qwen.ini` | 1× RTX PRO 6000 96 GB, 8 vCPU | Qwen3.6 35B-A3B/27B | 4×256K each |
+| `aws/g7e/12xlarge/deepseek-v4-flash-0731.ini` | 2× RTX PRO 6000 96 GB, 48 vCPU | DeepSeek V4 Flash 0731 Q4 + Q8 DSpark | 4×384K |
 | `aws/g6/xlarge/muse.ini` | 1× L4 24 GB, 4 vCPU | Muse Glimmer 30B Q4 + DFlash | 1×128K |
 | `aws/g6e/xlarge/muse.ini` | 1× L40S 48 GB, 4 vCPU | Muse Glimmer 30B Q6 + DFlash | 2×128K |
-| `aws/g7e/2xlarge/muse.ini` | 1× RTX PRO 6000 96 GB, 8 vCPU | Muse Glimmer 30B Q6 + DFlash | 4×256K |
+| `aws/g7e/2xlarge/muse.ini` | 1× RTX PRO 6000 96 GB, 8 vCPU | Muse Glimmer 30B Q6 + DFlash | 4×128K |
 
 `ctx-size` is the total cache divided among `parallel` slots; the table shows
 the per-request allocation. All AWS scenarios deliberately use f16 K and V.
+Each `general.ini` is cumulative and contains the best host-appropriate lane
+for models assigned to that tier and every lower tier. A model with multiple
+catalog quants appears only once: Muse uses Q4 on g6 and Q6 on g6e/g7e.
+Cumulative general presets stage every referenced model by default; use a
+family or single-model preset when the full transfer and startup inventory is
+not wanted.
+
+| Model lane | g6 general | g6e general | g7e general |
+| ---------- | ---------- | ----------- | ----------- |
+| Gemma E2B QAT Q4 | 4×128K | 4×128K | 4×128K |
+| Gemma E4B QAT Q4 | 4×128K | 4×128K | 4×128K |
+| Gemma 12B QAT Q4 | 4×128K | 4×128K | 4×128K |
+| Gemma 26B-A4B QAT Q4 | — | 2×256K | 4×256K |
+| Gemma 31B QAT Q4 | — | 1×256K | 2×256K |
+| Qwen3.5-9B Q4 | 2×128K | 2×128K | 2×128K |
+| Qwen3.6-35B-A3B Q6 | — | 1×192K | 4×256K |
+| Qwen3.6-27B Q6 | — | 1×192K | 4×256K |
+| Muse Glimmer 30B | Q4 1×128K | Q6 2×128K | Q6 4×128K |
+| GLM-4.7-Flash Q6 | — | — | 4×202,752 |
 The original four-host deployment shape consumes exactly 64 vCPUs when running
-together; `qwen.ini` is an alternative to the g7e `general.ini`, not a fifth
-simultaneous host. G6/G6e xlarge have 250 GB local NVMe; G7e 2xlarge has 1.9 TB
-and G7e 12xlarge has 3.8 TB.
+together. Family presets are alternatives to the corresponding cumulative
+`general.ini`, not additional simultaneous hosts. G6/G6e xlarge have 250 GB
+local NVMe; G7e 2xlarge has 1.9 TB and G7e 12xlarge has 3.8 TB.
 
 Every bundled AWS route also has a generated single-model alternative on the
 same instance type. These presets copy the bundle's effective context,
@@ -156,8 +190,8 @@ settings, but contain one section, stage one catalog key, and set
 | Host | Single-model presets |
 | ---- | -------------------- |
 | `g6.xlarge` | `gemma-e2b.ini`, `gemma-e4b.ini`, `gemma-12b.ini`, `qwen-9b.ini`, `muse.ini` |
-| `g6e.xlarge` | `gemma-26b-a4b.ini`, `gemma-31b.ini`, `muse.ini` |
-| `g7e.2xlarge` | `qwen-35b-a3b.ini`, `qwen-27b.ini`, `glm-4.7-flash.ini`, `muse.ini` |
+| `g6e.xlarge` | `gemma-26b-a4b.ini`, `gemma-31b.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `muse.ini` |
+| `g7e.2xlarge` | `gemma-26b-a4b.ini`, `gemma-31b.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `glm-4.7-flash.ini`, `muse.ini` |
 
 The family bundles remain supported for flexible hosts. Prefer a single-model
 preset when NeurOn or another controller already knows which model owns the
@@ -198,10 +232,10 @@ needlessly tight. Sampling follows the publisher's `temp=1.0`, `top_p=0.95`,
 
 Muse's 52 layers repeat three 2K sliding-window layers then one global layer,
 with two KV heads, so its f16 cache grows much more slowly than a conventional
-52-layer dense-attention model. That makes 1×128K on 24 GB and 2×128K on
-48 GB credible starting points. The 96 GB shape allocates 4×256K without YaRN;
-the publisher describes 131,072+ context, so 256K remains an explicit first-boot
-quality/position gate rather than a proven operating point. For all three,
+52-layer dense-attention model. The 24/48/96 GB shapes allocate 1×128K,
+2×128K, and 4×128K respectively. The 96 GB route spends its extra memory on
+concurrency while staying at the publisher's default 131,072-token position
+range. For all three,
 verify full-GPU load, peak VRAM, image input, strict JSON/tools/SSE, per-slot
 context, DFlash acceptance and throughput before production use. If DFlash
 hurts concurrency or stability, record a target-only comparison; do not silently
@@ -276,14 +310,15 @@ one-model-per-host boxes.
 | Preset | GGUF | On-disk | Fits | Notes |
 | ------ | ---- | ------- | ---- | ----- |
 | `deepseek-v4-flash` | [antirez/deepseek-v4-gguf](https://huggingface.co/antirez/deepseek-v4-gguf) `Q4KExperts...imatrix` | ~153 GB | 2× 96 GB | Preserved Preview-era target-only route. Q4 experts / F16 attn+indexer / Q8 shared+out; no draft is configured. |
-| `aws/g7e/12xlarge/deepseek-v4-flash-0731` | [unsloth/DeepSeek-V4-Flash-0731-GGUF](https://huggingface.co/unsloth/DeepSeek-V4-Flash-0731-GGUF) `UD-Q4_K_XL` + Q8_0 DSpark | ~166 GB | 2× 96 GB | Quality-credible 0731 successor; b10362 `draft-dspark`, max 5, f16 K/V, 256K initial context. |
+| `aws/g7e/12xlarge/deepseek-v4-flash-0731` | [unsloth/DeepSeek-V4-Flash-0731-GGUF](https://huggingface.co/unsloth/DeepSeek-V4-Flash-0731-GGUF) `UD-Q4_K_XL` + Q8_0 DSpark | ~166 GB | 2× 96 GB | Quality-credible 0731 successor; b10362 `draft-dspark`, max 5, f16 K/V, verified 4×384K with headroom. |
 | `glm-5.2` | [unsloth/GLM-5.2-GGUF](https://huggingface.co/unsloth/GLM-5.2-GGUF) `UD-Q4_K_XL` | ~467 GB (11 shards) | 6× 96 GB (5× very tight) | Full, non-pruned GLM-5.2. Best quality, no REAP loop tax. |
 | `glm-5.2-reap` | [0xSero/GLM-5.2-REAP-504B-GGUF](https://huggingface.co/0xSero/GLM-5.2-REAP-504B-GGUF) `Q4_K_XL` | ~308 GB (8 shards) | 4× 96 GB | REAP 34%-expert-pruned. Fits in 4 cards, but per the card the loop rate roughly doubles (3.6%→7.2%) and the DSA indexer tensors are faked (duplicated from the nearest full layer) to load — no DSA speedup. Prefer `glm-5.2` if you have the 6th card. |
 
 The Preview-era DeepSeek route has the measured load/context points above. The
-generated 0731+DSpark route and the GLM 5.2 presets remain untested on their
-target hardware; their settings are heuristic and require the first-boot gates
-below:
+generated 0731+DSpark route has also been owner-verified at 4×384K with
+headroom on 2×96 GB. Its wider client-contract, template, DSpark-acceptance,
+and sustained-concurrency gates still apply. The GLM 5.2 presets remain
+untested on target hardware and require their first-boot gates below:
 - `deepseek-v4-flash` uses `flash-attn = auto` (not `on`): DeepSeek V4's
   compressed attention (CSA/HCA) isn't fully FA-wired, and real dual-96GB runs
   showed FA auto-disabling with "Flash Attention tensor is assigned to device
@@ -298,8 +333,9 @@ below:
 - DeepSeek-V4-Flash is a reasoning model (Non-think / Think-High / Think-Max).
   `reasoning = off` here only controls how thinking is *parsed* in the
   response, not whether the model thinks; Think-Max additionally wants
-  `ctx-size` ≥ ~384K. The Preview route ships 384K; the 0731+DSpark route
-  starts at 256K, enough for non-think and Think-High but not Think-Max. The
+  `ctx-size` ≥ ~384K per request. The Preview route ships one 384K slot; the
+  0731+DSpark route ships four 384K slots and therefore covers the Think-Max
+  threshold for every concurrent request. The
   official chat encoding is a Python encoder, not jinja —
   antirez's "chat-v2" GGUF embeds a template (`jinja = true` uses it), worth
   eyeballing that turns render correctly.
@@ -312,9 +348,8 @@ below:
 - The preserved Preview-era DeepSeek preset remains target-only. The generated
   0731 route is separate and uses the checkpoint's DSpark head with
   `spec-type = draft-dspark`; do not relabel it as MTP. b10362 contains the
-  required PR #25784 support. Its Q8_0 companion adds about 10.9 GB, which is
-  why the initial context is 256K rather than carrying the old target-only
-  route's 384K allocation forward blindly.
+  required PR #25784 support. Its Q8_0 companion adds about 10.9 GB; the
+  measured 2×96 GB deployment still retained headroom at four 384K slots.
 - Multi-GPU: weights split across both GPUs by default (layer split) — confirm
   with `nvidia-smi` that both cards show the target and, for 0731, the DSpark
   companion after load (~76 GB/card for the old target alone; roughly
