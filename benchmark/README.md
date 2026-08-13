@@ -114,6 +114,26 @@ with swap-on-demand at 1 or deliberately load/retain more models. That choice
 needs cold/warm/swap/concurrency/memory measurements on the 96 GB hardware; the
 harness does not guess it.
 
+## Live full-context endpoint probe
+
+Use `full-context` against an already-running PreFer endpoint to test retrieval
+near that model's configured context boundary. The command discovers the loaded
+model and its `--ctx-size`, renders the model's real chat template, uses the
+server tokenizer to size unique start/middle/end needles, leaves 8K tokens of
+headroom by default, and records the API's observed usage and timings. Run it
+only when the endpoint can dedicate a generation slot to the test.
+
+```bash
+python -m benchmark.scripts.full_context --base-url http://HOST:8080/v1 --dry-run
+python -m benchmark.scripts.full_context --base-url http://HOST:8080/v1 --timeout-seconds 1800 --output benchmark/artifacts/full-context.json
+```
+
+The generated request is synthetic and contains no private data. A pass requires
+the reported prompt usage to match the chat-template-aware sizing, the request
+to stay within the configured context, exact retrieval of all three unique
+codes, and a clean stop. The command never prints or saves the generated filler
+prompt.
+
 ## Isolated current-backend baseline
 
 The default baseline builds the production-pinned b10362 Dockerfile, never
