@@ -15,13 +15,14 @@ downloaded from Hugging Face on first start.
 
 The root `CHANGELOG.md` is the consumer-facing history for hosted models and
 presets. It has no `Unreleased` section and no independent PreFer calendar or
-semantic version. After a container build succeeds, add one entry keyed by its
-immutable `sha-<short-commit>` image tag, including the full source SHA, date,
-llama.cpp base pin, hosted-model/preset additions or removals, exact
-context/concurrency deltas, quant or speculative-decoding changes, prestaging
-impact, and compatibility notes. Make that final record in a root-only commit;
-the container workflow watches `docker/prefer/**`, so the changelog update does
-not create a replacement image whose SHA would invalidate the entry.
+semantic version. Update it in the same commit as every consumer-visible
+hosted-model or preset change. The entry describes the changes in that commit
+and uses a concise descriptive heading; it must not try to predict the
+commit's own SHA. CI assigns the resulting immutable `sha-<short-commit>` image
+tag after merge. Include the llama.cpp base pin, hosted-model/preset additions
+or removals, exact context/concurrency deltas, quant or speculative-decoding
+changes, prestaging impact, and compatibility notes. Do not defer the entry to
+a post-build follow-up commit merely to insert the SHA.
 
 ## Conventions
 

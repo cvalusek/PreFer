@@ -1,18 +1,21 @@
 # PreFer changelog
 
-This file is the canonical update reference for published PreFer container
-revisions. Each release entry is keyed by the immutable `sha-<short-commit>`
-container tag and records the full source commit, release date, llama.cpp base
-image, hosted-model inventory, preset additions or removals, context and
-concurrency changes, artifact or speculative-decoding changes, prestaging
-impact, and compatibility notes.
+This file is the canonical update reference for consumer-visible PreFer
+hosted-model and preset changes. Each entry is written in the same commit as
+the changes it describes and uses a concise descriptive heading. It records
+the llama.cpp base image, hosted-model inventory, preset additions or removals,
+context and concurrency changes, artifact or speculative-decoding changes,
+prestaging impact, and compatibility notes.
 
-Only published revisions are recorded. There is no prospective or
-`Unreleased` section. After a container build succeeds, its release entry is
-added in a root-only commit so documenting the published SHA does not trigger a
-replacement container build.
+There is no prospective `Unreleased` section and no independent PreFer
+calendar or semantic version. An entry does not try to predict its own commit
+SHA; CI assigns the resulting immutable `sha-<short-commit>` image tag after
+merge.
 
-## `sha-53b2f31` — 2026-08-13
+The first entry below was recorded immediately after its implementation image
+had already published, before the same-commit policy above was adopted.
+
+## AWS hosted-model preset expansion
 
 - Source: `53b2f31d1f5bf2cc03c681343781d6d6555b19a3`
 - Image: `ghcr.io/cvalusek/prefer:sha-53b2f31@sha256:3bb7b4bbeddeff0441a91cf0d0074541895423c26503db213b3b1989762254d2`
