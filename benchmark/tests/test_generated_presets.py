@@ -120,6 +120,29 @@ class GeneratedPresetTests(unittest.TestCase):
         self.assertIn("mmproj = /models/unsloth/Qwen3.5-9B-GGUF/mmproj-F16.gguf", preset)
         self.assertNotIn("unsloth/Qwen3.5-9B-MTP-GGUF", preset)
 
+    def test_qwen_38_27b_uses_pinned_q6_with_embedded_mtp(self) -> None:
+        catalog = json.loads((PREFER_ROOT / "preset-catalog.json").read_text(encoding="utf-8"))
+        self.assertNotIn("qwen-3.6-27b", catalog["models"])
+        qwen = catalog["models"]["qwen-3.8-27b"]
+        self.assertEqual(qwen["section"], "unsloth/Qwen3.8-27B-GGUF:UD-Q6_K_XL")
+        self.assertEqual(qwen["aliases"], ["qwen-3.8-27b"])
+        self.assertTrue(qwen["embedded_mtp"])
+        self.assertEqual(qwen["settings"]["spec-type"], "draft-mtp")
+        self.assertEqual(qwen["settings"]["spec-draft-n-max"], 2)
+        self.assertNotIn("mmproj", qwen["settings"])
+        self.assertEqual(qwen["downloads"], [{
+            "repo": "unsloth/Qwen3.8-27B-GGUF",
+            "revision": "4604b899a826000505a834e623272db5b7fd62f6",
+            "include": ["Qwen3.8-27B-UD-Q6_K_XL.gguf"],
+        }])
+        self.assertEqual(qwen["artifacts"], [{
+            "role": "model",
+            "repo": "unsloth/Qwen3.8-27B-GGUF",
+            "path": "Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "size": 25924152384,
+            "sha256": "739202186fd9389bb58497c58b56c8a0d4253d99d20131e6a0427e363e678fc8",
+        }])
+
     def test_single_model_aws_presets_match_their_bundle_routes(self) -> None:
         cases = [
             ("aws/g6/xlarge/general.ini", "aws/g6/xlarge/gemma-e2b.ini", "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL"),
@@ -129,9 +152,9 @@ class GeneratedPresetTests(unittest.TestCase):
             ("aws/g6e/xlarge/gemma.ini", "aws/g6e/xlarge/gemma-26b-a4b.ini", "unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL"),
             ("aws/g6e/xlarge/gemma.ini", "aws/g6e/xlarge/gemma-31b.ini", "unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL"),
             ("aws/g6e/xlarge/qwen.ini", "aws/g6e/xlarge/qwen-35b-a3b.ini", "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL"),
-            ("aws/g6e/xlarge/qwen.ini", "aws/g6e/xlarge/qwen-27b.ini", "unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q6_K_XL"),
+            ("aws/g6e/xlarge/qwen.ini", "aws/g6e/xlarge/qwen-27b.ini", "unsloth/Qwen3.8-27B-GGUF:UD-Q6_K_XL"),
             ("aws/g7e/2xlarge/qwen.ini", "aws/g7e/2xlarge/qwen-35b-a3b.ini", "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL"),
-            ("aws/g7e/2xlarge/qwen.ini", "aws/g7e/2xlarge/qwen-27b.ini", "unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q6_K_XL"),
+            ("aws/g7e/2xlarge/qwen.ini", "aws/g7e/2xlarge/qwen-27b.ini", "unsloth/Qwen3.8-27B-GGUF:UD-Q6_K_XL"),
             ("aws/g7e/2xlarge/gemma.ini", "aws/g7e/2xlarge/gemma-26b-a4b.ini", "unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL"),
             ("aws/g7e/2xlarge/gemma.ini", "aws/g7e/2xlarge/gemma-31b.ini", "unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL"),
             ("aws/g7e/2xlarge/general.ini", "aws/g7e/2xlarge/glm-4.7-flash.ini", "unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF:UD-Q6_K_XL"),
@@ -163,7 +186,7 @@ class GeneratedPresetTests(unittest.TestCase):
                 "gemma-4-31b": (262144, 1),
                 "qwen-3.5-9b": (262144, 2),
                 "qwen-3.6-35b-a3b": (196608, 1),
-                "qwen-3.6-27b": (196608, 1),
+                "qwen-3.8-27b": (196608, 1),
                 "muse-glimmer-30b-q6": (262144, 2),
             },
             "aws/g7e/2xlarge/general.ini": {
@@ -174,7 +197,7 @@ class GeneratedPresetTests(unittest.TestCase):
                 "gemma-4-31b": (524288, 2),
                 "qwen-3.5-9b": (262144, 2),
                 "qwen-3.6-35b-a3b": (1048576, 4),
-                "qwen-3.6-27b": (1048576, 4),
+                "qwen-3.8-27b": (1048576, 4),
                 "glm-4.7-flash": (811008, 4),
                 "muse-glimmer-30b-q6": (524288, 4),
             },

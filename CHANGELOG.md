@@ -1,5 +1,24 @@
 # PreFer changelog
 
+## `Current`
+
+- Local
+  - Modified `8gb.ini`, `12gb.ini`, `12gb-pascal.ini`, and `96gb.ini`
+    - Replaced `qwen-3.6-27b` with `qwen-3.8-27b`.
+- AWS
+  - G6e
+    - `xlarge`
+      - Modified `qwen-27b.ini`
+        - Replaced `qwen-3.6-27b` with `qwen-3.8-27b`.
+      - Modified `qwen.ini` and `general.ini`
+        - Includes `qwen-3.8-27b` instead of `qwen-3.6-27b`.
+  - G7e
+    - `2xlarge`
+      - Modified `qwen-27b.ini`
+        - Replaced `qwen-3.6-27b` with `qwen-3.8-27b`.
+      - Modified `qwen.ini` and `general.ini`
+        - Includes `qwen-3.8-27b` instead of `qwen-3.6-27b`.
+
 ## `sha-53b2f31`
 
 Image: `ghcr.io/cvalusek/prefer:sha-53b2f31@sha256:3bb7b4bbeddeff0441a91cf0d0074541895423c26503db213b3b1989762254d2`

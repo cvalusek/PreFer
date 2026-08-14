@@ -15,7 +15,7 @@
     "gemma-4-e2b",
     "gemma-4-e4b",
     "qwen-3.6-35b-a3b",
-    "qwen-3.6-27b",
+    "qwen-3.8-27b",
     "glm-4.7-flash"
   ],
   "models": {
@@ -180,22 +180,23 @@
         {"role": "model", "repo": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF", "path": "Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf"}
       ]
     },
-    "qwen-3.6-27b": {
-      "section": "unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q6_K_XL",
-      "aliases": ["qwen-3.6-27b"],
+    "qwen-3.8-27b": {
+      "section": "unsloth/Qwen3.8-27B-GGUF:UD-Q6_K_XL",
+      "aliases": ["qwen-3.8-27b"],
+      "license": "apache-2.0",
       "embedded_mtp": true,
       "settings": {
-        "model": "/models/unsloth/Qwen3.6-27B-MTP-GGUF/Qwen3.6-27B-UD-Q6_K_XL.gguf",
+        "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
         "spec-type": "draft-mtp",
         "spec-draft-n-max": 2,
         "top-k": 20,
         "min-p": 0.0
       },
       "downloads": [
-        {"repo": "unsloth/Qwen3.6-27B-MTP-GGUF", "revision": null, "include": ["*UD-Q6_K_XL*"]}
+        {"repo": "unsloth/Qwen3.8-27B-GGUF", "revision": "4604b899a826000505a834e623272db5b7fd62f6", "include": ["Qwen3.8-27B-UD-Q6_K_XL.gguf"]}
       ],
       "artifacts": [
-        {"role": "model", "repo": "unsloth/Qwen3.6-27B-MTP-GGUF", "path": "Qwen3.6-27B-UD-Q6_K_XL.gguf"}
+        {"role": "model", "repo": "unsloth/Qwen3.8-27B-GGUF", "path": "Qwen3.8-27B-UD-Q6_K_XL.gguf", "size": 25924152384, "sha256": "739202186fd9389bb58497c58b56c8a0d4253d99d20131e6a0427e363e678fc8"}
       ]
     },
     "muse-glimmer-30b-q4": {

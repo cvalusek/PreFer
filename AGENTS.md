@@ -7,7 +7,7 @@ read this before changing presets, the Dockerfile, or the detection scripts.
 ## Project overview
 
 PreFer: llama.cpp router containers for self-hosted LLM inference on local,
-RunPod, and AWS hardware. `docker/prefer/` hosts Gemma 4, Qwen3.5/Qwen3.6,
+RunPod, and AWS hardware. `docker/prefer/` hosts Gemma 4, Qwen3.5/Qwen3.6/Qwen3.8,
 Muse Glimmer, GLM, and DeepSeek V4 routes via `llama-server` router mode, with models
 downloaded from Hugging Face on first start.
 
@@ -181,7 +181,7 @@ not wanted.
 | Gemma 31B QAT Q4 | — | 1×256K | 2×256K |
 | Qwen3.5-9B Q4 | 2×128K | 2×128K | 2×128K |
 | Qwen3.6-35B-A3B Q6 | — | 1×192K | 4×256K |
-| Qwen3.6-27B Q6 | — | 1×192K | 4×256K |
+| Qwen3.8-27B Q6 | — | 1×192K | 4×256K |
 | Muse Glimmer 30B | Q4 1×128K | Q6 2×128K | Q6 4×128K |
 | GLM-4.7-Flash Q6 | — | — | 4×202,752 |
 The original four-host deployment shape consumes exactly 64 vCPUs when running
@@ -218,7 +218,16 @@ Gemma 12B/31B use Unsloth's QAT-derived UD-Q4_K_XL targets, same-repository
 Q4_0 MTP assistants, and F16 projectors. Qwen3.5-9B uses the non-MTP
 UD-Q4_K_XL target plus its F16 projector, preserving the g6 route's two-way
 parallelism and vision support. Do not set `draft-mtp` on that GGUF: b10257
-rejects it because it contains no MTP layers. DeepSeek 0731 uses the five-shard
+rejects it because it contains no MTP layers. Qwen3.8-27B replaces the former
+Qwen3.6-27B route with the immutable Unsloth UD-Q6_K_XL artifact at
+`4604b899a826000505a834e623272db5b7fd62f6`; it retains embedded MTP with
+`spec-draft-n-max=2`, but intentionally does not configure the optional
+projector. The model's native 262K context, thinking sampler, and existing
+192K/256K deployment shapes did not require a preset-setting change. Its
+embedded template exposes `reasoning_effort` (`low`, `medium`, and `xhigh`,
+defaulting to `xhigh`) and defaults to preserving prior thinking; those remain
+request/template behavior rather than duplicated INI settings. DeepSeek 0731
+uses the five-shard
 UD-Q4_K_XL target plus the
 co-located Q8_0 DSpark companion; `spec-type` is `draft-dspark` and
 `spec-draft-n-max=5`. IQ1/IQ2 are intentionally absent.
@@ -474,17 +483,19 @@ Qwen/GLM if their headroom allows.
 
 ## Qwen sampling: `presence-penalty`
 
-Qwen3.6's official recommendation is `presence_penalty = 1.5` (alongside
-`temp=1.0, top_p=0.95, top_k=20`) to avoid loops in long reasoning — but
+Qwen3.8-27B's default thinking profile recommends `presence_penalty = 0.0`
+alongside `temp=1.0, top_p=0.95, top_k=20`, exactly matching its PreFer route.
+Older Qwen guidance also proposed `presence_penalty = 1.5` to avoid loops in
+some non-thinking or long-reasoning configurations, but
 presence penalty applies to *every* token seen so far in the context,
 regardless of whether repeating it is a loop or legitimate verbatim reuse
 (e.g. an agent re-typing the same file path). This is a documented tension
 in the Qwen community itself, not unique to our setup. Since the
 `dry-allowed-length = 24` change above covers the same "long reasoning loop"
 failure mode more precisely (only penalizing actual repeated *sequences*,
-not all repeated tokens), Qwen's `presence-penalty` was set to `0.0` across
-all presets, relying on DRY instead. If long-reasoning loops reappear on
-Qwen without presence_penalty, that'd be the first thing to revisit —
+not all repeated tokens), Qwen's `presence-penalty` remains `0.0` across
+all presets, relying on DRY as the targeted loop mitigation. If long-reasoning
+loops reappear on Qwen without presence_penalty, that'd be the first thing to revisit —
 either raise `presence-penalty` back up (accepting the agentic-output risk)
 or tune DRY further before doing so.
 
@@ -497,7 +508,7 @@ or tune DRY further before doing so.
   1M section has been removed. Legacy 64k smoke tests on Titan X Pascal confirmed
   gemma-4-26B-A4B and GLM could load/generate, but the current native-context
   entries are still heuristic: gemma-4-26B-A4B uses `n-cpu-moe=20`, Qwen3.6
-  35B uses `n-cpu-moe=26`, and GLM uses `n-cpu-moe=18`. Qwen3.6 27B is dense,
+  35B uses `n-cpu-moe=26`, and GLM uses `n-cpu-moe=18`. Qwen3.8 27B is dense,
   so `n-cpu-moe` is not expected to matter.
 - **`8gb.ini`**: **entirely heuristic**. It mirrors the same router id shape
   as `12gb.ini`, with higher MoE offload values (`n-cpu-moe` 26/32/24 for

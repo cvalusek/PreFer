@@ -1,6 +1,6 @@
 # PreFer Container
 
-A llama.cpp router container hosting Gemma 4, Qwen3.5/Qwen3.6, Muse Glimmer,
+A llama.cpp router container hosting Gemma 4, Qwen3.5/Qwen3.6/Qwen3.8, Muse Glimmer,
 GLM, and DeepSeek V4.
 
 Published hosted-model and preset changes are recorded by immutable container
@@ -90,7 +90,7 @@ The exact cumulative `general.ini` matrix is:
 | Gemma 31B QAT Q4 | — | 1×256K | 2×256K |
 | Qwen3.5-9B Q4 | 2×128K | 2×128K | 2×128K |
 | Qwen3.6-35B-A3B Q6 | — | 1×192K | 4×256K |
-| Qwen3.6-27B Q6 | — | 1×192K | 4×256K |
+| Qwen3.8-27B Q6 | — | 1×192K | 4×256K |
 | Muse Glimmer 30B | Q4 1×128K | Q6 2×128K | Q6 4×128K |
 | GLM-4.7-Flash Q6 | — | — | 4×202,752 |
 
@@ -225,7 +225,7 @@ layout means multiple presets/services can safely share one volume.
 | [unsloth/gemma-4-31B-it-qat-GGUF](https://huggingface.co/unsloth/gemma-4-31B-it-qat-GGUF) | `UD-Q4_K_XL` | Revision-pinned QAT target + same-repo Q4_0 MTP + F16 projector; AWS g6e |
 | [unsloth/Qwen3.5-9B-GGUF](https://huggingface.co/unsloth/Qwen3.5-9B-GGUF) | `UD-Q4_K_XL` | Revision-pinned target + F16 projector; no speculative decoding; AWS g6 |
 | [unsloth/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF) | `UD-Q6_K_XL` | MTP draft is built into the main GGUF, no separate `model-draft` |
-| [unsloth/Qwen3.6-27B-MTP-GGUF](https://huggingface.co/unsloth/Qwen3.6-27B-MTP-GGUF) | `UD-Q6_K_XL` | MTP draft is built into the main GGUF, no separate `model-draft` |
+| [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF) | `UD-Q6_K_XL` | Revision-pinned target with MTP built into the main GGUF; no separate `model-draft` or projector is configured |
 | [unsloth/Muse-Glimmer-30B-GGUF](https://huggingface.co/unsloth/Muse-Glimmer-30B-GGUF) | `UD-Q4_K_XL` / `UD-Q6_K_XL` | Revision-pinned target + `dflash-kquant.gguf` + `mmproj-kquant.gguf`; AWS 24/48/96 GB; requires b10362 or later |
 | [unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF](https://huggingface.co/unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF) | `UD-Q6_K_XL` | No speculative decoding |
 | [antirez/deepseek-v4-gguf](https://huggingface.co/antirez/deepseek-v4-gguf) | `Q4KExperts...imatrix` | Preserved Preview-era target-only route |
@@ -245,7 +245,7 @@ layout means multiple presets/services can safely share one volume.
 | `gemma-4-31b` | g6e 256K ×1; g7e 256K ×2 | g6e/g7e `general.ini`, `gemma.ini`, and `gemma-31b.ini` |
 | `qwen-3.5`, `qwen-3.5-9b` | 128K ×2 | g6/g6e/g7e `general.ini`; g6 `qwen-9b.ini` |
 | `qwen-3.6`, `qwen-3.6-35b-a3b` | g6e 192K ×1; g7e 256K ×4 | tier presets; g6e/g7e `general.ini`, `qwen.ini`, and `qwen-35b-a3b.ini` |
-| `qwen-3.6-27b` | g6e 192K ×1; g7e 256K ×4 | tier presets; g6e/g7e `general.ini`, `qwen.ini`, and `qwen-27b.ini` |
+| `qwen-3.8-27b` | g6e 192K ×1; g7e 256K ×4 | tier presets; g6e/g7e `general.ini`, `qwen.ini`, and `qwen-27b.ini` |
 | `muse-glimmer`, `muse-glimmer-30b` | Q4 128K ×1; Q6 128K ×2 or ×4 | g6/g6e/g7e `general.ini` and `muse.ini` |
 | `glm-4.7-flash` | 202,752 ×4 on g7e | tier presets; g7e `general.ini` and `glm-4.7-flash.ini` |
 | `deepseek-v4-flash` | 393216 | `deepseek-v4-flash.ini` |

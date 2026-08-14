@@ -144,9 +144,9 @@
       "presets": ["8gb.ini", "12gb.ini", "12gb-pascal.ini", "96gb.ini", "aws/g6e/xlarge/general.ini", "aws/g6e/xlarge/qwen.ini", "aws/g6e/xlarge/qwen-35b-a3b.ini", "aws/g7e/2xlarge/general.ini", "aws/g7e/2xlarge/qwen.ini", "aws/g7e/2xlarge/qwen-35b-a3b.ini"]
     },
     {
-      "canonical_id": "unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q6_K_XL",
-      "discovery_id": "unsloth/Qwen3.6-27B-MTP-GGUF:Q6_K_XL",
-      "aliases": ["qwen-3.6-27b"],
+      "canonical_id": "unsloth/Qwen3.8-27B-GGUF:UD-Q6_K_XL",
+      "discovery_id": "unsloth/Qwen3.8-27B-GGUF:Q6_K_XL",
+      "aliases": ["qwen-3.8-27b"],
       "quantization": "UD-Q6_K_XL",
       "presets": ["8gb.ini", "12gb.ini", "12gb-pascal.ini", "96gb.ini", "aws/g6e/xlarge/general.ini", "aws/g6e/xlarge/qwen.ini", "aws/g6e/xlarge/qwen-27b.ini", "aws/g7e/2xlarge/general.ini", "aws/g7e/2xlarge/qwen.ini", "aws/g7e/2xlarge/qwen-27b.ini"]
     },
