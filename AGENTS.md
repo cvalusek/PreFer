@@ -22,7 +22,9 @@ commit's own SHA. CI assigns the resulting immutable `sha-<short-commit>` image
 tag after merge. Include the llama.cpp base pin, hosted-model/preset additions
 or removals, exact context/concurrency deltas, quant or speculative-decoding
 changes, prestaging impact, and compatibility notes. Do not defer the entry to
-a post-build follow-up commit merely to insert the SHA.
+a post-build follow-up commit merely to insert the SHA. Keep entries concise
+and user-facing. Maintenance instructions and implementation rationale belong
+in this file, not in `CHANGELOG.md`.
 
 ## Conventions
 
