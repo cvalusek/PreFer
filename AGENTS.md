@@ -16,15 +16,20 @@ downloaded from Hugging Face on first start.
 The root `CHANGELOG.md` is the consumer-facing history for hosted models and
 presets. It has no `Unreleased` section and no independent PreFer calendar or
 semantic version. Update it in the same commit as every consumer-visible
-hosted-model or preset change. The entry describes the changes in that commit
-and uses a concise descriptive heading; it must not try to predict the
-commit's own SHA. CI assigns the resulting immutable `sha-<short-commit>` image
-tag after merge. Include the llama.cpp base pin, hosted-model/preset additions
-or removals, exact context/concurrency deltas, quant or speculative-decoding
-changes, prestaging impact, and compatibility notes. Do not defer the entry to
-a post-build follow-up commit merely to insert the SHA. Keep entries concise
-and user-facing. Maintenance instructions and implementation rationale belong
-in this file, not in `CHANGELOG.md`.
+hosted-model or preset change by adding a populated `Current` section at the
+top. `Current` describes the changes already merged while their image is still
+building; never leave an empty `Current` section in the file.
+
+After CI publishes the immutable image, make a root-only follow-up commit that
+changes the `Current` heading to the resulting `sha-<short-commit>` tag and
+adds the exact image identity. Do not rewrite the approved change bullets
+during finalization. The image workflow watches `docker/prefer/**`, so this
+root changelog-only commit does not create another image. Include additions,
+removals, and exact context/concurrency deltas, plus quant, speculative,
+prestaging, or compatibility changes only when they actually changed. Keep
+entries concise, user-facing, nested by platform and instance, and limited to
+one model per line. Maintenance instructions and implementation rationale
+belong in this file, not in `CHANGELOG.md`.
 
 ## Conventions
 

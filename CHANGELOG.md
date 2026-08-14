@@ -1,22 +1,94 @@
 # PreFer changelog
 
-## AWS hosted-model preset expansion
+## `sha-53b2f31`
 
 Image: `ghcr.io/cvalusek/prefer:sha-53b2f31@sha256:3bb7b4bbeddeff0441a91cf0d0074541895423c26503db213b3b1989762254d2`
 
-Runtime: llama.cpp `server-cuda-b10362`
-
-- AWS `general.ini` presets are now cumulative by instance size. Use a family
-  or single-model preset when you do not want every supported model prestaged.
-- G6 adds Muse Q4 at 1×128K and raises Gemma E4B from 2×128K to 4×128K.
-- G6e adds a cumulative general preset plus Qwen3.6 27B and 35B-A3B Q6 family
-  and single-model presets at 1×192K. Gemma 26B changes from 4×128K to 2×256K;
-  Gemma 31B remains 1×256K.
-- G7e general now includes all lower-tier models. New Gemma family and
-  single-model presets run 26B at 4×256K and 31B at 2×256K. Qwen3.6 27B/35B
-  increase to 4×256K, GLM-4.7-Flash to 4×202,752, and Muse Q6 uses 4×128K.
-- DeepSeek V4 Flash 0731 increases from 1×256K to the verified 4×384K shape,
-  retaining its Q4 target, Q8 DSpark companion, and f16 K/V cache.
-- Prestaging manifests were regenerated for every changed and new preset.
-  Model artifacts, aliases, the v1 client contract, `models-max=1`, and the
-  llama.cpp runtime pin are unchanged.
+- AWS
+  - General presets
+    - `general.ini` now includes models supported by its instance class and smaller instance classes.
+    - `general.ini` now prestages its complete model inventory.
+  - G6
+    - `xlarge`
+      - Modified `gemma-e4b.ini`
+        - Model: `gemma-4-e4b`
+        - Increased concurrency from 2 to 4.
+      - Modified `general.ini`
+        - Added `muse-glimmer-30b`.
+          - Context: 128K
+          - Concurrency: 1
+        - Includes the updated `gemma-4-e4b` configuration.
+  - G6e
+    - `xlarge`
+      - Modified `gemma-26b-a4b.ini`
+        - Model: `gemma-4-26b-a4b`
+        - Increased context from 128K to 256K.
+        - Decreased concurrency from 4 to 2.
+      - Modified `gemma.ini`
+        - Includes the updated `gemma-4-26b-a4b` configuration.
+        - Includes `gemma-4-31b`.
+      - Added `qwen-27b.ini`
+        - Model: `qwen-3.6-27b`
+        - Context: 192K
+        - Concurrency: 1
+      - Added `qwen-35b-a3b.ini`
+        - Model: `qwen-3.6-35b-a3b`
+        - Context: 192K
+        - Concurrency: 1
+      - Added `qwen.ini`
+        - Includes `qwen-3.6-27b`.
+        - Includes `qwen-3.6-35b-a3b`.
+      - Added `general.ini`
+        - Includes `gemma-4-e2b`.
+        - Includes `gemma-4-e4b`.
+        - Includes `gemma-4-12b`.
+        - Includes `gemma-4-26b-a4b`.
+        - Includes `gemma-4-31b`.
+        - Includes `qwen-3.5-9b`.
+        - Includes `qwen-3.6-27b`.
+        - Includes `qwen-3.6-35b-a3b`.
+        - Includes `muse-glimmer-30b`.
+  - G7e
+    - `2xlarge`
+      - Added `gemma-26b-a4b.ini`
+        - Model: `gemma-4-26b-a4b`
+        - Context: 256K
+        - Concurrency: 4
+      - Added `gemma-31b.ini`
+        - Model: `gemma-4-31b`
+        - Context: 256K
+        - Concurrency: 2
+      - Added `gemma.ini`
+        - Includes `gemma-4-26b-a4b`.
+        - Includes `gemma-4-31b`.
+      - Modified `qwen-27b.ini`
+        - Model: `qwen-3.6-27b`
+        - Increased context from 128K to 256K.
+      - Modified `qwen-35b-a3b.ini`
+        - Model: `qwen-3.6-35b-a3b`
+        - Increased context from 128K to 256K.
+      - Modified `qwen.ini`
+        - Includes the updated `qwen-3.6-27b` configuration.
+        - Includes the updated `qwen-3.6-35b-a3b` configuration.
+      - Modified `glm-4.7-flash.ini`
+        - Model: `glm-4.7-flash`
+        - Increased context from 128K to 198K.
+      - Modified `muse.ini`
+        - Model: `muse-glimmer-30b`
+        - Decreased context from 256K to 128K.
+      - Modified `general.ini`
+        - Added `gemma-4-e2b`.
+        - Added `gemma-4-e4b`.
+        - Added `gemma-4-12b`.
+        - Added `gemma-4-26b-a4b`.
+        - Added `gemma-4-31b`.
+        - Added `qwen-3.5-9b`.
+        - Added `muse-glimmer-30b`.
+        - Includes the updated `qwen-3.6-27b` configuration.
+        - Includes the updated `qwen-3.6-35b-a3b` configuration.
+        - Includes the updated `glm-4.7-flash` configuration.
+    - `12xlarge`
+      - Modified `deepseek-v4-flash-0731.ini`
+        - Model: `deepseek-v4-flash-0731`
+        - Increased concurrency from 1 to 4.
+        - Increased context from 256K to 384K.
