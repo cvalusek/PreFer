@@ -1,6 +1,8 @@
 # PreFer changelog
 
-## `Current`
+## `sha-c925ef2`
+
+Image: `ghcr.io/cvalusek/prefer:sha-c925ef2@sha256:00e085311dd72f5af1d820cf86745d18130e0f3b6226a9f56f22d22982428660`
 
 - Local
   - Modified `8gb.ini`, `12gb.ini`, `12gb-pascal.ini`, and `96gb.ini`
