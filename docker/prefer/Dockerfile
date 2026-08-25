@@ -41,6 +41,7 @@ ENV LD_LIBRARY_PATH=/app
 
 COPY presets/ /presets/
 COPY preset-catalog.json /preset-catalog.json
+COPY deployment-inventory.generated.json /deployment-inventory.json
 COPY model-downloads.generated.sh /model-downloads.generated.sh
 COPY detect-preset.sh /detect-preset.sh
 COPY download-models.sh /download-models.sh

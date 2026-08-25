@@ -144,6 +144,13 @@
       "presets": ["8gb.ini", "12gb.ini", "12gb-pascal.ini", "96gb.ini", "aws/g6e/xlarge/general.ini", "aws/g6e/xlarge/qwen.ini", "aws/g6e/xlarge/qwen-35b-a3b.ini", "aws/g7e/2xlarge/general.ini", "aws/g7e/2xlarge/qwen.ini", "aws/g7e/2xlarge/qwen-35b-a3b.ini"]
     },
     {
+      "canonical_id": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_XL",
+      "discovery_id": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:Q4_K_XL",
+      "aliases": ["qwen-3.6", "qwen-3.6-35b-a3b"],
+      "quantization": "UD-Q4_K_XL",
+      "presets": ["local/titan-x-pascal/1x/general.ini"]
+    },
+    {
       "canonical_id": "unsloth/Qwen3.8-27B-GGUF:UD-Q6_K_XL",
       "discovery_id": "unsloth/Qwen3.8-27B-GGUF:Q6_K_XL",
       "aliases": ["qwen-3.8-27b"],

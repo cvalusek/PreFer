@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "family": "gemma",
+  "model_slug": "gemma-4-e2b",
+  "shared": {
+    "aliases": [
+      "gemma-4-e2b"
+    ],
+    "request_model_id": "gemma-4-e2b"
+  },
+  "quants": {
+    "ud-q4-k-xl": {
+      "key": "gemma-4-e2b",
+      "section": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+      "settings": {
+        "model": "/models/unsloth/gemma-4-E2B-it-qat-GGUF/gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf",
+        "model-draft": "/models/unsloth/gemma-4-E2B-it-qat-GGUF/mtp-gemma-4-E2B-it.gguf",
+        "mmproj": "/models/unsloth/gemma-4-E2B-it-qat-GGUF/mmproj-F16.gguf",
+        "spec-type": "draft-mtp",
+        "spec-draft-n-max": 4,
+        "flash-attn": "off",
+        "top-k": 64
+      },
+      "downloads": [
+        {
+          "repo": "unsloth/gemma-4-E2B-it-qat-GGUF",
+          "revision": null,
+          "include": [
+            "*UD-Q4_K_XL*",
+            "mtp-gemma-4-E2B-it.gguf",
+            "mmproj-F16.gguf"
+          ]
+        }
+      ],
+      "artifacts": [
+        {
+          "role": "model",
+          "repo": "unsloth/gemma-4-E2B-it-qat-GGUF",
+          "path": "gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf"
+        },
+        {
+          "role": "draft",
+          "repo": "unsloth/gemma-4-E2B-it-qat-GGUF",
+          "path": "mtp-gemma-4-E2B-it.gguf"
+        },
+        {
+          "role": "projector",
+          "repo": "unsloth/gemma-4-E2B-it-qat-GGUF",
+          "path": "mmproj-F16.gguf"
+        }
+      ]
+    }
+  }
+}

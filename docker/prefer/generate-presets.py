@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Generate deployment presets and downloader definitions from one catalog."""
+"""Generate deployment presets, downloads, and deployment inventory."""
 
 from __future__ import annotations
 
 import argparse
+import copy
 import fnmatch
 import hashlib
 import json
@@ -17,8 +18,10 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent
 CATALOG_PATH = ROOT / "preset-catalog.json"
-SCENARIO_PATHS = (ROOT / "preset-scenarios" / "aws.json",)
+MODELS_ROOT = ROOT / "models"
+SCENARIOS_ROOT = ROOT / "preset-scenarios"
 DOWNLOADS_PATH = ROOT / "model-downloads.generated.sh"
+INVENTORY_PATH = ROOT / "deployment-inventory.generated.json"
 
 
 class CatalogError(ValueError):
@@ -30,9 +33,96 @@ def load_json(path: Path) -> dict[str, Any]:
         return json.load(handle, object_pairs_hook=OrderedDict)
 
 
-def ini_value(value: Any) -> str:
+def load_catalog() -> dict[str, Any]:
+    catalog = load_json(CATALOG_PATH)
+    if catalog.get("schema_version") != 2:
+        raise CatalogError("preset-catalog.json must use schema_version 2")
+
+    models: OrderedDict[str, dict[str, Any]] = OrderedDict()
+    model_paths = sorted(MODELS_ROOT.glob("*/*/model.json"))
+    if not model_paths:
+        raise CatalogError("models/<family>/<model>/model.json files are required")
+
+    for path in model_paths:
+        source = load_json(path)
+        relative = path.relative_to(MODELS_ROOT)
+        family, model_slug, filename = relative.parts
+        if filename != "model.json":
+            raise CatalogError(f"unexpected model catalog path: {relative.as_posix()}")
+        if source.get("schema_version") != 1:
+            raise CatalogError(f"{relative.as_posix()}: schema_version must be 1")
+        if source.get("family") != family or source.get("model_slug") != model_slug:
+            raise CatalogError(f"{relative.as_posix()}: family/model_slug must match its folder path")
+        quants = source.get("quants")
+        if not isinstance(quants, dict) or not quants:
+            raise CatalogError(f"{relative.as_posix()}: quants must be a non-empty object")
+        shared = source.get("shared", OrderedDict())
+        if not isinstance(shared, dict):
+            raise CatalogError(f"{relative.as_posix()}: shared must be an object")
+        if "settings" in shared and not isinstance(shared["settings"], dict):
+            raise CatalogError(f"{relative.as_posix()}: shared.settings must be an object")
+
+        for quant_slug, lane in quants.items():
+            if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", quant_slug):
+                raise CatalogError(f"{relative.as_posix()}: unsafe quant key {quant_slug!r}")
+            key = lane.get("key")
+            if not key:
+                raise CatalogError(f"{relative.as_posix()}:{quant_slug}: key is required")
+            if key in models:
+                raise CatalogError(f"duplicate model key {key!r}")
+            model = copy.deepcopy(OrderedDict(shared))
+            for name, value in lane.items():
+                if name == "key":
+                    continue
+                if name == "settings" and name in model:
+                    if not isinstance(value, dict):
+                        raise CatalogError(f"{relative.as_posix()}:{quant_slug}: settings must be an object")
+                    model[name] = OrderedDict((*model[name].items(), *value.items()))
+                else:
+                    model[name] = copy.deepcopy(value)
+            if isinstance(model.get("settings"), dict):
+                settings = model["settings"]
+                model["settings"] = OrderedDict(
+                    (name, settings[name])
+                    for name in ("model", "model-draft", "mmproj")
+                    if name in settings
+                )
+                model["settings"].update(
+                    (name, value)
+                    for name, value in settings.items()
+                    if name not in {"model", "model-draft", "mmproj"}
+                )
+            model["_catalog"] = OrderedDict(
+                family=family,
+                model_slug=model_slug,
+                quant_slug=quant_slug,
+                source=f"models/{relative.as_posix()}",
+            )
+            models[key] = model
+
+    model_order = catalog.get("model_order")
+    if not isinstance(model_order, list) or set(model_order) != set(models) or len(model_order) != len(models):
+        raise CatalogError("preset-catalog.json model_order must list every model key exactly once")
+    catalog["models"] = OrderedDict((key, models[key]) for key in model_order)
+    return catalog
+
+
+DECIMAL_SETTINGS = {
+    "temp",
+    "top-p",
+    "min-p",
+    "dry-multiplier",
+    "dry-base",
+    "repeat-penalty",
+    "presence-penalty",
+}
+
+
+def ini_value(value: Any, name: str | None = None) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
+    if name in DECIMAL_SETTINGS and isinstance(value, int):
+        return f"{value:.1f}"
     return str(value)
 
 
@@ -45,8 +135,8 @@ def include_matches(path: str, pattern: str) -> bool:
 
 
 def validate_catalog(catalog: dict[str, Any]) -> None:
-    if catalog.get("schema_version") != 1:
-        raise CatalogError("preset-catalog.json must use schema_version 1")
+    if catalog.get("schema_version") != 2:
+        raise CatalogError("preset-catalog.json must use schema_version 2")
     runtime = catalog.get("runtime", {})
     runtime_tag = str(runtime.get("llama_cpp_tag", ""))
     if not re.fullmatch(r"b[0-9]+", runtime_tag):
@@ -71,6 +161,15 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
             raise CatalogError(f"unsafe model key: {key!r}")
         if not model.get("section"):
             raise CatalogError(f"{key}: section is required")
+        aliases = model.get("aliases")
+        if not isinstance(aliases, list) or not aliases or any(not isinstance(alias, str) or not alias for alias in aliases):
+            raise CatalogError(f"{key}: aliases must be a non-empty list of strings")
+        request_model_id = model.get("request_model_id")
+        if request_model_id not in aliases:
+            raise CatalogError(f"{key}: request_model_id must name one of the configured aliases")
+        identity = model.get("_catalog", {})
+        if set(identity) != {"family", "model_slug", "quant_slug", "source"}:
+            raise CatalogError(f"{key}: generated catalog identity is incomplete")
         lineage = model.get("lineage")
         if lineage:
             if not lineage.get("repo") or not re.fullmatch(r"[0-9a-fA-F]{40}", str(lineage.get("revision", ""))):
@@ -165,41 +264,104 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
         raise CatalogError(f"legacy_default_prestage contains unknown keys: {', '.join(unknown)}")
 
 
+def load_scenarios() -> list[tuple[dict[str, Any], dict[str, Any], Path]]:
+    records: OrderedDict[str, tuple[dict[str, Any], dict[str, Any], Path]] = OrderedDict()
+    source_paths = sorted(SCENARIOS_ROOT.rglob("*.json"))
+    if not source_paths:
+        raise CatalogError("preset-scenarios/**/*.json files are required")
+
+    for source_path in source_paths:
+        source = load_json(source_path)
+        if source.get("schema_version") != 1:
+            raise CatalogError(f"{source_path}: schema_version must be 1")
+        source_metadata = OrderedDict(
+            provider=source.get("provider"),
+            hardware=source.get("hardware", OrderedDict()),
+            compatibility=source.get("compatibility", OrderedDict()),
+            verification=source.get("verification", "configuration-only"),
+        )
+        for scenario in source.get("scenarios", []):
+            path = scenario.get("path")
+            if not path:
+                raise CatalogError(f"{source_path}: every scenario needs a path")
+            if path in records:
+                raise CatalogError(f"duplicate generated preset path: {path}")
+            records[path] = (scenario, source_metadata, source_path)
+
+    resolved: dict[str, dict[str, Any]] = {}
+
+    def resolve(path: str, stack: tuple[str, ...] = ()) -> dict[str, Any]:
+        if path in resolved:
+            return copy.deepcopy(resolved[path])
+        if path not in records:
+            raise CatalogError(f"unknown extended scenario: {path}")
+        if path in stack:
+            raise CatalogError(f"scenario inheritance cycle: {' -> '.join((*stack, path))}")
+        raw, _, _ = records[path]
+        base_path = raw.get("extends")
+        scenario = resolve(base_path, (*stack, path)) if base_path else OrderedDict()
+        for name, value in raw.items():
+            if name == "extends":
+                continue
+            if name == "defaults" and name in scenario:
+                scenario[name] = OrderedDict((*scenario[name].items(), *value.items()))
+            else:
+                scenario[name] = copy.deepcopy(value)
+        resolved[path] = scenario
+        return copy.deepcopy(scenario)
+
+    return [(resolve(path), metadata, source_path) for path, (_, metadata, source_path) in records.items()]
+
+
+def effective_request_model_id(model: dict[str, Any], entry: dict[str, Any]) -> str:
+    aliases = entry.get("aliases", model.get("aliases", []))
+    request_model_id = entry.get("request_model_id", model.get("request_model_id"))
+    if request_model_id not in aliases:
+        raise CatalogError("effective request_model_id must name one of the effective aliases")
+    return request_model_id
+
+
+def effective_model_settings(
+    catalog: dict[str, Any], scenario: dict[str, Any], entry: dict[str, Any]
+) -> tuple[str, OrderedDict[str, Any]]:
+    key = entry.get("key")
+    if key not in catalog["models"]:
+        raise CatalogError(f"{scenario['path']}: unknown model key {key!r}")
+    model = catalog["models"][key]
+    settings = OrderedDict(model["settings"])
+    aliases = entry.get("aliases", model.get("aliases", []))
+    effective_request_model_id(model, entry)
+    if aliases:
+        settings["alias"] = ", ".join(aliases)
+    for name, value in entry.get("overrides", {}).items():
+        if value is None:
+            settings.pop(name, None)
+        else:
+            settings[name] = value
+    return entry.get("section", model["section"]), settings
+
+
 def render_ini(catalog: dict[str, Any], scenario: dict[str, Any]) -> tuple[str, list[str]]:
-    models = catalog["models"]
     lines = ["version = 1", ""]
     defaults = scenario.get("defaults", {})
     if defaults:
         lines.append("[*]")
-        lines.extend(f"{name} = {ini_value(value)}" for name, value in defaults.items())
+        lines.extend(f"{name} = {ini_value(value, name)}" for name, value in defaults.items())
         lines.append("")
 
     prestage: list[str] = []
     sections: set[str] = set()
     for entry in scenario.get("models", []):
         key = entry.get("key")
-        if key not in models:
-            raise CatalogError(f"{scenario['path']}: unknown model key {key!r}")
-        model = models[key]
-        section = entry.get("section", model["section"])
+        section, settings = effective_model_settings(catalog, scenario, entry)
         if section in sections:
             raise CatalogError(f"{scenario['path']}: duplicate section {section}")
         sections.add(section)
         if key not in prestage:
             prestage.append(key)
 
-        settings = OrderedDict(model["settings"])
-        aliases = entry.get("aliases", model.get("aliases", []))
-        if aliases:
-            settings["alias"] = ", ".join(aliases)
-        for name, value in entry.get("overrides", {}).items():
-            if value is None:
-                settings.pop(name, None)
-            else:
-                settings[name] = value
-
         lines.append(f"[{section}]")
-        lines.extend(f"{name} = {ini_value(value)}" for name, value in settings.items())
+        lines.extend(f"{name} = {ini_value(value, name)}" for name, value in settings.items())
         lines.append("")
 
     if not prestage:
@@ -298,24 +460,126 @@ def render_downloads(catalog: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def render_inventory(
+    catalog: dict[str, Any], scenario_records: list[tuple[dict[str, Any], dict[str, Any], Path]]
+) -> str:
+    inventory_models: OrderedDict[str, dict[str, Any]] = OrderedDict()
+    for key, model in catalog["models"].items():
+        identity = model["_catalog"]
+        item = OrderedDict(
+            key=key,
+            family=identity["family"],
+            model_slug=identity["model_slug"],
+            quant_slug=identity["quant_slug"],
+            source=identity["source"],
+        )
+        for name, value in model.items():
+            if name != "_catalog":
+                item[name] = value
+        item["download_fingerprint"] = model_download_fingerprint(key, model)
+        sizes = [artifact.get("size") for artifact in model["artifacts"]]
+        item["artifact_bytes"] = sum(sizes) if all(isinstance(size, int) for size in sizes) else None
+        inventory_models[key] = item
+
+    catalog_payload = OrderedDict(
+        runtime=catalog["runtime"],
+        legacy_default_prestage=catalog["legacy_default_prestage"],
+        models=inventory_models,
+    )
+    catalog_fingerprint = hashlib.sha256(
+        json.dumps(catalog_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+    deployments: list[dict[str, Any]] = []
+    for scenario, source_metadata, source_path in scenario_records:
+        output_path = validate_output_path(scenario["path"])
+        provider = source_metadata.get("provider") or PurePosixPath(scenario["path"]).parts[0]
+        hardware = OrderedDict(source_metadata.get("hardware", {}))
+        if provider == "aws" and scenario.get("instance_type"):
+            hardware.setdefault("provider_sku", scenario["instance_type"])
+        if provider == "aws" and scenario.get("gpu"):
+            hardware.setdefault("display_name", scenario["gpu"])
+
+        model_entries: list[dict[str, Any]] = []
+        prestage: list[str] = []
+        for entry in scenario.get("models", []):
+            key = entry["key"]
+            model = catalog["models"][key]
+            identity = model["_catalog"]
+            section, section_settings = effective_model_settings(catalog, scenario, entry)
+            effective_settings = OrderedDict(scenario.get("defaults", {}))
+            effective_settings.update(section_settings)
+            parallel = int(effective_settings.get("parallel", 1))
+            context_size = int(effective_settings.get("ctx-size", 0))
+            context_per_request = context_size // parallel if context_size > 0 else None
+            if key not in prestage:
+                prestage.append(key)
+            model_entries.append(
+                OrderedDict(
+                    key=key,
+                    family=identity["family"],
+                    model_slug=identity["model_slug"],
+                    quant_slug=identity["quant_slug"],
+                    section=section,
+                    request_model_id=effective_request_model_id(model, entry),
+                    aliases=entry.get("aliases", model.get("aliases", [])),
+                    context_size=context_size,
+                    parallel=parallel,
+                    context_per_request=context_per_request,
+                    cache_type_k=effective_settings.get("cache-type-k"),
+                    cache_type_v=effective_settings.get("cache-type-v"),
+                    settings=effective_settings,
+                )
+            )
+
+        preset_container_path = f"/presets/{scenario['path']}"
+        deployments.append(
+            OrderedDict(
+                id=PurePosixPath(scenario["path"]).with_suffix("").as_posix(),
+                provider=provider,
+                source=source_path.relative_to(ROOT).as_posix(),
+                preset=preset_container_path,
+                prestage_manifest=str(PurePosixPath(preset_container_path).with_suffix(".prestage")),
+                environment=OrderedDict(
+                    LLAMA_ARG_MODELS_PRESET=preset_container_path,
+                    LLAMA_ARG_MODELS_MAX="1",
+                    PRESTAGE_MODELS=",".join(prestage),
+                ),
+                hardware=hardware,
+                compatibility=source_metadata.get("compatibility", OrderedDict()),
+                verification=source_metadata.get("verification", "configuration-only"),
+                models=model_entries,
+            )
+        )
+
+    inventory = OrderedDict(
+        schema_version="prefer.deployment-inventory.v1",
+        catalog_fingerprint=catalog_fingerprint,
+        runtime=catalog["runtime"],
+        models=inventory_models,
+        deployments=deployments,
+    )
+    return json.dumps(inventory, indent=2, ensure_ascii=False) + "\n"
+
+
 def expected_outputs() -> dict[Path, str]:
-    catalog = load_json(CATALOG_PATH)
+    catalog = load_catalog()
     validate_catalog(catalog)
-    outputs: dict[Path, str] = {DOWNLOADS_PATH: render_downloads(catalog)}
+    scenario_records = load_scenarios()
+    outputs: dict[Path, str] = {
+        DOWNLOADS_PATH: render_downloads(catalog),
+        INVENTORY_PATH: render_inventory(catalog, scenario_records),
+    }
     seen_paths: set[Path] = set()
 
-    for source_path in SCENARIO_PATHS:
-        source = load_json(source_path)
-        if source.get("schema_version") != 1:
-            raise CatalogError(f"{source_path}: schema_version must be 1")
-        for scenario in source.get("scenarios", []):
-            output_path = validate_output_path(scenario["path"])
-            if output_path in seen_paths:
-                raise CatalogError(f"duplicate generated preset path: {scenario['path']}")
-            seen_paths.add(output_path)
-            ini, prestage = render_ini(catalog, scenario)
-            outputs[output_path] = ini
-            outputs[output_path.with_suffix(".prestage")] = ",".join(prestage) + "\n"
+    for scenario, _, _ in scenario_records:
+        output_path = validate_output_path(scenario["path"])
+        if output_path in seen_paths:
+            raise CatalogError(f"duplicate generated preset path: {scenario['path']}")
+        seen_paths.add(output_path)
+        ini, prestage = render_ini(catalog, scenario)
+        outputs[output_path] = ini
+        outputs[output_path.with_suffix(".prestage")] = ",".join(prestage) + "\n"
 
     return outputs
 

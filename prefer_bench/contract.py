@@ -254,9 +254,10 @@ def preset_contract_diff(contract: dict[str, Any] | None = None) -> list[str]:
             differences.append(
                 f"aliases differ for {canonical_id}: contract={expected[canonical_id]['aliases']} preset={actual[canonical_id]['aliases']}"
             )
-        if sorted(actual[canonical_id]["presets"]) != sorted(expected[canonical_id]["presets"]):
+        missing_presets = sorted(set(expected[canonical_id]["presets"]) - set(actual[canonical_id]["presets"]))
+        if missing_presets:
             differences.append(
-                f"presets differ for {canonical_id}: contract={expected[canonical_id]['presets']} actual={actual[canonical_id]['presets']}"
+                f"contract presets absent for {canonical_id}: {missing_presets}"
             )
         quant = canonical_id.rsplit(":", 1)[-1]
         if quant != expected[canonical_id]["quantization"]:

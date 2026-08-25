@@ -1,0 +1,403 @@
+{
+  "schema_version": 1,
+  "provider": "aws",
+  "hardware": {
+    "provider_sku": "g7e.2xlarge",
+    "gpu_slug": "rtx-pro-6000",
+    "gpu_name": "NVIDIA RTX PRO 6000 Blackwell",
+    "gpu_count": 1,
+    "vram_gb_each": 96,
+    "vcpu": 8,
+    "local_nvme_gb": 1900
+  },
+  "verification": "owner-operated",
+  "scenarios": [
+    {
+      "path": "aws/g7e/2xlarge/general.ini",
+      "instance_type": "g7e.2xlarge",
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell 96 GB",
+      "defaults": {
+        "n-gpu-layers": 999,
+        "n-cpu-moe": 0,
+        "batch-size": 2048,
+        "ubatch-size": 512,
+        "threads": 8,
+        "cache-type-k": "f16",
+        "cache-type-v": "f16",
+        "cache-reuse": 8192,
+        "flash-attn": "on",
+        "fit": "off",
+        "jinja": true,
+        "reasoning": "off",
+        "temp": 1.0,
+        "top-p": 0.95,
+        "dry-multiplier": 0.8,
+        "dry-base": 1.75,
+        "dry-allowed-length": 24,
+        "repeat-penalty": 1.0,
+        "presence-penalty": 0
+      },
+      "models": [
+        {
+          "key": "gemma-4-e2b",
+          "overrides": {
+            "ctx-size": 524288,
+            "parallel": 4
+          }
+        },
+        {
+          "key": "gemma-4-e4b",
+          "overrides": {
+            "ctx-size": 524288,
+            "parallel": 4
+          }
+        },
+        {
+          "key": "gemma-4-12b",
+          "overrides": {
+            "ctx-size": 524288,
+            "parallel": 4
+          }
+        },
+        {
+          "key": "gemma-4-26b-a4b",
+          "overrides": {
+            "ctx-size": 1048576,
+            "parallel": 4
+          }
+        },
+        {
+          "key": "gemma-4-31b",
+          "overrides": {
+            "ctx-size": 524288,
+            "parallel": 2
+          }
+        },
+        {
+          "key": "qwen-3.5-9b",
+          "overrides": {
+            "ctx-size": 262144,
+            "parallel": 2
+          }
+        },
+        {
+          "key": "qwen-3.6-35b-a3b",
+          "overrides": {
+            "ctx-size": 1048576,
+            "parallel": 4
+          }
+        },
+        {
+          "key": "qwen-3.8-27b",
+          "overrides": {
+            "ctx-size": 1048576,
+            "parallel": 4
+          }
+        },
+        {
+          "key": "glm-4.7-flash",
+          "overrides": {
+            "ctx-size": 811008,
+            "parallel": 4
+          }
+        },
+        {
+          "key": "muse-glimmer-30b-q6",
+          "overrides": {
+            "ctx-size": 524288,
+            "parallel": 4
+          }
+        }
+      ]
+    },
+    {
+      "path": "aws/g7e/2xlarge/qwen.ini",
+      "instance_type": "g7e.2xlarge",
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell 96 GB",
+      "defaults": {
+        "n-gpu-layers": 999,
+        "n-cpu-moe": 0,
+        "batch-size": 2048,
+        "ubatch-size": 512,
+        "threads": 8,
+        "cache-type-k": "f16",
+        "cache-type-v": "f16",
+        "cache-reuse": 8192,
+        "flash-attn": "on",
+        "fit": "off",
+        "jinja": true,
+        "reasoning": "off",
+        "temp": 1.0,
+        "top-p": 0.95,
+        "dry-multiplier": 0.8,
+        "dry-base": 1.75,
+        "dry-allowed-length": 24,
+        "repeat-penalty": 1.0,
+        "presence-penalty": 0
+      },
+      "models": [
+        {
+          "key": "qwen-3.6-35b-a3b",
+          "overrides": {
+            "ctx-size": 1048576,
+            "parallel": 4
+          }
+        },
+        {
+          "key": "qwen-3.8-27b",
+          "overrides": {
+            "ctx-size": 1048576,
+            "parallel": 4
+          }
+        }
+      ]
+    },
+    {
+      "path": "aws/g7e/2xlarge/qwen-27b.ini",
+      "instance_type": "g7e.2xlarge",
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell 96 GB",
+      "models": [
+        {
+          "key": "qwen-3.8-27b",
+          "overrides": {
+            "load-on-startup": true,
+            "n-gpu-layers": 999,
+            "n-cpu-moe": 0,
+            "ctx-size": 1048576,
+            "batch-size": 2048,
+            "ubatch-size": 512,
+            "threads": 8,
+            "cache-type-k": "f16",
+            "cache-type-v": "f16",
+            "cache-reuse": 8192,
+            "flash-attn": "on",
+            "fit": "off",
+            "jinja": true,
+            "reasoning": "off",
+            "temp": 1.0,
+            "top-p": 0.95,
+            "dry-multiplier": 0.8,
+            "dry-base": 1.75,
+            "dry-allowed-length": 24,
+            "repeat-penalty": 1.0,
+            "presence-penalty": 0.0,
+            "parallel": 4
+          }
+        }
+      ]
+    },
+    {
+      "path": "aws/g7e/2xlarge/qwen-35b-a3b.ini",
+      "instance_type": "g7e.2xlarge",
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell 96 GB",
+      "models": [
+        {
+          "key": "qwen-3.6-35b-a3b",
+          "overrides": {
+            "load-on-startup": true,
+            "n-gpu-layers": 999,
+            "n-cpu-moe": 0,
+            "ctx-size": 1048576,
+            "batch-size": 2048,
+            "ubatch-size": 512,
+            "threads": 8,
+            "cache-type-k": "f16",
+            "cache-type-v": "f16",
+            "cache-reuse": 8192,
+            "flash-attn": "on",
+            "fit": "off",
+            "jinja": true,
+            "reasoning": "off",
+            "temp": 1.0,
+            "top-p": 0.95,
+            "dry-multiplier": 0.8,
+            "dry-base": 1.75,
+            "dry-allowed-length": 24,
+            "repeat-penalty": 1.0,
+            "presence-penalty": 0.0,
+            "parallel": 4
+          }
+        }
+      ]
+    },
+    {
+      "path": "aws/g7e/2xlarge/gemma.ini",
+      "instance_type": "g7e.2xlarge",
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell 96 GB",
+      "defaults": {
+        "n-gpu-layers": 999,
+        "n-cpu-moe": 0,
+        "batch-size": 2048,
+        "ubatch-size": 512,
+        "threads": 8,
+        "cache-type-k": "f16",
+        "cache-type-v": "f16",
+        "cache-reuse": 8192,
+        "flash-attn": "on",
+        "fit": "off",
+        "jinja": true,
+        "reasoning": "off",
+        "temp": 1.0,
+        "top-p": 0.95,
+        "dry-multiplier": 0.8,
+        "dry-base": 1.75,
+        "dry-allowed-length": 24,
+        "repeat-penalty": 1.0,
+        "presence-penalty": 0
+      },
+      "models": [
+        {
+          "key": "gemma-4-26b-a4b",
+          "overrides": {
+            "ctx-size": 1048576,
+            "parallel": 4
+          }
+        },
+        {
+          "key": "gemma-4-31b",
+          "overrides": {
+            "ctx-size": 524288,
+            "parallel": 2
+          }
+        }
+      ]
+    },
+    {
+      "path": "aws/g7e/2xlarge/gemma-26b-a4b.ini",
+      "instance_type": "g7e.2xlarge",
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell 96 GB",
+      "models": [
+        {
+          "key": "gemma-4-26b-a4b",
+          "overrides": {
+            "load-on-startup": true,
+            "n-gpu-layers": 999,
+            "n-cpu-moe": 0,
+            "ctx-size": 1048576,
+            "batch-size": 2048,
+            "ubatch-size": 512,
+            "threads": 8,
+            "cache-type-k": "f16",
+            "cache-type-v": "f16",
+            "cache-reuse": 8192,
+            "flash-attn": "on",
+            "fit": "off",
+            "jinja": true,
+            "reasoning": "off",
+            "temp": 1.0,
+            "top-p": 0.95,
+            "dry-multiplier": 0.8,
+            "dry-base": 1.75,
+            "dry-allowed-length": 24,
+            "repeat-penalty": 1.0,
+            "presence-penalty": 0.0,
+            "parallel": 4
+          }
+        }
+      ]
+    },
+    {
+      "path": "aws/g7e/2xlarge/gemma-31b.ini",
+      "instance_type": "g7e.2xlarge",
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell 96 GB",
+      "models": [
+        {
+          "key": "gemma-4-31b",
+          "overrides": {
+            "load-on-startup": true,
+            "n-gpu-layers": 999,
+            "n-cpu-moe": 0,
+            "ctx-size": 524288,
+            "batch-size": 2048,
+            "ubatch-size": 512,
+            "threads": 8,
+            "cache-type-k": "f16",
+            "cache-type-v": "f16",
+            "cache-reuse": 8192,
+            "flash-attn": "on",
+            "fit": "off",
+            "jinja": true,
+            "reasoning": "off",
+            "temp": 1.0,
+            "top-p": 0.95,
+            "dry-multiplier": 0.8,
+            "dry-base": 1.75,
+            "dry-allowed-length": 24,
+            "repeat-penalty": 1.0,
+            "presence-penalty": 0.0,
+            "parallel": 2
+          }
+        }
+      ]
+    },
+    {
+      "path": "aws/g7e/2xlarge/glm-4.7-flash.ini",
+      "instance_type": "g7e.2xlarge",
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell 96 GB",
+      "models": [
+        {
+          "key": "glm-4.7-flash",
+          "overrides": {
+            "load-on-startup": true,
+            "n-gpu-layers": 999,
+            "n-cpu-moe": 0,
+            "ctx-size": 811008,
+            "batch-size": 2048,
+            "ubatch-size": 512,
+            "threads": 8,
+            "cache-type-k": "f16",
+            "cache-type-v": "f16",
+            "cache-reuse": 8192,
+            "flash-attn": "on",
+            "fit": "off",
+            "jinja": true,
+            "reasoning": "off",
+            "temp": 0.7,
+            "top-p": 0.95,
+            "top-k": 0,
+            "dry-multiplier": 0.8,
+            "dry-base": 1.75,
+            "dry-allowed-length": 24,
+            "repeat-penalty": 1.0,
+            "presence-penalty": 0.0,
+            "parallel": 4
+          }
+        }
+      ]
+    },
+    {
+      "path": "aws/g7e/2xlarge/muse.ini",
+      "instance_type": "g7e.2xlarge",
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell 96 GB",
+      "models": [
+        {
+          "key": "muse-glimmer-30b-q6",
+          "overrides": {
+            "load-on-startup": true,
+            "n-gpu-layers": 999,
+            "n-cpu-moe": 0,
+            "ctx-size": 524288,
+            "batch-size": 2048,
+            "ubatch-size": 512,
+            "threads": 8,
+            "cache-type-k": "f16",
+            "cache-type-v": "f16",
+            "cache-reuse": 8192,
+            "flash-attn": "on",
+            "fit": "off",
+            "jinja": true,
+            "reasoning": "off",
+            "temp": 1.0,
+            "top-p": 0.95,
+            "dry-multiplier": 0.8,
+            "dry-base": 1.75,
+            "dry-allowed-length": 24,
+            "repeat-penalty": 1.0,
+            "presence-penalty": 0.0,
+            "parallel": 4
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "provider": "runpod",
+  "hardware": {
+    "gpu_slug": "rtx-pro-6000",
+    "gpu_name": "RTX PRO 6000",
+    "provider_gpu_type_id": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+    "gpu_count": 2,
+    "vram_gb_each": 96,
+    "architecture": "Blackwell",
+    "advertised_hourly_usd_per_gpu": 2.09,
+    "pricing_observed_on": "2026-08-24",
+    "pricing_reference": "https://www.runpod.io/pricing"
+  },
+  "compatibility": {
+    "container_runtime": "nvidia",
+    "minimum_host_ram_gb": 188,
+    "minimum_volume_gb": 220,
+    "model_storage": "local or network volume; mmap is disabled by the preset"
+  },
+  "verification": "configuration-only",
+  "scenarios": [
+    {
+      "path": "runpod/rtx-pro-6000/2x/deepseek-v4-flash.ini",
+      "extends": "aws/g7e/12xlarge/deepseek-v4-flash-0731.ini"
+    }
+  ]
+}

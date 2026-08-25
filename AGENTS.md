@@ -39,7 +39,7 @@ belong in this file, not in `CHANGELOG.md`.
   them). Adding a new tier (e.g. `16gb.ini`) requires no changes to the
   detection script. `12gb-pascal.ini` is an intentional named compatibility
   preset and is never auto-detected; it is retained as a rollback for the
-  historical b9843 Gemma E4B MTP issue described below. Nested generated AWS
+  historical b9843 Gemma E4B MTP issue described below. Nested generated provider
   presets are also named presets and must be selected explicitly.
 - **Router model id naming**: use llama.cpp's HF-style section ids for the
   primary sections (e.g. `unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL`) and
@@ -60,7 +60,7 @@ belong in this file, not in `CHANGELOG.md`.
   reverted — it didn't avoid the phantom "default" model entry (see below)
   and added maintenance burden for no benefit. **Exception: single-model named
   presets** (`smol.ini`, `deepseek-v4-flash.ini`, `glm-5.2*.ini`, and all
-  generated AWS single-model presets) skip `[*]`
+  generated provider single-model presets) skip `[*]`
   entirely and put every key in their one model section — with nothing to
   share, `[*]` would just be indirection.
 - **No comments inside `.ini` files** (deliberate preference). Rationale for
@@ -88,9 +88,9 @@ one, so direct auto-detection also resolves to 1.
 The subtle fallback case is an explicitly selected preset outside the normal
 Compose path: preset detection is skipped, so with no CLI/environment value
 llama.cpp uses its router default of 4. Legacy named presets contain one model,
-but generated AWS presets can contain several. The AWS AMI therefore also
+but generated provider presets can contain several. The AWS AMI therefore also
 bakes `LLAMA_ARG_MODELS_MAX=1`, and its deployment environment repeats that
-value explicitly. Any other direct launcher selecting a generated AWS preset
+value explicitly. Any other direct launcher selecting a generated provider preset
 must set the limit rather than relying on llama.cpp's fallback.
 
 An older operator README row said 96 GB used the upstream default 4. That was
@@ -134,20 +134,55 @@ old Pascal results; `current` now means b10362. The Muse presets are no longer
 runtime-gated, but their 24/48/96 GB shapes still require normal first-boot
 fit, contract, DFlash, projector, and concurrency verification on target GPUs.
 
-## Generated AWS deployment presets
+## Generated deployment presets and inventory
 
-AWS deployment presets are generated, not hand-edited:
+AWS, RunPod, and generic local hardware presets are generated, not hand-edited:
 
-- `preset-catalog.json` owns model sections, aliases, exact download revisions,
-  files, sizes, hashes, companion artifacts, and model-specific settings.
-- `preset-scenarios/aws.json` owns the instance/model/context/concurrency shape.
-- `generate-presets.py` emits the nested `.ini` presets, sibling `.prestage`
-  manifests, and `model-downloads.generated.sh`. Run it after either source
-  changes; CI runs `generate-presets.py --check`.
+- `preset-catalog.json` owns only the pinned llama.cpp runtime and legacy
+  prestage default.
+- `models/<family>/<model>/model.json` owns model sections, aliases, exact
+  download revisions, files, sizes, hashes, companions, and model-specific
+  settings. One logical model file contains a `quants` dictionary; each quant
+  lane has a globally unique catalog key used by scenarios and staging.
+  Model-wide aliases/license/lineage/runtime facts belong in `shared`; settings
+  shared by multiple quant lanes may also live there, with lane settings merged
+  over them.
+- `preset-scenarios/<provider>/<hardware>/` owns provider/card/count,
+  model/context/concurrency, compatibility, and verification status. Files may
+  use `extends` to inherit an existing scenario by generated preset path. The
+  child always owns provider/hardware identity; inherited AWS instance metadata
+  must never leak into a RunPod/local inventory entry.
+- `generate-presets.py` recursively discovers both trees and emits the nested
+  `.ini` presets, sibling `.prestage` manifests,
+  `model-downloads.generated.sh`, and
+  `deployment-inventory.generated.json`. Run it after any source change; CI
+  runs `generate-presets.py --check`.
+- The deployment inventory is copied into the image as
+  `/deployment-inventory.json`, published as a commit-named workflow artifact,
+  and identified by OCI labels. It is the machine-readable NeurOn contract for
+  runtime, model/quant, provider GPU ID/count, effective settings, preset path,
+  and prestaging.
+- Every catalog lane owns an explicit `request_model_id` that must be one of
+  its configured aliases. Controllers use it for warmup and API requests.
+  `section` remains the exact generated INI header and is not request-safe:
+  llama.cpp can normalize quant names between configuration and discovery
+  (for example E2B `:UD-Q4_K_XL` becomes `:Q4_K_XL`).
 - A generated preset and its sibling `.prestage` file are a pair. With
   `PRESTAGE_MODELS` unset or blank, `download-models.sh` stages exactly the
   catalog keys referenced by the sidecar. A nonblank environment value still
   wins; use `none` for an intentional no-download run.
+
+AWS authored scenarios are split by instance shape under
+`preset-scenarios/aws/`. RunPod paths are
+`presets/runpod/<gpu-slug>/<count>x/`; all initial card shapes use one GPU
+except `runpod/rtx-pro-6000/2x/deepseek-v4-flash.ini`. RunPod prices and bundled
+host resources are dated observations, never stable provisioning constraints.
+Generic household profiles live under `presets/local/<gpu-slug>/1x/` and may
+record only GPU-class facts and compatibility gates. Never check in a private
+hostname, CPU, system RAM, disk, network, credential, or owner-specific mapping;
+NeurOn owns that private association.
+
+### AWS deployment matrix
 
 | Preset | Host | Routes | Cache allocation |
 | ------ | ---- | ------ | ---------------- |
@@ -205,6 +240,56 @@ The family bundles remain supported for flexible hosts. Prefer a single-model
 preset when NeurOn or another controller already knows which model owns the
 instance: unused router sections have shown undesirable startup overhead even
 when prestaging and `models-max` are bounded.
+
+### RunPod and local generated shapes
+
+RunPod's one-card folders cover the current advertised 24 GB through 288 GB
+Pod inventory using exact API `gpuTypeIds`. The 24 GB shape is reused by the
+24 GB cards and, conservatively, RTX 5090; the 48 GB shape is reused by 48 GB
+cards; the g7e high-context shape is reused by 80 GB and larger cards. Every
+inherited RunPod scenario remains `configuration-only` until the exact card is
+smoked. Do not interpret a larger VRAM number as proof that architecture,
+runtime buffers, speculative companions, or context allocation pass. The only
+initial multi-GPU RunPod route is 2× RTX PRO 6000 for the quality-credible
+DeepSeek 0731 Q4+DSpark preset.
+
+Generic local folders currently cover RTX 4060 8 GB, RTX A2000 8 GB, GTX 1070
+Ti, and TITAN X Pascal. Modern 8 GB profiles expose Gemma E2B/E4B and Qwen3.5
+9B; the 12 GB Pascal profile additionally exposes Gemma 12B. They use q4_0 K/V
+as a capacity necessity. The Pascal profiles require a CUDA 12 `sm_61` build,
+and omit E4B's MTP companion pending a direct MTP-on Pascal smoke. On b10362,
+the TITAN X Pascal generated profile has passed isolated load/generation for
+E2B, target-only E4B, Qwen3.5-9B, and Gemma 12B, followed by all four swaps
+through `general.ini` with `models-max=1`. Do not silently copy those q4 cache
+or target-only decisions into hosted profiles, which retain f16 K/V and normal
+speculative lanes.
+
+The b10362 TITAN X Pascal smoke used the generated contexts/concurrency exactly
+as shipped and a short text completion. Post-load VRAM was 5,933 MiB for E2B,
+7,769 MiB for target-only E4B, 9,906 MiB for Qwen3.5-9B, and 10,284 MiB for
+Gemma 12B. The subsequent `general.ini` swap cycle measured 5,932, 7,775,
+9,901, and 10,301 MiB respectively, with every request returning HTTP 200.
+Treat these as fit/routing smoke results, not throughput or long-context quality
+benchmarks.
+
+The TITAN X Pascal cumulative `general.ini` also exposes deliberately slow,
+high-intelligence CPU-expert-offload lanes for Gemma 4 26B-A4B QAT Q4 and
+Qwen3.6 35B-A3B Q4. Both allocate one 128K slot and preserve f16 K/V instead
+of inheriting the smaller models' q4_0 cache. Their speculative paths are
+disabled on Pascal. They are router choices in the existing general preset,
+not separate named presets.
+
+Both large lanes passed isolated b10362 load/generation and an LRU swap through
+the generated `general.ini` with `models-max=1`. Gemma 26B used
+`n-cpu-moe=15`, loaded its F16 projector and one 128K f16-K/V slot in about
+2.5 minutes, peaked near 12,043/12,288 MiB GPU and 7.6/15.5 GiB container
+memory, and decoded the short smoke at 0.36 tok/s. Qwen 35B used
+`n-cpu-moe=28`, ignored its embedded MTP tensors as intended, loaded one 128K
+f16-K/V slot in about 1 minute 40 seconds after Gemma eviction, peaked near
+12,025/12,288 MiB GPU and 13.7/15.5 GiB container memory, and decoded the short
+smoke at 0.90 tok/s. These are operational fit/routing measurements, not
+quality or sustained-throughput benchmarks; both lanes have very little memory
+headroom and are intentionally low-speed intelligence options.
 
 The apparently aggressive Gemma 12B `4×128K` f16 cache is intentional. Its
 [published architecture](https://huggingface.co/google/gemma-4-12B/blob/main/config.json)
@@ -397,7 +482,9 @@ untested on target hardware and require their first-boot gates below:
   `spec-*` keys. Cost: E4B loses MTP speculative throughput on that preset.
   `12gb.ini`, `8gb.ini`, and `96gb.ini` retain E4B MTP unchanged. Current
   b10362 contains the upstream fix, so the compatibility preset is now only a
-  rollback/reproduction lane pending a measured Pascal smoke on b10362.
+  rollback/reproduction lane. Its target-only path is measured on b10362, but
+  E4B's MTP-on path still needs a direct Pascal smoke before removing the
+  compatibility distinction.
 - **#22364** — router synthesizes a phantom `"default"` model entry in
   `/v1/models` regardless of whether `[*]`/`default-model` are used.
   Apparently cosmetic (`status: unloaded`), but if real models stop loading

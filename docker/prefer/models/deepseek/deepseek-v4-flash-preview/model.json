@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "family": "deepseek",
+  "model_slug": "deepseek-v4-flash-preview",
+  "shared": {
+    "aliases": [
+      "deepseek-v4-flash"
+    ],
+    "request_model_id": "deepseek-v4-flash"
+  },
+  "quants": {
+    "q4kexperts": {
+      "key": "deepseek-v4-flash",
+      "section": "antirez/deepseek-v4-gguf:Q4KExperts",
+      "settings": {
+        "model": "/models/antirez/deepseek-v4-gguf/DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf"
+      },
+      "downloads": [
+        {
+          "repo": "antirez/deepseek-v4-gguf",
+          "revision": null,
+          "include": [
+            "*Q4KExperts-F16HC*imatrix*"
+          ]
+        }
+      ],
+      "artifacts": [
+        {
+          "role": "model",
+          "repo": "antirez/deepseek-v4-gguf",
+          "path": "DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf"
+        }
+      ]
+    }
+  }
+}

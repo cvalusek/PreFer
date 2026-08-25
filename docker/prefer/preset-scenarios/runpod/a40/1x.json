@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "provider": "runpod",
+  "hardware": {
+    "gpu_slug": "a40",
+    "gpu_name": "A40",
+    "provider_gpu_type_id": "NVIDIA A40",
+    "gpu_count": 1,
+    "vram_gb_each": 48,
+    "architecture": "Ampere",
+    "observed_host_ram_gb": 50,
+    "observed_vcpu": 9,
+    "advertised_hourly_usd_per_gpu": 0.44,
+    "pricing_observed_on": "2026-08-24",
+    "pricing_reference": "https://www.runpod.io/pricing"
+  },
+  "compatibility": {
+    "container_runtime": "nvidia",
+    "provisioning_api": "https://docs.runpod.io/api-reference/pods/POST/pods"
+  },
+  "verification": "configuration-only",
+  "scenarios": [
+    {
+      "path": "runpod/a40/1x/general.ini",
+      "extends": "aws/g6e/xlarge/general.ini"
+    },
+    {
+      "path": "runpod/a40/1x/gemma.ini",
+      "extends": "aws/g6e/xlarge/gemma.ini"
+    },
+    {
+      "path": "runpod/a40/1x/gemma-26b-a4b.ini",
+      "extends": "aws/g6e/xlarge/gemma-26b-a4b.ini"
+    },
+    {
+      "path": "runpod/a40/1x/gemma-31b.ini",
+      "extends": "aws/g6e/xlarge/gemma-31b.ini"
+    },
+    {
+      "path": "runpod/a40/1x/qwen.ini",
+      "extends": "aws/g6e/xlarge/qwen.ini"
+    },
+    {
+      "path": "runpod/a40/1x/qwen-27b.ini",
+      "extends": "aws/g6e/xlarge/qwen-27b.ini"
+    },
+    {
+      "path": "runpod/a40/1x/qwen-35b-a3b.ini",
+      "extends": "aws/g6e/xlarge/qwen-35b-a3b.ini"
+    },
+    {
+      "path": "runpod/a40/1x/muse.ini",
+      "extends": "aws/g6e/xlarge/muse.ini"
+    }
+  ]
+}

@@ -37,17 +37,28 @@ smallest tier if VRAM is below all of them. Override with
 `LLAMA_ARG_MODELS_PRESET=/presets/<name>.ini` (and optionally
 `LLAMA_ARG_MODELS_MAX`) to force a specific preset.
 
-AWS scenario presets are generated under `presets/aws/` and are always
-selected explicitly. Edit `preset-catalog.json` for model/artifact facts and
-`preset-scenarios/aws.json` for deployment shape, then run:
+Provider and hardware presets are generated under `presets/aws/`,
+`presets/runpod/`, and `presets/local/`; they are always selected explicitly.
+Each logical model lives at `models/<family>/<model>/model.json`, with its
+deployable quant lanes in a `quants` dictionary. Model-wide provenance and
+settings common to multiple quant lanes live once in `shared`. Small nested files under
+`preset-scenarios/<provider>/<hardware>/` own deployment shape and may inherit
+an existing shape when only the provider/card identity differs. Then run:
 
 ```bash
 python docker/prefer/generate-presets.py
 python docker/prefer/generate-presets.py --check
 ```
 
-Do not hand-edit generated `.ini`, `.prestage`, or
-`model-downloads.generated.sh` files.
+Do not hand-edit generated `.ini`, `.prestage`,
+`model-downloads.generated.sh`, or `deployment-inventory.generated.json`
+files. The inventory is copied into released images at
+`/deployment-inventory.json`; it contains the exact runtime, model/quant
+catalog, provider hardware identity, effective settings, preset path, and
+prestage keys for every generated deployment. Controllers must use each
+model's `request_model_id` for warmup and API requests. `section` is the INI
+configuration identity and may differ from the model ID that llama.cpp
+advertises and accepts after quant-name normalization.
 
 | Preset | VRAM tier | Models | `models-max` | Notes |
 | ------ | --------- | ------ | ------------- | ----- |
@@ -119,6 +130,51 @@ another controller already knows the model assigned to the instance; unused
 router sections have caused undesirable startup overhead even with bounded
 prestaging and `models-max`.
 
+### Generated RunPod inventory
+
+RunPod paths use `runpod/<gpu-slug>/<count>x/<preset>.ini`. The authored
+scenario files carry RunPod's exact `gpuTypeIds`; the generated inventory also
+records advertised hourly price, host RAM, and vCPU observations dated
+2026-08-24. Those observations are comparison hints, not provisioning
+guarantees. NeurOn should query current availability and price while treating
+GPU ID, GPU count, and VRAM as the stable selection fields.
+
+| Reused deployment shape | One-GPU RunPod folders |
+| ----------------------- | ---------------------- |
+| 24 GB quality shape | `pro-6000-mig-24gb`, `l4`, `rtx-3090`, `rtx-4090`, `rtx-a5000`, and conservatively `rtx-5090` |
+| 48 GB quality shape | `pro-6000-mig-48gb`, `l40s`, `rtx-6000-ada`, `a40`, `l40`, `rtx-a6000` |
+| 80–288 GB high-context shape | `h100-pcie`, `h100-sxm`, `a100-pcie`, `a100-sxm`, `h100-nvl`, `rtx-pro-6000`, `h200`, `b200`, `b300` |
+
+Every one-GPU folder receives the corresponding cumulative, family, and
+dedicated single-model presets. These inherited RunPod shapes are marked
+`configuration-only`, not hardware-verified. The 32 GB RTX 5090 deliberately
+starts with the 24 GB shape rather than assuming the tighter 48 GB model set
+will preserve runtime and f16-cache headroom.
+
+The only initial multi-GPU RunPod preset is
+`runpod/rtx-pro-6000/2x/deepseek-v4-flash.ini`. It selects the pinned 0731
+`UD-Q4_K_XL` target and Q8_0 DSpark companion with f16 K/V, four 384K slots,
+and no CPU expert offload. RunPod fit and contract verification remain required
+even though the equivalent AWS GPU shape has owner-verified memory headroom.
+
+### Generic local hardware inventory
+
+Local paths use `local/<gpu-slug>/1x/<preset>.ini`. They describe only a GPU
+class and compatible model shape—never a hostname, CPU, system RAM, disk,
+credential, network, or owner-specific identifier.
+
+| GPU folder | Configured routes | Per-request context / concurrency | Compatibility |
+| ---------- | ----------------- | --------------------------------- | ------------- |
+| `rtx-4060` | Gemma E2B/E4B, Qwen3.5-9B | Gemma 128K ×2; Qwen 128K ×1 | Ada, configuration-only |
+| `rtx-a2000-8gb` | Same as RTX 4060 | Same | Ampere, configuration-only |
+| `gtx-1070-ti` | Gemma E2B/E4B, Qwen3.5-9B | 128K ×1 | CUDA 12 `sm_61`; E4B target-only pending b10362 Pascal smoke |
+| `titan-x-pascal` | Gemma E2B/E4B/12B/26B-A4B, Qwen3.5-9B/3.6-35B-A3B | E2B/E4B 128K ×2; all others 128K ×1; large MoE lanes use f16 K/V and CPU expert offload | CUDA 12 `sm_61`; all six b10362 load/generation and swapping paths verified; E4B/26B/35B target-only |
+
+These 8/12 GB profiles use q4_0 K/V because long context would otherwise not
+fit. They are deliberately separated from hosted profiles, which retain f16
+K/V. Each local folder includes `general.ini` plus one single-model preset per
+configured route so a controller can avoid unused router sections.
+
 Muse's Q4/Q6 target, DFlash drafter, and quantized projector are all pinned to
 `unsloth/Muse-Glimmer-30B-GGUF@faa5b025c584459c13febfa5c59883516710ae39`.
 The exact three-file payload is 18.91 GB for Q4 and 29.30 GB for Q6 before
@@ -141,9 +197,10 @@ E4B's main GGUF uses a supported GQA ratio of 4, but its MTP draft uses
 FlashAttention tile kernel, which aborts for that exact draft shape. E2B's MTP
 draft is ratio 4 and remains healthy.
 
-Current b10362 contains the fix. Keep
+Current b10362 contains the fix, and the target-only compatibility path has
+passed a Pascal load/generation smoke. Keep
 `LLAMA_ARG_MODELS_PRESET=/presets/12gb-pascal.ini` only as a rollback or old
-result reproduction lane until a b10362 Pascal smoke is recorded. The preset
+result reproduction lane until E4B's MTP-on path is directly verified. The preset
 preserves q4_0 K/V cache, FlashAttention, model
 identity, aliases, context, and every non-E4B setting; it removes only E4B's
 `model-draft` and `spec-*` keys. The cost is lower E4B throughput from losing
@@ -283,6 +340,15 @@ shell env vars):
 - `PREFER_MODEL_VOLUME` - Docker volume mounted at `/models` (default
   `prefer-model-cache`)
 - `HF_TOKEN` - optional, helps with Hugging Face rate limits
+- `HF_HUB_DISABLE_XET`, `HF_XET_HIGH_PERFORMANCE`,
+  `HF_XET_FIXED_DOWNLOAD_CONCURRENCY`,
+  `HF_XET_DATA_MAX_CONCURRENT_FILE_DOWNLOADS`, and the
+  `HF_XET_RECONSTRUCTION_DOWNLOAD_BUFFER_*` variables - optional local Compose
+  passthrough for bounding Xet transfer memory. The upstream CUDA image enables
+  high-performance mode; an operator with a 16 GB Docker Desktop VM should set
+  `HF_HUB_DISABLE_XET=1` for the lowest-memory path, or disable high-performance
+  mode and tune the lower-level controls. The checked-in example leaves every
+  override blank
 - `PRESTAGE_MODELS` - optional comma-separated override. If unset or blank, a
   generated preset uses its sibling `.prestage` manifest; legacy presets
   retain their existing defaults. Use `none` for an intentional no-download

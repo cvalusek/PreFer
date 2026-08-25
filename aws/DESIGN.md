@@ -71,9 +71,11 @@ aws/                          all EC2 deployment lives here (parallels docker/)
     prefer-boot.env          immutable AMI defaults (image, paths, router limit)
   cdk/                       thin wrapper: instance + IAM + IMDS + S3/endpoint wiring
 docker/prefer/
-  preset-catalog.json        model/artifact/revision source of truth
-  preset-scenarios/aws.json  AWS deployment shapes
-  generate-presets.py        emits presets, prestage sidecars, downloader cases
+  preset-catalog.json        runtime + legacy prestage metadata
+  models/<family>/<model>/   model.json files with quant/artifact source of truth
+  preset-scenarios/aws/      AWS deployment shapes split by instance family
+  generate-presets.py        emits presets, prestage sidecars, downloader cases, inventory
+  deployment-inventory.generated.json  controller-readable resolved deployments
   download-models.sh         S3 sync + preset-aware catalog downloads
 .github/workflows/
   build-prefer.yml           container image -> GHCR  [docker/prefer/** only]

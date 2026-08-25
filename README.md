@@ -39,9 +39,11 @@ container can do the boring parts reliably:
 ```text
 docker/
   prefer/             PreFer's llama.cpp router image
-    preset-catalog.json       model/artifact source of truth
-    preset-scenarios/         deployment shapes
-    generate-presets.py       deterministic preset/downloader generator
+    preset-catalog.json       runtime and legacy-prestage metadata
+    models/<family>/<model>/  model.json files with deployable quant lanes
+    preset-scenarios/         AWS, RunPod, and generic local deployment shapes
+    deployment-inventory.generated.json  controller-readable release inventory
+    generate-presets.py       deterministic preset/downloader/inventory generator
 aws/                  EC2 deployment (AMI + boot scripts + CDK); see aws/DESIGN.md
 .github/workflows/    Build workflows (container, AMI, and IaC build independently)
 ```
@@ -87,6 +89,9 @@ Useful knobs:
   AWS launcher or a direct `docker run`. The checked-in local Compose service
   intentionally does not pass it and remains Hugging Face-only.
 - `HF_TOKEN` improves Hugging Face rate limits.
+- `HF_HUB_DISABLE_XET` and `HF_XET_*` transfer controls can disable or bound
+  Xet downloads on constrained Docker Desktop installations; they are blank by
+  default in `.env.example`.
 - `LLAMA_ARG_MODELS_PRESET` forces a specific preset instead of VRAM detection.
 - `LLAMA_ARG_MODELS_MAX` controls how many routed models may be loaded at once.
   The normal Compose path defaults to `1`; see the exact
@@ -140,8 +145,20 @@ Certificate files under `docker/certs/` are ignored by git.
 ## Images
 
 GitHub Actions build the PreFer image. Additional models and deployment shapes
-belong in `preset-catalog.json` and `preset-scenarios/`; regenerate and commit
-their deterministic outputs.
+belong in `models/` and `preset-scenarios/`; regenerate and commit their
+deterministic outputs. Every image contains the resolved inventory at
+`/deployment-inventory.json`, carries an OCI label naming that path and schema,
+and publishes the same JSON as a commit-named workflow artifact. NeurOn can use
+it to select the exact preset, prestage keys, runtime, provider GPU ID, GPU
+count, context, concurrency, cache types, and API-safe `request_model_id`
+without parsing the documentation. The inventory's `section` field is the INI
+configuration identity and must not be used as the warmup model ID.
+
+RunPod presets are organized as `presets/runpod/<gpu>/1x/`; the initial
+multi-GPU exception is
+`presets/runpod/rtx-pro-6000/2x/deepseek-v4-flash.ini`. Generic household GPU
+profiles live under `presets/local/<gpu>/1x/`. They record no hostname, CPU,
+RAM, storage, credentials, or other private machine inventory.
 
 See [docker/prefer/README.md](docker/prefer/README.md) for model
 details, preset tiers, aliases, and operational notes.

@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "provider": "local",
+  "hardware": {
+    "gpu_slug": "titan-x-pascal",
+    "gpu_name": "NVIDIA TITAN X (Pascal)",
+    "gpu_count": 1,
+    "vram_gb_each": 12,
+    "architecture": "Pascal"
+  },
+  "compatibility": {
+    "container_runtime": "nvidia",
+    "cuda_major": 12,
+    "minimum_compute_capability": "6.1",
+    "required_cuda_arch": "sm_61",
+    "runtime_status": "b10362 target profiles verified; E4B MTP remains unverified; 26B/35B CPU-offload lanes verified target-only"
+  },
+  "verification": "load-generation-smoke-verified",
+  "scenarios": [
+    {
+      "path": "local/titan-x-pascal/1x/general.ini",
+      "defaults": {
+        "n-gpu-layers": 999,
+        "n-cpu-moe": 0,
+        "batch-size": 2048,
+        "ubatch-size": 512,
+        "threads": 8,
+        "cache-type-k": "q4_0",
+        "cache-type-v": "q4_0",
+        "cache-reuse": 256,
+        "flash-attn": "on",
+        "fit": "off",
+        "jinja": true,
+        "reasoning": "off",
+        "temp": 1.0,
+        "top-p": 0.95,
+        "dry-multiplier": 0.8,
+        "dry-base": 1.75,
+        "dry-allowed-length": 24,
+        "repeat-penalty": 1.0,
+        "presence-penalty": 0.0,
+        "sleep-idle-seconds": 1800
+      },
+      "models": [
+        {
+          "key": "gemma-4-e2b",
+          "overrides": {
+            "ctx-size": 262144,
+            "parallel": 2,
+            "flash-attn": "on"
+          }
+        },
+        {
+          "key": "gemma-4-e4b",
+          "overrides": {
+            "ctx-size": 262144,
+            "parallel": 2,
+            "flash-attn": "on",
+            "model-draft": null,
+            "spec-type": null,
+            "spec-draft-n-max": null
+          }
+        },
+        {
+          "key": "gemma-4-12b",
+          "overrides": {
+            "ctx-size": 131072,
+            "parallel": 1
+          }
+        },
+        {
+          "key": "qwen-3.5-9b",
+          "overrides": {
+            "ctx-size": 131072,
+            "parallel": 1
+          }
+        },
+        {
+          "key": "gemma-4-26b-a4b",
+          "overrides": {
+            "n-cpu-moe": 15,
+            "mmap": false,
+            "ubatch-size": 256,
+            "threads": 16,
+            "cache-type-k": "f16",
+            "cache-type-v": "f16",
+            "cache-reuse": 8192,
+            "ctx-size": 131072,
+            "parallel": 1,
+            "model-draft": null,
+            "spec-type": null,
+            "spec-draft-n-max": null
+          }
+        },
+        {
+          "key": "qwen-3.6-35b-a3b-q4",
+          "overrides": {
+            "n-cpu-moe": 28,
+            "mmap": false,
+            "ubatch-size": 256,
+            "threads": 16,
+            "cache-type-k": "f16",
+            "cache-type-v": "f16",
+            "cache-reuse": 8192,
+            "ctx-size": 131072,
+            "parallel": 1,
+            "spec-type": null,
+            "spec-draft-n-max": null
+          }
+        }
+      ]
+    },
+    {
+      "path": "local/titan-x-pascal/1x/gemma-e2b.ini",
+      "models": [
+        {
+          "key": "gemma-4-e2b",
+          "overrides": {
+            "n-gpu-layers": 999,
+            "n-cpu-moe": 0,
+            "batch-size": 2048,
+            "ubatch-size": 512,
+            "threads": 8,
+            "cache-type-k": "q4_0",
+            "cache-type-v": "q4_0",
+            "cache-reuse": 256,
+            "flash-attn": "on",
+            "fit": "off",
+            "jinja": true,
+            "reasoning": "off",
+            "temp": 1.0,
+            "top-p": 0.95,
+            "dry-multiplier": 0.8,
+            "dry-base": 1.75,
+            "dry-allowed-length": 24,
+            "repeat-penalty": 1.0,
+            "presence-penalty": 0.0,
+            "sleep-idle-seconds": 1800,
+            "ctx-size": 262144,
+            "parallel": 2,
+            "load-on-startup": true
+          }
+        }
+      ]
+    },
+    {
+      "path": "local/titan-x-pascal/1x/gemma-e4b.ini",
+      "models": [
+        {
+          "key": "gemma-4-e4b",
+          "overrides": {
+            "n-gpu-layers": 999,
+            "n-cpu-moe": 0,
+            "batch-size": 2048,
+            "ubatch-size": 512,
+            "threads": 8,
+            "cache-type-k": "q4_0",
+            "cache-type-v": "q4_0",
+            "cache-reuse": 256,
+            "flash-attn": "on",
+            "fit": "off",
+            "jinja": true,
+            "reasoning": "off",
+            "temp": 1.0,
+            "top-p": 0.95,
+            "dry-multiplier": 0.8,
+            "dry-base": 1.75,
+            "dry-allowed-length": 24,
+            "repeat-penalty": 1.0,
+            "presence-penalty": 0.0,
+            "sleep-idle-seconds": 1800,
+            "ctx-size": 262144,
+            "parallel": 2,
+            "model-draft": null,
+            "spec-type": null,
+            "spec-draft-n-max": null,
+            "load-on-startup": true
+          }
+        }
+      ]
+    },
+    {
+      "path": "local/titan-x-pascal/1x/gemma-12b.ini",
+      "models": [
+        {
+          "key": "gemma-4-12b",
+          "overrides": {
+            "n-gpu-layers": 999,
+            "n-cpu-moe": 0,
+            "batch-size": 2048,
+            "ubatch-size": 512,
+            "threads": 8,
+            "cache-type-k": "q4_0",
+            "cache-type-v": "q4_0",
+            "cache-reuse": 256,
+            "flash-attn": "on",
+            "fit": "off",
+            "jinja": true,
+            "reasoning": "off",
+            "temp": 1.0,
+            "top-p": 0.95,
+            "dry-multiplier": 0.8,
+            "dry-base": 1.75,
+            "dry-allowed-length": 24,
+            "repeat-penalty": 1.0,
+            "presence-penalty": 0.0,
+            "sleep-idle-seconds": 1800,
+            "ctx-size": 131072,
+            "parallel": 1,
+            "load-on-startup": true
+          }
+        }
+      ]
+    },
+    {
+      "path": "local/titan-x-pascal/1x/qwen-9b.ini",
+      "models": [
+        {
+          "key": "qwen-3.5-9b",
+          "overrides": {
+            "n-gpu-layers": 999,
+            "n-cpu-moe": 0,
+            "batch-size": 2048,
+            "ubatch-size": 512,
+            "threads": 8,
+            "cache-type-k": "q4_0",
+            "cache-type-v": "q4_0",
+            "cache-reuse": 256,
+            "flash-attn": "on",
+            "fit": "off",
+            "jinja": true,
+            "reasoning": "off",
+            "temp": 1.0,
+            "top-p": 0.95,
+            "dry-multiplier": 0.8,
+            "dry-base": 1.75,
+            "dry-allowed-length": 24,
+            "repeat-penalty": 1.0,
+            "presence-penalty": 0.0,
+            "sleep-idle-seconds": 1800,
+            "ctx-size": 131072,
+            "parallel": 1,
+            "load-on-startup": true
+          }
+        }
+      ]
+    }
+  ]
+}

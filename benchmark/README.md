@@ -30,7 +30,11 @@ production-default change.
 ## Stable client contract
 
 `contract/v1/contract.json` is the authoritative v1 promise. Tests keep its
-model IDs and aliases synchronized with every checked-in preset.
+model IDs, aliases, and quantizations synchronized with every checked-in
+preset. Each model's `presets` list is a required anchor set: removing an
+anchor fails validation, while additional provider/card copies are accepted
+only when they preserve the same contracted identity and aliases. This keeps
+deployment inventory growth out of the stable client-contract fixture.
 
 The promised surface is intentionally narrow:
 

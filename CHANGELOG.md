@@ -1,5 +1,60 @@
 # PreFer changelog
 
+## Current
+
+- Release inventory
+  - Added `/deployment-inventory.json` to the image and a commit-named CI artifact.
+  - Added exact model/quant, runtime, preset, prestage, GPU ID/count, context, concurrency, and cache settings for generated deployments.
+  - Added an API-safe `request_model_id` for controller warmup and requests; configured INI section names remain separate.
+- RunPod
+  - Added one-GPU folders for the advertised 24–288 GB NVIDIA Pod inventory.
+  - 24 GB shape: RTX PRO 6000 MIG 24GB, L4, RTX 3090, RTX 4090, RTX A5000, and conservatively RTX 5090.
+    - `gemma-4-e2b`: context 128K; concurrency 4.
+    - `gemma-4-e4b`: context 128K; concurrency 4.
+    - `gemma-4-12b`: context 128K; concurrency 4.
+    - `qwen-3.5-9b`: context 128K; concurrency 2.
+    - `muse-glimmer-30b`: Q4; context 128K; concurrency 1.
+  - 48 GB shape: RTX PRO 6000 MIG 48GB, L40S, RTX 6000 Ada, A40, L40, and RTX A6000.
+    - `gemma-4-26b-a4b`: context 256K; concurrency 2.
+    - `gemma-4-31b`: context 256K; concurrency 1.
+    - `qwen-3.6-35b-a3b`: Q6; context 192K; concurrency 1.
+    - `qwen-3.8-27b`: Q6; context 192K; concurrency 1.
+    - `muse-glimmer-30b`: Q6; context 128K; concurrency 2.
+    - Includes the 24 GB shape's smaller routes.
+  - High-context shape: A100/H100 variants, RTX PRO 6000, H200, B200, and B300.
+    - `gemma-4-26b-a4b`: context 256K; concurrency 4.
+    - `gemma-4-31b`: context 256K; concurrency 2.
+    - `qwen-3.6-35b-a3b`: Q6; context 256K; concurrency 4.
+    - `qwen-3.8-27b`: Q6; context 256K; concurrency 4.
+    - `glm-4.7-flash`: Q6; context 198K; concurrency 4.
+    - `muse-glimmer-30b`: Q6; context 128K; concurrency 4.
+    - Includes the smaller routes.
+  - Added `rtx-pro-6000/2x/deepseek-v4-flash.ini`.
+    - `deepseek-v4-flash`: Q4 target with Q8 DSpark; context 384K; concurrency 4; f16 K/V.
+  - New RunPod shapes are marked configuration-only pending exact-card fit and contract smoke tests.
+- Local
+  - Added optional Hugging Face Xet disable, concurrency, and download-buffer controls to local Compose; defaults remain unchanged.
+  - Added generic one-GPU folders for RTX 4060 8 GB and RTX A2000 8 GB.
+    - `gemma-4-e2b`: context 128K; concurrency 2.
+    - `gemma-4-e4b`: context 128K; concurrency 2.
+    - `qwen-3.5-9b`: context 128K; concurrency 1.
+  - Added a generic GTX 1070 Ti folder with CUDA 12 `sm_61` compatibility metadata.
+    - `gemma-4-e2b`: context 128K; concurrency 1.
+    - `gemma-4-e4b`: context 128K; concurrency 1; MTP disabled pending a current-runtime Pascal smoke.
+    - `qwen-3.5-9b`: context 128K; concurrency 1.
+  - Added a generic TITAN X Pascal folder with CUDA 12 `sm_61` compatibility metadata.
+    - `gemma-4-e2b`: context 128K; concurrency 2.
+    - `gemma-4-e4b`: context 128K; concurrency 2; MTP disabled pending a current-runtime Pascal smoke.
+    - `gemma-4-12b`: context 128K; concurrency 1.
+    - `qwen-3.5-9b`: context 128K; concurrency 1.
+    - `gemma-4-26b-a4b`: QAT Q4; context 128K; concurrency 1; f16 K/V; CPU expert offload; target-only.
+    - `qwen-3.6-35b-a3b`: Q4; context 128K; concurrency 1; f16 K/V; CPU expert offload; target-only.
+  - All new 8/12 GB local profiles use q4_0 K/V; no private machine metadata is included.
+  - Verified all six TITAN X Pascal routes on b10362 through isolated load/generation and `general.ini` model swapping; E4B, `gemma-4-26b-a4b`, and `qwen-3.6-35b-a3b` are target-only.
+  - RTX 4060, RTX A2000 8 GB, and GTX 1070 Ti remain configuration-only pending exact-card smoke tests.
+- AWS
+  - No model, quant, context, concurrency, cache, or preset-path changes; authored scenarios were split by instance family.
+
 ## `sha-c925ef2`
 
 Image: `ghcr.io/cvalusek/prefer:sha-c925ef2@sha256:00e085311dd72f5af1d820cf86745d18130e0f3b6226a9f56f22d22982428660`

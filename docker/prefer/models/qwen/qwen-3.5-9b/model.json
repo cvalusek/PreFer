@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "family": "qwen",
+  "model_slug": "qwen-3.5-9b",
+  "shared": {
+    "aliases": [
+      "qwen-3.5",
+      "qwen-3.5-9b"
+    ],
+    "request_model_id": "qwen-3.5-9b"
+  },
+  "quants": {
+    "ud-q4-k-xl": {
+      "key": "qwen-3.5-9b",
+      "section": "unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL",
+      "settings": {
+        "model": "/models/unsloth/Qwen3.5-9B-GGUF/Qwen3.5-9B-UD-Q4_K_XL.gguf",
+        "mmproj": "/models/unsloth/Qwen3.5-9B-GGUF/mmproj-F16.gguf",
+        "top-k": 20,
+        "min-p": 0
+      },
+      "downloads": [
+        {
+          "repo": "unsloth/Qwen3.5-9B-GGUF",
+          "revision": "3885219b6810b007914f3a7950a8d1b469d598a5",
+          "include": [
+            "Qwen3.5-9B-UD-Q4_K_XL.gguf",
+            "mmproj-F16.gguf"
+          ]
+        }
+      ],
+      "artifacts": [
+        {
+          "role": "model",
+          "repo": "unsloth/Qwen3.5-9B-GGUF",
+          "path": "Qwen3.5-9B-UD-Q4_K_XL.gguf",
+          "size": 5966095584,
+          "sha256": "6f5d30666c2d8ae16a306e616d95341dcf3cc46810df84d7e6f5a7d1e4c1b293"
+        },
+        {
+          "role": "projector",
+          "repo": "unsloth/Qwen3.5-9B-GGUF",
+          "path": "mmproj-F16.gguf",
+          "size": 918166080,
+          "sha256": "f70dc3509053962b0d0d3ee8a7eacebf5d60aa560cad78254ae8698516ae029f"
+        }
+      ]
+    }
+  }
+}

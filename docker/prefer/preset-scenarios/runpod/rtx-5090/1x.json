@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "provider": "runpod",
+  "hardware": {
+    "gpu_slug": "rtx-5090",
+    "gpu_name": "RTX 5090",
+    "provider_gpu_type_id": "NVIDIA GeForce RTX 5090",
+    "gpu_count": 1,
+    "vram_gb_each": 32,
+    "architecture": "Blackwell",
+    "observed_host_ram_gb": 35,
+    "observed_vcpu": 9,
+    "advertised_hourly_usd_per_gpu": 0.99,
+    "pricing_observed_on": "2026-08-24",
+    "pricing_reference": "https://www.runpod.io/pricing"
+  },
+  "compatibility": {
+    "container_runtime": "nvidia",
+    "provisioning_api": "https://docs.runpod.io/api-reference/pods/POST/pods"
+  },
+  "verification": "configuration-only",
+  "scenarios": [
+    {
+      "path": "runpod/rtx-5090/1x/general.ini",
+      "extends": "aws/g6/xlarge/general.ini"
+    },
+    {
+      "path": "runpod/rtx-5090/1x/gemma-e2b.ini",
+      "extends": "aws/g6/xlarge/gemma-e2b.ini"
+    },
+    {
+      "path": "runpod/rtx-5090/1x/gemma-e4b.ini",
+      "extends": "aws/g6/xlarge/gemma-e4b.ini"
+    },
+    {
+      "path": "runpod/rtx-5090/1x/gemma-12b.ini",
+      "extends": "aws/g6/xlarge/gemma-12b.ini"
+    },
+    {
+      "path": "runpod/rtx-5090/1x/qwen-9b.ini",
+      "extends": "aws/g6/xlarge/qwen-9b.ini"
+    },
+    {
+      "path": "runpod/rtx-5090/1x/muse.ini",
+      "extends": "aws/g6/xlarge/muse.ini"
+    }
+  ]
+}

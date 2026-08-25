@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "family": "glm",
+  "model_slug": "glm-5.2-reap",
+  "shared": {
+    "aliases": [
+      "glm-5.2-reap"
+    ],
+    "request_model_id": "glm-5.2-reap"
+  },
+  "quants": {
+    "q4-k-xl": {
+      "key": "glm-5.2-reap",
+      "section": "0xSero/GLM-5.2-REAP-504B-GGUF:Q4_K_XL",
+      "settings": {
+        "model": "/models/0xSero/GLM-5.2-REAP-504B-GGUF/GLM-5.2-REAP-504B-Q4_K_XL-00001-of-00008.gguf"
+      },
+      "downloads": [
+        {
+          "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
+          "revision": null,
+          "include": [
+            "*Q4_K_XL*"
+          ]
+        }
+      ],
+      "artifacts": [
+        {
+          "role": "model",
+          "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00001-of-00008.gguf"
+        },
+        {
+          "role": "model-shard",
+          "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00002-of-00008.gguf"
+        },
+        {
+          "role": "model-shard",
+          "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00003-of-00008.gguf"
+        },
+        {
+          "role": "model-shard",
+          "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00004-of-00008.gguf"
+        },
+        {
+          "role": "model-shard",
+          "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00005-of-00008.gguf"
+        },
+        {
+          "role": "model-shard",
+          "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00006-of-00008.gguf"
+        },
+        {
+          "role": "model-shard",
+          "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00007-of-00008.gguf"
+        },
+        {
+          "role": "model-shard",
+          "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00008-of-00008.gguf"
+        }
+      ]
+    }
+  }
+}

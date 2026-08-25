@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "provider": "runpod",
+  "hardware": {
+    "gpu_slug": "h100-nvl",
+    "gpu_name": "H100 NVL",
+    "provider_gpu_type_id": "NVIDIA H100 NVL",
+    "gpu_count": 1,
+    "vram_gb_each": 94,
+    "architecture": "Hopper",
+    "observed_host_ram_gb": 94,
+    "observed_vcpu": 16,
+    "advertised_hourly_usd_per_gpu": 3.19,
+    "pricing_observed_on": "2026-08-24",
+    "pricing_reference": "https://www.runpod.io/pricing"
+  },
+  "compatibility": {
+    "container_runtime": "nvidia",
+    "provisioning_api": "https://docs.runpod.io/api-reference/pods/POST/pods"
+  },
+  "verification": "configuration-only",
+  "scenarios": [
+    {
+      "path": "runpod/h100-nvl/1x/general.ini",
+      "extends": "aws/g7e/2xlarge/general.ini"
+    },
+    {
+      "path": "runpod/h100-nvl/1x/qwen.ini",
+      "extends": "aws/g7e/2xlarge/qwen.ini"
+    },
+    {
+      "path": "runpod/h100-nvl/1x/qwen-27b.ini",
+      "extends": "aws/g7e/2xlarge/qwen-27b.ini"
+    },
+    {
+      "path": "runpod/h100-nvl/1x/qwen-35b-a3b.ini",
+      "extends": "aws/g7e/2xlarge/qwen-35b-a3b.ini"
+    },
+    {
+      "path": "runpod/h100-nvl/1x/gemma.ini",
+      "extends": "aws/g7e/2xlarge/gemma.ini"
+    },
+    {
+      "path": "runpod/h100-nvl/1x/gemma-26b-a4b.ini",
+      "extends": "aws/g7e/2xlarge/gemma-26b-a4b.ini"
+    },
+    {
+      "path": "runpod/h100-nvl/1x/gemma-31b.ini",
+      "extends": "aws/g7e/2xlarge/gemma-31b.ini"
+    },
+    {
+      "path": "runpod/h100-nvl/1x/glm-4.7-flash.ini",
+      "extends": "aws/g7e/2xlarge/glm-4.7-flash.ini"
+    },
+    {
+      "path": "runpod/h100-nvl/1x/muse.ini",
+      "extends": "aws/g7e/2xlarge/muse.ini"
+    }
+  ]
+}

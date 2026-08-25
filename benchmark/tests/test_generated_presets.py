@@ -10,7 +10,27 @@ from prefer_bench.paths import REPO_ROOT
 
 
 PREFER_ROOT = REPO_ROOT / "docker" / "prefer"
-SCENARIOS_PATH = PREFER_ROOT / "preset-scenarios" / "aws.json"
+SCENARIOS_ROOT = PREFER_ROOT / "preset-scenarios"
+INVENTORY_PATH = PREFER_ROOT / "deployment-inventory.generated.json"
+
+
+def scenario_sources(provider: str | None = None) -> list[dict]:
+    sources = [json.loads(path.read_text(encoding="utf-8")) for path in sorted(SCENARIOS_ROOT.rglob("*.json"))]
+    if provider is not None:
+        sources = [source for source in sources if source.get("provider") == provider]
+    return sources
+
+
+def scenarios(provider: str | None = None) -> list[dict]:
+    return [scenario for source in scenario_sources(provider) for scenario in source["scenarios"]]
+
+
+def deployment_inventory() -> dict:
+    return json.loads(INVENTORY_PATH.read_text(encoding="utf-8"))
+
+
+def catalog_models() -> dict:
+    return deployment_inventory()["models"]
 
 
 def effective_preset_settings(path: Path) -> dict[str, dict[str, str]]:
@@ -43,9 +63,144 @@ class GeneratedPresetTests(unittest.TestCase):
         )
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
 
+    def test_model_catalog_is_split_by_family_model_and_quant_dictionary(self) -> None:
+        metadata = json.loads((PREFER_ROOT / "preset-catalog.json").read_text(encoding="utf-8"))
+        self.assertEqual(metadata["schema_version"], 2)
+        self.assertNotIn("models", metadata)
+        seen_keys: set[str] = set()
+        for path in sorted((PREFER_ROOT / "models").glob("*/*/model.json")):
+            source = json.loads(path.read_text(encoding="utf-8"))
+            family, model_slug, _ = path.relative_to(PREFER_ROOT / "models").parts
+            self.assertEqual(source["family"], family, path)
+            self.assertEqual(source["model_slug"], model_slug, path)
+            self.assertTrue(source["quants"], path)
+            for lane in source["quants"].values():
+                self.assertNotIn(lane["key"], seen_keys, lane["key"])
+                seen_keys.add(lane["key"])
+        self.assertEqual(seen_keys, set(catalog_models()))
+        muse = json.loads(
+            (PREFER_ROOT / "models" / "muse" / "muse-glimmer-30b" / "model.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(set(muse["quants"]), {"ud-q4-k-xl", "ud-q6-k-xl"})
+        self.assertEqual(muse["shared"]["settings"]["spec-type"], "draft-dflash")
+        self.assertEqual(set(muse["quants"]["ud-q4-k-xl"]["settings"]), {"model"})
+        self.assertEqual(set(muse["quants"]["ud-q6-k-xl"]["settings"]), {"model"})
+
+    def test_deployment_inventory_resolves_every_generated_scenario(self) -> None:
+        inventory = deployment_inventory()
+        self.assertEqual(inventory["schema_version"], "prefer.deployment-inventory.v1")
+        for key, model in inventory["models"].items():
+            self.assertIn(model["request_model_id"], model["aliases"], key)
+        deployments = inventory["deployments"]
+        self.assertEqual(len(deployments), len(scenarios()))
+        self.assertEqual(len({deployment["id"] for deployment in deployments}), len(deployments))
+        for deployment in deployments:
+            preset = PREFER_ROOT / "presets" / deployment["preset"].removeprefix("/presets/")
+            prestage = PREFER_ROOT / "presets" / deployment["prestage_manifest"].removeprefix("/presets/")
+            self.assertTrue(preset.exists(), deployment["id"])
+            self.assertTrue(prestage.exists(), deployment["id"])
+            self.assertEqual(deployment["environment"]["LLAMA_ARG_MODELS_PRESET"], deployment["preset"])
+            self.assertEqual(deployment["environment"]["LLAMA_ARG_MODELS_MAX"], "1")
+            self.assertEqual(
+                deployment["environment"]["PRESTAGE_MODELS"],
+                ",".join(dict.fromkeys(model["key"] for model in deployment["models"])),
+            )
+            for model in deployment["models"]:
+                self.assertIn(model["request_model_id"], model["aliases"], deployment["id"])
+
+        titan_general = next(
+            deployment
+            for deployment in deployments
+            if deployment["id"] == "local/titan-x-pascal/1x/general"
+        )
+        gemma_e2b = next(model for model in titan_general["models"] if model["key"] == "gemma-4-e2b")
+        self.assertEqual(gemma_e2b["section"], "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL")
+        self.assertEqual(gemma_e2b["request_model_id"], "gemma-4-e2b")
+
+        dockerfile = (PREFER_ROOT / "Dockerfile").read_text(encoding="utf-8")
+        netskope = (PREFER_ROOT / "Dockerfile.netskope").read_text(encoding="utf-8")
+        workflow = (REPO_ROOT / ".github" / "workflows" / "build-prefer.yml").read_text(encoding="utf-8")
+        self.assertIn("COPY deployment-inventory.generated.json /deployment-inventory.json", dockerfile)
+        self.assertIn(
+            "COPY docker/prefer/deployment-inventory.generated.json /deployment-inventory.json", netskope
+        )
+        self.assertIn("prefer-deployment-inventory-${{ github.sha }}", workflow)
+        self.assertIn("io.prefer.deployment-inventory.path=/deployment-inventory.json", workflow)
+
+    def test_runpod_inventory_uses_exact_gpu_ids_and_only_one_initial_multigpu_shape(self) -> None:
+        deployments = [item for item in deployment_inventory()["deployments"] if item["provider"] == "runpod"]
+        expected_cards = {
+            "pro-6000-mig-24gb", "l4", "rtx-3090", "rtx-4090", "rtx-a5000", "rtx-5090",
+            "pro-6000-mig-48gb", "l40s", "rtx-6000-ada", "a40", "l40", "rtx-a6000",
+            "h100-pcie", "h100-sxm", "a100-pcie", "a100-sxm", "h100-nvl", "rtx-pro-6000",
+            "h200", "b200", "b300",
+        }
+        self.assertEqual({item["hardware"]["gpu_slug"] for item in deployments}, expected_cards)
+        self.assertTrue(all(item["hardware"].get("provider_gpu_type_id") for item in deployments))
+        multigpu = [item for item in deployments if item["hardware"]["gpu_count"] > 1]
+        self.assertEqual([item["id"] for item in multigpu], ["runpod/rtx-pro-6000/2x/deepseek-v4-flash"])
+        for deployment in deployments:
+            for model in deployment["models"]:
+                self.assertEqual(model["cache_type_k"], "f16", deployment["id"])
+                self.assertEqual(model["cache_type_v"], "f16", deployment["id"])
+                self.assertGreaterEqual(model["context_per_request"], 131072, deployment["id"])
+
+        deepseek = multigpu[0]
+        self.assertEqual(deepseek["hardware"]["provider_gpu_type_id"], "NVIDIA RTX PRO 6000 Blackwell Server Edition")
+        self.assertEqual(deepseek["models"][0]["quant_slug"], "ud-q4-k-xl")
+        self.assertEqual(deepseek["models"][0]["parallel"], 4)
+        self.assertEqual(deepseek["models"][0]["context_per_request"], 393216)
+        self.assertEqual(deepseek["models"][0]["settings"]["spec-type"], "draft-dspark")
+
+    def test_local_inventory_is_generic_and_contains_only_the_owned_gpu_classes(self) -> None:
+        deployments = [item for item in deployment_inventory()["deployments"] if item["provider"] == "local"]
+        self.assertEqual(
+            {item["hardware"]["gpu_slug"] for item in deployments},
+            {"rtx-4060", "rtx-a2000-8gb", "gtx-1070-ti", "titan-x-pascal"},
+        )
+        for deployment in deployments:
+            hardware = deployment["hardware"]
+            self.assertEqual(set(hardware), {"gpu_slug", "gpu_name", "gpu_count", "vram_gb_each", "architecture"})
+            self.assertEqual(hardware["gpu_count"], 1)
+            for model in deployment["models"]:
+                expected_cache = (
+                    "f16"
+                    if model["key"] in {"gemma-4-26b-a4b", "qwen-3.6-35b-a3b-q4"}
+                    else "q4_0"
+                )
+                self.assertEqual(model["cache_type_k"], expected_cache, deployment["id"])
+                self.assertEqual(model["cache_type_v"], expected_cache, deployment["id"])
+
+        pascal_e4b = next(
+            item for item in deployments if item["id"] == "local/titan-x-pascal/1x/gemma-e4b"
+        )["models"][0]["settings"]
+        self.assertNotIn("model-draft", pascal_e4b)
+        self.assertNotIn("spec-type", pascal_e4b)
+
+        pascal_general = next(
+            item for item in deployments if item["id"] == "local/titan-x-pascal/1x/general"
+        )
+        large_local = {
+            model["key"]: model["settings"]
+            for model in pascal_general["models"]
+            if model["key"] in {"gemma-4-26b-a4b", "qwen-3.6-35b-a3b-q4"}
+        }
+        self.assertEqual(set(large_local), {"gemma-4-26b-a4b", "qwen-3.6-35b-a3b-q4"})
+        for settings in large_local.values():
+            self.assertGreater(settings["n-cpu-moe"], 0)
+            self.assertFalse(settings["mmap"])
+            self.assertNotIn("spec-type", settings)
+
+    def test_aws_scenarios_are_split_by_instance_family(self) -> None:
+        self.assertFalse((SCENARIOS_ROOT / "aws.json").exists())
+        paths = {path.relative_to(SCENARIOS_ROOT).as_posix() for path in SCENARIOS_ROOT.glob("aws/*/*.json")}
+        self.assertEqual(
+            paths,
+            {"aws/g6/xlarge.json", "aws/g6e/xlarge.json", "aws/g7e/2xlarge.json", "aws/g7e/12xlarge.json"},
+        )
+
     def test_aws_sidecars_exactly_match_scenario_model_keys(self) -> None:
-        source = json.loads(SCENARIOS_PATH.read_text(encoding="utf-8"))
-        for scenario in source["scenarios"]:
+        for scenario in scenarios("aws"):
             expected = list(dict.fromkeys(entry["key"] for entry in scenario["models"]))
             ini_path = PREFER_ROOT / "presets" / scenario["path"]
             sidecar = ini_path.with_suffix(".prestage").read_text(encoding="utf-8").strip().split(",")
@@ -53,8 +208,7 @@ class GeneratedPresetTests(unittest.TestCase):
             self.assertTrue(parse_preset(ini_path), scenario["path"])
 
     def test_every_aws_route_has_at_least_128k_context_per_slot_and_f16_kv(self) -> None:
-        source = json.loads(SCENARIOS_PATH.read_text(encoding="utf-8"))
-        for scenario in source["scenarios"]:
+        for scenario in scenarios("aws"):
             defaults = scenario.get("defaults", {})
             for entry in scenario["models"]:
                 settings = {**defaults, **entry.get("overrides", {})}
@@ -101,7 +255,7 @@ class GeneratedPresetTests(unittest.TestCase):
             self.assertEqual(settings["load-on-startup"], "true", preset_name)
             self.assertEqual(preset_path.with_suffix(".prestage").read_text(encoding="utf-8").strip(), prestage_key)
 
-        catalog = json.loads((PREFER_ROOT / "preset-catalog.json").read_text(encoding="utf-8"))
+        catalog = {"models": catalog_models()}
         for key in ("muse-glimmer-30b-q4", "muse-glimmer-30b-q6"):
             model = catalog["models"][key]
             self.assertEqual(model["lineage"]["revision"], "90625aaf7c8d5338df3779e3f2ef1b8c9e669252")
@@ -121,7 +275,7 @@ class GeneratedPresetTests(unittest.TestCase):
         self.assertNotIn("unsloth/Qwen3.5-9B-MTP-GGUF", preset)
 
     def test_qwen_38_27b_uses_pinned_q6_with_embedded_mtp(self) -> None:
-        catalog = json.loads((PREFER_ROOT / "preset-catalog.json").read_text(encoding="utf-8"))
+        catalog = {"models": catalog_models()}
         self.assertNotIn("qwen-3.6-27b", catalog["models"])
         qwen = catalog["models"]["qwen-3.8-27b"]
         self.assertEqual(qwen["section"], "unsloth/Qwen3.8-27B-GGUF:UD-Q6_K_XL")
@@ -202,10 +356,9 @@ class GeneratedPresetTests(unittest.TestCase):
                 "muse-glimmer-30b-q6": (524288, 4),
             },
         }
-        source = json.loads(SCENARIOS_PATH.read_text(encoding="utf-8"))
-        scenarios = {scenario["path"]: scenario for scenario in source["scenarios"]}
+        scenarios_by_path = {scenario["path"]: scenario for scenario in scenarios("aws")}
         for path, model_shapes in expected.items():
-            scenario = scenarios[path]
+            scenario = scenarios_by_path[path]
             actual = {
                 entry["key"]: (entry["overrides"]["ctx-size"], entry["overrides"]["parallel"])
                 for entry in scenario["models"]
@@ -223,21 +376,20 @@ class GeneratedPresetTests(unittest.TestCase):
                 self.assertEqual(settings["parallel"], "1", name)
 
     def test_removed_qwen_yarn_route_is_absent_from_active_presets(self) -> None:
-        source = json.loads(SCENARIOS_PATH.read_text(encoding="utf-8"))
-        for scenario in source["scenarios"]:
+        for scenario in scenarios("aws"):
             preset = (PREFER_ROOT / "presets" / scenario["path"]).read_text(encoding="utf-8")
             self.assertNotIn("qwen-3.6-35b-a3b-1m", preset, scenario["path"])
             self.assertNotIn("yarn-orig-ctx", preset, scenario["path"])
 
     def test_draft_mtp_models_declare_their_draft_source(self) -> None:
-        catalog = json.loads((PREFER_ROOT / "preset-catalog.json").read_text(encoding="utf-8"))
+        catalog = {"models": catalog_models()}
         for key, model in catalog["models"].items():
             settings = model["settings"]
             if settings.get("spec-type") == "draft-mtp":
                 self.assertTrue(settings.get("model-draft") or model.get("embedded_mtp"), key)
 
     def test_external_draft_models_have_exact_catalog_artifacts(self) -> None:
-        catalog = json.loads((PREFER_ROOT / "preset-catalog.json").read_text(encoding="utf-8"))
+        catalog = {"models": catalog_models()}
         for key, model in catalog["models"].items():
             settings = model["settings"]
             if settings.get("spec-type") in {"draft-dflash", "draft-dspark", "draft-eagle3", "draft-simple"}:
@@ -255,7 +407,7 @@ class GeneratedPresetTests(unittest.TestCase):
         self.assertIn("\nPRESTAGE_MODELS=\n", f"\n{example_env}")
 
     def test_generated_downloader_has_catalog_fingerprints_and_exact_artifacts(self) -> None:
-        catalog = json.loads((PREFER_ROOT / "preset-catalog.json").read_text(encoding="utf-8"))
+        catalog = {"models": catalog_models()}
         generated = (PREFER_ROOT / "model-downloads.generated.sh").read_text(encoding="utf-8")
         for key, model in catalog["models"].items():
             payload = {

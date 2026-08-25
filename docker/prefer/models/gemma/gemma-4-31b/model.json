@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "family": "gemma",
+  "model_slug": "gemma-4-31b",
+  "shared": {
+    "aliases": [
+      "gemma-4-31b"
+    ],
+    "request_model_id": "gemma-4-31b"
+  },
+  "quants": {
+    "ud-q4-k-xl": {
+      "key": "gemma-4-31b",
+      "section": "unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL",
+      "settings": {
+        "model": "/models/unsloth/gemma-4-31B-it-qat-GGUF/gemma-4-31B-it-qat-UD-Q4_K_XL.gguf",
+        "model-draft": "/models/unsloth/gemma-4-31B-it-qat-GGUF/MTP/mtp-gemma-4-31B-it-Q4_0.gguf",
+        "mmproj": "/models/unsloth/gemma-4-31B-it-qat-GGUF/mmproj-F16.gguf",
+        "spec-type": "draft-mtp",
+        "spec-draft-n-max": 4,
+        "top-k": 64
+      },
+      "downloads": [
+        {
+          "repo": "unsloth/gemma-4-31B-it-qat-GGUF",
+          "revision": "43cc1aeb31adf47ec06a854507ce552cd9862e6f",
+          "include": [
+            "gemma-4-31B-it-qat-UD-Q4_K_XL.gguf",
+            "MTP/mtp-gemma-4-31B-it-Q4_0.gguf",
+            "mmproj-F16.gguf"
+          ]
+        }
+      ],
+      "artifacts": [
+        {
+          "role": "model",
+          "repo": "unsloth/gemma-4-31B-it-qat-GGUF",
+          "path": "gemma-4-31B-it-qat-UD-Q4_K_XL.gguf",
+          "size": 17287670048,
+          "sha256": "00b5a7c497f0c8934033088c10a7fa9a4c015e46ee6d89e9c6890650ba5d0e71"
+        },
+        {
+          "role": "draft",
+          "repo": "unsloth/gemma-4-31B-it-qat-GGUF",
+          "path": "MTP/mtp-gemma-4-31B-it-Q4_0.gguf",
+          "size": 279955968,
+          "sha256": "3a5e99fd8d0b23afb1fccd1ee0c9ebd1f571d00399c2dae2292d217feeec0f6b"
+        },
+        {
+          "role": "projector",
+          "repo": "unsloth/gemma-4-31B-it-qat-GGUF",
+          "path": "mmproj-F16.gguf",
+          "size": 1198957024,
+          "sha256": "4775e1bf6ef6f8df94caed2d672c74432f0722565e5225a170c72949ebe4cf23"
+        }
+      ]
+    }
+  }
+}

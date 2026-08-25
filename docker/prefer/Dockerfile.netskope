@@ -28,6 +28,7 @@ ENV LD_LIBRARY_PATH=/app
 
 COPY docker/prefer/presets/ /presets/
 COPY docker/prefer/preset-catalog.json /preset-catalog.json
+COPY docker/prefer/deployment-inventory.generated.json /deployment-inventory.json
 COPY docker/prefer/model-downloads.generated.sh /model-downloads.generated.sh
 COPY docker/prefer/detect-preset.sh /detect-preset.sh
 COPY docker/prefer/download-models.sh /download-models.sh

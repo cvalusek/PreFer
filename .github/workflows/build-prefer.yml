@@ -44,6 +44,9 @@ jobs:
           tags: |
             type=raw,value=latest
             type=sha,format=short
+          labels: |
+            io.prefer.deployment-inventory.path=/deployment-inventory.json
+            io.prefer.deployment-inventory.schema=prefer.deployment-inventory.v1
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -54,3 +57,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Upload deployment inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: prefer-deployment-inventory-${{ github.sha }}
+          path: docker/prefer/deployment-inventory.generated.json
+          if-no-files-found: error
