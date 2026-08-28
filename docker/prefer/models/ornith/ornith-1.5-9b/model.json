@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "family": "ornith",
+  "model_slug": "ornith-1.5-9b",
+  "shared": {
+    "aliases": [
+      "ornith-1.5",
+      "ornith-1.5-9b"
+    ],
+    "request_model_id": "ornith-1.5-9b",
+    "license": "mit",
+    "lineage": {
+      "repo": "ornith-ai/Ornith-1.5-9B",
+      "revision": "489cb97981b8654bcfcf30ce1f94ed1b62e07b53"
+    },
+    "settings": {
+      "top-k": 20,
+      "min-p": 0,
+      "presence-penalty": 1.5
+    }
+  },
+  "quants": {
+    "q4-k-m": {
+      "key": "ornith-1.5-9b-q4",
+      "section": "ornith-ai/Ornith-1.5-9B-GGUF:Q4_K_M",
+      "settings": {
+        "model": "/models/ornith-ai/Ornith-1.5-9B-GGUF/Ornith-1.5-9B-Q4_K_M.gguf",
+        "mmproj": "/models/ornith-ai/Ornith-1.5-9B-GGUF/mmproj-Ornith-1.5-9B-BF16.gguf"
+      },
+      "downloads": [
+        {
+          "repo": "ornith-ai/Ornith-1.5-9B-GGUF",
+          "revision": "abdd624b12ebf020b767fff532ff44fe552b28c3",
+          "include": [
+            "Ornith-1.5-9B-Q4_K_M.gguf",
+            "mmproj-Ornith-1.5-9B-BF16.gguf"
+          ]
+        }
+      ],
+      "artifacts": [
+        {
+          "role": "model",
+          "repo": "ornith-ai/Ornith-1.5-9B-GGUF",
+          "path": "Ornith-1.5-9B-Q4_K_M.gguf",
+          "size": 5780090816,
+          "sha256": "70c112196e0b7023803c9762752e46d29e612a92c83f995bc3ba1ceb07e8fab6"
+        },
+        {
+          "role": "projector",
+          "repo": "ornith-ai/Ornith-1.5-9B-GGUF",
+          "path": "mmproj-Ornith-1.5-9B-BF16.gguf",
+          "size": 921704672,
+          "sha256": "626f9f90627402a6bf4a999111d0fbd69b5fcca7aa8ba089d69e5f10e8858e1d"
+        }
+      ]
+    },
+    "q6-k": {
+      "key": "ornith-1.5-9b-q6",
+      "section": "ornith-ai/Ornith-1.5-9B-GGUF:Q6_K",
+      "settings": {
+        "model": "/models/ornith-ai/Ornith-1.5-9B-GGUF/Ornith-1.5-9B-Q6_K.gguf",
+        "mmproj": "/models/ornith-ai/Ornith-1.5-9B-GGUF/mmproj-Ornith-1.5-9B-BF16.gguf"
+      },
+      "downloads": [
+        {
+          "repo": "ornith-ai/Ornith-1.5-9B-GGUF",
+          "revision": "abdd624b12ebf020b767fff532ff44fe552b28c3",
+          "include": [
+            "Ornith-1.5-9B-Q6_K.gguf",
+            "mmproj-Ornith-1.5-9B-BF16.gguf"
+          ]
+        }
+      ],
+      "artifacts": [
+        {
+          "role": "model",
+          "repo": "ornith-ai/Ornith-1.5-9B-GGUF",
+          "path": "Ornith-1.5-9B-Q6_K.gguf",
+          "size": 7558901696,
+          "sha256": "b6f76e74f86245b3caee014b797c10dca931c4dfdaabfb134eab655f81e4154a"
+        },
+        {
+          "role": "projector",
+          "repo": "ornith-ai/Ornith-1.5-9B-GGUF",
+          "path": "mmproj-Ornith-1.5-9B-BF16.gguf",
+          "size": 921704672,
+          "sha256": "626f9f90627402a6bf4a999111d0fbd69b5fcca7aa8ba089d69e5f10e8858e1d"
+        }
+      ]
+    },
+    "q8-0": {
+      "key": "ornith-1.5-9b-q8",
+      "section": "ornith-ai/Ornith-1.5-9B-GGUF:Q8_0",
+      "settings": {
+        "model": "/models/ornith-ai/Ornith-1.5-9B-GGUF/Ornith-1.5-9B-Q8_0.gguf",
+        "mmproj": "/models/ornith-ai/Ornith-1.5-9B-GGUF/mmproj-Ornith-1.5-9B-BF16.gguf"
+      },
+      "downloads": [
+        {
+          "repo": "ornith-ai/Ornith-1.5-9B-GGUF",
+          "revision": "abdd624b12ebf020b767fff532ff44fe552b28c3",
+          "include": [
+            "Ornith-1.5-9B-Q8_0.gguf",
+            "mmproj-Ornith-1.5-9B-BF16.gguf"
+          ]
+        }
+      ],
+      "artifacts": [
+        {
+          "role": "model",
+          "repo": "ornith-ai/Ornith-1.5-9B-GGUF",
+          "path": "Ornith-1.5-9B-Q8_0.gguf",
+          "size": 9786060384,
+          "sha256": "22086870b009dbe9815ee752c48a82de930118a7c5ce5599590892ae03b8b010"
+        },
+        {
+          "role": "projector",
+          "repo": "ornith-ai/Ornith-1.5-9B-GGUF",
+          "path": "mmproj-Ornith-1.5-9B-BF16.gguf",
+          "size": 921704672,
+          "sha256": "626f9f90627402a6bf4a999111d0fbd69b5fcca7aa8ba089d69e5f10e8858e1d"
+        }
+      ]
+    }
+  }
+}

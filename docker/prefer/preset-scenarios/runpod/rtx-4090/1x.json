@@ -43,6 +43,14 @@
     {
       "path": "runpod/rtx-4090/1x/muse.ini",
       "extends": "aws/g6/xlarge/muse.ini"
+    },
+    {
+      "path": "runpod/rtx-4090/1x/ornith-9b.ini",
+      "extends": "aws/g6/xlarge/ornith-9b.ini"
+    },
+    {
+      "path": "runpod/rtx-4090/1x/nemotron-lightning.ini",
+      "extends": "aws/g6/xlarge/nemotron-lightning.ini"
     }
   ]
 }

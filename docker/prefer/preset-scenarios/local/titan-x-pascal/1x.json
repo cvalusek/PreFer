@@ -13,9 +13,9 @@
     "cuda_major": 12,
     "minimum_compute_capability": "6.1",
     "required_cuda_arch": "sm_61",
-    "runtime_status": "b10362 target profiles verified; E4B MTP remains unverified; 26B/35B CPU-offload lanes verified target-only"
+    "runtime_status": "b10362 existing target profiles verified; new Ornith and Nemotron Lightning lanes remain configuration-only"
   },
-  "verification": "load-generation-smoke-verified",
+  "verification": "mixed-owner-verified-and-configuration-only",
   "scenarios": [
     {
       "path": "local/titan-x-pascal/1x/general.ini",
@@ -106,6 +106,41 @@
             "parallel": 1,
             "spec-type": null,
             "spec-draft-n-max": null
+          }
+        },
+        {
+          "key": "ornith-1.5-9b-q6",
+          "overrides": {
+            "ctx-size": 131072,
+            "parallel": 1
+          }
+        },
+        {
+          "key": "ornith-1.5-35b-a3b-q4",
+          "overrides": {
+            "n-cpu-moe": 28,
+            "mmap": false,
+            "ubatch-size": 256,
+            "threads": 16,
+            "cache-type-k": "f16",
+            "cache-type-v": "f16",
+            "cache-reuse": 8192,
+            "ctx-size": 131072,
+            "parallel": 1
+          }
+        },
+        {
+          "key": "nemotron-3.5-lightning-30b-a3b-q4",
+          "overrides": {
+            "n-cpu-moe": 28,
+            "mmap": false,
+            "ubatch-size": 256,
+            "threads": 16,
+            "cache-type-k": "f16",
+            "cache-type-v": "f16",
+            "cache-reuse": 8192,
+            "ctx-size": 131072,
+            "parallel": 1
           }
         }
       ]

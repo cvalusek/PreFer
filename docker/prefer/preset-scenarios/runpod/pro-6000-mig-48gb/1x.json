@@ -51,6 +51,22 @@
     {
       "path": "runpod/pro-6000-mig-48gb/1x/muse.ini",
       "extends": "aws/g6e/xlarge/muse.ini"
+    },
+    {
+      "path": "runpod/pro-6000-mig-48gb/1x/ornith.ini",
+      "extends": "aws/g6e/xlarge/ornith.ini"
+    },
+    {
+      "path": "runpod/pro-6000-mig-48gb/1x/ornith-9b.ini",
+      "extends": "aws/g6e/xlarge/ornith-9b.ini"
+    },
+    {
+      "path": "runpod/pro-6000-mig-48gb/1x/ornith-35b-a3b.ini",
+      "extends": "aws/g6e/xlarge/ornith-35b-a3b.ini"
+    },
+    {
+      "path": "runpod/pro-6000-mig-48gb/1x/nemotron-lightning.ini",
+      "extends": "aws/g6e/xlarge/nemotron-lightning.ini"
     }
   ]
 }

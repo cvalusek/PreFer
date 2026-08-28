@@ -165,7 +165,12 @@ class GeneratedPresetTests(unittest.TestCase):
             for model in deployment["models"]:
                 expected_cache = (
                     "f16"
-                    if model["key"] in {"gemma-4-26b-a4b", "qwen-3.6-35b-a3b-q4"}
+                    if model["key"] in {
+                        "gemma-4-26b-a4b",
+                        "qwen-3.6-35b-a3b-q4",
+                        "ornith-1.5-35b-a3b-q4",
+                        "nemotron-3.5-lightning-30b-a3b-q4",
+                    }
                     else "q4_0"
                 )
                 self.assertEqual(model["cache_type_k"], expected_cache, deployment["id"])
@@ -183,13 +188,25 @@ class GeneratedPresetTests(unittest.TestCase):
         large_local = {
             model["key"]: model["settings"]
             for model in pascal_general["models"]
-            if model["key"] in {"gemma-4-26b-a4b", "qwen-3.6-35b-a3b-q4"}
+            if model["key"] in {
+                "gemma-4-26b-a4b",
+                "qwen-3.6-35b-a3b-q4",
+                "ornith-1.5-35b-a3b-q4",
+                "nemotron-3.5-lightning-30b-a3b-q4",
+            }
         }
-        self.assertEqual(set(large_local), {"gemma-4-26b-a4b", "qwen-3.6-35b-a3b-q4"})
+        self.assertEqual(set(large_local), {
+            "gemma-4-26b-a4b",
+            "qwen-3.6-35b-a3b-q4",
+            "ornith-1.5-35b-a3b-q4",
+            "nemotron-3.5-lightning-30b-a3b-q4",
+        })
         for settings in large_local.values():
             self.assertGreater(settings["n-cpu-moe"], 0)
             self.assertFalse(settings["mmap"])
-            self.assertNotIn("spec-type", settings)
+        self.assertNotIn("spec-type", large_local["ornith-1.5-35b-a3b-q4"])
+        self.assertEqual(large_local["nemotron-3.5-lightning-30b-a3b-q4"]["spec-type"], "draft-mtp")
+        self.assertEqual(large_local["nemotron-3.5-lightning-30b-a3b-q4"]["n-cpu-moe"], 28)
 
     def test_aws_scenarios_are_split_by_instance_family(self) -> None:
         self.assertFalse((SCENARIOS_ROOT / "aws.json").exists())
@@ -297,20 +314,51 @@ class GeneratedPresetTests(unittest.TestCase):
             "sha256": "739202186fd9389bb58497c58b56c8a0d4253d99d20131e6a0427e363e678fc8",
         }])
 
+    def test_ornith_and_nemotron_lanes_are_immutable_and_bounded(self) -> None:
+        models = catalog_models()
+        self.assertFalse(any("397" in key for key in models))
+
+        ornith = models["ornith-1.5-35b-a3b-q8"]
+        self.assertEqual(ornith["lineage"]["revision"], "10fbf86fed7ecee4a061f8b499a618f46001cac1")
+        self.assertEqual(ornith["downloads"][0]["revision"], "12393612fd4f730ff5aadc23e9b8f9648aa49ceb")
+        self.assertNotIn("spec-type", ornith["settings"])
+        self.assertEqual(ornith["settings"]["temp"], 0.6)
+
+        nemotron = models["nemotron-3.5-lightning-30b-a3b-q8"]
+        self.assertEqual(nemotron["lineage"]["revision"], "63a200063804e06fdb41d6717e43bc92f67859d2")
+        self.assertEqual(nemotron["downloads"][0]["revision"], "9169f1a8ac58a29383ec27a447b4af3532da8864")
+        self.assertEqual(nemotron["settings"]["spec-type"], "draft-mtp")
+        self.assertEqual(nemotron["settings"]["spec-draft-n-max"], 3)
+        self.assertEqual(
+            {artifact["role"]: artifact["sha256"] for artifact in nemotron["artifacts"]},
+            {
+                "model": "d4cc4c9fffaa356db8b49cfaba9233609cfb29b4dd89d827665210dc1cc8dbbb",
+                "draft": "3c97aa5d1188384d81af610a5152c98d88d7669bdfa1f9814d18b452db4f170d",
+            },
+        )
+
     def test_single_model_aws_presets_match_their_bundle_routes(self) -> None:
         cases = [
             ("aws/g6/xlarge/general.ini", "aws/g6/xlarge/gemma-e2b.ini", "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL"),
             ("aws/g6/xlarge/general.ini", "aws/g6/xlarge/gemma-e4b.ini", "unsloth/gemma-4-E4B-it-qat-GGUF:UD-Q4_K_XL"),
             ("aws/g6/xlarge/general.ini", "aws/g6/xlarge/gemma-12b.ini", "unsloth/gemma-4-12B-it-qat-GGUF:UD-Q4_K_XL"),
             ("aws/g6/xlarge/general.ini", "aws/g6/xlarge/qwen-9b.ini", "unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL"),
+            ("aws/g6/xlarge/general.ini", "aws/g6/xlarge/ornith-9b.ini", "ornith-ai/Ornith-1.5-9B-GGUF:Q8_0"),
+            ("aws/g6/xlarge/general.ini", "aws/g6/xlarge/nemotron-lightning.ini", "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF:Q4_0"),
             ("aws/g6e/xlarge/gemma.ini", "aws/g6e/xlarge/gemma-26b-a4b.ini", "unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL"),
             ("aws/g6e/xlarge/gemma.ini", "aws/g6e/xlarge/gemma-31b.ini", "unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL"),
             ("aws/g6e/xlarge/qwen.ini", "aws/g6e/xlarge/qwen-35b-a3b.ini", "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL"),
             ("aws/g6e/xlarge/qwen.ini", "aws/g6e/xlarge/qwen-27b.ini", "unsloth/Qwen3.8-27B-GGUF:UD-Q6_K_XL"),
+            ("aws/g6e/xlarge/ornith.ini", "aws/g6e/xlarge/ornith-9b.ini", "ornith-ai/Ornith-1.5-9B-GGUF:Q8_0"),
+            ("aws/g6e/xlarge/ornith.ini", "aws/g6e/xlarge/ornith-35b-a3b.ini", "ornith-ai/Ornith-1.5-35B-A3B-GGUF:Q8_0"),
+            ("aws/g6e/xlarge/general.ini", "aws/g6e/xlarge/nemotron-lightning.ini", "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF:Q8_0"),
             ("aws/g7e/2xlarge/qwen.ini", "aws/g7e/2xlarge/qwen-35b-a3b.ini", "unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL"),
             ("aws/g7e/2xlarge/qwen.ini", "aws/g7e/2xlarge/qwen-27b.ini", "unsloth/Qwen3.8-27B-GGUF:UD-Q6_K_XL"),
             ("aws/g7e/2xlarge/gemma.ini", "aws/g7e/2xlarge/gemma-26b-a4b.ini", "unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL"),
             ("aws/g7e/2xlarge/gemma.ini", "aws/g7e/2xlarge/gemma-31b.ini", "unsloth/gemma-4-31B-it-qat-GGUF:UD-Q4_K_XL"),
+            ("aws/g7e/2xlarge/ornith.ini", "aws/g7e/2xlarge/ornith-9b.ini", "ornith-ai/Ornith-1.5-9B-GGUF:Q8_0"),
+            ("aws/g7e/2xlarge/ornith.ini", "aws/g7e/2xlarge/ornith-35b-a3b.ini", "ornith-ai/Ornith-1.5-35B-A3B-GGUF:Q8_0"),
+            ("aws/g7e/2xlarge/general.ini", "aws/g7e/2xlarge/nemotron-lightning.ini", "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF:Q8_0"),
             ("aws/g7e/2xlarge/general.ini", "aws/g7e/2xlarge/glm-4.7-flash.ini", "unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF:UD-Q6_K_XL"),
         ]
         for bundle_name, single_name, section in cases:
@@ -330,6 +378,8 @@ class GeneratedPresetTests(unittest.TestCase):
                 "gemma-4-e4b": (524288, 4),
                 "gemma-4-12b": (524288, 4),
                 "qwen-3.5-9b": (262144, 2),
+                "ornith-1.5-9b-q8": (262144, 2),
+                "nemotron-3.5-lightning-30b-a3b-q4": (131072, 1),
                 "muse-glimmer-30b-q4": (131072, 1),
             },
             "aws/g6e/xlarge/general.ini": {
@@ -341,6 +391,9 @@ class GeneratedPresetTests(unittest.TestCase):
                 "qwen-3.5-9b": (262144, 2),
                 "qwen-3.6-35b-a3b": (196608, 1),
                 "qwen-3.8-27b": (196608, 1),
+                "ornith-1.5-9b-q8": (524288, 2),
+                "ornith-1.5-35b-a3b-q8": (262144, 1),
+                "nemotron-3.5-lightning-30b-a3b-q8": (262144, 1),
                 "muse-glimmer-30b-q6": (262144, 2),
             },
             "aws/g7e/2xlarge/general.ini": {
@@ -352,6 +405,9 @@ class GeneratedPresetTests(unittest.TestCase):
                 "qwen-3.5-9b": (262144, 2),
                 "qwen-3.6-35b-a3b": (1048576, 4),
                 "qwen-3.8-27b": (1048576, 4),
+                "ornith-1.5-9b-q8": (1048576, 4),
+                "ornith-1.5-35b-a3b-q8": (1048576, 4),
+                "nemotron-3.5-lightning-30b-a3b-q8": (2097152, 2),
                 "glm-4.7-flash": (811008, 4),
                 "muse-glimmer-30b-q6": (524288, 4),
             },

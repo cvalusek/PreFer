@@ -2,12 +2,28 @@
 
 ## Current
 
+- Models
+  - Added target-only `ornith-1.5-9b` with pinned Q4, Q6, and Q8 targets plus its BF16 projector.
+  - Added target-only `ornith-1.5-35b-a3b` with pinned Q4 and Q8 targets plus its BF16 projector.
+  - Added `nemotron-3.5-lightning-30b-a3b` with pinned Q4/Q8 targets and matching MTP drafts.
 - Release inventory
   - Added `/deployment-inventory.json` to the image and a commit-named CI artifact.
   - Added exact model/quant, runtime, preset, prestage, GPU ID/count, context, concurrency, and cache settings for generated deployments.
   - Added an API-safe `request_model_id` for controller warmup and requests; configured INI section names remain separate.
 - RunPod
   - Added one-GPU folders for the advertised 24–288 GB NVIDIA Pod inventory.
+  - 24 GB shape
+    - Added `ornith-1.5-9b`: Q8; context 128K; concurrency 2.
+    - Added `nemotron-3.5-lightning-30b-a3b`: Q4; context 128K; concurrency 1; MTP enabled.
+  - 48 GB shape
+    - Added `ornith-1.5-9b`: Q8; context 256K; concurrency 2.
+    - Added `ornith-1.5-35b-a3b`: Q8; context 256K; concurrency 1.
+    - Added `nemotron-3.5-lightning-30b-a3b`: Q8; context 256K; concurrency 1; MTP enabled.
+  - 80–288 GB high-context shape
+    - Added `ornith-1.5-9b`: Q8; context 256K; concurrency 4.
+    - Added `ornith-1.5-35b-a3b`: Q8; context 256K; concurrency 4.
+    - Added `nemotron-3.5-lightning-30b-a3b`: Q8; context 1M; concurrency 2; MTP enabled.
+  - Added matching dedicated `ornith-9b.ini`, `ornith-35b-a3b.ini`, `ornith.ini`, and `nemotron-lightning.ini` where the model fits the inherited card shape.
   - 24 GB shape: RTX PRO 6000 MIG 24GB, L4, RTX 3090, RTX 4090, RTX A5000, and conservatively RTX 5090.
     - `gemma-4-e2b`: context 128K; concurrency 4.
     - `gemma-4-e4b`: context 128K; concurrency 4.
@@ -38,10 +54,14 @@
     - `gemma-4-e2b`: context 128K; concurrency 2.
     - `gemma-4-e4b`: context 128K; concurrency 2.
     - `qwen-3.5-9b`: context 128K; concurrency 1.
+    - `ornith-1.5-9b`: Q4; context 128K; concurrency 1.
+    - `nemotron-3.5-lightning-30b-a3b`: Q4; context 128K; concurrency 1; f16 K/V; CPU expert offload; MTP enabled.
   - Added a generic GTX 1070 Ti folder with CUDA 12 `sm_61` compatibility metadata.
     - `gemma-4-e2b`: context 128K; concurrency 1.
     - `gemma-4-e4b`: context 128K; concurrency 1; MTP disabled pending a current-runtime Pascal smoke.
     - `qwen-3.5-9b`: context 128K; concurrency 1.
+    - `ornith-1.5-9b`: Q4; context 128K; concurrency 1.
+    - `nemotron-3.5-lightning-30b-a3b`: Q4; context 128K; concurrency 1; f16 K/V; CPU expert offload; MTP enabled.
   - Added a generic TITAN X Pascal folder with CUDA 12 `sm_61` compatibility metadata.
     - `gemma-4-e2b`: context 128K; concurrency 2.
     - `gemma-4-e4b`: context 128K; concurrency 2; MTP disabled pending a current-runtime Pascal smoke.
@@ -49,11 +69,29 @@
     - `qwen-3.5-9b`: context 128K; concurrency 1.
     - `gemma-4-26b-a4b`: QAT Q4; context 128K; concurrency 1; f16 K/V; CPU expert offload; target-only.
     - `qwen-3.6-35b-a3b`: Q4; context 128K; concurrency 1; f16 K/V; CPU expert offload; target-only.
-  - All new 8/12 GB local profiles use q4_0 K/V; no private machine metadata is included.
-  - Verified all six TITAN X Pascal routes on b10362 through isolated load/generation and `general.ini` model swapping; E4B, `gemma-4-26b-a4b`, and `qwen-3.6-35b-a3b` are target-only.
+    - `ornith-1.5-9b`: Q6; context 128K; concurrency 1.
+    - `ornith-1.5-35b-a3b`: Q4; context 128K; concurrency 1; f16 K/V; CPU expert offload.
+    - `nemotron-3.5-lightning-30b-a3b`: Q4; context 128K; concurrency 1; f16 K/V; CPU expert offload; MTP enabled.
+  - Small local routes use q4_0 K/V; CPU-expert-offload routes retain f16 K/V; no private machine metadata is included.
+  - The six earlier TITAN X Pascal routes retain their b10362 load/generation and swap verification; the new Ornith and Nemotron routes remain configuration-only.
   - RTX 4060, RTX A2000 8 GB, and GTX 1070 Ti remain configuration-only pending exact-card smoke tests.
 - AWS
-  - No model, quant, context, concurrency, cache, or preset-path changes; authored scenarios were split by instance family.
+  - G6 `xlarge`
+    - Added `ornith-9b.ini`: `ornith-1.5-9b`; Q8; context 128K; concurrency 2.
+    - Added `nemotron-lightning.ini`: `nemotron-3.5-lightning-30b-a3b`; Q4; context 128K; concurrency 1; MTP enabled.
+    - Modified `general.ini` to include both models.
+  - G6e `xlarge`
+    - Added `ornith-9b.ini`: `ornith-1.5-9b`; Q8; context 256K; concurrency 2.
+    - Added `ornith-35b-a3b.ini`: `ornith-1.5-35b-a3b`; Q8; context 256K; concurrency 1.
+    - Added `ornith.ini` with both Ornith models.
+    - Added `nemotron-lightning.ini`: `nemotron-3.5-lightning-30b-a3b`; Q8; context 256K; concurrency 1; MTP enabled.
+    - Modified `general.ini` to include all three models.
+  - G7e `2xlarge`
+    - Added `ornith-9b.ini`: `ornith-1.5-9b`; Q8; context 256K; concurrency 4.
+    - Added `ornith-35b-a3b.ini`: `ornith-1.5-35b-a3b`; Q8; context 256K; concurrency 4.
+    - Added `ornith.ini` with both Ornith models.
+    - Added `nemotron-lightning.ini`: `nemotron-3.5-lightning-30b-a3b`; Q8; context 1M; concurrency 2; MTP enabled.
+    - Modified `general.ini` to include all three models.
 
 ## `sha-c925ef2`
 

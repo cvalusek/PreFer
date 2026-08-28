@@ -1,7 +1,7 @@
 # PreFer Container
 
-A llama.cpp router container hosting Gemma 4, Qwen3.5/Qwen3.6/Qwen3.8, Muse Glimmer,
-GLM, and DeepSeek V4.
+A llama.cpp router container hosting Gemma 4, Qwen3.5/Qwen3.6/Qwen3.8,
+Ornith 1.5, Nemotron 3.5 Lightning, Muse Glimmer, GLM, and DeepSeek V4.
 
 Published hosted-model and preset changes are recorded by immutable container
 SHA in the repository [changelog](../../CHANGELOG.md).
@@ -78,11 +78,11 @@ example, uses Q4 on g6 and Q6 on g6e/g7e.
 
 | Preset | Instance | Models | Per-request context / concurrency |
 | ------ | -------- | ------ | --------------------------------- |
-| `aws/g6/xlarge/general.ini` | `g6.xlarge`, L4 24 GB | Gemma E2B/E4B/12B, Qwen3.5-9B, Muse Q4 | Gemmas 128K ×4; Qwen9 128K ×2; Muse 128K ×1 |
-| `aws/g6e/xlarge/general.ini` | `g6e.xlarge`, L40S 48 GB | All g6 routes plus Gemma 26B/31B, Qwen3.6 35B/27B, Muse Q6 | See the instance matrix below; 128K minimum |
+| `aws/g6/xlarge/general.ini` | `g6.xlarge`, L4 24 GB | Gemma E2B/E4B/12B, Qwen3.5-9B, Ornith 9B Q8, Nemotron Lightning Q4, Muse Q4 | 128K minimum |
+| `aws/g6e/xlarge/general.ini` | `g6e.xlarge`, L40S 48 GB | All g6 routes plus Gemma 26B/31B, Qwen3.6 35B/27B, Ornith 35B Q8, Nemotron Lightning Q8, Muse Q6 | See the instance matrix below; 128K minimum |
 | `aws/g6e/xlarge/gemma.ini` | `g6e.xlarge`, L40S 48 GB | Gemma 26B-A4B, 31B | 26B 256K ×2; 31B 256K ×1 |
 | `aws/g6e/xlarge/qwen.ini` | `g6e.xlarge`, L40S 48 GB | Qwen3.6 35B-A3B/27B Q6 | 192K ×1 each |
-| `aws/g7e/2xlarge/general.ini` | `g7e.2xlarge`, RTX PRO 6000 96 GB | All g6e routes plus GLM-4.7-Flash | 26B/31B/Qwen3.6 at native context; GLM at max; smaller lanes inherited |
+| `aws/g7e/2xlarge/general.ini` | `g7e.2xlarge`, RTX PRO 6000 96 GB | All g6e routes plus GLM-4.7-Flash | High-context and concurrency shape; see the exact matrix below |
 | `aws/g7e/2xlarge/gemma.ini` | `g7e.2xlarge`, RTX PRO 6000 96 GB | Gemma 26B-A4B, 31B | 26B 256K ×4; 31B 256K ×2 |
 | `aws/g7e/2xlarge/qwen.ini` | `g7e.2xlarge`, RTX PRO 6000 96 GB | Qwen3.6 35B-A3B/27B | 256K ×4 each |
 | `aws/g7e/12xlarge/deepseek-v4-flash-0731.ini` | `g7e.12xlarge`, 2× RTX PRO 6000 96 GB | DeepSeek V4 Flash 0731 | 384K ×4, DSpark enabled |
@@ -102,6 +102,9 @@ The exact cumulative `general.ini` matrix is:
 | Qwen3.5-9B Q4 | 2×128K | 2×128K | 2×128K |
 | Qwen3.6-35B-A3B Q6 | — | 1×192K | 4×256K |
 | Qwen3.8-27B Q6 | — | 1×192K | 4×256K |
+| Ornith 1.5 9B Q8 | 2×128K | 2×256K | 4×256K |
+| Ornith 1.5 35B-A3B Q8 | — | 1×256K | 4×256K |
+| Nemotron 3.5 Lightning 30B-A3B | Q4 + MTP 1×128K | Q8 + MTP 1×256K | Q8 + MTP 2×1M |
 | Muse Glimmer 30B | Q4 1×128K | Q6 2×128K | Q6 4×128K |
 | GLM-4.7-Flash Q6 | — | — | 4×202,752 |
 
@@ -121,9 +124,9 @@ model section, staging one catalog key, and loading that model at startup.
 
 | Instance | Dedicated single-model presets |
 | -------- | ------------------------------ |
-| `g6.xlarge` | `gemma-e2b.ini`, `gemma-e4b.ini`, `gemma-12b.ini`, `qwen-9b.ini`, `muse.ini` |
-| `g6e.xlarge` | `gemma-26b-a4b.ini`, `gemma-31b.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `muse.ini` |
-| `g7e.2xlarge` | `gemma-26b-a4b.ini`, `gemma-31b.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `glm-4.7-flash.ini`, `muse.ini` |
+| `g6.xlarge` | `gemma-e2b.ini`, `gemma-e4b.ini`, `gemma-12b.ini`, `qwen-9b.ini`, `ornith-9b.ini`, `nemotron-lightning.ini`, `muse.ini` |
+| `g6e.xlarge` | `gemma-26b-a4b.ini`, `gemma-31b.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `ornith-9b.ini`, `ornith-35b-a3b.ini`, `nemotron-lightning.ini`, `muse.ini` |
+| `g7e.2xlarge` | `gemma-26b-a4b.ini`, `gemma-31b.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `ornith-9b.ini`, `ornith-35b-a3b.ini`, `nemotron-lightning.ini`, `glm-4.7-flash.ini`, `muse.ini` |
 
 The family bundles remain supported. Prefer a dedicated preset when NeurOn or
 another controller already knows the model assigned to the instance; unused
@@ -165,15 +168,28 @@ credential, network, or owner-specific identifier.
 
 | GPU folder | Configured routes | Per-request context / concurrency | Compatibility |
 | ---------- | ----------------- | --------------------------------- | ------------- |
-| `rtx-4060` | Gemma E2B/E4B, Qwen3.5-9B | Gemma 128K ×2; Qwen 128K ×1 | Ada, configuration-only |
+| `rtx-4060` | Gemma E2B/E4B, Qwen3.5-9B, Ornith 9B Q4, Nemotron Lightning Q4 | Gemma 128K ×2; all others 128K ×1; Nemotron uses f16 K/V and CPU expert offload | Ada, configuration-only |
 | `rtx-a2000-8gb` | Same as RTX 4060 | Same | Ampere, configuration-only |
-| `gtx-1070-ti` | Gemma E2B/E4B, Qwen3.5-9B | 128K ×1 | CUDA 12 `sm_61`; E4B target-only pending b10362 Pascal smoke |
-| `titan-x-pascal` | Gemma E2B/E4B/12B/26B-A4B, Qwen3.5-9B/3.6-35B-A3B | E2B/E4B 128K ×2; all others 128K ×1; large MoE lanes use f16 K/V and CPU expert offload | CUDA 12 `sm_61`; all six b10362 load/generation and swapping paths verified; E4B/26B/35B target-only |
+| `gtx-1070-ti` | Gemma E2B/E4B, Qwen3.5-9B, Ornith 9B Q4, Nemotron Lightning Q4 | 128K ×1; Nemotron uses f16 K/V and CPU expert offload | CUDA 12 `sm_61`; new routes configuration-only |
+| `titan-x-pascal` | Existing Gemma/Qwen routes plus Ornith 9B Q6, Ornith 35B-A3B Q4, Nemotron Lightning Q4 | E2B/E4B 128K ×2; all others 128K ×1; large MoE lanes use f16 K/V and CPU expert offload | CUDA 12 `sm_61`; prior six routes verified, new routes configuration-only |
 
-These 8/12 GB profiles use q4_0 K/V because long context would otherwise not
-fit. They are deliberately separated from hosted profiles, which retain f16
-K/V. Each local folder includes `general.ini` plus one single-model preset per
-configured route so a controller can avoid unused router sections.
+The small local routes use q4_0 K/V because long context would otherwise not
+fit. CPU-expert-offload intelligence routes retain f16 K/V so weight and cache
+degradation are not compounded. The new local Ornith and Nemotron routes are
+available through `general.ini`; they do not add dedicated local presets.
+
+Ornith uses first-party immutable GGUFs and BF16 projectors. The 9B lane uses
+Q4_K_M locally, Q6_K on TITAN X Pascal, and Q8_0 on hosted cards. The 35B-A3B
+lane uses Q4_K_M with CPU expert offload on TITAN X Pascal and Q8_0 on 48 GB or
+larger hosted cards. Its trained embedded MTP layer is not enabled until that
+path has a direct llama.cpp smoke.
+
+Nemotron Lightning uses the repaired, immutable ggml-org Q4_0/Q8_0 target and
+matching MTP files. Hosted lanes are fully GPU resident. Constrained local
+lanes use `n-cpu-moe = 28`, `mmap = false`, one 128K slot, and f16 K/V; lower
+partial-offload values are excluded because b10362 has a known draft-loader
+failure below that boundary. All new shapes still require their first exact-card
+load, contract, context, and MTP-acceptance smoke.
 
 Muse's Q4/Q6 target, DFlash drafter, and quantized projector are all pinned to
 `unsloth/Muse-Glimmer-30B-GGUF@faa5b025c584459c13febfa5c59883516710ae39`.
@@ -283,6 +299,9 @@ layout means multiple presets/services can safely share one volume.
 | [unsloth/Qwen3.5-9B-GGUF](https://huggingface.co/unsloth/Qwen3.5-9B-GGUF) | `UD-Q4_K_XL` | Revision-pinned target + F16 projector; no speculative decoding; AWS g6 |
 | [unsloth/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF) | `UD-Q6_K_XL` | MTP draft is built into the main GGUF, no separate `model-draft` |
 | [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF) | `UD-Q6_K_XL` | Revision-pinned target with MTP built into the main GGUF; no separate `model-draft` or projector is configured |
+| [ornith-ai/Ornith-1.5-9B-GGUF](https://huggingface.co/ornith-ai/Ornith-1.5-9B-GGUF) | `Q4_K_M` / `Q6_K` / `Q8_0` | First-party pinned target + BF16 projector; embedded MTP remains disabled pending a direct smoke |
+| [ornith-ai/Ornith-1.5-35B-A3B-GGUF](https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF) | `Q4_K_M` / `Q8_0` | First-party pinned target + BF16 projector; embedded MTP remains disabled pending a direct smoke |
+| [ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF](https://huggingface.co/ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF) | `Q4_0` / `Q8_0` | Repaired pinned target + matching MTP file; draft maximum 3 |
 | [unsloth/Muse-Glimmer-30B-GGUF](https://huggingface.co/unsloth/Muse-Glimmer-30B-GGUF) | `UD-Q4_K_XL` / `UD-Q6_K_XL` | Revision-pinned target + `dflash-kquant.gguf` + `mmproj-kquant.gguf`; AWS 24/48/96 GB; requires b10362 or later |
 | [unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF](https://huggingface.co/unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF) | `UD-Q6_K_XL` | No speculative decoding |
 | [antirez/deepseek-v4-gguf](https://huggingface.co/antirez/deepseek-v4-gguf) | `Q4KExperts...imatrix` | Preserved Preview-era target-only route |
@@ -303,6 +322,9 @@ layout means multiple presets/services can safely share one volume.
 | `qwen-3.5`, `qwen-3.5-9b` | 128K ×2 | g6/g6e/g7e `general.ini`; g6 `qwen-9b.ini` |
 | `qwen-3.6`, `qwen-3.6-35b-a3b` | g6e 192K ×1; g7e 256K ×4 | tier presets; g6e/g7e `general.ini`, `qwen.ini`, and `qwen-35b-a3b.ini` |
 | `qwen-3.8-27b` | g6e 192K ×1; g7e 256K ×4 | tier presets; g6e/g7e `general.ini`, `qwen.ini`, and `qwen-27b.ini` |
+| `ornith-1.5`, `ornith-1.5-9b` | g6 128K ×2; g6e 256K ×2; g7e 256K ×4 | local `general.ini`; hosted `general.ini`, `ornith.ini`, and `ornith-9b.ini` |
+| `ornith-1.5-35b-a3b` | g6e 256K ×1; g7e 256K ×4 | TITAN X `general.ini`; hosted `general.ini`, `ornith.ini`, and `ornith-35b-a3b.ini` |
+| `nemotron-3.5-lightning`, `nemotron-3.5-lightning-30b-a3b` | g6 128K ×1; g6e 256K ×1; g7e 1M ×2 | local `general.ini`; hosted `general.ini` and `nemotron-lightning.ini` |
 | `muse-glimmer`, `muse-glimmer-30b` | Q4 128K ×1; Q6 128K ×2 or ×4 | g6/g6e/g7e `general.ini` and `muse.ini` |
 | `glm-4.7-flash` | 202,752 ×4 on g7e | tier presets; g7e `general.ini` and `glm-4.7-flash.ini` |
 | `deepseek-v4-flash` | 393216 | `deepseek-v4-flash.ini` |

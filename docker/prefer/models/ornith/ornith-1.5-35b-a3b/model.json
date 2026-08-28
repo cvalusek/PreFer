@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "family": "ornith",
+  "model_slug": "ornith-1.5-35b-a3b",
+  "shared": {
+    "aliases": [
+      "ornith-1.5-35b-a3b"
+    ],
+    "request_model_id": "ornith-1.5-35b-a3b",
+    "license": "mit",
+    "lineage": {
+      "repo": "ornith-ai/Ornith-1.5-35B-A3B",
+      "revision": "10fbf86fed7ecee4a061f8b499a618f46001cac1"
+    },
+    "settings": {
+      "temp": 0.6,
+      "top-k": 20,
+      "min-p": 0
+    }
+  },
+  "quants": {
+    "q4-k-m": {
+      "key": "ornith-1.5-35b-a3b-q4",
+      "section": "ornith-ai/Ornith-1.5-35B-A3B-GGUF:Q4_K_M",
+      "settings": {
+        "model": "/models/ornith-ai/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf",
+        "mmproj": "/models/ornith-ai/Ornith-1.5-35B-A3B-GGUF/mmproj-Ornith-1.5-35B-BF16.gguf"
+      },
+      "downloads": [
+        {
+          "repo": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
+          "revision": "12393612fd4f730ff5aadc23e9b8f9648aa49ceb",
+          "include": [
+            "Ornith-1.5-35B-Q4_K_M.gguf",
+            "mmproj-Ornith-1.5-35B-BF16.gguf"
+          ]
+        }
+      ],
+      "artifacts": [
+        {
+          "role": "model",
+          "repo": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
+          "path": "Ornith-1.5-35B-Q4_K_M.gguf",
+          "size": 21713463040,
+          "sha256": "42739874cc2ccfdb8523b23fbe52e29b2a7555c8176737ca9ca0b5d59859d41f"
+        },
+        {
+          "role": "projector",
+          "repo": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
+          "path": "mmproj-Ornith-1.5-35B-BF16.gguf",
+          "size": 902822240,
+          "sha256": "1921a36a85aee56cd2abd27f46701802c9d85a33474792e600df6c3b282a135d"
+        }
+      ]
+    },
+    "q8-0": {
+      "key": "ornith-1.5-35b-a3b-q8",
+      "section": "ornith-ai/Ornith-1.5-35B-A3B-GGUF:Q8_0",
+      "settings": {
+        "model": "/models/ornith-ai/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q8_0.gguf",
+        "mmproj": "/models/ornith-ai/Ornith-1.5-35B-A3B-GGUF/mmproj-Ornith-1.5-35B-BF16.gguf"
+      },
+      "downloads": [
+        {
+          "repo": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
+          "revision": "12393612fd4f730ff5aadc23e9b8f9648aa49ceb",
+          "include": [
+            "Ornith-1.5-35B-Q8_0.gguf",
+            "mmproj-Ornith-1.5-35B-BF16.gguf"
+          ]
+        }
+      ],
+      "artifacts": [
+        {
+          "role": "model",
+          "repo": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
+          "path": "Ornith-1.5-35B-Q8_0.gguf",
+          "size": 37802149280,
+          "sha256": "de46c4baf4b4dd85ea438bb0f757f21c38841a353506579979bba114311658c3"
+        },
+        {
+          "role": "projector",
+          "repo": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
+          "path": "mmproj-Ornith-1.5-35B-BF16.gguf",
+          "size": 902822240,
+          "sha256": "1921a36a85aee56cd2abd27f46701802c9d85a33474792e600df6c3b282a135d"
+        }
+      ]
+    }
+  }
+}

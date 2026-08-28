@@ -8,7 +8,8 @@ read this before changing presets, the Dockerfile, or the detection scripts.
 
 PreFer: llama.cpp router containers for self-hosted LLM inference on local,
 RunPod, and AWS hardware. `docker/prefer/` hosts Gemma 4, Qwen3.5/Qwen3.6/Qwen3.8,
-Muse Glimmer, GLM, and DeepSeek V4 routes via `llama-server` router mode, with models
+Ornith 1.5, Nemotron 3.5 Lightning, Muse Glimmer, GLM, and DeepSeek V4 routes via
+`llama-server` router mode, with models
 downloaded from Hugging Face on first start.
 
 ## Published change reference
@@ -186,8 +187,8 @@ NeurOn owns that private association.
 
 | Preset | Host | Routes | Cache allocation |
 | ------ | ---- | ------ | ---------------- |
-| `aws/g6/xlarge/general.ini` | 1× L4 24 GB, 4 vCPU | Gemma E2B/E4B/12B, Qwen3.5-9B, Muse Q4 | Gemmas: 4×128K; Qwen9: 2×128K; Muse: 1×128K |
-| `aws/g6e/xlarge/general.ini` | 1× L40S 48 GB, 4 vCPU | All g6 routes plus Gemma 26B/31B, Qwen3.6 35B/27B, Muse Q6 | See exact cumulative matrix below |
+| `aws/g6/xlarge/general.ini` | 1× L4 24 GB, 4 vCPU | Gemma E2B/E4B/12B, Qwen3.5-9B, Ornith 9B Q8, Nemotron Q4, Muse Q4 | See exact cumulative matrix below |
+| `aws/g6e/xlarge/general.ini` | 1× L40S 48 GB, 4 vCPU | All g6 routes plus Gemma 26B/31B, Qwen3.6 35B/27B, Ornith 35B Q8, Nemotron Q8, Muse Q6 | See exact cumulative matrix below |
 | `aws/g6e/xlarge/gemma.ini` | 1× L40S 48 GB, 4 vCPU | Gemma 26B-A4B/31B | 26B: 2×256K; 31B: 1×256K |
 | `aws/g6e/xlarge/qwen.ini` | 1× L40S 48 GB, 4 vCPU | Qwen3.6 35B-A3B/27B Q6 | 1×192K each |
 | `aws/g7e/2xlarge/general.ini` | 1× RTX PRO 6000 96 GB, 8 vCPU | All g6e routes plus GLM-4.7-Flash | See exact cumulative matrix below |
@@ -217,6 +218,9 @@ not wanted.
 | Qwen3.5-9B Q4 | 2×128K | 2×128K | 2×128K |
 | Qwen3.6-35B-A3B Q6 | — | 1×192K | 4×256K |
 | Qwen3.8-27B Q6 | — | 1×192K | 4×256K |
+| Ornith 1.5 9B Q8 | 2×128K | 2×256K | 4×256K |
+| Ornith 1.5 35B-A3B Q8 | — | 1×256K | 4×256K |
+| Nemotron 3.5 Lightning 30B-A3B | Q4 + MTP 1×128K | Q8 + MTP 1×256K | Q8 + MTP 2×1M |
 | Muse Glimmer 30B | Q4 1×128K | Q6 2×128K | Q6 4×128K |
 | GLM-4.7-Flash Q6 | — | — | 4×202,752 |
 The original four-host deployment shape consumes exactly 64 vCPUs when running
@@ -232,9 +236,9 @@ settings, but contain one section, stage one catalog key, and set
 
 | Host | Single-model presets |
 | ---- | -------------------- |
-| `g6.xlarge` | `gemma-e2b.ini`, `gemma-e4b.ini`, `gemma-12b.ini`, `qwen-9b.ini`, `muse.ini` |
-| `g6e.xlarge` | `gemma-26b-a4b.ini`, `gemma-31b.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `muse.ini` |
-| `g7e.2xlarge` | `gemma-26b-a4b.ini`, `gemma-31b.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `glm-4.7-flash.ini`, `muse.ini` |
+| `g6.xlarge` | `gemma-e2b.ini`, `gemma-e4b.ini`, `gemma-12b.ini`, `qwen-9b.ini`, `ornith-9b.ini`, `nemotron-lightning.ini`, `muse.ini` |
+| `g6e.xlarge` | `gemma-26b-a4b.ini`, `gemma-31b.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `ornith-9b.ini`, `ornith-35b-a3b.ini`, `nemotron-lightning.ini`, `muse.ini` |
+| `g7e.2xlarge` | `gemma-26b-a4b.ini`, `gemma-31b.ini`, `qwen-35b-a3b.ini`, `qwen-27b.ini`, `ornith-9b.ini`, `ornith-35b-a3b.ini`, `nemotron-lightning.ini`, `glm-4.7-flash.ini`, `muse.ini` |
 
 The family bundles remain supported for flexible hosts. Prefer a single-model
 preset when NeurOn or another controller already knows which model owns the
@@ -254,10 +258,13 @@ initial multi-GPU RunPod route is 2× RTX PRO 6000 for the quality-credible
 DeepSeek 0731 Q4+DSpark preset.
 
 Generic local folders currently cover RTX 4060 8 GB, RTX A2000 8 GB, GTX 1070
-Ti, and TITAN X Pascal. Modern 8 GB profiles expose Gemma E2B/E4B and Qwen3.5
-9B; the 12 GB Pascal profile additionally exposes Gemma 12B. They use q4_0 K/V
-as a capacity necessity. The Pascal profiles require a CUDA 12 `sm_61` build,
-and omit E4B's MTP companion pending a direct MTP-on Pascal smoke. On b10362,
+Ti, and TITAN X Pascal. Modern 8 GB profiles expose Gemma E2B/E4B, Qwen3.5 9B,
+Ornith 1.5 9B Q4, and a deliberately slow Nemotron Lightning Q4 CPU-expert lane;
+the 12 GB Pascal profile additionally exposes Gemma 12B, Ornith 9B Q6, Ornith
+35B-A3B Q4 with CPU expert offload, and Nemotron. Small routes use q4_0 K/V as
+a capacity necessity; the large CPU-expert lanes retain f16 K/V. The Pascal
+profiles require a CUDA 12 `sm_61` build, and omit E4B's MTP companion pending
+a direct MTP-on Pascal smoke. On b10362,
 the TITAN X Pascal generated profile has passed isolated load/generation for
 E2B, target-only E4B, Qwen3.5-9B, and Gemma 12B, followed by all four swaps
 through `general.ini` with `models-max=1`. Do not silently copy those q4 cache
@@ -316,6 +323,27 @@ uses the five-shard
 UD-Q4_K_XL target plus the
 co-located Q8_0 DSpark companion; `spec-type` is `draft-dspark` and
 `spec-draft-n-max=5`. IQ1/IQ2 are intentionally absent.
+
+Ornith 1.5 uses first-party immutable GGUFs. The 9B catalog lanes are Q4_K_M,
+Q6_K, and Q8_0; the 35B-A3B lanes are Q4_K_M and Q8_0. Both include the
+matching BF16 projector and preserve the publisher's native 262,144-token
+range. The 9B route uses Q4 on 8 GB local cards, Q6 on TITAN X Pascal, and Q8
+on hosted cards. The 35B route uses Q4 plus CPU expert offload only on TITAN X
+and Q8 on hosted 48 GB or larger cards. Although the architectures expose a
+trained next-token layer, the first-party llama.cpp card does not document the
+embedded-MTP serving path, so Ornith remains target-only until a direct smoke.
+
+Nemotron 3.5 Lightning uses the repaired immutable ggml-org Q4_0/Q8_0 target
+and matching MTP artifacts at revision
+`9169f1a8ac58a29383ec27a447b4af3532da8864`, linked to NVIDIA's BF16 revision
+`63a200063804e06fdb41d6717e43bc92f67859d2`. It uses `draft-mtp` with
+`spec-draft-n-max=3`. Hosted 24 GB uses Q4 at 1×128K; hosted 48 GB uses Q8 at
+1×256K; 80/96 GB inherited shapes use Q8 at 2×1M. Local profiles keep MTP but
+offload experts with `n-cpu-moe=28`, `mmap=false`, f16 K/V, and one 128K slot.
+b10362 has a reproducible draft-loader failure for lower partial `n-cpu-moe`
+values on this model, while 28 and above load; do not reduce that setting
+without a matched smoke. All new Nemotron shapes remain configuration-only
+until exact-card load, context, contract, and MTP-acceptance verification.
 
 Muse uses two immutable Unsloth lanes from
 `unsloth/Muse-Glimmer-30B-GGUF@faa5b025c584459c13febfa5c59883516710ae39`,

@@ -61,6 +61,27 @@
             "ctx-size": 131072,
             "parallel": 1
           }
+        },
+        {
+          "key": "ornith-1.5-9b-q4",
+          "overrides": {
+            "ctx-size": 131072,
+            "parallel": 1
+          }
+        },
+        {
+          "key": "nemotron-3.5-lightning-30b-a3b-q4",
+          "overrides": {
+            "n-cpu-moe": 28,
+            "mmap": false,
+            "ubatch-size": 256,
+            "threads": 16,
+            "cache-type-k": "f16",
+            "cache-type-v": "f16",
+            "cache-reuse": 8192,
+            "ctx-size": 131072,
+            "parallel": 1
+          }
         }
       ]
     },

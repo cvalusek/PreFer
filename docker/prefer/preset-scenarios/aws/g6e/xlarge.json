@@ -95,6 +95,27 @@
           }
         },
         {
+          "key": "ornith-1.5-9b-q8",
+          "overrides": {
+            "ctx-size": 524288,
+            "parallel": 2
+          }
+        },
+        {
+          "key": "ornith-1.5-35b-a3b-q8",
+          "overrides": {
+            "ctx-size": 262144,
+            "parallel": 1
+          }
+        },
+        {
+          "key": "nemotron-3.5-lightning-30b-a3b-q8",
+          "overrides": {
+            "ctx-size": 262144,
+            "parallel": 1
+          }
+        },
+        {
           "key": "muse-glimmer-30b-q6",
           "overrides": {
             "ctx-size": 262144,
@@ -353,6 +374,150 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0.0,
             "parallel": 2
+          }
+        }
+      ]
+    },
+    {
+      "path": "aws/g6e/xlarge/ornith.ini",
+      "instance_type": "g6e.xlarge",
+      "gpu": "NVIDIA L40S 48 GB",
+      "defaults": {
+        "n-gpu-layers": 999,
+        "n-cpu-moe": 0,
+        "batch-size": 2048,
+        "ubatch-size": 512,
+        "threads": 4,
+        "cache-type-k": "f16",
+        "cache-type-v": "f16",
+        "cache-reuse": 8192,
+        "flash-attn": "on",
+        "fit": "off",
+        "jinja": true,
+        "reasoning": "off",
+        "temp": 1.0,
+        "top-p": 0.95,
+        "dry-multiplier": 0.8,
+        "dry-base": 1.75,
+        "dry-allowed-length": 24,
+        "repeat-penalty": 1.0,
+        "presence-penalty": 0.0
+      },
+      "models": [
+        {
+          "key": "ornith-1.5-9b-q8",
+          "overrides": {
+            "ctx-size": 524288,
+            "parallel": 2
+          }
+        },
+        {
+          "key": "ornith-1.5-35b-a3b-q8",
+          "overrides": {
+            "ctx-size": 262144,
+            "parallel": 1
+          }
+        }
+      ]
+    },
+    {
+      "path": "aws/g6e/xlarge/ornith-9b.ini",
+      "instance_type": "g6e.xlarge",
+      "gpu": "NVIDIA L40S 48 GB",
+      "models": [
+        {
+          "key": "ornith-1.5-9b-q8",
+          "overrides": {
+            "load-on-startup": true,
+            "n-gpu-layers": 999,
+            "n-cpu-moe": 0,
+            "ctx-size": 524288,
+            "batch-size": 2048,
+            "ubatch-size": 512,
+            "threads": 4,
+            "cache-type-k": "f16",
+            "cache-type-v": "f16",
+            "cache-reuse": 8192,
+            "flash-attn": "on",
+            "fit": "off",
+            "jinja": true,
+            "reasoning": "off",
+            "temp": 1.0,
+            "top-p": 0.95,
+            "dry-multiplier": 0.8,
+            "dry-base": 1.75,
+            "dry-allowed-length": 24,
+            "repeat-penalty": 1.0,
+            "presence-penalty": 1.5,
+            "parallel": 2
+          }
+        }
+      ]
+    },
+    {
+      "path": "aws/g6e/xlarge/ornith-35b-a3b.ini",
+      "instance_type": "g6e.xlarge",
+      "gpu": "NVIDIA L40S 48 GB",
+      "models": [
+        {
+          "key": "ornith-1.5-35b-a3b-q8",
+          "overrides": {
+            "load-on-startup": true,
+            "n-gpu-layers": 999,
+            "n-cpu-moe": 0,
+            "ctx-size": 262144,
+            "batch-size": 2048,
+            "ubatch-size": 512,
+            "threads": 4,
+            "cache-type-k": "f16",
+            "cache-type-v": "f16",
+            "cache-reuse": 8192,
+            "flash-attn": "on",
+            "fit": "off",
+            "jinja": true,
+            "reasoning": "off",
+            "temp": 0.6,
+            "top-p": 0.95,
+            "dry-multiplier": 0.8,
+            "dry-base": 1.75,
+            "dry-allowed-length": 24,
+            "repeat-penalty": 1.0,
+            "presence-penalty": 0.0,
+            "parallel": 1
+          }
+        }
+      ]
+    },
+    {
+      "path": "aws/g6e/xlarge/nemotron-lightning.ini",
+      "instance_type": "g6e.xlarge",
+      "gpu": "NVIDIA L40S 48 GB",
+      "models": [
+        {
+          "key": "nemotron-3.5-lightning-30b-a3b-q8",
+          "overrides": {
+            "load-on-startup": true,
+            "n-gpu-layers": 999,
+            "n-cpu-moe": 0,
+            "ctx-size": 262144,
+            "batch-size": 2048,
+            "ubatch-size": 512,
+            "threads": 4,
+            "cache-type-k": "f16",
+            "cache-type-v": "f16",
+            "cache-reuse": 8192,
+            "flash-attn": "on",
+            "fit": "off",
+            "jinja": true,
+            "reasoning": "off",
+            "temp": 1.0,
+            "top-p": 0.95,
+            "dry-multiplier": 0.8,
+            "dry-base": 1.75,
+            "dry-allowed-length": 24,
+            "repeat-penalty": 1.0,
+            "presence-penalty": 0.0,
+            "parallel": 1
           }
         }
       ]

@@ -158,6 +158,55 @@
       "presets": ["8gb.ini", "12gb.ini", "12gb-pascal.ini", "96gb.ini", "aws/g6e/xlarge/general.ini", "aws/g6e/xlarge/qwen.ini", "aws/g6e/xlarge/qwen-27b.ini", "aws/g7e/2xlarge/general.ini", "aws/g7e/2xlarge/qwen.ini", "aws/g7e/2xlarge/qwen-27b.ini"]
     },
     {
+      "canonical_id": "ornith-ai/Ornith-1.5-9B-GGUF:Q4_K_M",
+      "discovery_id": "ornith-ai/Ornith-1.5-9B-GGUF:Q4_K_M",
+      "aliases": ["ornith-1.5", "ornith-1.5-9b"],
+      "quantization": "Q4_K_M",
+      "presets": ["local/rtx-4060/1x/general.ini", "local/rtx-a2000-8gb/1x/general.ini", "local/gtx-1070-ti/1x/general.ini"]
+    },
+    {
+      "canonical_id": "ornith-ai/Ornith-1.5-9B-GGUF:Q6_K",
+      "discovery_id": "ornith-ai/Ornith-1.5-9B-GGUF:Q6_K",
+      "aliases": ["ornith-1.5", "ornith-1.5-9b"],
+      "quantization": "Q6_K",
+      "presets": ["local/titan-x-pascal/1x/general.ini"]
+    },
+    {
+      "canonical_id": "ornith-ai/Ornith-1.5-9B-GGUF:Q8_0",
+      "discovery_id": "ornith-ai/Ornith-1.5-9B-GGUF:Q8_0",
+      "aliases": ["ornith-1.5", "ornith-1.5-9b"],
+      "quantization": "Q8_0",
+      "presets": ["aws/g6/xlarge/general.ini", "aws/g6/xlarge/ornith-9b.ini", "aws/g6e/xlarge/general.ini", "aws/g6e/xlarge/ornith.ini", "aws/g6e/xlarge/ornith-9b.ini", "aws/g7e/2xlarge/general.ini", "aws/g7e/2xlarge/ornith.ini", "aws/g7e/2xlarge/ornith-9b.ini"]
+    },
+    {
+      "canonical_id": "ornith-ai/Ornith-1.5-35B-A3B-GGUF:Q4_K_M",
+      "discovery_id": "ornith-ai/Ornith-1.5-35B-A3B-GGUF:Q4_K_M",
+      "aliases": ["ornith-1.5-35b-a3b"],
+      "quantization": "Q4_K_M",
+      "presets": ["local/titan-x-pascal/1x/general.ini"]
+    },
+    {
+      "canonical_id": "ornith-ai/Ornith-1.5-35B-A3B-GGUF:Q8_0",
+      "discovery_id": "ornith-ai/Ornith-1.5-35B-A3B-GGUF:Q8_0",
+      "aliases": ["ornith-1.5-35b-a3b"],
+      "quantization": "Q8_0",
+      "presets": ["aws/g6e/xlarge/general.ini", "aws/g6e/xlarge/ornith.ini", "aws/g6e/xlarge/ornith-35b-a3b.ini", "aws/g7e/2xlarge/general.ini", "aws/g7e/2xlarge/ornith.ini", "aws/g7e/2xlarge/ornith-35b-a3b.ini"]
+    },
+    {
+      "canonical_id": "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF:Q4_0",
+      "discovery_id": "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF:Q4_0",
+      "aliases": ["nemotron-3.5-lightning", "nemotron-3.5-lightning-30b-a3b"],
+      "quantization": "Q4_0",
+      "presets": ["aws/g6/xlarge/general.ini", "aws/g6/xlarge/nemotron-lightning.ini", "local/rtx-4060/1x/general.ini", "local/rtx-a2000-8gb/1x/general.ini", "local/gtx-1070-ti/1x/general.ini", "local/titan-x-pascal/1x/general.ini"]
+    },
+    {
+      "canonical_id": "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF:Q8_0",
+      "discovery_id": "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF:Q8_0",
+      "aliases": ["nemotron-3.5-lightning", "nemotron-3.5-lightning-30b-a3b"],
+      "quantization": "Q8_0",
+      "presets": ["aws/g6e/xlarge/general.ini", "aws/g6e/xlarge/nemotron-lightning.ini", "aws/g7e/2xlarge/general.ini", "aws/g7e/2xlarge/nemotron-lightning.ini"]
+    },
+    {
       "canonical_id": "unsloth/Muse-Glimmer-30B-GGUF:UD-Q4_K_XL",
       "discovery_id": "unsloth/Muse-Glimmer-30B-GGUF:Q4_K_XL",
       "aliases": ["muse-glimmer", "muse-glimmer-30b"],

@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "family": "nemotron",
+  "model_slug": "nemotron-3.5-lightning-30b-a3b",
+  "shared": {
+    "aliases": [
+      "nemotron-3.5-lightning",
+      "nemotron-3.5-lightning-30b-a3b"
+    ],
+    "request_model_id": "nemotron-3.5-lightning-30b-a3b",
+    "license": "nvidia-open-model-license-agreement-1.1",
+    "lineage": {
+      "repo": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+      "revision": "63a200063804e06fdb41d6717e43bc92f67859d2"
+    },
+    "settings": {
+      "spec-type": "draft-mtp",
+      "spec-draft-n-max": 3,
+      "top-k": 0,
+      "min-p": 0
+    }
+  },
+  "quants": {
+    "q4-0": {
+      "key": "nemotron-3.5-lightning-30b-a3b-q4",
+      "section": "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF:Q4_0",
+      "settings": {
+        "model": "/models/ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf",
+        "model-draft": "/models/ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF/mtp-NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf"
+      },
+      "downloads": [
+        {
+          "repo": "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF",
+          "revision": "9169f1a8ac58a29383ec27a447b4af3532da8864",
+          "include": [
+            "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf",
+            "mtp-NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf"
+          ]
+        }
+      ],
+      "artifacts": [
+        {
+          "role": "model",
+          "repo": "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF",
+          "path": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf",
+          "size": 18898091584,
+          "sha256": "61f87e75974e4b535dcdf9aad056541a9514f1dfa4538b463b081d19b7a00e3c"
+        },
+        {
+          "role": "draft",
+          "repo": "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF",
+          "path": "mtp-NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf",
+          "size": 1155907520,
+          "sha256": "19f964207d5236dc88662686f00604a5494974c23fb04dd16a5ad7b2eebbd5b4"
+        }
+      ]
+    },
+    "q8-0": {
+      "key": "nemotron-3.5-lightning-30b-a3b-q8",
+      "section": "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF:Q8_0",
+      "settings": {
+        "model": "/models/ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q8_0.gguf",
+        "model-draft": "/models/ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF/mtp-NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q8_0.gguf"
+      },
+      "downloads": [
+        {
+          "repo": "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF",
+          "revision": "9169f1a8ac58a29383ec27a447b4af3532da8864",
+          "include": [
+            "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q8_0.gguf",
+            "mtp-NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q8_0.gguf"
+          ]
+        }
+      ],
+      "artifacts": [
+        {
+          "role": "model",
+          "repo": "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF",
+          "path": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q8_0.gguf",
+          "size": 33585495616,
+          "sha256": "d4cc4c9fffaa356db8b49cfaba9233609cfb29b4dd89d827665210dc1cc8dbbb"
+        },
+        {
+          "role": "draft",
+          "repo": "ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF",
+          "path": "mtp-NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q8_0.gguf",
+          "size": 2175713216,
+          "sha256": "3c97aa5d1188384d81af610a5152c98d88d7669bdfa1f9814d18b452db4f170d"
+        }
+      ]
+    }
+  }
+}
