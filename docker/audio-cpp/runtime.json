@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "runtime": {
+    "name": "audio.cpp",
+    "source_repo": "0xShug0/audio.cpp",
+    "source_revision": "6d530f4052ca93b5cd84ef6124406dcf85542a6f"
+  },
+  "base_images": {
+    "cuda12": {
+      "reference": "ghcr.io/0xshug0/audio.cpp:full-cuda12-20260828-6d530f4@sha256:88ec7504877ae0ff427dd15089693b260c1228cc511b22cd4a79b44f0b1ee268",
+      "index_digest": "sha256:88ec7504877ae0ff427dd15089693b260c1228cc511b22cd4a79b44f0b1ee268",
+      "platform_manifests": {
+        "linux/amd64": "sha256:f0b9cc1318845dc9fec14b7d1d59475e12c06313900345523fb36b89fca99c16",
+        "linux/arm64": "sha256:e835dadb8a18b91107ba80aea291e0b31be37b469dc49207e698c390fb6bc20d"
+      }
+    },
+    "cpu": {
+      "reference": "ghcr.io/0xshug0/audio.cpp:full-cpu-20260828-6d530f4@sha256:df1c931a1bed1ca1591b8dcc911839ee0d178e8556c45e8ccf81133b9a7910a6",
+      "index_digest": "sha256:df1c931a1bed1ca1591b8dcc911839ee0d178e8556c45e8ccf81133b9a7910a6",
+      "platform_manifests": {
+        "linux/amd64": "sha256:e37f3c94e7cf929723eb570e584c389030cef1eb07165c1909ef863f9a9bb37f",
+        "linux/arm64": "sha256:b4944f43f1ad4a4db4bc26d093631f8ef7fc5ecbf554dc812ac32f9750d44bb6"
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "family": "personaplex",
+  "model_slug": "personaplex-7b-v1",
+  "shared": {
+    "id": "personaplex-7b",
+    "family": "personaplex",
+    "task": "s2s",
+    "mode": "streaming",
+    "description": "PersonaPlex 7B v1 full-duplex English speech-to-speech conversation model",
+    "license": "NVIDIA Open Model License",
+    "lineage": {
+      "repo": "nvidia/personaplex-7b-v1",
+      "revision": "fdaf4090a61cb315c138a1faee287ffd6c716309",
+      "gated": true
+    }
+  },
+  "quants": {
+    "q4-k": {
+      "key": "personaplex-7b-q4",
+      "precision": "Q4_K",
+      "primary": true,
+      "server": {
+        "session_options": {
+          "personaplex.graph_arena_mb": 512
+        }
+      },
+      "artifact": {
+        "repo": "audio-cpp/audio.cpp-gguf",
+        "revision": "315d31fe91fdfd30d36a1deb08e89ff25a8bece5",
+        "path": "PersonaPlex-GGUF/personaplex-7b-v1-q4_k.gguf",
+        "size": 7860681248,
+        "sha256": "257347f65ed2cf563d44499144636f7999a78fe9547c27b5eb057b4ce9cc3665"
+      }
+    }
+  }
+}

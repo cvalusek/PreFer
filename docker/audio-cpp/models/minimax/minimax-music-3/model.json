@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "family": "minimax",
+  "model_slug": "minimax-music-3",
+  "shared": {
+    "id": "minimax-music-3",
+    "family": "minimax_music3",
+    "task": "gen",
+    "mode": "offline",
+    "description": "MiniMax Music 3 long-form text-and-lyrics-to-music model",
+    "license": "MiniMax Music 3 Community License",
+    "lineage": {
+      "repo": "MiniMaxAI/MiniMax-Music3",
+      "revision": "fbdf52fbaaca799592917417eb05f1899f1255ec"
+    }
+  },
+  "quants": {
+    "q4-0": {
+      "key": "minimax-music-3-q4",
+      "precision": "Q4_0/Q8_0 mixed package",
+      "primary": true,
+      "server_path": ".",
+      "server": {
+        "session_options": {
+          "language_model_gguf": "language_model_q4_0.gguf",
+          "rvq_depth_decoder_gguf": "rvq_depth_decoder_q8_0.gguf",
+          "flow_transformer_gguf": "transformer_q4_0.gguf",
+          "mem_saver": true
+        }
+      },
+      "artifacts": [
+        {
+          "repo": "audio-cpp/MiniMax-Music3-GGUF",
+          "revision": "2a19a42dd84d9ab9411316977ff3c9fd143ab214",
+          "path": "config.json",
+          "size": 107,
+          "sha256": "1ffcff67d916d5519d1ef9a36853232ee6bcb7e14a936623c4e85559f5dce106"
+        },
+        {
+          "repo": "audio-cpp/MiniMax-Music3-GGUF",
+          "revision": "2a19a42dd84d9ab9411316977ff3c9fd143ab214",
+          "path": "config/language_model.json",
+          "size": 1596,
+          "sha256": "34ded58fcd5e8181557f1417e76af9f3e95109a5ce113a4771fd16f8625b53c0"
+        },
+        {
+          "repo": "audio-cpp/MiniMax-Music3-GGUF",
+          "revision": "2a19a42dd84d9ab9411316977ff3c9fd143ab214",
+          "path": "config/rvq_depth_decoder.json",
+          "size": 274,
+          "sha256": "b38c7f72d4b2fa8667442071f9e4a63ca5a7b5d0859e5e64ee7f79c4bc64520c"
+        },
+        {
+          "repo": "audio-cpp/MiniMax-Music3-GGUF",
+          "revision": "2a19a42dd84d9ab9411316977ff3c9fd143ab214",
+          "path": "config/condition_encoder.json",
+          "size": 292,
+          "sha256": "1cdea3f36506719128ae4a29cdfff74b1134e607eb4a504ce6d810568fac8263"
+        },
+        {
+          "repo": "audio-cpp/MiniMax-Music3-GGUF",
+          "revision": "2a19a42dd84d9ab9411316977ff3c9fd143ab214",
+          "path": "config/transformer.json",
+          "size": 294,
+          "sha256": "f60856be934127a8b8223510aff2e38a9efd8bbdbc230c3d3339b96e2cb12f00"
+        },
+        {
+          "repo": "audio-cpp/MiniMax-Music3-GGUF",
+          "revision": "2a19a42dd84d9ab9411316977ff3c9fd143ab214",
+          "path": "config/vocoder.json",
+          "size": 251,
+          "sha256": "4161afd07ba7d5b949e29c8a7a005592259fba73e9110b6ece9dfd38d3489eac"
+        },
+        {
+          "repo": "audio-cpp/MiniMax-Music3-GGUF",
+          "revision": "2a19a42dd84d9ab9411316977ff3c9fd143ab214",
+          "path": "tokenizer/tokenizer.json",
+          "size": 11423801,
+          "sha256": "b1537fa9e59a537276ecbc2e12d0438edff635a1f4a4948e679774b5feb3e610"
+        },
+        {
+          "repo": "audio-cpp/MiniMax-Music3-GGUF",
+          "revision": "2a19a42dd84d9ab9411316977ff3c9fd143ab214",
+          "path": "tokenizer/tokenizer_config.json",
+          "size": 377,
+          "sha256": "1689852cc9c45010de040c8302a8acdc0d2c4c6c740dd7e9dd0a8c704e16eada"
+        },
+        {
+          "repo": "audio-cpp/MiniMax-Music3-GGUF",
+          "revision": "2a19a42dd84d9ab9411316977ff3c9fd143ab214",
+          "path": "language_model_q4_0.gguf",
+          "size": 6006866496,
+          "sha256": "6f621dd636320403c03e9f755b3e2047f5754d055e0fcc6c0c444ae52ffbfa90"
+        },
+        {
+          "repo": "audio-cpp/MiniMax-Music3-GGUF",
+          "revision": "2a19a42dd84d9ab9411316977ff3c9fd143ab214",
+          "path": "rvq_depth_decoder_q8_0.gguf",
+          "size": 714028960,
+          "sha256": "d5b7495fb1a7845abfeab13df829510de442fd4ea0fd55467fe9895fe8ec5db6"
+        },
+        {
+          "repo": "audio-cpp/MiniMax-Music3-GGUF",
+          "revision": "2a19a42dd84d9ab9411316977ff3c9fd143ab214",
+          "path": "condition_encoder.gguf",
+          "size": 100677184,
+          "sha256": "7f9414097b1f6ad154dae08ed69ce88fd0db6d7fd422f4d1a847216ca28ba1bf"
+        },
+        {
+          "repo": "audio-cpp/MiniMax-Music3-GGUF",
+          "revision": "2a19a42dd84d9ab9411316977ff3c9fd143ab214",
+          "path": "transformer_q4_0.gguf",
+          "size": 1396392768,
+          "sha256": "18d3b2461a2988f59e197ccf05dc3931663099290b42443baa2a30e4fd15e506"
+        },
+        {
+          "repo": "audio-cpp/MiniMax-Music3-GGUF",
+          "revision": "2a19a42dd84d9ab9411316977ff3c9fd143ab214",
+          "path": "vocoder.gguf",
+          "size": 216704192,
+          "sha256": "0a768b596516678fc850da1aff36556b8bc6bafcb7b42bc7ba7cb46cb9927a42"
+        }
+      ]
+    }
+  }
+}

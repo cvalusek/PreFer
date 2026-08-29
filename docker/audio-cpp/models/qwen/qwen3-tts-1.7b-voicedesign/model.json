@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "family": "qwen",
+  "model_slug": "qwen3-tts-1.7b-voicedesign",
+  "shared": {
+    "id": "qwen3-tts-1.7b-voicedesign",
+    "family": "qwen3_tts",
+    "task": "vdes",
+    "mode": "offline",
+    "description": "Qwen3 TTS 12Hz 1.7B VoiceDesign instruction-driven voice creation model",
+    "license": "Apache-2.0",
+    "lineage": {
+      "repo": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+      "revision": "5ecdb67327fd37bb2e042aab12ff7391903235d3"
+    }
+  },
+  "quants": {
+    "bf16": {
+      "key": "qwen3-tts-1.7b-voicedesign-bf16",
+      "precision": "BF16",
+      "primary": true,
+      "artifact": {
+        "repo": "audio-cpp/audio.cpp-gguf",
+        "revision": "09fe073ba154561f4474162e8bd4ab233a848eca",
+        "path": "Qwen3-TTS-12Hz-1.7B-VoiceDesign-GGUF/qwen3-tts-12hz-1.7b-voicedesign-bf16.gguf",
+        "size": 4179089248,
+        "sha256": "f4cebcd68023a2db7c3fc8d52d1d28eafb22d4e3b7a64e12c4f946a300536f86"
+      }
+    }
+  }
+}

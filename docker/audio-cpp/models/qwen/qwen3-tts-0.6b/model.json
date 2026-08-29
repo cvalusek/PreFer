@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "family": "qwen",
+  "model_slug": "qwen3-tts-0.6b",
+  "shared": {
+    "id": "qwen3-tts-0.6b",
+    "family": "qwen3_tts",
+    "task": "tts",
+    "mode": "offline",
+    "description": "Qwen3 TTS 12Hz 0.6B Base voice-cloning model",
+    "license": "Apache-2.0",
+    "lineage": {
+      "repo": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+      "revision": "5d83992436eae1d760afd27aff78a71d676296fc"
+    }
+  },
+  "quants": {
+    "bf16": {
+      "key": "qwen3-tts-0.6b-bf16",
+      "precision": "BF16",
+      "primary": true,
+      "artifact": {
+        "repo": "audio-cpp/audio.cpp-gguf",
+        "revision": "89c1e5437d5df724c5d36fca23f1e98e3d5185d7",
+        "path": "Qwen3-TTS-12Hz-0.6B-Base-GGUF/qwen3-tts-12hz-0.6b-base-bf16.gguf",
+        "size": 2516154496,
+        "sha256": "97d418048b07b5b267628da955b27db4c57b353ded8089de01a469b474255b8d"
+      }
+    }
+  }
+}

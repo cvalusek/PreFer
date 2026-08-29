@@ -2,4 +2,4 @@ services:
   prefer:
     build:
       context: .
-      dockerfile: docker/prefer/Dockerfile.netskope
+      dockerfile: docker/llama-cpp/Dockerfile.netskope

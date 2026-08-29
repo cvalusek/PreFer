@@ -1,0 +1,41 @@
+# Pinned in lockstep with Dockerfile. This variant trusts a local
+# Netskope/corporate CA before Python package install.
+ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b10362@sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c
+FROM ${LLAMA_CPP_BASE_IMAGE}
+
+COPY docker/certs/*.crt /usr/local/share/ca-certificates/
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates python3-pip \
+    && update-ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+ENV PIP_CERT=/etc/ssl/certs/ca-certificates.crt
+
+RUN pip install --no-cache-dir --break-system-packages -U "huggingface_hub[cli]"
+
+ARG S5CMD_VERSION=2.2.2
+RUN curl -fsSL "https://github.com/peak/s5cmd/releases/download/v${S5CMD_VERSION}/s5cmd_${S5CMD_VERSION}_Linux-64bit.tar.gz" \
+    | tar -xz -C /usr/local/bin s5cmd
+
+ENV HF_HOME=/models
+ENV HF_XET_HIGH_PERFORMANCE=1
+ENV PYTHONUNBUFFERED=1
+ENV LLAMA_CACHE=/models
+ENV LD_LIBRARY_PATH=/app
+
+COPY docker/llama-cpp/presets/ /presets/
+COPY docker/llama-cpp/preset-catalog.json /preset-catalog.json
+COPY docker/llama-cpp/deployment-inventory.generated.json /deployment-inventory.json
+COPY docker/llama-cpp/model-downloads.generated.sh /model-downloads.generated.sh
+COPY docker/llama-cpp/detect-preset.sh /detect-preset.sh
+COPY docker/llama-cpp/download-models.sh /download-models.sh
+COPY docker/llama-cpp/entrypoint.sh /entrypoint.sh
+RUN sed -i 's/\r$//' /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh \
+    && chmod +x /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh
+
+EXPOSE 8080
+
+ENTRYPOINT ["/entrypoint.sh"]

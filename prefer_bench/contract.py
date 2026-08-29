@@ -268,7 +268,7 @@ def preset_contract_diff(contract: dict[str, Any] | None = None) -> list[str]:
 def inspect_models_max(repo_root: Path) -> dict[str, Any]:
     compose = (repo_root / "docker-compose.yml").read_text(encoding="utf-8")
     env_example = (repo_root / ".env.example").read_text(encoding="utf-8")
-    detect = (repo_root / "docker" / "prefer" / "detect-preset.sh").read_text(encoding="utf-8")
+    detect = (repo_root / "docker" / "llama-cpp" / "detect-preset.sh").read_text(encoding="utf-8")
     compose_match = re.search(r"LLAMA_ARG_MODELS_MAX=\$\{LLAMA_ARG_MODELS_MAX:-([0-9]+)\}", compose)
     example_match = re.search(r"^LLAMA_ARG_MODELS_MAX=([0-9]+)$", env_example, re.MULTILINE)
     preset_load = {

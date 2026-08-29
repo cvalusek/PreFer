@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "family": "qwen",
+  "model_slug": "qwen3-tts-1.7b-customvoice",
+  "shared": {
+    "id": "qwen3-tts-1.7b-customvoice",
+    "family": "qwen3_tts",
+    "task": "tts",
+    "mode": "offline",
+    "description": "Qwen3 TTS 12Hz 1.7B CustomVoice packaged-speaker and style-control model",
+    "license": "Apache-2.0",
+    "lineage": {
+      "repo": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+      "revision": "0c0e3051f131929182e2c023b9537f8b1c68adfe"
+    }
+  },
+  "quants": {
+    "bf16": {
+      "key": "qwen3-tts-1.7b-customvoice-bf16",
+      "precision": "BF16",
+      "primary": true,
+      "artifact": {
+        "repo": "audio-cpp/audio.cpp-gguf",
+        "revision": "09fe073ba154561f4474162e8bd4ab233a848eca",
+        "path": "Qwen3-TTS-12Hz-1.7B-CustomVoice-GGUF/qwen3-tts-12hz-1.7b-customvoice-bf16.gguf",
+        "size": 4179144352,
+        "sha256": "ef55652c7aa919dc5eeb7967c782a17a6f5d9a8b775337376a4678d37e71a11c"
+      }
+    }
+  }
+}

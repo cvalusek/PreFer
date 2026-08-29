@@ -6,7 +6,8 @@ on:
     paths:
       - 'prefer_bench/**'
       - 'benchmark/**'
-      - 'docker/prefer/**'
+      - 'docker/llama-cpp/**'
+      - 'docker/audio-cpp/**'
       - 'docker-compose.yml'
       - '.env.example'
       - 'README.md'
@@ -16,7 +17,8 @@ on:
     paths:
       - 'prefer_bench/**'
       - 'benchmark/**'
-      - 'docker/prefer/**'
+      - 'docker/llama-cpp/**'
+      - 'docker/audio-cpp/**'
       - 'docker-compose.yml'
       - '.env.example'
       - 'README.md'

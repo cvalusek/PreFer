@@ -1,10 +1,10 @@
-name: Build PreFer image
+name: Build PreFer llama.cpp image
 
 on:
   push:
     branches: [main]
     paths:
-      - 'docker/prefer/**'
+      - 'docker/llama-cpp/**'
       - '.github/workflows/build-prefer.yml'
   workflow_dispatch:
 
@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Verify generated presets
-        run: python docker/prefer/generate-presets.py --check
+        run: python docker/llama-cpp/generate-presets.py --check
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -44,14 +44,17 @@ jobs:
           tags: |
             type=raw,value=latest
             type=sha,format=short
+            type=raw,value=llama-cuda
+            type=sha,prefix=llama-cuda-sha-,format=short
           labels: |
+            io.prefer.runtime=llama.cpp
             io.prefer.deployment-inventory.path=/deployment-inventory.json
             io.prefer.deployment-inventory.schema=prefer.deployment-inventory.v1
 
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: docker/prefer
+          context: docker/llama-cpp
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -62,5 +65,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: prefer-deployment-inventory-${{ github.sha }}
-          path: docker/prefer/deployment-inventory.generated.json
+          path: docker/llama-cpp/deployment-inventory.generated.json
           if-no-files-found: error

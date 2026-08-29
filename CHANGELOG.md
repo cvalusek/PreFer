@@ -2,6 +2,30 @@
 
 ## Current
 
+- Runtime images
+  - Llama: added `llama-cuda` and `llama-cuda-sha-<commit>` tags; existing `latest` and `sha-<commit>` tags remain unchanged.
+  - Audio: added `audio-cuda12`, `audio-cuda12-sha-<commit>`, `audio-cpu`, and `audio-cpu-sha-<commit>` tags.
+- Local Compose
+  - Renamed the llama container from `prefer` to `prefer-llama`; the Compose service remains `prefer`.
+  - Changed the local llama image tag from `prefer:local` to `prefer:llama-cuda-local`.
+  - Added `prefer-audio` to the default application on port 8081 with separate model and voice volumes.
+- Audio
+  - Added `qwen3-tts-0.6b`: BF16; offline TTS and voice cloning; lazy loading.
+  - Added `qwen3-tts-1.7b-customvoice`: BF16; packaged voices and instruction-based style control; lazy loading.
+  - Added `qwen3-tts-1.7b-voicedesign`: BF16; instruction-driven voice creation; lazy loading.
+  - Verified both Qwen3 TTS 1.7B routes on TITAN X Pascal with valid 24 kHz output and one-model LRU swapping.
+  - Added `qwen3-asr-0.6b`: Q8; uploaded and live streaming transcription; lazy loading.
+  - Added `ace-step-1.5`: Turbo Q8; music generation and editing; lazy loading.
+  - Added `minimax-music-3`: mixed Q4/Q8 package; experimental music generation; lazy loading.
+  - Added `personaplex-7b`: Q4; English full-duplex speech conversation; 512 MiB graph arena for 12 GB compatibility; lazy loading.
+  - Expanded blank or unset audio prestaging from five to seven pinned routes and from about 26.2 GB to 34.5 GB; `none` still skips downloads.
+  - Increased first-start health-check grace from one hour to four hours for the expanded artifact set.
+  - Limited audio residency to one model with LRU swapping and 30-minute idle unload.
+  - Added exact runtime/model pins, single- and multi-file SHA-256 validation, and `/deployment-inventory.json` for NeurOn provisioning.
+  - Added generated AWS G6/G6e, local GPU, and one-card RunPod 24-48 GB deployment configs.
+  - Added `general`, `speech`, `assistant`, `voice-lab`, `conversation`, and `music` bundles plus single-model configs.
+  - Added config-aware prestaging: a selected `AUDIO_SERVER_CONFIG` stages only its paired model manifest unless explicitly overridden.
+  - Expanded the release inventory with provider hardware IDs, config paths, capability bundles, exact staged bytes, residency, and verification state.
 - Models
   - Added target-only `ornith-1.5-9b` with pinned Q4, Q6, and Q8 targets plus its BF16 projector.
   - Added target-only `ornith-1.5-35b-a3b` with pinned Q4 and Q8 targets plus its BF16 projector.

@@ -3,7 +3,7 @@ name: ${PREFER_BENCH_PROJECT:?PREFER_BENCH_PROJECT must be a unique prefer-bench
 services:
   router:
     build:
-      context: ../docker/prefer
+      context: ../docker/llama-cpp
       dockerfile: Dockerfile
       args:
         LLAMA_CPP_BASE_IMAGE: ${PREFER_BENCH_BASE_IMAGE:-ghcr.io/ggml-org/llama.cpp:server-cuda-b10362@sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c}

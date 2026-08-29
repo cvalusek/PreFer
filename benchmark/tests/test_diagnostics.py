@@ -41,7 +41,7 @@ class DiagnosticAndCompatibilityTests(unittest.TestCase):
         detected_tier_names = {path.name for path in PRESETS_ROOT.glob("*gb.ini")}
         self.assertNotIn("12gb-pascal.ini", detected_tier_names)
         self.assertIn("12gb.ini", detected_tier_names)
-        dockerfile = (REPO_ROOT / "docker" / "prefer" / "Dockerfile").read_text(encoding="utf-8")
+        dockerfile = (REPO_ROOT / "docker" / "llama-cpp" / "Dockerfile").read_text(encoding="utf-8")
         self.assertIn("server-cuda-b10362", dockerfile)
         self.assertIn("sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c", dockerfile)
 
@@ -61,7 +61,7 @@ class DiagnosticAndCompatibilityTests(unittest.TestCase):
         self.assertEqual(current["source_commit"], "4801e3c567d5131dd41b387df5f2d4b1370d92be")
         self.assertEqual(current["manifest_digest"], "sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c")
 
-        catalog = json.loads((REPO_ROOT / "docker" / "prefer" / "preset-catalog.json").read_text(encoding="utf-8"))
+        catalog = json.loads((REPO_ROOT / "docker" / "llama-cpp" / "preset-catalog.json").read_text(encoding="utf-8"))
         self.assertEqual(
             catalog["runtime"]["platform_manifests"],
             {

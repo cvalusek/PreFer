@@ -6,11 +6,14 @@ read this before changing presets, the Dockerfile, or the detection scripts.
 
 ## Project overview
 
-PreFer: llama.cpp router containers for self-hosted LLM inference on local,
-RunPod, and AWS hardware. `docker/prefer/` hosts Gemma 4, Qwen3.5/Qwen3.6/Qwen3.8,
+PreFer: sibling llama.cpp and audio.cpp containers for self-hosted inference.
+`docker/llama-cpp/` serves LLMs on local, RunPod, and AWS hardware and hosts
+Gemma 4, Qwen3.5/Qwen3.6/Qwen3.8,
 Ornith 1.5, Nemotron 3.5 Lightning, Muse Glimmer, GLM, and DeepSeek V4 routes via
 `llama-server` router mode, with models
-downloaded from Hugging Face on first start.
+downloaded from Hugging Face on first start. `docker/audio-cpp/` is a separate
+speech/music runtime with its own API, inventory, model volume, and release
+tags.
 
 ## Published change reference
 
@@ -24,8 +27,8 @@ building; never leave an empty `Current` section in the file.
 After CI publishes the immutable image, make a root-only follow-up commit that
 changes the `Current` heading to the resulting `sha-<short-commit>` tag and
 adds the exact image identity. Do not rewrite the approved change bullets
-during finalization. The image workflow watches `docker/prefer/**`, so this
-root changelog-only commit does not create another image. Include additions,
+during finalization. Image workflows watch their runtime folders, so this root
+changelog-only commit does not create another image. Include additions,
 removals, and exact context/concurrency deltas, plus quant, speculative,
 prestaging, or compatibility changes only when they actually changed. Keep
 entries concise, user-facing, nested by platform and instance, and limited to
@@ -733,7 +736,7 @@ a Packer-built public AMI (DLAMI Base GPU Ubuntu 24.04 base, resolved via SSM) +
 systemd boot unit (stage instance-store NVMe at `/opt/dlami/nvme`, `docker run`
 with `/models` on NVMe) + a CDK stack distributed as synthesized CloudFormation.
 The container is pulled at boot (not baked), and CI is path-filtered so AWS
-changes never rebuild the container (`build-prefer.yml` is `docker/prefer/**`
+changes never rebuild the container (`build-prefer.yml` is `docker/llama-cpp/**`
 only; `build-aws.yml` covers `aws/`). `build-aws.yml` is one workflow with
 ordered jobs — a paths-filtered `ami` job (Packer; public AMI built into
 us-east-1 + us-east-2) hands its `ami-map` artifact to a `cdk` job that bakes it
@@ -769,7 +772,7 @@ Run the deterministic suite and mock replay:
 
 Live verification remains hardware-dependent. The isolated command creates a
 generated Compose project, loopback port other than 8080, network, and cloned
-model volume, then removes all of them while leaving operator `prefer` and
+model volume, then removes all of them while leaving the operator llama service and
 NeurOn state alone. See `benchmark/README.md` for current b10362, the historical
 Pascal compatibility preset, `models-max`, long-context, idle, and historical
 b9843/b9982 evidence.
@@ -785,3 +788,121 @@ Other useful manual checks:
 
 Any future live smoke job still needs a GPU host; no CPU-only fallback is
 practical for the normal model tiers.
+
+## audio.cpp sibling runtime
+
+`docker/audio-cpp/` is deliberately separate from the llama router. The GHCR
+product remains `ghcr.io/cvalusek/prefer`, but runtime tags do not overlap:
+`audio-cuda12`, `audio-cuda12-sha-<commit>`, `audio-cpu`, and
+`audio-cpu-sha-<commit>`. The llama workflow retains `latest` and
+`sha-<commit>` for compatibility and also publishes `llama-cuda` and
+`llama-cuda-sha-<commit>`. Never point `latest` at audio.cpp.
+
+The local Compose service key remains `prefer` for command compatibility, but
+its container is `prefer-llama`. The default Compose application also runs
+`prefer-audio` on host port 8081. Target `docker compose up prefer` or
+`docker compose up audio` when only one runtime should run. Audio models and
+server-side voice references use separate named volumes. Both services request
+the available NVIDIA GPUs, so operators must account for aggregate residency
+when they intentionally load llama and audio models at the same time.
+
+`docker/audio-cpp/runtime.json` owns the immutable upstream audio.cpp source
+and dual-platform CPU/CUDA image identities. Per-model files under
+`models/<family>/<model>/model.json` own official lineage plus either one exact
+artifact or a same-repository multi-file package, byte sizes, SHA-256 values,
+optional package-level server path, task, mode, and request id. `generate.py`
+also reads `deployment-bundles.json` and
+`deployment-scenarios/<provider>/<hardware>.json`, then emits both backend
+defaults, nested `server-configs/` plus paired `.prestage` manifests, the exact
+resumable downloader, and `deployment-inventory.generated.json`; CI requires
+`generate.py --check`.
+No model bytes or Git LFS pointers belong in this repository.
+
+The audio inventory owns backend-level CUDA 12 and CPU deployments plus CUDA
+scenario trees for AWS G6/G6e, generic local cards, and exact one-card RunPod
+24-48 GB offers. `general` exposes every capability for exploration. `speech`,
+`assistant`, `voice-lab`, `conversation`, and `music` group related routes,
+and every supported route has a single-model alternative. All configs retain
+one-model lazy residency: inclusion controls discoverability and prestaging,
+not simultaneous GPU load. With `AUDIO_PRESTAGE_MODELS` blank, the entrypoint
+uses the `.prestage` sidecar paired with `AUDIO_SERVER_CONFIG`; an explicit
+model list or `none` still wins. Only the CUDA image contains provider scenario
+configs, and inventory scenario entries point to `audio-cuda12`.
+
+AWS audio scenarios cover `g6.xlarge` (L4 24 GB) and `g6e.xlarge` (L40S 48
+GB). RunPod scenarios cover the exact current 24/32/48 GB card IDs already used
+by the llama inventory: L4, RTX 3090/4090/5090, RTX A5000/A6000, A40,
+L40/L40S, RTX 6000 Ada, and RTX PRO 6000 MIG 24/48 GB. Generic local profiles
+cover RTX 4060 8 GB, RTX A2000 8 GB, GTX 1070 Ti, and TITAN X Pascal without
+private host metadata. The 8 GB and GTX 1070 Ti profiles expose only the four
+Qwen speech/voice models; TITAN X exposes the full catalog based on the owner
+smokes below. A route appearing in a configuration-only scenario is not proof
+of fit, useful latency, or quality on that exact card.
+
+Every audio release embeds the resolved catalog at
+`/deployment-inventory.json`, identifies it with OCI path/schema labels, and
+uploads `prefer-audio-deployment-inventory-<commit-sha>`. NeurOn should use the
+inventory's provider hardware ID, image tag, `AUDIO_SERVER_CONFIG`, model IDs,
+staged artifact bytes, compatibility, and verification status rather than
+parsing these docs or guessing from VRAM.
+
+The audio catalog selects Qwen3 TTS 12Hz 0.6B Base BF16, Qwen3 TTS 12Hz 1.7B
+CustomVoice BF16, Qwen3 TTS 12Hz 1.7B VoiceDesign BF16, Qwen3 ASR 0.6B Q8_0,
+ACE-Step 1.5 Turbo Q8_0, MiniMax Music 3's mixed Q4_0/Q8_0 package, and
+PersonaPlex 7B Q4_K. TTS stays BF16 because the modest savings from Q8 do not
+justify assuming audible parity. The Base checkpoint is a voice-cloning route,
+so callers must supply `voice_ref` and `reference_text` or use a server-side
+voice library; do not document it as a generic built-in voice. CustomVoice uses
+packaged speaker ids and optional style instructions. VoiceDesign uses the
+framework `vdes` task plus an instruction and requires no reference audio. ASR
+is configured in streaming mode so the same id can serve normal
+uploads and the live PCM endpoint. ACE-Step and MiniMax run through
+`/v1/tasks/run`; MiniMax remains experimental upstream. PersonaPlex runs
+full-duplex conversation through `/v1/audio/speech/live`, is English-only, and
+uses its own 7B conversational intelligence rather than the llama service.
+The ACE-Step and MiniMax server/catalog `task` value is `gen`; `music` is the
+model-spec capability label, not an accepted framework task kind.
+ACE-Step enables its memory-saver session option for local 12 GB headroom.
+MiniMax explicitly selects the packaged Q4 language model, Q8 depth decoder,
+and Q4 flow transformer; its generic session default names a BF16 depth decoder
+that is not present in the selected balanced package.
+PersonaPlex Q4 sets `personaplex.graph_arena_mb=512`. On the local TITAN X
+Pascal, that setting completed both a direct one-second speech-to-speech path
+and the server's chunked-PCM/SSE live route at 24 kHz mono. The live smoke
+emitted 12 audio deltas, `speech.audio.done`, and `[DONE]`; its reconstructed
+output was a valid 0.96-second, 24 kHz mono WAV. This is an API/load/fit smoke,
+not a conversation-quality result. The default 1 GiB arena is unnecessary for
+this bounded route.
+The CUDA server's generic pre-load memory guard is disabled because its fixed
+`1.5x` single-file estimate reports 11.11 GiB for the 7.86 GB artifact and
+rejects it before applying the smaller arena, despite the measured fit. Keep
+`max_loaded_models=1`; do not re-enable the generic guard until upstream can
+account for effective per-model memory settings or provide a safe override.
+
+Both Qwen 1.7B BF16 routes passed local TITAN X Pascal load/generation and LRU
+swap smokes on the pinned runtime. CustomVoice accepted packaged speakers
+`Vivian` and `Ryan` plus style instructions through `/v1/audio/speech` and
+produced a valid 4.32-second 24 kHz mono WAV. VoiceDesign accepted the native
+`vdes` request through `/v1/tasks/run` without reference audio and produced a
+valid 4.72-second 24 kHz mono WAV. Observed whole-device usage was 4,758 MiB
+with CustomVoice resident and 5,028 MiB with VoiceDesign resident on the 12,288
+MiB card. These are fit/API smokes, not voice-quality or latency benchmarks.
+
+With both audio selection variables unset or blank, the entrypoint uses the
+all-capabilities default and stages every generated primary package. A selected
+`AUDIO_SERVER_CONFIG` changes that blank default to its paired prestage
+manifest. A comma-separated `AUDIO_PRESTAGE_MODELS` value overrides either
+default; `none` intentionally skips downloads. Multi-file packages must stay within one
+immutable repository revision and are only considered staged after every file
+passes its catalog byte-size and SHA-256 check.
+The full generated default is about 34.5 GB, so both audio images use a four-hour
+health-check start period. A successful check still marks the server healthy
+immediately; the long grace only prevents slow first-boot staging from becoming
+a false failure.
+
+Both configs register models lazily, set `max_loaded_models=1`, and unload an
+idle resident model after 30 minutes. This allows audio-route swapping on small
+devices; it is not a concurrency claim. audio.cpp serializes calls per model,
+and new audio routes remain configuration-only until exact-card load, quality,
+API, and latency smoke tests pass. The upstream management UI is not enabled:
+PreFer stages only its pinned catalog artifacts and verifies size plus SHA-256.

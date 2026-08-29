@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "family": "ace-step",
+  "model_slug": "ace-step-1.5",
+  "shared": {
+    "id": "ace-step-1.5",
+    "family": "ace_step",
+    "task": "gen",
+    "mode": "offline",
+    "description": "ACE-Step 1.5 Turbo text-to-music and music-editing model",
+    "license": "MIT",
+    "lineage": {
+      "repo": "ACE-Step/Ace-Step1.5",
+      "revision": "19671f406d603126926c1b7e2adc169acbcade22"
+    }
+  },
+  "quants": {
+    "turbo-q8-0": {
+      "key": "ace-step-1.5-turbo-q8",
+      "precision": "Q8_0",
+      "primary": true,
+      "server": {
+        "session_options": {
+          "mem_saver": true
+        }
+      },
+      "artifact": {
+        "repo": "audio-cpp/audio.cpp-gguf",
+        "revision": "315d31fe91fdfd30d36a1deb08e89ff25a8bece5",
+        "path": "ACE-Step1.5-GGUF/turbo/ace-step-1.5-turbo-q8_0.gguf",
+        "size": 6185460032,
+        "sha256": "cd7bf272588f548d4a253f57483132ef0f8f54a549f26471b09caa72c654270b"
+      }
+    }
+  }
+}

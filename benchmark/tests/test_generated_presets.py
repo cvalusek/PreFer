@@ -9,7 +9,7 @@ from prefer_bench.contract import parse_preset
 from prefer_bench.paths import REPO_ROOT
 
 
-PREFER_ROOT = REPO_ROOT / "docker" / "prefer"
+PREFER_ROOT = REPO_ROOT / "docker" / "llama-cpp"
 SCENARIOS_ROOT = PREFER_ROOT / "preset-scenarios"
 INVENTORY_PATH = PREFER_ROOT / "deployment-inventory.generated.json"
 
@@ -122,7 +122,7 @@ class GeneratedPresetTests(unittest.TestCase):
         workflow = (REPO_ROOT / ".github" / "workflows" / "build-prefer.yml").read_text(encoding="utf-8")
         self.assertIn("COPY deployment-inventory.generated.json /deployment-inventory.json", dockerfile)
         self.assertIn(
-            "COPY docker/prefer/deployment-inventory.generated.json /deployment-inventory.json", netskope
+            "COPY docker/llama-cpp/deployment-inventory.generated.json /deployment-inventory.json", netskope
         )
         self.assertIn("prefer-deployment-inventory-${{ github.sha }}", workflow)
         self.assertIn("io.prefer.deployment-inventory.path=/deployment-inventory.json", workflow)

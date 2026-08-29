@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "provider": "local",
+  "output_root": "local/rtx-a2000-8gb/1x",
+  "hardware": {
+    "gpu_slug": "rtx-a2000-8gb",
+    "gpu_name": "NVIDIA RTX A2000 8GB",
+    "gpu_count": 1,
+    "vram_gb_each": 8,
+    "architecture": "Ampere"
+  },
+  "compatibility": {
+    "container_runtime": "nvidia",
+    "cuda_major": 12
+  },
+  "verification": "configuration-only",
+  "bundles": [
+    "speech",
+    "assistant",
+    "voice-lab"
+  ],
+  "single_models": [
+    "qwen3-asr-0.6b-q8",
+    "qwen3-tts-0.6b-bf16",
+    "qwen3-tts-1.7b-customvoice-bf16",
+    "qwen3-tts-1.7b-voicedesign-bf16"
+  ]
+}

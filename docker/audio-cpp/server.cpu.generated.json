@@ -1,0 +1,84 @@
+{
+  "host": "0.0.0.0",
+  "port": 8080,
+  "backend": "cpu",
+  "device": 0,
+  "threads": 4,
+  "lazy_load": true,
+  "max_loaded_models": 1,
+  "idle_unload_ms": 1800000,
+  "min_free_memory_mb": 0,
+  "busy_timeout_ms": 300000,
+  "max_request_body_bytes": 536870912,
+  "log_request_body": false,
+  "models": [
+    {
+      "id": "qwen3-tts-0.6b",
+      "family": "qwen3_tts",
+      "path": "/models/audio-cpp/audio.cpp-gguf/Qwen3-TTS-12Hz-0.6B-Base-GGUF/qwen3-tts-12hz-0.6b-base-bf16.gguf",
+      "task": "tts",
+      "mode": "offline",
+      "lazy": true
+    },
+    {
+      "id": "qwen3-tts-1.7b-customvoice",
+      "family": "qwen3_tts",
+      "path": "/models/audio-cpp/audio.cpp-gguf/Qwen3-TTS-12Hz-1.7B-CustomVoice-GGUF/qwen3-tts-12hz-1.7b-customvoice-bf16.gguf",
+      "task": "tts",
+      "mode": "offline",
+      "lazy": true
+    },
+    {
+      "id": "ace-step-1.5",
+      "family": "ace_step",
+      "path": "/models/audio-cpp/audio.cpp-gguf/ACE-Step1.5-GGUF/turbo/ace-step-1.5-turbo-q8_0.gguf",
+      "task": "gen",
+      "mode": "offline",
+      "lazy": true,
+      "session_options": {
+        "mem_saver": true
+      }
+    },
+    {
+      "id": "minimax-music-3",
+      "family": "minimax_music3",
+      "path": "/models/audio-cpp/MiniMax-Music3-GGUF",
+      "task": "gen",
+      "mode": "offline",
+      "lazy": true,
+      "session_options": {
+        "language_model_gguf": "language_model_q4_0.gguf",
+        "rvq_depth_decoder_gguf": "rvq_depth_decoder_q8_0.gguf",
+        "flow_transformer_gguf": "transformer_q4_0.gguf",
+        "mem_saver": true
+      }
+    },
+    {
+      "id": "personaplex-7b",
+      "family": "personaplex",
+      "path": "/models/audio-cpp/audio.cpp-gguf/PersonaPlex-GGUF/personaplex-7b-v1-q4_k.gguf",
+      "task": "s2s",
+      "mode": "streaming",
+      "lazy": true,
+      "session_options": {
+        "personaplex.graph_arena_mb": 512
+      }
+    },
+    {
+      "id": "qwen3-asr-0.6b",
+      "family": "qwen3_asr",
+      "path": "/models/audio-cpp/audio.cpp-gguf/Qwen3-ASR-0.6B-GGUF/qwen3-asr-0.6b-q8_0.gguf",
+      "task": "asr",
+      "mode": "streaming",
+      "lazy": true
+    },
+    {
+      "id": "qwen3-tts-1.7b-voicedesign",
+      "family": "qwen3_tts",
+      "path": "/models/audio-cpp/audio.cpp-gguf/Qwen3-TTS-12Hz-1.7B-VoiceDesign-GGUF/qwen3-tts-12hz-1.7b-voicedesign-bf16.gguf",
+      "task": "vdes",
+      "mode": "offline",
+      "lazy": true
+    }
+  ]
+}

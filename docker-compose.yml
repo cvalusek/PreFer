@@ -2,11 +2,11 @@ name: prefer
 
 services:
   prefer:
-    container_name: prefer
+    container_name: prefer-llama
     build:
-      context: ./docker/prefer
+      context: ./docker/llama-cpp
       dockerfile: Dockerfile
-    image: prefer:local
+    image: prefer:llama-cuda-local
     ports:
       - "${LLM_PORT:-8080}:8080"
     volumes:
@@ -31,6 +31,32 @@ services:
               count: all
               capabilities: [gpu]
 
+  audio:
+    container_name: prefer-audio
+    build:
+      context: ./docker/audio-cpp
+      dockerfile: Dockerfile
+    image: prefer:audio-cuda12-local
+    ports:
+      - "${AUDIO_PORT:-8081}:8080"
+    volumes:
+      - prefer-audio-model-cache:/models
+      - prefer-audio-voices:/voices
+    environment:
+      - AUDIO_SERVER_CONFIG=${AUDIO_SERVER_CONFIG:-}
+      - AUDIO_PRESTAGE_MODELS=${AUDIO_PRESTAGE_MODELS:-}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
 volumes:
   prefer-model-cache:
     name: ${PREFER_MODEL_VOLUME:-prefer-model-cache}
+  prefer-audio-model-cache:
+    name: ${PREFER_AUDIO_MODEL_VOLUME:-prefer-audio-model-cache}
+  prefer-audio-voices:
+    name: ${PREFER_AUDIO_VOICE_VOLUME:-prefer-audio-voices}

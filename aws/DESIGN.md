@@ -70,7 +70,7 @@ aws/                          all EC2 deployment lives here (parallels docker/)
     20-run-container.sh      docker pull (pinned tag) + docker run with /models on NVMe
     prefer-boot.env          immutable AMI defaults (image, paths, router limit)
   cdk/                       thin wrapper: instance + IAM + IMDS + S3/endpoint wiring
-docker/prefer/
+docker/llama-cpp/
   preset-catalog.json        runtime + legacy prestage metadata
   models/<family>/<model>/   model.json files with quant/artifact source of truth
   preset-scenarios/aws/      AWS deployment shapes split by instance family
@@ -78,7 +78,8 @@ docker/prefer/
   deployment-inventory.generated.json  controller-readable resolved deployments
   download-models.sh         S3 sync + preset-aware catalog downloads
 .github/workflows/
-  build-prefer.yml           container image -> GHCR  [docker/prefer/** only]
+  build-prefer.yml           llama container -> GHCR  [docker/llama-cpp/** only]
+  build-audio.yml            audio containers -> GHCR [docker/audio-cpp/** only]
   build-aws.yml              ami job (Packer, path-gated) -> cdk job (synth + release) [aws/**]
 ```
 
@@ -253,7 +254,8 @@ The hard requirement: a change in one area must not trigger unrelated builds.
 
 | Workflow | Triggers on | Produces |
 | -------- | ----------- | -------- |
-| `build-prefer.yml` (existing) | `docker/prefer/**` | container image → GHCR |
+| `build-prefer.yml` (existing) | `docker/llama-cpp/**` | llama container → GHCR |
+| `build-audio.yml` | `docker/audio-cpp/**` | audio CPU/CUDA containers → GHCR |
 | `build-aws.yml` (new) | `aws/**`, self | public AMI (us-east-1 + us-east-2) and/or `template-latest` release |
 
 The key decoupler: **the container is pulled at boot, not baked**, so the

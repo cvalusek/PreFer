@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "bundles": {
+    "general": {
+      "description": "All pinned speech, voice-authoring, conversation, and music capabilities for exploration",
+      "server": {
+        "busy_timeout_ms": 1800000
+      },
+      "models": [
+        "qwen3-tts-0.6b-bf16",
+        "qwen3-tts-1.7b-customvoice-bf16",
+        "qwen3-tts-1.7b-voicedesign-bf16",
+        "qwen3-asr-0.6b-q8",
+        "personaplex-7b-q4",
+        "ace-step-1.5-turbo-q8",
+        "minimax-music-3-q4"
+      ]
+    },
+    "speech": {
+      "description": "Qwen transcription, voice cloning, packaged voices, and voice design",
+      "models": [
+        "qwen3-asr-0.6b-q8",
+        "qwen3-tts-0.6b-bf16",
+        "qwen3-tts-1.7b-customvoice-bf16",
+        "qwen3-tts-1.7b-voicedesign-bf16"
+      ]
+    },
+    "assistant": {
+      "description": "Related ASR and TTS routes for a conventional listen-and-speak assistant",
+      "models": [
+        "qwen3-asr-0.6b-q8",
+        "qwen3-tts-0.6b-bf16",
+        "qwen3-tts-1.7b-customvoice-bf16"
+      ]
+    },
+    "voice-lab": {
+      "description": "Voice cloning, packaged speakers, and instruction-driven voice authoring",
+      "models": [
+        "qwen3-tts-0.6b-bf16",
+        "qwen3-tts-1.7b-customvoice-bf16",
+        "qwen3-tts-1.7b-voicedesign-bf16"
+      ]
+    },
+    "conversation": {
+      "description": "Dedicated English full-duplex PersonaPlex conversation",
+      "models": [
+        "personaplex-7b-q4"
+      ]
+    },
+    "music": {
+      "description": "ACE-Step and MiniMax music generation and editing",
+      "server": {
+        "busy_timeout_ms": 1800000
+      },
+      "models": [
+        "ace-step-1.5-turbo-q8",
+        "minimax-music-3-q4"
+      ]
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "provider": "runpod",
+  "output_root": "runpod/rtx-a6000/1x",
+  "hardware": {
+    "gpu_slug": "rtx-a6000",
+    "gpu_name": "RTX A6000",
+    "provider_gpu_type_id": "NVIDIA RTX A6000",
+    "gpu_count": 1,
+    "vram_gb_each": 48,
+    "architecture": "Ampere",
+    "observed_host_ram_gb": 50,
+    "observed_vcpu": 9,
+    "advertised_hourly_usd_per_gpu": 0.53,
+    "pricing_observed_on": "2026-08-24",
+    "pricing_reference": "https://www.runpod.io/pricing"
+  },
+  "compatibility": {
+    "container_runtime": "nvidia",
+    "provisioning_api": "https://docs.runpod.io/api-reference/pods/POST/pods"
+  },
+  "verification": "configuration-only",
+  "bundles": ["general", "speech", "assistant", "voice-lab", "conversation", "music"],
+  "single_models": "all"
+}

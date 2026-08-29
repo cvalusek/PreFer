@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "provider": "local",
+  "output_root": "local/titan-x-pascal/1x",
+  "hardware": {
+    "gpu_slug": "titan-x-pascal",
+    "gpu_name": "NVIDIA TITAN X (Pascal)",
+    "gpu_count": 1,
+    "vram_gb_each": 12,
+    "architecture": "Pascal"
+  },
+  "compatibility": {
+    "container_runtime": "nvidia",
+    "cuda_major": 12,
+    "minimum_compute_capability": "6.1",
+    "required_cuda_arch": "sm_61"
+  },
+  "verification": "mixed-owner-verified-and-configuration-only",
+  "server": {
+    "threads": 8
+  },
+  "bundles": [
+    "general",
+    "speech",
+    "assistant",
+    "voice-lab",
+    "conversation",
+    "music"
+  ],
+  "single_models": "all"
+}
