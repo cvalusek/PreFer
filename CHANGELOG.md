@@ -1,6 +1,11 @@
 # PreFer changelog
 
-## Current
+## sha-8b234f4
+
+- Images
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-8b234f4@sha256:651595639dd2c78fa2caa99655eb3f48d5835547fc448f0aa709ddc3f2fdff6a`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-8b234f4@sha256:245d48234d11972463fbc184a95d0881dfaf62d8264d36f720eac6d6639e19ab`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-8b234f4@sha256:bfd8e5f33af0a49dc72f82132c244886d34135c9d3aeeb70442c8a14362c4ce5`.
 
 - Artifact staging
   - Audio and image downloads now use Hugging Face's Xet-aware `hf` client with resumable state on each runtime's persistent model volume.
