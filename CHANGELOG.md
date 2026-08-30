@@ -1,6 +1,9 @@
 # PreFer changelog
 
-## Current
+## sha-9a404b2
+
+- Images
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-9a404b2@sha256:73f2b604bf4ddff3511c5a271b4d3dd791f0bf5a80c4fa7149435d8737d4a788`.
 
 - Runtime images
   - Added `image-cuda12` and `image-cuda12-sha-<commit>` for Linux AMD64.
