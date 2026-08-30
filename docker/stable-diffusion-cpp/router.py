@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from email.parser import BytesParser
 from email.policy import default as email_policy
+import hashlib
 import http.client
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -27,6 +28,7 @@ HOP_BY_HOP_HEADERS = {
     "upgrade",
 }
 PRESTAGE_STATUS_PATH = Path("/tmp/prefer-image-prestage.status")
+MODELS_ROOT = Path(os.environ.get("PREFER_MODELS_DIR", "/models"))
 
 
 class RequestError(Exception):
@@ -90,13 +92,68 @@ def prestage_state() -> dict:
     return {"state": "completed" if code == 0 else "failed", "exit_code": code}
 
 
+def artifact_download_id(artifact: dict) -> str:
+    identity = {
+        "repo": artifact["repo"],
+        "revision": artifact["revision"],
+        "path": artifact["path"],
+        "size": artifact["size"],
+        "sha256": artifact["sha256"],
+    }
+    return hashlib.sha256(
+        json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def artifact_stat_signature(stat_result: os.stat_result) -> str:
+    return ":".join(
+        str(value)
+        for value in (
+            stat_result.st_dev,
+            stat_result.st_ino,
+            stat_result.st_size,
+        )
+    )
+
+
+def artifact_marker_path(artifact: dict) -> Path:
+    artifact_id = artifact_download_id(artifact)
+    return MODELS_ROOT / ".prefer-cache" / "downloads-v2" / "verified" / f"{artifact_id}.complete"
+
+
+def artifact_marker_matches(artifact: dict, stat_result: os.stat_result) -> bool:
+    artifact_id = artifact_download_id(artifact)
+    marker = artifact_marker_path(artifact)
+    try:
+        schema, recorded_id, recorded_signature = marker.read_text(encoding="utf-8").strip().split("\t")
+        marker_stat = marker.stat()
+    except (OSError, ValueError):
+        return False
+    return (
+        schema == "v1"
+        and recorded_id == artifact_id
+        and recorded_signature == artifact_stat_signature(stat_result)
+        and stat_result.st_mtime_ns <= marker_stat.st_mtime_ns
+    )
+
+
 def model_files_present(model: dict) -> bool:
     for artifact in model.get("required_files", []):
         path = Path(artifact["container_path"])
         try:
-            if path.stat().st_size != artifact["size"]:
+            stat_result = path.stat()
+            if stat_result.st_size != artifact["size"]:
                 return False
         except OSError:
+            return False
+        marker = artifact_marker_path(artifact)
+        if marker.exists():
+            if not artifact_marker_matches(artifact, stat_result):
+                return False
+        elif prestage_state()["state"] != "completed":
+            # Legacy or explicitly un-prestaged exact-size files remain usable
+            # once the background pass completes. Requested artifacts always
+            # receive markers before successful prestaging is published.
             return False
     return True
 

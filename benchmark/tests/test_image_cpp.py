@@ -164,16 +164,22 @@ class ImageCppTests(unittest.TestCase):
         )
 
         self.assertIn(runtime["base_image"]["reference"], dockerfile)
+        self.assertIn('"huggingface_hub[cli]"', dockerfile)
+        self.assertIn("COPY download-artifacts.sh /prefer-download-artifacts.sh", dockerfile)
         self.assertIn("container_name: prefer-image", compose)
         self.assertIn("${IMAGE_PORT:-8082}:8080", compose)
         self.assertIn("IMAGE_SERVER_CONFIG=${IMAGE_SERVER_CONFIG:-}", compose)
         self.assertIn("IMAGE_PRESTAGE_MODELS=${IMAGE_PRESTAGE_MODELS:-}", compose)
+        self.assertIn("IMAGE_DOWNLOAD_JOBS=${IMAGE_DOWNLOAD_JOBS:-4}", compose)
         self.assertIn("type=raw,value=image-cuda12", workflow)
         self.assertIn("type=sha,prefix=image-cuda12-sha-", workflow)
         self.assertIn("platforms: linux/amd64", workflow)
         self.assertNotIn("linux/arm64", workflow)
         self.assertIn("prefer-image-deployment-inventory-${{ github.sha }}", workflow)
-        self.assertIn(" || return $?", downloader)
+        self.assertIn("benchmark.tests.test_artifact_downloads", workflow)
+        self.assertIn("prefer_download_hf_artifact", downloader)
+        self.assertIn("image_download_model_keys", downloader)
+        self.assertNotIn("curl ", downloader)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+source /prefer-download-artifacts.sh
 source /model-downloads.generated.sh
 
 server_config="${AUDIO_SERVER_CONFIG:-/app/server.json}"
@@ -19,6 +20,7 @@ if [ -z "$requested" ]; then
   fi
 fi
 declare -A seen=()
+model_keys=()
 IFS=',' read -ra keys <<< "$requested"
 for key in "${keys[@]}"; do
   key="${key//[[:space:]]/}"
@@ -26,8 +28,9 @@ for key in "${keys[@]}"; do
     continue
   fi
   seen["$key"]=1
-  audio_download_model_key "$key"
+  model_keys+=("$key")
 done
+audio_download_model_keys "${model_keys[@]}"
 
 echo "[audio-entrypoint] starting audio.cpp server with $server_config"
 exec /app/entrypoint.sh server --config "$server_config" "$@"

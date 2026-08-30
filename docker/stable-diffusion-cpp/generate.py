@@ -22,6 +22,26 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def artifact_download_identity(artifact: dict) -> dict:
+    return {
+        "repo": artifact["repo"],
+        "revision": artifact["revision"],
+        "path": artifact["path"],
+        "size": artifact["size"],
+        "sha256": artifact["sha256"],
+    }
+
+
+def artifact_download_id(artifact: dict) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            artifact_download_identity(artifact),
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+
+
 def container_path(artifact: dict) -> str:
     return f"/models/{artifact['repo']}/{artifact['path']}"
 
@@ -31,6 +51,7 @@ def load_lanes() -> tuple[list[dict], dict[str, dict], dict[str, dict]]:
     by_key: dict[str, dict] = {}
     primary_by_id: dict[str, dict] = {}
     seen_ids: set[str] = set()
+    artifacts_by_destination: dict[tuple[str, str], dict] = {}
     for path in sorted(MODELS_ROOT.glob("*/*/model.json")):
         source = load_json(path)
         family, model_slug, _ = path.relative_to(MODELS_ROOT).parts
@@ -82,6 +103,14 @@ def load_lanes() -> tuple[list[dict], dict[str, dict], dict[str, dict]]:
                     or ".." in artifact_path.parts
                 ):
                     raise ValueError(f"{key}: artifact path must remain relative")
+                destination = (repo, artifact_value)
+                identity = artifact_download_identity(artifact)
+                previous = artifacts_by_destination.get(destination)
+                if previous is not None and previous != identity:
+                    raise ValueError(
+                        f"{key}: artifact destination {repo}/{artifact_value} has conflicting immutable identities"
+                    )
+                artifacts_by_destination[destination] = identity
                 argument = artifact.get("argument")
                 if not isinstance(argument, str) or not argument.startswith("--"):
                     raise ValueError(f"{key}: artifact argument must be a long option")
@@ -411,73 +440,56 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
 
 def download_script(lanes: list[dict]) -> str:
     primary_keys = ",".join(lane["key"] for lane in lanes if lane["primary"])
-    cases = []
+    model_cases = []
     for lane in lanes:
-        commands = []
+        artifact_ids = " ".join(
+            json.dumps(artifact_download_id(artifact)) for artifact in lane["artifacts"]
+        )
+        model_cases.append(
+            f"  {lane['key']})\n    printf '%s\\n' {artifact_ids}\n    ;;"
+        )
+
+    artifacts: dict[tuple[str, str], dict] = {}
+    for lane in lanes:
         for artifact in lane["artifacts"]:
-            commands.append(
-                "    image_download_artifact "
-                + " ".join(
-                    json.dumps(value)
-                    for value in (
-                        artifact["repo"],
-                        artifact["revision"],
-                        artifact["path"],
-                        str(artifact["size"]),
-                        artifact["sha256"],
-                    )
-                )
-                + " || return $?"
-            )
-        cases.append(f"  {lane['key']})\n" + "\n".join(commands) + "\n    ;;")
+            artifacts.setdefault((artifact["repo"], artifact["path"]), artifact)
+    artifact_cases = []
+    for artifact in artifacts.values():
+        artifact_id = artifact_download_id(artifact)
+        artifact_cases.append(
+            f"  {artifact_id})\n"
+            f"    prefer_download_hf_artifact \"image-download\" \"$1\" "
+            f"{json.dumps(artifact['repo'])} {json.dumps(artifact['revision'])} "
+            f"{json.dumps(artifact['path'])} {artifact['size']} {json.dumps(artifact['sha256'])}\n"
+            "    ;;"
+        )
     return f'''#!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE_GENERATED_MODEL_KEYS={json.dumps(primary_keys)}
+readonly IMAGE_GENERATED_MODEL_KEYS={json.dumps(primary_keys)}
 
-image_download_artifact() {{
-  local repo="$1" revision="$2" path="$3" expected_size="$4" expected_sha="$5"
-  local destination="/models/${{repo}}/${{path}}"
-  local partial="${{destination}}.partial.$$"
-  mkdir -p "$(dirname "$destination")"
-  if [ -f "$destination" ]; then
-    local existing_size existing_sha
-    existing_size="$(stat -c %s "$destination")"
-    existing_sha="$(sha256sum "$destination" | awk '{{print $1}}')"
-    if [ "$existing_size" = "$expected_size" ] && [ "$existing_sha" = "$expected_sha" ]; then
-      echo "[image-download] verified $repo/$path"
-      return
-    fi
-    echo "[image-download] replacing invalid $repo/$path" >&2
-    rm -f "$destination"
-  fi
-  local auth=()
-  if [ -n "${{HF_TOKEN:-}}" ]; then
-    auth=(-H "Authorization: Bearer $HF_TOKEN")
-  fi
-  trap 'rm -f "$partial"' RETURN
-  curl --fail --location --retry 5 --retry-all-errors "${{auth[@]}}" \
-    "https://huggingface.co/${{repo}}/resolve/${{revision}}/${{path}}?download=true" \
-    --output "$partial"
-  local actual_size actual_sha
-  actual_size="$(stat -c %s "$partial")"
-  actual_sha="$(sha256sum "$partial" | awk '{{print $1}}')"
-  if [ "$actual_size" != "$expected_size" ] || [ "$actual_sha" != "$expected_sha" ]; then
-    echo "[image-download] integrity failure for $repo/$path" >&2
-    return 1
-  fi
-  mv "$partial" "$destination"
-  trap - RETURN
+image_model_artifact_ids() {{
+  case "$1" in
+{chr(10).join(model_cases)}
+    *) echo "[image-download] unknown catalog key: $1" >&2; return 2 ;;
+  esac
+}}
+
+image_download_artifact_id() {{
+  case "$1" in
+{chr(10).join(artifact_cases)}
+    *) echo "[image-download] unknown artifact id: $1" >&2; return 2 ;;
+  esac
+}}
+
+image_download_model_keys() {{
+  prefer_download_model_keys \
+    "image-download" "${{IMAGE_DOWNLOAD_JOBS:-4}}" 8 \
+    image_model_artifact_ids image_download_artifact_id "$@"
 }}
 
 image_download_model_key() {{
-  case "$1" in
-{chr(10).join(cases)}
-  *)
-    echo "[image-download] unknown catalog key: $1" >&2
-    return 2
-    ;;
-  esac
+  image_download_model_keys "$1"
 }}
 '''
 

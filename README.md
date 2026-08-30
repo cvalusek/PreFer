@@ -129,8 +129,9 @@ Useful knobs:
   intentionally does not pass it and remains Hugging Face-only.
 - `HF_TOKEN` improves Hugging Face rate limits.
 - `HF_HUB_DISABLE_XET` and `HF_XET_*` transfer controls can disable or bound
-  Xet downloads on constrained Docker Desktop installations; they are blank by
-  default in `.env.example`.
+  Xet downloads on constrained Docker Desktop installations. The example
+  values are blank; Audio and Image use their image default of high-performance
+  Xet unless that setting is overridden.
 - `LLAMA_ARG_MODELS_PRESET` forces a specific preset instead of VRAM detection.
 - `LLAMA_ARG_MODELS_MAX` controls how many routed models may be loaded at once.
   The normal Compose path defaults to `1`; see the exact
@@ -146,6 +147,8 @@ Useful knobs:
   prestage sidecar when `AUDIO_PRESTAGE_MODELS` is blank.
 - `AUDIO_PRESTAGE_MODELS` selects pinned audio packages to stage. Blank or
   unset follows the selected server config; use `none` to skip downloads.
+- `AUDIO_DOWNLOAD_JOBS` bounds independent audio artifact transfers from 1 to
+  8 (default `4`). Shared component paths are deduplicated before work starts.
 - `PREFER_AUDIO_MODEL_VOLUME` and `PREFER_AUDIO_VOICE_VOLUME` name the audio
   model and server-side voice-library volumes.
 - `IMAGE_PORT` sets the image service host port (default `8082`).
@@ -153,7 +156,14 @@ Useful knobs:
   uses the all-capabilities default.
 - `IMAGE_PRESTAGE_MODELS` selects pinned image lanes to stage. Blank follows
   the selected config; use `none` to skip downloads.
+- `IMAGE_DOWNLOAD_JOBS` bounds independent image artifact transfers from 1 to
+  8 (default `4`). Image discovery remains available while those jobs run.
 - `PREFER_IMAGE_MODEL_VOLUME` names the persistent image `/models` volume.
+
+Audio and image staging use Hugging Face's `hf` CLI and Xet on their separate
+model volumes. Interrupted transfers resume from hidden, stable staging paths;
+size and SHA-256 are verified before atomic publication. A verified completion
+marker avoids rehashing unchanged multi-gigabyte files on every restart.
 
 ## Contract and benchmark harness
 

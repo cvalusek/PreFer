@@ -25,6 +25,9 @@ jobs:
       - name: Test lazy image router
         run: python -m unittest discover -s docker/stable-diffusion-cpp/tests -v
 
+      - name: Test resumable artifact downloads
+        run: python -m unittest benchmark.tests.test_artifact_downloads -v
+
   build-and-push:
     needs: verify
     runs-on: ubuntu-latest

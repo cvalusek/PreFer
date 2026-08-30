@@ -68,6 +68,14 @@ SDXL does not advertise masks, inpainting, or ControlNet. stable-diffusion.cpp
 documents its current ControlNet path for SD 1.5, so adding that capability
 requires a separate exact runtime/model smoke.
 
+Artifact staging uses Hugging Face's `hf` CLI and Xet. Downloads land in stable
+hidden paths on the image model volume, so stopping the container preserves
+resumable `.incomplete` state. Exact size and SHA-256 are checked before a
+same-volume atomic rename publishes a component. Stat-bound completion markers
+avoid hashing unchanged multi-gigabyte files on every restart; legacy files are
+hashed once when their selected lane is first staged. Shared encoders and VAEs
+are deduplicated across model keys before bounded parallel work begins.
+
 The catalog is configuration-complete but the hardware routes remain
 `configuration-only` until their first exact-card load, generation/edit,
 memory, and output-quality smoke. FLUX.2 Klein also retains a VERIFY item for
@@ -127,9 +135,16 @@ Environment variables:
   default.
 - `IMAGE_PRESTAGE_MODELS` overrides the sibling prestage manifest. Blank uses
   the selected config; `none` skips downloads.
-- `HF_TOKEN` is passed only to authenticated Hugging Face downloads.
+- `IMAGE_DOWNLOAD_JOBS` accepts 1 through 8 independent artifact transfers and
+  defaults to 4.
+- `HF_TOKEN`, `HF_HUB_DISABLE_XET`, and the `HF_XET_*` controls are passed to
+  Hugging Face staging. Xet high-performance mode is enabled by default.
 
-The local Compose path is Hugging Face-only and does not configure S3.
+The local Compose path is Hugging Face-only and does not configure S3. Image
+discovery still starts immediately and does not wait for background staging.
+Requests wait only for their selected files and verification markers. An
+explicit `none` remains a no-download choice; pre-existing exact-size files
+without markers become usable after that empty background pass completes.
 
 ## Generated inventory
 
@@ -139,8 +154,9 @@ Source ownership is split so no giant hand-edited catalog is required:
 - `models/<family>/<model>/model.json` owns model-wide facts and quant lanes.
 - `deployment-bundles.json` owns related capability bundles.
 - `deployment-scenarios/` owns hardware lane selection.
-- `generate.py` emits configs, prestage manifests, the downloader, and
-  `deployment-inventory.generated.json`.
+- `download-artifacts.sh` owns the checked-in resumable transfer behavior.
+- `generate.py` emits configs, prestage manifests, the artifact resolver/map
+  in `model-downloads.generated.sh`, and `deployment-inventory.generated.json`.
 
 Regenerate and verify with:
 
@@ -148,6 +164,7 @@ Regenerate and verify with:
 python docker/stable-diffusion-cpp/generate.py
 python docker/stable-diffusion-cpp/generate.py --check
 python -m unittest discover -s docker/stable-diffusion-cpp/tests -v
+python -m unittest benchmark.tests.test_artifact_downloads -v
 ```
 
 The image embeds the NeurOn provisioning contract at

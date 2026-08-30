@@ -2,15 +2,24 @@ ARG AUDIO_CPP_BASE_IMAGE=ghcr.io/0xshug0/audio.cpp:full-cpu-20260828-6d530f4@sha
 FROM ${AUDIO_CPP_BASE_IMAGE}
 
 USER root
-RUN mkdir -p /models /voices \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates python3-pip util-linux \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m pip install --no-cache-dir --break-system-packages -U "huggingface_hub[cli]" \
+    && mkdir -p /models /voices \
     && chown ubuntu:ubuntu /models /voices
+
+ENV HF_HOME=/models/.prefer-cache/huggingface \
+    HF_XET_HIGH_PERFORMANCE=1 \
+    PYTHONUNBUFFERED=1
 
 COPY server.cpu.generated.json /app/server.json
 COPY deployment-inventory.generated.json /deployment-inventory.json
+COPY download-artifacts.sh /prefer-download-artifacts.sh
 COPY model-downloads.generated.sh /model-downloads.generated.sh
 COPY entrypoint.sh /prefer-audio-entrypoint.sh
-RUN sed -i 's/\r$//' /model-downloads.generated.sh /prefer-audio-entrypoint.sh \
-    && chmod +x /model-downloads.generated.sh /prefer-audio-entrypoint.sh
+RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-audio-entrypoint.sh \
+    && chmod +x /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-audio-entrypoint.sh
 
 LABEL io.prefer.runtime="audio.cpp" \
       io.prefer.audio.backend="cpu" \

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+source /prefer-download-artifacts.sh
 source /model-downloads.generated.sh
 
 server_config="${IMAGE_SERVER_CONFIG:-/app/server.json}"
@@ -23,6 +24,7 @@ rm -f /tmp/prefer-image-prestage.status /tmp/prefer-image-prestage.status.tmp
 (
   set +e
   declare -A seen=()
+  model_keys=()
   status=0
   IFS=',' read -ra keys <<< "$requested"
   for key in "${keys[@]}"; do
@@ -31,12 +33,10 @@ rm -f /tmp/prefer-image-prestage.status /tmp/prefer-image-prestage.status.tmp
       continue
     fi
     seen["$key"]=1
-    image_download_model_key "$key"
-    status=$?
-    if [ "$status" -ne 0 ]; then
-      break
-    fi
+    model_keys+=("$key")
   done
+  image_download_model_keys "${model_keys[@]}"
+  status=$?
   printf '%s\n' "$status" > /tmp/prefer-image-prestage.status.tmp
   mv /tmp/prefer-image-prestage.status.tmp /tmp/prefer-image-prestage.status
   exit "$status"

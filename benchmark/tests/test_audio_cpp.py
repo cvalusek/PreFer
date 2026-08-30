@@ -170,6 +170,8 @@ class AudioCppTests(unittest.TestCase):
             dockerfile_text = (AUDIO_ROOT / dockerfile).read_text(encoding="utf-8")
             self.assertIn(reference, dockerfile_text)
             self.assertIn("--start-period=4h", dockerfile_text)
+            self.assertIn('"huggingface_hub[cli]"', dockerfile_text)
+            self.assertIn("COPY download-artifacts.sh /prefer-download-artifacts.sh", dockerfile_text)
             self.assertNotIn("ENV AUDIO_PRESTAGE_MODELS", dockerfile_text)
             self.assertEqual(set(runtime["base_images"][variant]["platform_manifests"]), {"linux/amd64", "linux/arm64"})
 
@@ -265,9 +267,12 @@ class AudioCppTests(unittest.TestCase):
         self.assertIn("${AUDIO_PORT:-8081}:8080", compose)
         self.assertIn("AUDIO_SERVER_CONFIG=${AUDIO_SERVER_CONFIG:-}", compose)
         self.assertIn("AUDIO_PRESTAGE_MODELS=${AUDIO_PRESTAGE_MODELS:-}", compose)
+        self.assertIn("AUDIO_DOWNLOAD_JOBS=${AUDIO_DOWNLOAD_JOBS:-4}", compose)
+        self.assertIn("HF_XET_HIGH_PERFORMANCE=${HF_XET_HIGH_PERFORMANCE:-1}", compose)
         self.assertIn("type=raw,value=audio-${{ matrix.variant }}", workflow)
         self.assertIn("type=sha,prefix=audio-${{ matrix.variant }}-sha-", workflow)
         self.assertIn("prefer-audio-deployment-inventory-${{ github.sha }}", workflow)
+        self.assertIn("benchmark.tests.test_artifact_downloads", workflow)
         self.assertIn("type=raw,value=latest", llama_workflow)
         self.assertIn("type=raw,value=llama-cuda", llama_workflow)
 

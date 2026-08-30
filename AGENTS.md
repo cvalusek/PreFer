@@ -772,6 +772,55 @@ or tune DRY further before doing so.
   explicit no-E4B-draft compatibility preset is the b9843/Pascal fallback.
   Scrubbed evidence is under `benchmark/baselines/`.
 
+## Audio and image artifact downloads
+
+Audio and image deliberately share transfer behavior without sharing a Docker
+build context. `docker/audio-cpp/download-artifacts.sh` and
+`docker/stable-diffusion-cpp/download-artifacts.sh` are checked-in,
+byte-for-byte copies; the downloader integration test enforces that parity.
+Keep both copies in the same change. Moving the helper to a root-level common
+path would require changing both Docker build contexts and both workflow path
+filters, otherwise a helper-only change could publish neither runtime. The
+generated `model-downloads.generated.sh` files remain runtime-owned maps from
+model keys to immutable artifact IDs and exact transfer metadata.
+
+Both runtime images install the same `hf` CLI used by llama.cpp, keep
+`HF_HOME` on their own `/models` volume, and enable Xet high-performance mode
+by default. Audio and image do not inherit llama's optional S3 cache. Compose
+passes `HF_TOKEN`, `HF_HUB_DISABLE_XET`, and the existing `HF_XET_*` tuning
+variables to each service. `AUDIO_DOWNLOAD_JOBS` and `IMAGE_DOWNLOAD_JOBS`
+default to four and accept only 1 through 8. Generators reject two immutable
+identities that target the same final repository/path; selected model keys are
+resolved and deduplicated to artifact IDs before batches launch. Batches join
+in catalog order, report the first failure in that stable order, and do not
+launch a later batch after a failed one.
+
+Each artifact uses a stable hidden staging directory under
+`/models/.prefer-cache/downloads-v2/`. `hf download --local-dir` owns its
+resumable `.incomplete` state there; never add PID-scoped cleanup or delete the
+staging tree on transfer failure. A completed staging file must pass the
+catalog byte size and SHA-256 before `mv` atomically replaces the final path on
+the same volume. An invalid staged *completed* file may be removed so the next
+`hf` call repairs it, but any separate `.incomplete` state is retained. An
+invalid existing final remains in place until its verified replacement is
+ready, so a failed repair cannot destroy the prior path.
+
+Successful publication writes an atomic `downloads-v2/verified` marker bound
+to the artifact fingerprint and current device/inode/size. A file newer than
+its marker is rehashed. Existing installations without markers pay one exact
+SHA-256 pass, then unchanged restarts use the marker instead of rescanning
+multi-gigabyte files. A crash after file publication but before marker
+publication is safe: the next run hashes the final and repairs the marker.
+
+Image prestaging remains a background child and must never delay router
+discovery. The router reports a requested artifact staged only when its exact
+size and marker match while prestaging is active; this prevents a same-sized
+corrupt file from being loaded during repair. After a successful empty
+`IMAGE_PRESTAGE_MODELS=none` pass, an exact-size legacy file without a marker
+remains usable, preserving the explicit no-download contract. A stale marker
+never gets that fallback. Requests can proceed as soon as all artifacts for
+their selected model are published even when unrelated background jobs remain.
+
 ## S3 model cache (`S3_BUCKET_NAME`)
 
 `download-models.sh` has an optional S3 layer gated on `S3_BUCKET_NAME`.

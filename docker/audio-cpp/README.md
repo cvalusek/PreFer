@@ -86,6 +86,17 @@ configs, tokenizer, and component GGUFs are all pinned and checked. Official
 base revisions and licenses are recorded in the per-model catalogs. No Git LFS
 objects are added to this repository.
 
+Staging uses Hugging Face's `hf` CLI and Xet rather than direct `curl` URLs.
+Each artifact has a stable hidden staging path on the audio model volume, so a
+container stop retains Hugging Face's resumable `.incomplete` state. The final
+path is replaced only after exact size and SHA-256 validation, using a
+same-volume atomic rename. Unchanged artifacts then use a stat-bound completion
+marker; an existing pre-marker installation is hashed once after upgrade and
+does not pay that cost on later starts. `AUDIO_DOWNLOAD_JOBS` defaults to four
+independent artifact paths and accepts 1 through 8. Shared paths are
+deduplicated before jobs launch, and failures are joined and reported in stable
+catalog order.
+
 The default config registers all seven ids lazily, retains only one model at a
 time, and unloads an idle resident model after 30 minutes. Requests for another
 id evict the least-recently-used idle model and reload it. audio.cpp serializes
@@ -118,8 +129,12 @@ first start uses the all-capabilities default and stages every primary package.
 Set a generated server config to stage its matching sidecar, set
 `AUDIO_PRESTAGE_MODELS=none` to skip downloads, or provide a comma-separated
 subset of the prestage keys in the table above. The full default set is about
-34.5 GB. Image health checks allow four hours for this one-time staging; the
+34.5 GB. Both audio variants' health checks allow four hours for this one-time staging; the
 service becomes healthy immediately once the server is ready.
+
+Compose passes `HF_TOKEN` plus the same `HF_HUB_DISABLE_XET` and `HF_XET_*`
+controls as the llama service. Xet high-performance mode is enabled by default
+for audio staging and can be overridden for a constrained host.
 
 The CPU image is intentionally separate rather than pretending that CPU and
 CUDA are interchangeable performance tiers:
@@ -254,6 +269,7 @@ Run:
 ```bash
 python docker/audio-cpp/generate.py
 python docker/audio-cpp/generate.py --check
+python -m unittest benchmark.tests.test_artifact_downloads -v
 ```
 
 The generator emits locked CUDA/CPU defaults, every scenario config and its

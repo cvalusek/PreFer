@@ -1,5 +1,20 @@
 # PreFer changelog
 
+## Current
+
+- Artifact staging
+  - Audio and image downloads now use Hugging Face's Xet-aware `hf` client with resumable state on each runtime's persistent model volume.
+  - Added exact-path deduplication and bounded parallel artifact staging: four jobs by default, configurable from one through eight.
+  - Kept immutable revisions, exact byte-size checks, first-install SHA-256 verification, and same-volume atomic publication.
+  - Added verified completion markers so unchanged multi-gigabyte artifacts are not rehashed on every container restart.
+- Audio
+  - Replaced sequential direct-URL transfers with resumable, component-parallel staging while preserving config-aware prestage selection and the separate audio model volume.
+- Image
+  - Interrupted downloads now resume instead of losing PID-scoped partial files when the container stops.
+  - Discovery still starts immediately; generation and editing wait only for the selected model's staged artifacts.
+- Local Compose
+  - Added `AUDIO_DOWNLOAD_JOBS` and `IMAGE_DOWNLOAD_JOBS` plus Hugging Face token and Xet controls for both runtime services.
+
 ## sha-9a404b2
 
 - Images

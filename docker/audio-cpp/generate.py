@@ -23,10 +23,31 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def artifact_download_identity(artifact: dict) -> dict:
+    return {
+        "repo": artifact["repo"],
+        "revision": artifact["revision"],
+        "path": artifact["path"],
+        "size": artifact["size"],
+        "sha256": artifact["sha256"],
+    }
+
+
+def artifact_download_id(artifact: dict) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            artifact_download_identity(artifact),
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+
+
 def model_lanes() -> list[dict]:
     lanes: list[dict] = []
     seen_keys: set[str] = set()
     seen_ids: set[str] = set()
+    artifacts_by_destination: dict[tuple[str, str], dict] = {}
     for path in sorted(MODELS_ROOT.glob("*/*/model.json")):
         source = load_json(path)
         relative = path.relative_to(MODELS_ROOT)
@@ -55,12 +76,36 @@ def model_lanes() -> list[dict]:
             if not isinstance(artifacts, list) or not artifacts:
                 raise ValueError(f"{key}: at least one artifact is required")
             for artifact in artifacts:
+                repo = artifact.get("repo")
+                if not isinstance(repo, str) or not re.fullmatch(
+                    r"[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*",
+                    repo,
+                ):
+                    raise ValueError(f"{key}: artifact repo must be a safe owner/name")
                 if not re.fullmatch(r"[0-9a-f]{40}", artifact["revision"]):
                     raise ValueError(f"{key}: artifact revision must be an immutable SHA")
                 if not re.fullmatch(r"[0-9a-f]{64}", artifact["sha256"]):
                     raise ValueError(f"{key}: artifact sha256 is invalid")
                 if not isinstance(artifact["size"], int) or artifact["size"] <= 0:
                     raise ValueError(f"{key}: artifact size must be positive")
+                artifact_value = artifact.get("path")
+                artifact_path = PurePosixPath(str(artifact_value or ""))
+                if (
+                    not isinstance(artifact_value, str)
+                    or not artifact_value
+                    or "\\" in artifact_value
+                    or artifact_path.is_absolute()
+                    or ".." in artifact_path.parts
+                ):
+                    raise ValueError(f"{key}: artifact path must remain relative")
+                destination = (repo, artifact_value)
+                identity = artifact_download_identity(artifact)
+                previous = artifacts_by_destination.get(destination)
+                if previous is not None and previous != identity:
+                    raise ValueError(
+                        f"{key}: artifact destination {repo}/{artifact_value} has conflicting immutable identities"
+                    )
+                artifacts_by_destination[destination] = identity
             artifact_repos = {artifact["repo"] for artifact in artifacts}
             if len(artifact_repos) != 1:
                 raise ValueError(f"{key}: all package artifacts must share one repository")
@@ -454,63 +499,56 @@ def deployment_inventory(
 
 def download_script(lanes: list[dict]) -> str:
     keys = ",".join(lane["key"] for lane in lanes if lane["primary"])
-    cases = []
+    model_cases = []
     for lane in lanes:
-        commands = []
+        artifact_ids = " ".join(
+            json.dumps(artifact_download_id(artifact)) for artifact in lane["artifacts"]
+        )
+        model_cases.append(
+            f"  {lane['key']})\n    printf '%s\\n' {artifact_ids}\n    ;;"
+        )
+
+    artifacts: dict[tuple[str, str], dict] = {}
+    for lane in lanes:
         for artifact in lane["artifacts"]:
-            commands.append(
-                f"    audio_download_artifact {json.dumps(lane['key'])} "
-                f"{json.dumps(artifact['repo'])} {json.dumps(artifact['revision'])} "
-                f"{json.dumps(artifact['path'])} {artifact['size']} {json.dumps(artifact['sha256'])}"
-            )
-        cases.append(f"  {lane['key']})\n{chr(10).join(commands)}\n    ;;")
+            artifacts.setdefault((artifact["repo"], artifact["path"]), artifact)
+    artifact_cases = []
+    for artifact in artifacts.values():
+        artifact_id = artifact_download_id(artifact)
+        artifact_cases.append(
+            f"  {artifact_id})\n"
+            f"    prefer_download_hf_artifact \"audio-download\" \"$1\" "
+            f"{json.dumps(artifact['repo'])} {json.dumps(artifact['revision'])} "
+            f"{json.dumps(artifact['path'])} {artifact['size']} {json.dumps(artifact['sha256'])}\n"
+            "    ;;"
+        )
     return f'''#!/usr/bin/env bash
 set -euo pipefail
 
 readonly AUDIO_GENERATED_MODEL_KEYS={json.dumps(keys)}
 
-audio_verify_artifact() {{
-  local path="$1"
-  local expected_size="$2"
-  local expected_sha256="$3"
-  [ -f "$path" ] || return 1
-  [ "$(stat -c '%s' "$path")" = "$expected_size" ] || return 1
-  [ "$(sha256sum "$path" | cut -d ' ' -f 1)" = "$expected_sha256" ]
+audio_model_artifact_ids() {{
+  case "$1" in
+{chr(10).join(model_cases)}
+    *) echo "[audio-download] unknown model key: $1" >&2; return 2 ;;
+  esac
 }}
 
-audio_download_artifact() {{
-  local key="$1"
-  local repo="$2"
-  local revision="$3"
-  local artifact="$4"
-  local expected_size="$5"
-  local expected_sha256="$6"
-  local destination="/models/$repo/$artifact"
-  local partial="${{destination}}.partial"
-  local url="https://huggingface.co/$repo/resolve/$revision/$artifact?download=true"
+audio_download_artifact_id() {{
+  case "$1" in
+{chr(10).join(artifact_cases)}
+    *) echo "[audio-download] unknown artifact id: $1" >&2; return 2 ;;
+  esac
+}}
 
-  mkdir -p "$(dirname "$destination")"
-  if audio_verify_artifact "$destination" "$expected_size" "$expected_sha256"; then
-    echo "[audio-download] $key: exact artifact already present"
-    return
-  fi
-
-  rm -f "$destination"
-  echo "[audio-download] $key: downloading pinned artifact"
-  curl --fail --location --retry 5 --retry-all-errors --continue-at - --output "$partial" "$url"
-  if ! audio_verify_artifact "$partial" "$expected_size" "$expected_sha256"; then
-    echo "[audio-download] $key: size or SHA-256 validation failed" >&2
-    rm -f "$partial"
-    return 1
-  fi
-  mv -f "$partial" "$destination"
+audio_download_model_keys() {{
+  prefer_download_model_keys \
+    "audio-download" "${{AUDIO_DOWNLOAD_JOBS:-4}}" 8 \
+    audio_model_artifact_ids audio_download_artifact_id "$@"
 }}
 
 audio_download_model_key() {{
-  case "$1" in
-{chr(10).join(cases)}
-    *) echo "[audio-download] unknown model key: $1" >&2; return 2 ;;
-  esac
+  audio_download_model_keys "$1"
 }}
 '''
 
