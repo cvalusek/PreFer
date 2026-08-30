@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "provider": "runpod",
+  "lanes": {
+    "flux-2-klein-4b": "flux-2-klein-4b-bf16-q8",
+    "z-image-turbo": "z-image-turbo-q8",
+    "qwen-image": "qwen-image-q6",
+    "qwen-image-edit-2511": "qwen-image-edit-2511-q6",
+    "sdxl-1.0": "sdxl-1.0-fp16"
+  },
+  "bundles": ["general", "fast", "generation", "edit", "quality"],
+  "single_models": "all",
+  "compatibility": {"container_runtime": "nvidia", "provisioning_api": "https://docs.runpod.io/api-reference/pods/POST/pods"},
+  "verification": "configuration-only",
+  "variants": [
+    {"output_root": "runpod/a40/1x", "hardware": {"gpu_slug": "a40", "gpu_name": "A40", "provider_gpu_type_id": "NVIDIA A40", "gpu_count": 1, "vram_gb_each": 48, "architecture": "Ampere", "observed_host_ram_gb": 50, "observed_vcpu": 9, "advertised_hourly_usd_per_gpu": 0.44, "pricing_observed_on": "2026-08-24", "pricing_reference": "https://www.runpod.io/pricing"}},
+    {"output_root": "runpod/l40/1x", "hardware": {"gpu_slug": "l40", "gpu_name": "L40", "provider_gpu_type_id": "NVIDIA L40", "gpu_count": 1, "vram_gb_each": 48, "architecture": "Ada Lovelace", "observed_host_ram_gb": 94, "observed_vcpu": 8, "advertised_hourly_usd_per_gpu": 0.82, "pricing_observed_on": "2026-08-24", "pricing_reference": "https://www.runpod.io/pricing"}},
+    {"output_root": "runpod/l40s/1x", "hardware": {"gpu_slug": "l40s", "gpu_name": "L40S", "provider_gpu_type_id": "NVIDIA L40S", "gpu_count": 1, "vram_gb_each": 48, "architecture": "Ada Lovelace", "observed_host_ram_gb": 94, "observed_vcpu": 16, "advertised_hourly_usd_per_gpu": 0.99, "pricing_observed_on": "2026-08-24", "pricing_reference": "https://www.runpod.io/pricing"}},
+    {"output_root": "runpod/pro-6000-mig-48gb/1x", "hardware": {"gpu_slug": "pro-6000-mig-48gb", "gpu_name": "RTX PRO 6000 MIG 48GB", "provider_gpu_type_id": "NVIDIA RTX PRO 6000 Blackwell Server Edition MIG 2g.48gb", "gpu_count": 1, "vram_gb_each": 48, "architecture": "Blackwell", "observed_host_ram_gb": 62, "observed_vcpu": 8, "advertised_hourly_usd_per_gpu": 1.09, "pricing_observed_on": "2026-08-24", "pricing_reference": "https://www.runpod.io/pricing"}},
+    {"output_root": "runpod/rtx-6000-ada/1x", "hardware": {"gpu_slug": "rtx-6000-ada", "gpu_name": "RTX 6000 Ada", "provider_gpu_type_id": "NVIDIA RTX 6000 Ada Generation", "gpu_count": 1, "vram_gb_each": 48, "architecture": "Ada Lovelace", "observed_host_ram_gb": 167, "observed_vcpu": 10, "advertised_hourly_usd_per_gpu": 0.84, "pricing_observed_on": "2026-08-24", "pricing_reference": "https://www.runpod.io/pricing"}},
+    {"output_root": "runpod/rtx-a6000/1x", "hardware": {"gpu_slug": "rtx-a6000", "gpu_name": "RTX A6000", "provider_gpu_type_id": "NVIDIA RTX A6000", "gpu_count": 1, "vram_gb_each": 48, "architecture": "Ampere", "observed_host_ram_gb": 50, "observed_vcpu": 9, "advertised_hourly_usd_per_gpu": 0.53, "pricing_observed_on": "2026-08-24", "pricing_reference": "https://www.runpod.io/pricing"}}
+  ]
+}

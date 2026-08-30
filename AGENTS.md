@@ -6,14 +6,16 @@ read this before changing presets, the Dockerfile, or the detection scripts.
 
 ## Project overview
 
-PreFer: sibling llama.cpp and audio.cpp containers for self-hosted inference.
+PreFer: sibling llama.cpp, audio.cpp, and stable-diffusion.cpp containers for
+self-hosted inference.
 `docker/llama-cpp/` serves LLMs on local, RunPod, and AWS hardware and hosts
 Gemma 4, Qwen3.5/Qwen3.6/Qwen3.8,
 Ornith 1.5, Nemotron 3.5 Lightning, Muse Glimmer, GLM, and DeepSeek V4 routes via
 `llama-server` router mode, with models
 downloaded from Hugging Face on first start. `docker/audio-cpp/` is a separate
 speech/music runtime with its own API, inventory, model volume, and release
-tags.
+tags. `docker/stable-diffusion-cpp/` provides image generation/editing with a
+separate API, inventory, model volume, and release tags.
 
 ## Published change reference
 
@@ -493,6 +495,74 @@ untested on target hardware and require their first-boot gates below:
   `ubatch-size` / `ctx-size` (see the batch note above). `tensor-split` can't
   rescue it either: 153 GB of weights already forces both 96 GB cards near-full,
   so you can't bias enough weight off device 0 to make room for a big buffer.
+
+## Image runtime
+
+`docker/stable-diffusion-cpp/` wraps upstream stable-diffusion.cpp rather than
+ComfyUI. Its supported public surface is deliberately small:
+`GET /health`, `GET /v1/models`, `POST /v1/images/generations`, and
+`POST /v1/images/edits`. Do not claim the native asynchronous `/sdcpp/v1` or
+WebUI `/sdapi/v1` surfaces until the router has a durable job-to-worker
+lifetime contract.
+
+The upstream server loads exactly one pipeline at process start and reports a
+generic model id. PreFer's Python router owns the real catalog and starts a
+private worker lazily for the request's `model`. Discovery must remain
+side-effect free: `/v1/models` must never download, warm, or load a model.
+Prestaging runs in the background and publishes state through `/health` and
+the catalog. A request waits only for its selected artifacts. The router
+serializes generation/editing, retains at most one worker, swaps on model
+change, and unloads after 30 idle minutes.
+
+Image catalog ownership mirrors the other generated runtimes:
+
+- `runtime.json` pins the upstream CUDA image index, platform manifest, and
+  source revision.
+- `models/<family>/<model>/model.json` owns request ids, capabilities,
+  licenses, lineage, runtime flags, and a quant dictionary. Every pipeline
+  component has an immutable repository revision, exact path, size, SHA-256,
+  role, and server argument.
+- `deployment-bundles.json` owns `general`, `fast`, `generation`, `edit`, and
+  `quality` groupings.
+- `deployment-scenarios/` owns AWS, RunPod, and generic local hardware lane
+  selection. Its compact source files may describe multiple hardware variants;
+  generated configs still live under
+  `server-configs/<provider>/<gpu>/<count>/` with sibling `.prestage` files.
+- `generate.py` emits every server config, prestage sidecar, the integrity-
+  checking downloader, and `deployment-inventory.generated.json`. CI runs it
+  with `--check`.
+
+The release inventory is embedded at `/deployment-inventory.json`, labeled
+with schema `prefer.image-deployment-inventory.v1`, and uploaded as
+`prefer-image-deployment-inventory-<commit-sha>`. NeurOn should select
+`IMAGE_SERVER_CONFIG` and leave `IMAGE_PRESTAGE_MODELS` blank to follow its
+sidecar. A nonblank override wins; `none` intentionally skips downloads. The
+local Compose route is Hugging Face-only and does not pass S3 settings.
+
+Current request ids are `flux-2-klein-4b`, `z-image-turbo`, `qwen-image`,
+`qwen-image-edit-2511`, and `sdxl-1.0`. Qwen Image Edit 2511 must keep
+`--model-args qwen_image_zero_cond_t=true`. Its supported stable-diffusion.cpp
+recipe uses the BF16 Qwen 2.5 VL encoder and no separate projector; do not
+substitute a GGUF encoder/projector pair without a matched smoke. SDXL
+advertises generation plus maskless img2img through the edit endpoint; it does
+not advertise masks, inpainting, or ControlNet because stable-diffusion.cpp's
+current documentation limits the known ControlNet path to SD 1.5. Adding those
+capabilities requires an exact pinned model/runtime smoke rather than inference
+from SDXL support.
+
+The pinned upstream CUDA base is
+`ghcr.io/leejet/stable-diffusion.cpp:master-cuda@sha256:dcd82f38252a32822dcd0c80672d5948df8e63bb4a3064988e0f7c2bec10c100`
+at source `be0e34480dada95f8ce9a021bbb95c5de85d67c7`. It currently provides
+Linux AMD64 only. The release workflow must not advertise ARM64 or pin the
+moving tag without its immutable digest. The image tags are `image-cuda12`
+and `image-cuda12-sha-<commit>`; they do not alter llama.cpp's `latest` tags.
+
+All initial image hardware routes are `configuration-only`. Before promotion,
+smoke the exact card/runtime/artifact tuple for load, output integrity,
+generation/edit behavior, peak VRAM/RAM, and swap/unload. Preserve the open
+FLUX.2 Klein metadata-validation contradiction as VERIFY until the pinned CUDA
+tuple produces a non-corrupt image. Pascal configs also require confirmation
+that the upstream image contains working `sm_61` kernels.
 
 ## Known upstream llama.cpp issues (not fixable via our config)
 

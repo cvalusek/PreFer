@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "bundles": {
+    "general": {
+      "description": "All pinned generation and editing capabilities for exploration",
+      "models": [
+        "flux-2-klein-4b",
+        "z-image-turbo",
+        "qwen-image",
+        "qwen-image-edit-2511",
+        "sdxl-1.0"
+      ]
+    },
+    "fast": {
+      "description": "Fast modern generation and editing routes",
+      "models": ["flux-2-klein-4b", "z-image-turbo"]
+    },
+    "generation": {
+      "description": "Text-to-image generation routes",
+      "models": ["flux-2-klein-4b", "z-image-turbo", "qwen-image", "sdxl-1.0"]
+    },
+    "edit": {
+      "description": "Instruction editing and maskless image-to-image routes",
+      "models": ["flux-2-klein-4b", "qwen-image-edit-2511", "sdxl-1.0"]
+    },
+    "quality": {
+      "description": "Qwen generation and dedicated Qwen editing routes",
+      "models": ["qwen-image", "qwen-image-edit-2511"]
+    }
+  }
+}

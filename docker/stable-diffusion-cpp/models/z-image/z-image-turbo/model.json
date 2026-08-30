@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "family": "z-image",
+  "model_slug": "z-image-turbo",
+  "shared": {
+    "id": "z-image-turbo",
+    "display_name": "Z-Image-Turbo",
+    "description": "Fast eight-step text-to-image generation",
+    "capabilities": ["generation"],
+    "license": "Apache-2.0",
+    "lineage": {
+      "derivative_repo": "leejet/Z-Image-Turbo-GGUF"
+    },
+    "args": [
+      "--cfg-scale", "1.0",
+      "--steps", "8",
+      "--sampling-method", "euler",
+      "--diffusion-fa",
+      "--vae-tiling"
+    ]
+  },
+  "quants": {
+    "q4": {
+      "key": "z-image-turbo-q4",
+      "precision": "Q4_K target / Q4_K_M text encoder",
+      "artifacts": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "leejet/Z-Image-Turbo-GGUF",
+          "revision": "c61c0e422dc8b541b7548cf33a4ef8302b0f8085",
+          "path": "z_image_turbo-Q4_K.gguf",
+          "size": 3864250304,
+          "sha256": "14b375ab4f226bc5378f68f37e899ef3c2242b8541e61e2bc1aff40976086fbd"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "black-forest-labs/FLUX.1-schnell",
+          "revision": "741f7c3ce8b383c54771c7003378a50191e9efe9",
+          "path": "ae.safetensors",
+          "size": 335304388,
+          "sha256": "afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+          "revision": "a06e946bb6b655725eafa393f4a9745d460374c9",
+          "path": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+          "size": 2497281120,
+          "sha256": "3605803b982cb64aead44f6c1b2ae36e3acdb41d8e46c8a94c6533bc4c67e597"
+        }
+      ]
+    },
+    "q6": {
+      "key": "z-image-turbo-q6",
+      "precision": "Q6_K target / Q4_K_M text encoder",
+      "artifacts": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "leejet/Z-Image-Turbo-GGUF",
+          "revision": "c61c0e422dc8b541b7548cf33a4ef8302b0f8085",
+          "path": "z_image_turbo-Q6_K.gguf",
+          "size": 5263239104,
+          "sha256": "319f627beac8059b7546f36a7b4d5097b7f4ee6a1fc37585d0f75ca1d12d01af"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "black-forest-labs/FLUX.1-schnell",
+          "revision": "741f7c3ce8b383c54771c7003378a50191e9efe9",
+          "path": "ae.safetensors",
+          "size": 335304388,
+          "sha256": "afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+          "revision": "a06e946bb6b655725eafa393f4a9745d460374c9",
+          "path": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+          "size": 2497281120,
+          "sha256": "3605803b982cb64aead44f6c1b2ae36e3acdb41d8e46c8a94c6533bc4c67e597"
+        }
+      ]
+    },
+    "q8": {
+      "key": "z-image-turbo-q8",
+      "precision": "Q8_0 target / Q8_0 text encoder",
+      "primary": true,
+      "artifacts": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "leejet/Z-Image-Turbo-GGUF",
+          "revision": "c61c0e422dc8b541b7548cf33a4ef8302b0f8085",
+          "path": "z_image_turbo-Q8_0.gguf",
+          "size": 6577440704,
+          "sha256": "df1c5baa86d1398c979495a6072dbcee79444fdb884a2445582ba0769c44e9a1"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "black-forest-labs/FLUX.1-schnell",
+          "revision": "741f7c3ce8b383c54771c7003378a50191e9efe9",
+          "path": "ae.safetensors",
+          "size": 335304388,
+          "sha256": "afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+          "revision": "a06e946bb6b655725eafa393f4a9745d460374c9",
+          "path": "Qwen3-4B-Instruct-2507-Q8_0.gguf",
+          "size": 4280405600,
+          "sha256": "391c1e410fd9f4cf2de2b510273b56a84c19ce18f4fa3bfb3774031dac4ef068"
+        }
+      ]
+    }
+  }
+}

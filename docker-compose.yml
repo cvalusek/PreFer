@@ -53,6 +53,28 @@ services:
               count: all
               capabilities: [gpu]
 
+  image:
+    container_name: prefer-image
+    build:
+      context: ./docker/stable-diffusion-cpp
+      dockerfile: Dockerfile
+    image: prefer:image-cuda12-local
+    ports:
+      - "${IMAGE_PORT:-8082}:8080"
+    volumes:
+      - prefer-image-model-cache:/models
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - IMAGE_SERVER_CONFIG=${IMAGE_SERVER_CONFIG:-}
+      - IMAGE_PRESTAGE_MODELS=${IMAGE_PRESTAGE_MODELS:-}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
 volumes:
   prefer-model-cache:
     name: ${PREFER_MODEL_VOLUME:-prefer-model-cache}
@@ -60,3 +82,5 @@ volumes:
     name: ${PREFER_AUDIO_MODEL_VOLUME:-prefer-audio-model-cache}
   prefer-audio-voices:
     name: ${PREFER_AUDIO_VOICE_VOLUME:-prefer-audio-voices}
+  prefer-image-model-cache:
+    name: ${PREFER_IMAGE_MODEL_VOLUME:-prefer-image-model-cache}

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "provider": "aws",
+  "lanes": {
+    "flux-2-klein-4b": "flux-2-klein-4b-bf16-q8",
+    "z-image-turbo": "z-image-turbo-q8",
+    "qwen-image": "qwen-image-q8",
+    "qwen-image-edit-2511": "qwen-image-edit-2511-q8",
+    "sdxl-1.0": "sdxl-1.0-fp16"
+  },
+  "bundles": ["general", "fast", "generation", "edit", "quality"],
+  "single_models": "all",
+  "variants": [
+    {
+      "output_root": "aws/g7e/2xlarge",
+      "hardware": {
+        "provider_sku": "g7e.2xlarge",
+        "gpu_slug": "rtx-pro-6000",
+        "gpu_name": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+        "gpu_count": 1,
+        "vram_gb_each": 96,
+        "architecture": "Blackwell",
+        "vcpu": 8,
+        "local_nvme_gb": 1900
+      },
+      "compatibility": {"container_runtime": "nvidia", "cuda_major": 12},
+      "verification": "configuration-only"
+    }
+  ]
+}

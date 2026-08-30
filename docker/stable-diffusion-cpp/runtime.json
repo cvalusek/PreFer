@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "runtime": {
+    "name": "stable-diffusion.cpp",
+    "source_repo": "leejet/stable-diffusion.cpp",
+    "source_revision": "be0e34480dada95f8ce9a021bbb95c5de85d67c7"
+  },
+  "base_image": {
+    "reference": "ghcr.io/leejet/stable-diffusion.cpp:master-cuda@sha256:dcd82f38252a32822dcd0c80672d5948df8e63bb4a3064988e0f7c2bec10c100",
+    "index_digest": "sha256:dcd82f38252a32822dcd0c80672d5948df8e63bb4a3064988e0f7c2bec10c100",
+    "platform_manifests": {
+      "linux/amd64": "sha256:777aa6c94fefa00dd331588cf4a05ca6fc7f43e705f8c99eea46715333a7fe08"
+    },
+    "attestation_manifest": "sha256:e749becab9c65413ce79cc2350a9df8a05adce07cfe44e06002652e53a6fc669"
+  }
+}

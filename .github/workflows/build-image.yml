@@ -1,0 +1,86 @@
+name: Build PreFer stable-diffusion.cpp image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docker/stable-diffusion-cpp/**'
+      - '.github/workflows/build-image.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify generated image configuration and inventory
+        run: python docker/stable-diffusion-cpp/generate.py --check
+
+      - name: Test lazy image router
+        run: python -m unittest discover -s docker/stable-diffusion-cpp/tests -v
+
+  build-and-push:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=image-cuda12
+            type=sha,prefix=image-cuda12-sha-,format=short
+          labels: |
+            io.prefer.runtime=stable-diffusion.cpp
+            io.prefer.image.backend=cuda12
+            io.prefer.deployment-inventory.path=/deployment-inventory.json
+            io.prefer.deployment-inventory.schema=prefer.image-deployment-inventory.v1
+
+      - name: Build and push Linux AMD64 image
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/stable-diffusion-cpp
+          file: docker/stable-diffusion-cpp/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=image-cuda12
+          cache-to: type=gha,scope=image-cuda12,mode=max
+
+  publish-inventory:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Upload image deployment inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: prefer-image-deployment-inventory-${{ github.sha }}
+          path: docker/stable-diffusion-cpp/deployment-inventory.generated.json
+          if-no-files-found: error

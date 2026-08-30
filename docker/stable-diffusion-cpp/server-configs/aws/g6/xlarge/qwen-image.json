@@ -1,0 +1,79 @@
+{
+  "host": "0.0.0.0",
+  "port": 8080,
+  "backend_host": "127.0.0.1",
+  "backend_port": 8083,
+  "backend_binary": "/sd-server",
+  "lazy_load": true,
+  "max_loaded_models": 1,
+  "idle_unload_ms": 1800000,
+  "startup_timeout_ms": 1800000,
+  "busy_timeout_ms": 3600000,
+  "backend_request_timeout_ms": 3600000,
+  "max_request_body_bytes": 268435456,
+  "models": [
+    {
+      "id": "qwen-image",
+      "display_name": "Qwen Image",
+      "family": "qwen",
+      "description": "High-quality text-to-image generation with strong text rendering",
+      "capabilities": [
+        "generation"
+      ],
+      "precision": "Q4_K_M target / Q4_K_M text encoder",
+      "license": "Apache-2.0",
+      "catalog_key": "qwen-image-q4",
+      "args": [
+        "--diffusion-model",
+        "/models/unsloth/Qwen-Image-GGUF/qwen-image-Q4_K_M.gguf",
+        "--vae",
+        "/models/Comfy-Org/Qwen-Image_ComfyUI/split_files/vae/qwen_image_vae.safetensors",
+        "--llm",
+        "/models/mradermacher/Qwen2.5-VL-7B-Instruct-GGUF/Qwen2.5-VL-7B-Instruct.Q4_K_M.gguf",
+        "--cfg-scale",
+        "2.5",
+        "--steps",
+        "50",
+        "--sampling-method",
+        "euler",
+        "--flow-shift",
+        "3",
+        "--diffusion-fa",
+        "--vae-tiling",
+        "--offload-to-cpu"
+      ],
+      "required_files": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "unsloth/Qwen-Image-GGUF",
+          "revision": "8aa13c32cf6dda8ad5cb5e3a1beb93150faa246b",
+          "path": "qwen-image-Q4_K_M.gguf",
+          "size": 13127088672,
+          "sha256": "eb2d4719dda7c73c52c1685673d173f4c1407e78688c2869352cef3ef7ba3819",
+          "container_path": "/models/unsloth/Qwen-Image-GGUF/qwen-image-Q4_K_M.gguf"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "Comfy-Org/Qwen-Image_ComfyUI",
+          "revision": "7beb7b647f04469fbe64ba8adc2bb0d7e5e9f73f",
+          "path": "split_files/vae/qwen_image_vae.safetensors",
+          "size": 253806246,
+          "sha256": "a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f",
+          "container_path": "/models/Comfy-Org/Qwen-Image_ComfyUI/split_files/vae/qwen_image_vae.safetensors"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "mradermacher/Qwen2.5-VL-7B-Instruct-GGUF",
+          "revision": "cfa2baa09946b211c107e6e104948987a64dd2c1",
+          "path": "Qwen2.5-VL-7B-Instruct.Q4_K_M.gguf",
+          "size": 4683072512,
+          "sha256": "0f00a930ba3108b6861ddadf74d8ebbd82e257c63eba728e62c3e8970f5eed94",
+          "container_path": "/models/mradermacher/Qwen2.5-VL-7B-Instruct-GGUF/Qwen2.5-VL-7B-Instruct.Q4_K_M.gguf"
+        }
+      ]
+    }
+  ]
+}

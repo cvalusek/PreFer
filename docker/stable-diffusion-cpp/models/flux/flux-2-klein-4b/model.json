@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "family": "flux",
+  "model_slug": "flux-2-klein-4b",
+  "shared": {
+    "id": "flux-2-klein-4b",
+    "display_name": "FLUX.2 Klein 4B",
+    "description": "Fast four-step generation and instruction-driven image editing",
+    "capabilities": ["generation", "edit"],
+    "license": "Apache-2.0",
+    "lineage": {
+      "base_repo": "black-forest-labs/FLUX.2-klein-4B",
+      "derivative_repo": "leejet/FLUX.2-klein-4B-GGUF"
+    },
+    "args": [
+      "--cfg-scale", "1.0",
+      "--steps", "4",
+      "--sampling-method", "euler",
+      "--diffusion-fa",
+      "--vae-tiling"
+    ]
+  },
+  "quants": {
+    "q4": {
+      "key": "flux-2-klein-4b-q4",
+      "precision": "Q4_0 target / Q4_K_M text encoder",
+      "artifacts": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "leejet/FLUX.2-klein-4B-GGUF",
+          "revision": "3b1f5a9dc3abb32238b053aeb3d823c30afdacbd",
+          "path": "flux-2-klein-4b-Q4_0.gguf",
+          "size": 2460378560,
+          "sha256": "d1023499ef3f2f82ff7c50e6778495195c1b6cc34835741778868428111f9ff4"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "black-forest-labs/FLUX.2-small-decoder",
+          "revision": "a3efc24f613ef42d9428af62fdbd6f5fd8856c4a",
+          "path": "full_encoder_small_decoder.safetensors",
+          "size": 249519092,
+          "sha256": "ea4273f02d1fafbf8e1d1c2cf6018ed8748652eb0bf34f2dd91171f16f15ab62"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "unsloth/Qwen3-4B-GGUF",
+          "revision": "22c9fc8a8c7700b76a1789366280a6a5a1ad1120",
+          "path": "Qwen3-4B-Q4_K_M.gguf",
+          "size": 2497281312,
+          "sha256": "f6f851777709861056efcdad3af01da38b31223a3ba26e61a4f8bf3a2195813a"
+        }
+      ]
+    },
+    "q8-q4": {
+      "key": "flux-2-klein-4b-q8-q4",
+      "precision": "Q8_0 target / Q4_K_M text encoder",
+      "artifacts": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "leejet/FLUX.2-klein-4B-GGUF",
+          "revision": "3b1f5a9dc3abb32238b053aeb3d823c30afdacbd",
+          "path": "flux-2-klein-4b-Q8_0.gguf",
+          "size": 4300629440,
+          "sha256": "0bba6951258ec8f92d51114a8fa13e66828297bfff58a738f52729b3ef66fa28"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "black-forest-labs/FLUX.2-small-decoder",
+          "revision": "a3efc24f613ef42d9428af62fdbd6f5fd8856c4a",
+          "path": "full_encoder_small_decoder.safetensors",
+          "size": 249519092,
+          "sha256": "ea4273f02d1fafbf8e1d1c2cf6018ed8748652eb0bf34f2dd91171f16f15ab62"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "unsloth/Qwen3-4B-GGUF",
+          "revision": "22c9fc8a8c7700b76a1789366280a6a5a1ad1120",
+          "path": "Qwen3-4B-Q4_K_M.gguf",
+          "size": 2497281312,
+          "sha256": "f6f851777709861056efcdad3af01da38b31223a3ba26e61a4f8bf3a2195813a"
+        }
+      ]
+    },
+    "bf16-q8": {
+      "key": "flux-2-klein-4b-bf16-q8",
+      "precision": "BF16 target / Q8_0 text encoder",
+      "primary": true,
+      "artifacts": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "black-forest-labs/FLUX.2-klein-4B",
+          "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+          "path": "flux-2-klein-4b.safetensors",
+          "size": 7751105712,
+          "sha256": "ec3d4e733a771f61c052fb4856c48b336c55eaf2c65487c2a1faeb9bbda7a343"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "black-forest-labs/FLUX.2-small-decoder",
+          "revision": "a3efc24f613ef42d9428af62fdbd6f5fd8856c4a",
+          "path": "full_encoder_small_decoder.safetensors",
+          "size": 249519092,
+          "sha256": "ea4273f02d1fafbf8e1d1c2cf6018ed8748652eb0bf34f2dd91171f16f15ab62"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "unsloth/Qwen3-4B-GGUF",
+          "revision": "22c9fc8a8c7700b76a1789366280a6a5a1ad1120",
+          "path": "Qwen3-4B-Q8_0.gguf",
+          "size": 4280405792,
+          "sha256": "eed555233267a33c7e8ee31682762cc7751b3f6d224039086e0e846f05fffa5d"
+        }
+      ]
+    },
+    "q8": {
+      "key": "flux-2-klein-4b-q8",
+      "precision": "Q8_0 target / Q8_0 text encoder",
+      "artifacts": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "leejet/FLUX.2-klein-4B-GGUF",
+          "revision": "3b1f5a9dc3abb32238b053aeb3d823c30afdacbd",
+          "path": "flux-2-klein-4b-Q8_0.gguf",
+          "size": 4300629440,
+          "sha256": "0bba6951258ec8f92d51114a8fa13e66828297bfff58a738f52729b3ef66fa28"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "black-forest-labs/FLUX.2-small-decoder",
+          "revision": "a3efc24f613ef42d9428af62fdbd6f5fd8856c4a",
+          "path": "full_encoder_small_decoder.safetensors",
+          "size": 249519092,
+          "sha256": "ea4273f02d1fafbf8e1d1c2cf6018ed8748652eb0bf34f2dd91171f16f15ab62"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "unsloth/Qwen3-4B-GGUF",
+          "revision": "22c9fc8a8c7700b76a1789366280a6a5a1ad1120",
+          "path": "Qwen3-4B-Q8_0.gguf",
+          "size": 4280405792,
+          "sha256": "eed555233267a33c7e8ee31682762cc7751b3f6d224039086e0e846f05fffa5d"
+        }
+      ]
+    }
+  }
+}

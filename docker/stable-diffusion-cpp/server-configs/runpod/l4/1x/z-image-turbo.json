@@ -1,0 +1,77 @@
+{
+  "host": "0.0.0.0",
+  "port": 8080,
+  "backend_host": "127.0.0.1",
+  "backend_port": 8083,
+  "backend_binary": "/sd-server",
+  "lazy_load": true,
+  "max_loaded_models": 1,
+  "idle_unload_ms": 1800000,
+  "startup_timeout_ms": 1800000,
+  "busy_timeout_ms": 3600000,
+  "backend_request_timeout_ms": 3600000,
+  "max_request_body_bytes": 268435456,
+  "models": [
+    {
+      "id": "z-image-turbo",
+      "display_name": "Z-Image-Turbo",
+      "family": "z-image",
+      "description": "Fast eight-step text-to-image generation",
+      "capabilities": [
+        "generation"
+      ],
+      "precision": "Q8_0 target / Q8_0 text encoder",
+      "license": "Apache-2.0",
+      "catalog_key": "z-image-turbo-q8",
+      "args": [
+        "--diffusion-model",
+        "/models/leejet/Z-Image-Turbo-GGUF/z_image_turbo-Q8_0.gguf",
+        "--vae",
+        "/models/black-forest-labs/FLUX.1-schnell/ae.safetensors",
+        "--llm",
+        "/models/unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-Q8_0.gguf",
+        "--cfg-scale",
+        "1.0",
+        "--steps",
+        "8",
+        "--sampling-method",
+        "euler",
+        "--diffusion-fa",
+        "--vae-tiling",
+        "--offload-to-cpu"
+      ],
+      "required_files": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "leejet/Z-Image-Turbo-GGUF",
+          "revision": "c61c0e422dc8b541b7548cf33a4ef8302b0f8085",
+          "path": "z_image_turbo-Q8_0.gguf",
+          "size": 6577440704,
+          "sha256": "df1c5baa86d1398c979495a6072dbcee79444fdb884a2445582ba0769c44e9a1",
+          "container_path": "/models/leejet/Z-Image-Turbo-GGUF/z_image_turbo-Q8_0.gguf"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "black-forest-labs/FLUX.1-schnell",
+          "revision": "741f7c3ce8b383c54771c7003378a50191e9efe9",
+          "path": "ae.safetensors",
+          "size": 335304388,
+          "sha256": "afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38",
+          "container_path": "/models/black-forest-labs/FLUX.1-schnell/ae.safetensors"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+          "revision": "a06e946bb6b655725eafa393f4a9745d460374c9",
+          "path": "Qwen3-4B-Instruct-2507-Q8_0.gguf",
+          "size": 4280405600,
+          "sha256": "391c1e410fd9f4cf2de2b510273b56a84c19ce18f4fa3bfb3774031dac4ef068",
+          "container_path": "/models/unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-Q8_0.gguf"
+        }
+      ]
+    }
+  ]
+}

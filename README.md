@@ -5,7 +5,9 @@
 PreFer packages practical self-hosted inference runtimes. Its llama.cpp image
 provides known-good LLM mixes, VRAM-aware router configs, and model staging for
 local, RunPod, and AWS hardware. Its audio.cpp images provide pinned speech,
-music-generation, and speech-to-speech routes behind a separate audio API.
+music-generation, and speech-to-speech routes behind a separate audio API. Its
+stable-diffusion.cpp image provides curated image generation and editing behind
+OpenAI-style image endpoints without requiring ComfyUI workflows.
 
 Published hosted-model and preset changes are recorded by immutable container
 SHA in the [PreFer changelog](CHANGELOG.md).
@@ -50,6 +52,11 @@ docker/
     models/<family>/<model>/  immutable audio model artifacts and lineage
     deployment-inventory.generated.json  controller-readable audio inventory
     generate.py               deterministic server/downloader/inventory generator
+  stable-diffusion-cpp/  PreFer's image generation and editing image
+    runtime.json              pinned upstream CUDA runtime and Linux platform
+    models/<family>/<model>/  immutable image pipelines and quant lanes
+    deployment-inventory.generated.json  controller-readable image inventory
+    generate.py               deterministic config/downloader/inventory generator
 aws/                  EC2 deployment (AMI + boot scripts + CDK); see aws/DESIGN.md
 .github/workflows/    Build workflows (container, AMI, and IaC build independently)
 ```
@@ -83,22 +90,31 @@ Once the server is ready:
 curl http://localhost:8080/v1/models
 ```
 
-The audio service is part of the default Compose application. Build and start
-both llama.cpp and audio.cpp with:
+The audio and image services are part of the default Compose application. Build
+and start all three runtimes with:
 
 ```bash
 docker compose up --build
 curl http://localhost:8081/v1/models
+curl http://localhost:8082/v1/models
 ```
 
 To run only one runtime, target its Compose service explicitly with
-`docker compose up prefer` or `docker compose up audio`.
+`docker compose up prefer`, `docker compose up audio`, or
+`docker compose up image`.
 
 It exposes Qwen3 TTS Base, CustomVoice, VoiceDesign, and ASR; ACE-Step 1.5;
 MiniMax Music 3; and PersonaPlex. It keeps at most one resident model and swaps
 lazily. The TTS Base model is a voice-cloning route and needs `voice_ref` plus
 `reference_text`, or a matching server-side voice library. See
 [the audio runtime guide](docker/audio-cpp/README.md) for request examples.
+
+The image service exposes FLUX.2 Klein, Z-Image-Turbo, Qwen Image, Qwen Image
+Edit 2511, and SDXL through `/v1/images/generations` and `/v1/images/edits`.
+Discovery and background prestaging do not load a model; the first request
+starts the selected worker and the router retains only one model. See
+[the image runtime guide](docker/stable-diffusion-cpp/README.md) for request
+examples and hardware lanes.
 
 ## Environment
 
@@ -132,6 +148,12 @@ Useful knobs:
   unset follows the selected server config; use `none` to skip downloads.
 - `PREFER_AUDIO_MODEL_VOLUME` and `PREFER_AUDIO_VOICE_VOLUME` name the audio
   model and server-side voice-library volumes.
+- `IMAGE_PORT` sets the image service host port (default `8082`).
+- `IMAGE_SERVER_CONFIG` selects a generated image deployment config. Blank
+  uses the all-capabilities default.
+- `IMAGE_PRESTAGE_MODELS` selects pinned image lanes to stage. Blank follows
+  the selected config; use `none` to skip downloads.
+- `PREFER_IMAGE_MODEL_VOLUME` names the persistent image `/models` volume.
 
 ## Contract and benchmark harness
 
@@ -179,7 +201,9 @@ GitHub Actions publish all runtimes to `ghcr.io/cvalusek/prefer`. The existing
 `latest` and `sha-<commit>` tags remain llama.cpp compatibility tags; explicit
 llama tags are `llama-cuda` and `llama-cuda-sha-<commit>`. Audio publishes
 `audio-cuda12`, `audio-cuda12-sha-<commit>`, `audio-cpu`, and
-`audio-cpu-sha-<commit>` without changing `latest`.
+`audio-cpu-sha-<commit>` without changing `latest`. Image generation publishes
+`image-cuda12` and `image-cuda12-sha-<commit>` for Linux AMD64; the pinned
+upstream CUDA base does not currently publish an ARM64 runtime.
 
 Additional llama models and deployment shapes
 belong in `models/` and `preset-scenarios/`; regenerate and commit their
@@ -197,6 +221,12 @@ and single-model configs; exact staging bytes; and the selected
 `AUDIO_SERVER_CONFIG`. It is embedded at the same image path and also published
 as `prefer-audio-deployment-inventory-<commit-sha>` for provisioning screens.
 
+The image release uses the same inventory path and controller pattern. It adds
+exact pipeline components and hashes, generation/edit capabilities, background
+prestaging, one-model residency, AWS/local/RunPod hardware choices, and the
+selected `IMAGE_SERVER_CONFIG`. CI publishes the JSON as
+`prefer-image-deployment-inventory-<commit-sha>`.
+
 RunPod presets are organized as `presets/runpod/<gpu>/1x/`; the initial
 multi-GPU exception is
 `presets/runpod/rtx-pro-6000/2x/deepseek-v4-flash.ini`. Generic household GPU
@@ -206,4 +236,5 @@ RAM, storage, credentials, or other private machine inventory.
 See [the llama.cpp runtime guide](docker/llama-cpp/README.md) for LLM model
 details, preset tiers, aliases, and operational notes, and
 [the audio.cpp runtime guide](docker/audio-cpp/README.md) for speech and music
-details.
+details, and [the image runtime guide](docker/stable-diffusion-cpp/README.md)
+for image generation and editing.

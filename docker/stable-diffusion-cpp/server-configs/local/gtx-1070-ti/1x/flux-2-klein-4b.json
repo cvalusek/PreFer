@@ -1,0 +1,80 @@
+{
+  "host": "0.0.0.0",
+  "port": 8080,
+  "backend_host": "127.0.0.1",
+  "backend_port": 8083,
+  "backend_binary": "/sd-server",
+  "lazy_load": true,
+  "max_loaded_models": 1,
+  "idle_unload_ms": 1800000,
+  "startup_timeout_ms": 1800000,
+  "busy_timeout_ms": 3600000,
+  "backend_request_timeout_ms": 3600000,
+  "max_request_body_bytes": 268435456,
+  "models": [
+    {
+      "id": "flux-2-klein-4b",
+      "display_name": "FLUX.2 Klein 4B",
+      "family": "flux",
+      "description": "Fast four-step generation and instruction-driven image editing",
+      "capabilities": [
+        "generation",
+        "edit"
+      ],
+      "precision": "Q4_0 target / Q4_K_M text encoder",
+      "license": "Apache-2.0",
+      "catalog_key": "flux-2-klein-4b-q4",
+      "args": [
+        "--diffusion-model",
+        "/models/leejet/FLUX.2-klein-4B-GGUF/flux-2-klein-4b-Q4_0.gguf",
+        "--vae",
+        "/models/black-forest-labs/FLUX.2-small-decoder/full_encoder_small_decoder.safetensors",
+        "--llm",
+        "/models/unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf",
+        "--cfg-scale",
+        "1.0",
+        "--steps",
+        "4",
+        "--sampling-method",
+        "euler",
+        "--diffusion-fa",
+        "--vae-tiling",
+        "--offload-to-cpu",
+        "--clip-on-cpu",
+        "--vae-on-cpu"
+      ],
+      "required_files": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "leejet/FLUX.2-klein-4B-GGUF",
+          "revision": "3b1f5a9dc3abb32238b053aeb3d823c30afdacbd",
+          "path": "flux-2-klein-4b-Q4_0.gguf",
+          "size": 2460378560,
+          "sha256": "d1023499ef3f2f82ff7c50e6778495195c1b6cc34835741778868428111f9ff4",
+          "container_path": "/models/leejet/FLUX.2-klein-4B-GGUF/flux-2-klein-4b-Q4_0.gguf"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "black-forest-labs/FLUX.2-small-decoder",
+          "revision": "a3efc24f613ef42d9428af62fdbd6f5fd8856c4a",
+          "path": "full_encoder_small_decoder.safetensors",
+          "size": 249519092,
+          "sha256": "ea4273f02d1fafbf8e1d1c2cf6018ed8748652eb0bf34f2dd91171f16f15ab62",
+          "container_path": "/models/black-forest-labs/FLUX.2-small-decoder/full_encoder_small_decoder.safetensors"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "unsloth/Qwen3-4B-GGUF",
+          "revision": "22c9fc8a8c7700b76a1789366280a6a5a1ad1120",
+          "path": "Qwen3-4B-Q4_K_M.gguf",
+          "size": 2497281312,
+          "sha256": "f6f851777709861056efcdad3af01da38b31223a3ba26e61a4f8bf3a2195813a",
+          "container_path": "/models/unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf"
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,58 @@
 # PreFer changelog
 
+## Current
+
+- Runtime images
+  - Added `image-cuda12` and `image-cuda12-sha-<commit>` for Linux AMD64.
+  - Pinned stable-diffusion.cpp source `be0e34480dada95f8ce9a021bbb95c5de85d67c7` and its immutable CUDA 12 image.
+- Local Compose
+  - Added `prefer-image` on port 8082 with a separate `prefer-image-model-cache` volume.
+  - Added image config, prestage, port, and volume environment settings.
+- Image API
+  - Added `GET /health` and side-effect-free `GET /v1/models` discovery.
+  - Added `POST /v1/images/generations` and `POST /v1/images/edits`.
+  - Added background prestaging; discovery no longer waits for downloads or model warmup.
+  - Limited residency to one lazily loaded model with model swapping and 30-minute idle unload.
+- Models
+  - Added `flux-2-klein-4b`: generation and editing; Q4, mixed Q8/Q4, Q8, and official BF16 target lanes; four-step Euler defaults.
+  - Added `z-image-turbo`: generation; Q4, Q6, and Q8 lanes; eight-step Euler defaults.
+  - Added `qwen-image`: generation; Q4, Q6, and Q8 lanes; 50-step Qwen defaults.
+  - Added `qwen-image-edit-2511`: editing; Q4, Q6, and Q8 targets with the required BF16 encoder; 40-step Qwen defaults and `qwen_image_zero_cond_t=true`.
+  - Added `sdxl-1.0`: FP16 generation and maskless img2img; masks, inpainting, and ControlNet are not advertised.
+- Deployment inventory
+  - Added exact runtime, model, quant, component, revision, size, SHA-256, capability, config, prestage, and hardware metadata at `/deployment-inventory.json`.
+  - Added `general`, `fast`, `generation`, `edit`, and `quality` bundles plus single-model configs.
+  - Added a commit-named `prefer-image-deployment-inventory-<commit-sha>` release artifact for NeurOn provisioning.
+- AWS
+  - G6 `xlarge`
+    - Added `flux-2-klein-4b`: official BF16 target with Q8 encoder.
+    - Added `z-image-turbo`: Q8 target and encoder.
+    - Added `qwen-image`: Q4 target and encoder with CPU offload.
+    - Added `sdxl-1.0`: FP16 with CPU offload.
+  - G6e `xlarge`
+    - Added `flux-2-klein-4b`: official BF16 target with Q8 encoder.
+    - Added `z-image-turbo`: Q8 target and encoder.
+    - Added `qwen-image`: Q6 target with BF16 encoder.
+    - Added `qwen-image-edit-2511`: Q6 target with BF16 encoder.
+    - Added `sdxl-1.0`: FP16.
+  - G7e `2xlarge`
+    - Added `flux-2-klein-4b`: official BF16 target with Q8 encoder.
+    - Added `z-image-turbo`: Q8 target and encoder.
+    - Added `qwen-image`: Q8 target with BF16 encoder.
+    - Added `qwen-image-edit-2511`: Q8 target with BF16 encoder.
+    - Added `sdxl-1.0`: FP16.
+- RunPod
+  - Added one-card configs for the checked-in 24–288 GB NVIDIA inventory using exact provider GPU type IDs.
+  - 24–32 GB uses the AWS G6 lanes and omits the dedicated Qwen Edit route.
+  - 48 GB uses Q6 Qwen generation/editing lanes with the BF16 encoder.
+  - 80–288 GB uses Q8 Qwen generation/editing lanes with the BF16 encoder.
+  - Recorded dated price and host-resource observations without treating them as provisioning guarantees.
+- Local
+  - Added RTX 4060 8 GB and RTX A2000 8 GB configs with FLUX Q4, Z-Image Q4, and SDXL CPU-offload lanes.
+  - Added GTX 1070 Ti with the same 8 GB routes and an explicit Pascal `sm_61` verification gate.
+  - Added TITAN X Pascal with FLUX Q8/Q4, Z-Image Q6/Q4, and SDXL CPU-offload lanes.
+  - Marked every initial image route configuration-only pending exact-card load, output, memory, and swap verification.
+
 ## sha-8e7430a
 
 - Images

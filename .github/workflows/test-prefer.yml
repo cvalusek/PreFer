@@ -8,6 +8,7 @@ on:
       - 'benchmark/**'
       - 'docker/llama-cpp/**'
       - 'docker/audio-cpp/**'
+      - 'docker/stable-diffusion-cpp/**'
       - 'docker-compose.yml'
       - '.env.example'
       - 'README.md'
@@ -19,6 +20,7 @@ on:
       - 'benchmark/**'
       - 'docker/llama-cpp/**'
       - 'docker/audio-cpp/**'
+      - 'docker/stable-diffusion-cpp/**'
       - 'docker-compose.yml'
       - '.env.example'
       - 'README.md'
@@ -40,6 +42,11 @@ jobs:
 
       - name: Unit and negative tests
         run: python -m unittest discover -s benchmark/tests -v
+
+      - name: Validate generated image catalog and lazy router
+        run: |
+          python docker/stable-diffusion-cpp/generate.py --check
+          python -m unittest discover -s docker/stable-diffusion-cpp/tests -v
 
       - name: Validate versioned schemas, fixtures, corpus, and preset aliases
         run: python -m prefer_bench validate

@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "provider": "aws",
+  "lanes": {
+    "flux-2-klein-4b": "flux-2-klein-4b-bf16-q8",
+    "z-image-turbo": "z-image-turbo-q8",
+    "qwen-image": "qwen-image-q4",
+    "sdxl-1.0": "sdxl-1.0-fp16"
+  },
+  "bundles": ["general", "fast", "generation", "edit", "quality"],
+  "single_models": "all",
+  "server": {
+    "model_args_append": ["--offload-to-cpu"]
+  },
+  "variants": [
+    {
+      "output_root": "aws/g6/xlarge",
+      "hardware": {
+        "provider_sku": "g6.xlarge",
+        "gpu_slug": "l4",
+        "gpu_name": "NVIDIA L4",
+        "gpu_count": 1,
+        "vram_gb_each": 24,
+        "architecture": "Ada Lovelace",
+        "vcpu": 4,
+        "local_nvme_gb": 250
+      },
+      "compatibility": {"container_runtime": "nvidia", "cuda_major": 12},
+      "verification": "configuration-only"
+    }
+  ]
+}

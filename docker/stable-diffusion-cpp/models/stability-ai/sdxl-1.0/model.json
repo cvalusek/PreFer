@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "family": "stability-ai",
+  "model_slug": "sdxl-1.0",
+  "shared": {
+    "id": "sdxl-1.0",
+    "display_name": "Stable Diffusion XL 1.0",
+    "description": "Lightweight generation and maskless image-to-image fallback",
+    "capabilities": ["generation", "edit"],
+    "license": "CreativeML Open RAIL++-M",
+    "lineage": {
+      "base_repo": "stabilityai/stable-diffusion-xl-base-1.0"
+    },
+    "args": [
+      "--cfg-scale", "7.0",
+      "--steps", "30",
+      "--sampling-method", "dpm++2m",
+      "--diffusion-fa",
+      "--vae-tiling"
+    ]
+  },
+  "quants": {
+    "fp16": {
+      "key": "sdxl-1.0-fp16",
+      "precision": "FP16",
+      "primary": true,
+      "artifacts": [
+        {
+          "role": "checkpoint",
+          "argument": "--model",
+          "repo": "stabilityai/stable-diffusion-xl-base-1.0",
+          "revision": "462165984030d82259a11f4367a4eed129e94a7b",
+          "path": "sd_xl_base_1.0.safetensors",
+          "size": 6938078334,
+          "sha256": "31e35c80fc4829d14f90153f4c74cd59c90b779f6afe05a74cd6120b893f7e5b"
+        }
+      ]
+    }
+  }
+}

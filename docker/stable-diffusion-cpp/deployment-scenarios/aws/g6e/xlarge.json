@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "provider": "aws",
+  "lanes": {
+    "flux-2-klein-4b": "flux-2-klein-4b-bf16-q8",
+    "z-image-turbo": "z-image-turbo-q8",
+    "qwen-image": "qwen-image-q6",
+    "qwen-image-edit-2511": "qwen-image-edit-2511-q6",
+    "sdxl-1.0": "sdxl-1.0-fp16"
+  },
+  "bundles": ["general", "fast", "generation", "edit", "quality"],
+  "single_models": "all",
+  "variants": [
+    {
+      "output_root": "aws/g6e/xlarge",
+      "hardware": {
+        "provider_sku": "g6e.xlarge",
+        "gpu_slug": "l40s",
+        "gpu_name": "NVIDIA L40S",
+        "gpu_count": 1,
+        "vram_gb_each": 48,
+        "architecture": "Ada Lovelace",
+        "vcpu": 4,
+        "local_nvme_gb": 250
+      },
+      "compatibility": {"container_runtime": "nvidia", "cuda_major": 12},
+      "verification": "configuration-only"
+    }
+  ]
+}

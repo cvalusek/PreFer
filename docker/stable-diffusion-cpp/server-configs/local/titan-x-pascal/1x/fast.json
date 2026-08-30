@@ -1,0 +1,141 @@
+{
+  "host": "0.0.0.0",
+  "port": 8080,
+  "backend_host": "127.0.0.1",
+  "backend_port": 8083,
+  "backend_binary": "/sd-server",
+  "lazy_load": true,
+  "max_loaded_models": 1,
+  "idle_unload_ms": 1800000,
+  "startup_timeout_ms": 1800000,
+  "busy_timeout_ms": 3600000,
+  "backend_request_timeout_ms": 3600000,
+  "max_request_body_bytes": 268435456,
+  "models": [
+    {
+      "id": "flux-2-klein-4b",
+      "display_name": "FLUX.2 Klein 4B",
+      "family": "flux",
+      "description": "Fast four-step generation and instruction-driven image editing",
+      "capabilities": [
+        "generation",
+        "edit"
+      ],
+      "precision": "Q8_0 target / Q4_K_M text encoder",
+      "license": "Apache-2.0",
+      "catalog_key": "flux-2-klein-4b-q8-q4",
+      "args": [
+        "--diffusion-model",
+        "/models/leejet/FLUX.2-klein-4B-GGUF/flux-2-klein-4b-Q8_0.gguf",
+        "--vae",
+        "/models/black-forest-labs/FLUX.2-small-decoder/full_encoder_small_decoder.safetensors",
+        "--llm",
+        "/models/unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf",
+        "--cfg-scale",
+        "1.0",
+        "--steps",
+        "4",
+        "--sampling-method",
+        "euler",
+        "--diffusion-fa",
+        "--vae-tiling",
+        "--offload-to-cpu",
+        "--clip-on-cpu"
+      ],
+      "required_files": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "leejet/FLUX.2-klein-4B-GGUF",
+          "revision": "3b1f5a9dc3abb32238b053aeb3d823c30afdacbd",
+          "path": "flux-2-klein-4b-Q8_0.gguf",
+          "size": 4300629440,
+          "sha256": "0bba6951258ec8f92d51114a8fa13e66828297bfff58a738f52729b3ef66fa28",
+          "container_path": "/models/leejet/FLUX.2-klein-4B-GGUF/flux-2-klein-4b-Q8_0.gguf"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "black-forest-labs/FLUX.2-small-decoder",
+          "revision": "a3efc24f613ef42d9428af62fdbd6f5fd8856c4a",
+          "path": "full_encoder_small_decoder.safetensors",
+          "size": 249519092,
+          "sha256": "ea4273f02d1fafbf8e1d1c2cf6018ed8748652eb0bf34f2dd91171f16f15ab62",
+          "container_path": "/models/black-forest-labs/FLUX.2-small-decoder/full_encoder_small_decoder.safetensors"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "unsloth/Qwen3-4B-GGUF",
+          "revision": "22c9fc8a8c7700b76a1789366280a6a5a1ad1120",
+          "path": "Qwen3-4B-Q4_K_M.gguf",
+          "size": 2497281312,
+          "sha256": "f6f851777709861056efcdad3af01da38b31223a3ba26e61a4f8bf3a2195813a",
+          "container_path": "/models/unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "z-image-turbo",
+      "display_name": "Z-Image-Turbo",
+      "family": "z-image",
+      "description": "Fast eight-step text-to-image generation",
+      "capabilities": [
+        "generation"
+      ],
+      "precision": "Q6_K target / Q4_K_M text encoder",
+      "license": "Apache-2.0",
+      "catalog_key": "z-image-turbo-q6",
+      "args": [
+        "--diffusion-model",
+        "/models/leejet/Z-Image-Turbo-GGUF/z_image_turbo-Q6_K.gguf",
+        "--vae",
+        "/models/black-forest-labs/FLUX.1-schnell/ae.safetensors",
+        "--llm",
+        "/models/unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+        "--cfg-scale",
+        "1.0",
+        "--steps",
+        "8",
+        "--sampling-method",
+        "euler",
+        "--diffusion-fa",
+        "--vae-tiling",
+        "--offload-to-cpu",
+        "--clip-on-cpu"
+      ],
+      "required_files": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "leejet/Z-Image-Turbo-GGUF",
+          "revision": "c61c0e422dc8b541b7548cf33a4ef8302b0f8085",
+          "path": "z_image_turbo-Q6_K.gguf",
+          "size": 5263239104,
+          "sha256": "319f627beac8059b7546f36a7b4d5097b7f4ee6a1fc37585d0f75ca1d12d01af",
+          "container_path": "/models/leejet/Z-Image-Turbo-GGUF/z_image_turbo-Q6_K.gguf"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "black-forest-labs/FLUX.1-schnell",
+          "revision": "741f7c3ce8b383c54771c7003378a50191e9efe9",
+          "path": "ae.safetensors",
+          "size": 335304388,
+          "sha256": "afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38",
+          "container_path": "/models/black-forest-labs/FLUX.1-schnell/ae.safetensors"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+          "revision": "a06e946bb6b655725eafa393f4a9745d460374c9",
+          "path": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+          "size": 2497281120,
+          "sha256": "3605803b982cb64aead44f6c1b2ae36e3acdb41d8e46c8a94c6533bc4c67e597",
+          "container_path": "/models/unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-Q4_K_M.gguf"
+        }
+      ]
+    }
+  ]
+}

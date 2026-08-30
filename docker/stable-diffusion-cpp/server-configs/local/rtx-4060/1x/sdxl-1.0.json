@@ -1,0 +1,56 @@
+{
+  "host": "0.0.0.0",
+  "port": 8080,
+  "backend_host": "127.0.0.1",
+  "backend_port": 8083,
+  "backend_binary": "/sd-server",
+  "lazy_load": true,
+  "max_loaded_models": 1,
+  "idle_unload_ms": 1800000,
+  "startup_timeout_ms": 1800000,
+  "busy_timeout_ms": 3600000,
+  "backend_request_timeout_ms": 3600000,
+  "max_request_body_bytes": 268435456,
+  "models": [
+    {
+      "id": "sdxl-1.0",
+      "display_name": "Stable Diffusion XL 1.0",
+      "family": "stability-ai",
+      "description": "Lightweight generation and maskless image-to-image fallback",
+      "capabilities": [
+        "generation",
+        "edit"
+      ],
+      "precision": "FP16",
+      "license": "CreativeML Open RAIL++-M",
+      "catalog_key": "sdxl-1.0-fp16",
+      "args": [
+        "--model",
+        "/models/stabilityai/stable-diffusion-xl-base-1.0/sd_xl_base_1.0.safetensors",
+        "--cfg-scale",
+        "7.0",
+        "--steps",
+        "30",
+        "--sampling-method",
+        "dpm++2m",
+        "--diffusion-fa",
+        "--vae-tiling",
+        "--offload-to-cpu",
+        "--clip-on-cpu",
+        "--vae-on-cpu"
+      ],
+      "required_files": [
+        {
+          "role": "checkpoint",
+          "argument": "--model",
+          "repo": "stabilityai/stable-diffusion-xl-base-1.0",
+          "revision": "462165984030d82259a11f4367a4eed129e94a7b",
+          "path": "sd_xl_base_1.0.safetensors",
+          "size": 6938078334,
+          "sha256": "31e35c80fc4829d14f90153f4c74cd59c90b779f6afe05a74cd6120b893f7e5b",
+          "container_path": "/models/stabilityai/stable-diffusion-xl-base-1.0/sd_xl_base_1.0.safetensors"
+        }
+      ]
+    }
+  ]
+}

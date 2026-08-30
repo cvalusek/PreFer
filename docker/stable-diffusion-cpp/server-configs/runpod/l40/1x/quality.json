@@ -1,0 +1,142 @@
+{
+  "host": "0.0.0.0",
+  "port": 8080,
+  "backend_host": "127.0.0.1",
+  "backend_port": 8083,
+  "backend_binary": "/sd-server",
+  "lazy_load": true,
+  "max_loaded_models": 1,
+  "idle_unload_ms": 1800000,
+  "startup_timeout_ms": 1800000,
+  "busy_timeout_ms": 3600000,
+  "backend_request_timeout_ms": 3600000,
+  "max_request_body_bytes": 268435456,
+  "models": [
+    {
+      "id": "qwen-image",
+      "display_name": "Qwen Image",
+      "family": "qwen",
+      "description": "High-quality text-to-image generation with strong text rendering",
+      "capabilities": [
+        "generation"
+      ],
+      "precision": "Q6_K target / BF16 text encoder",
+      "license": "Apache-2.0",
+      "catalog_key": "qwen-image-q6",
+      "args": [
+        "--diffusion-model",
+        "/models/QuantStack/Qwen-Image-GGUF/Qwen_Image-Q6_K.gguf",
+        "--vae",
+        "/models/Comfy-Org/Qwen-Image_ComfyUI/split_files/vae/qwen_image_vae.safetensors",
+        "--llm",
+        "/models/Comfy-Org/Qwen-Image_ComfyUI/split_files/text_encoders/qwen_2.5_vl_7b.safetensors",
+        "--cfg-scale",
+        "2.5",
+        "--steps",
+        "50",
+        "--sampling-method",
+        "euler",
+        "--flow-shift",
+        "3",
+        "--diffusion-fa",
+        "--vae-tiling"
+      ],
+      "required_files": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "QuantStack/Qwen-Image-GGUF",
+          "revision": "257f261fa92593bed760aa6fa3f7921a49fea00f",
+          "path": "Qwen_Image-Q6_K.gguf",
+          "size": 16824990240,
+          "sha256": "0c60643ee869161ee7acd530f7faf1cb2361f131e1ebae27b95fdc481b6df2b2",
+          "container_path": "/models/QuantStack/Qwen-Image-GGUF/Qwen_Image-Q6_K.gguf"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "Comfy-Org/Qwen-Image_ComfyUI",
+          "revision": "7beb7b647f04469fbe64ba8adc2bb0d7e5e9f73f",
+          "path": "split_files/vae/qwen_image_vae.safetensors",
+          "size": 253806246,
+          "sha256": "a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f",
+          "container_path": "/models/Comfy-Org/Qwen-Image_ComfyUI/split_files/vae/qwen_image_vae.safetensors"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "Comfy-Org/Qwen-Image_ComfyUI",
+          "revision": "b8f0a47470ec2a0724d6267ca696235e441baa5d",
+          "path": "split_files/text_encoders/qwen_2.5_vl_7b.safetensors",
+          "size": 16584415576,
+          "sha256": "cfafd739459bc86257397259f612a9aee88e5b98e85b5c0d0d1717e898b3463a",
+          "container_path": "/models/Comfy-Org/Qwen-Image_ComfyUI/split_files/text_encoders/qwen_2.5_vl_7b.safetensors"
+        }
+      ]
+    },
+    {
+      "id": "qwen-image-edit-2511",
+      "display_name": "Qwen Image Edit 2511",
+      "family": "qwen",
+      "description": "Instruction-driven image editing with reference-image understanding",
+      "capabilities": [
+        "edit"
+      ],
+      "precision": "Q6_K target / BF16 text encoder",
+      "license": "Apache-2.0",
+      "catalog_key": "qwen-image-edit-2511-q6",
+      "args": [
+        "--diffusion-model",
+        "/models/unsloth/Qwen-Image-Edit-2511-GGUF/qwen-image-edit-2511-Q6_K.gguf",
+        "--vae",
+        "/models/Comfy-Org/Qwen-Image_ComfyUI/split_files/vae/qwen_image_vae.safetensors",
+        "--llm",
+        "/models/Comfy-Org/Qwen-Image_ComfyUI/split_files/text_encoders/qwen_2.5_vl_7b.safetensors",
+        "--cfg-scale",
+        "2.5",
+        "--steps",
+        "40",
+        "--sampling-method",
+        "euler",
+        "--flow-shift",
+        "3",
+        "--model-args",
+        "qwen_image_zero_cond_t=true",
+        "--diffusion-fa",
+        "--vae-tiling"
+      ],
+      "required_files": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+          "revision": "0d33d9692b4b26212297240d87b0d4719aa4fd06",
+          "path": "qwen-image-edit-2511-Q6_K.gguf",
+          "size": 16852417120,
+          "sha256": "fdc28e5b8f7d9cfe0399fd1700c375f25f000fc4159bbdb0d4a809ae898eb759",
+          "container_path": "/models/unsloth/Qwen-Image-Edit-2511-GGUF/qwen-image-edit-2511-Q6_K.gguf"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "Comfy-Org/Qwen-Image_ComfyUI",
+          "revision": "7beb7b647f04469fbe64ba8adc2bb0d7e5e9f73f",
+          "path": "split_files/vae/qwen_image_vae.safetensors",
+          "size": 253806246,
+          "sha256": "a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f",
+          "container_path": "/models/Comfy-Org/Qwen-Image_ComfyUI/split_files/vae/qwen_image_vae.safetensors"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "Comfy-Org/Qwen-Image_ComfyUI",
+          "revision": "b8f0a47470ec2a0724d6267ca696235e441baa5d",
+          "path": "split_files/text_encoders/qwen_2.5_vl_7b.safetensors",
+          "size": 16584415576,
+          "sha256": "cfafd739459bc86257397259f612a9aee88e5b98e85b5c0d0d1717e898b3463a",
+          "container_path": "/models/Comfy-Org/Qwen-Image_ComfyUI/split_files/text_encoders/qwen_2.5_vl_7b.safetensors"
+        }
+      ]
+    }
+  ]
+}

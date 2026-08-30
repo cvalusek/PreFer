@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "provider": "local",
+  "lanes": {
+    "flux-2-klein-4b": "flux-2-klein-4b-q8-q4",
+    "z-image-turbo": "z-image-turbo-q6",
+    "sdxl-1.0": "sdxl-1.0-fp16"
+  },
+  "bundles": ["general", "fast", "generation", "edit"],
+  "single_models": "all",
+  "server": {
+    "model_args_append": ["--offload-to-cpu", "--clip-on-cpu"]
+  },
+  "variants": [
+    {
+      "output_root": "local/titan-x-pascal/1x",
+      "hardware": {"gpu_slug": "titan-x-pascal", "gpu_name": "NVIDIA TITAN X (Pascal)", "gpu_count": 1, "vram_gb_each": 12, "architecture": "Pascal"},
+      "compatibility": {"container_runtime": "nvidia", "cuda_major": 12, "required_cuda_arch": "sm_61", "runtime_status": "upstream image architecture coverage requires smoke"},
+      "verification": "configuration-only"
+    }
+  ]
+}

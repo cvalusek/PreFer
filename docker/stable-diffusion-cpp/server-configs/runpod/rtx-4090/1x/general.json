@@ -1,0 +1,240 @@
+{
+  "host": "0.0.0.0",
+  "port": 8080,
+  "backend_host": "127.0.0.1",
+  "backend_port": 8083,
+  "backend_binary": "/sd-server",
+  "lazy_load": true,
+  "max_loaded_models": 1,
+  "idle_unload_ms": 1800000,
+  "startup_timeout_ms": 1800000,
+  "busy_timeout_ms": 3600000,
+  "backend_request_timeout_ms": 3600000,
+  "max_request_body_bytes": 268435456,
+  "models": [
+    {
+      "id": "flux-2-klein-4b",
+      "display_name": "FLUX.2 Klein 4B",
+      "family": "flux",
+      "description": "Fast four-step generation and instruction-driven image editing",
+      "capabilities": [
+        "generation",
+        "edit"
+      ],
+      "precision": "BF16 target / Q8_0 text encoder",
+      "license": "Apache-2.0",
+      "catalog_key": "flux-2-klein-4b-bf16-q8",
+      "args": [
+        "--diffusion-model",
+        "/models/black-forest-labs/FLUX.2-klein-4B/flux-2-klein-4b.safetensors",
+        "--vae",
+        "/models/black-forest-labs/FLUX.2-small-decoder/full_encoder_small_decoder.safetensors",
+        "--llm",
+        "/models/unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q8_0.gguf",
+        "--cfg-scale",
+        "1.0",
+        "--steps",
+        "4",
+        "--sampling-method",
+        "euler",
+        "--diffusion-fa",
+        "--vae-tiling",
+        "--offload-to-cpu"
+      ],
+      "required_files": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "black-forest-labs/FLUX.2-klein-4B",
+          "revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+          "path": "flux-2-klein-4b.safetensors",
+          "size": 7751105712,
+          "sha256": "ec3d4e733a771f61c052fb4856c48b336c55eaf2c65487c2a1faeb9bbda7a343",
+          "container_path": "/models/black-forest-labs/FLUX.2-klein-4B/flux-2-klein-4b.safetensors"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "black-forest-labs/FLUX.2-small-decoder",
+          "revision": "a3efc24f613ef42d9428af62fdbd6f5fd8856c4a",
+          "path": "full_encoder_small_decoder.safetensors",
+          "size": 249519092,
+          "sha256": "ea4273f02d1fafbf8e1d1c2cf6018ed8748652eb0bf34f2dd91171f16f15ab62",
+          "container_path": "/models/black-forest-labs/FLUX.2-small-decoder/full_encoder_small_decoder.safetensors"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "unsloth/Qwen3-4B-GGUF",
+          "revision": "22c9fc8a8c7700b76a1789366280a6a5a1ad1120",
+          "path": "Qwen3-4B-Q8_0.gguf",
+          "size": 4280405792,
+          "sha256": "eed555233267a33c7e8ee31682762cc7751b3f6d224039086e0e846f05fffa5d",
+          "container_path": "/models/unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q8_0.gguf"
+        }
+      ]
+    },
+    {
+      "id": "z-image-turbo",
+      "display_name": "Z-Image-Turbo",
+      "family": "z-image",
+      "description": "Fast eight-step text-to-image generation",
+      "capabilities": [
+        "generation"
+      ],
+      "precision": "Q8_0 target / Q8_0 text encoder",
+      "license": "Apache-2.0",
+      "catalog_key": "z-image-turbo-q8",
+      "args": [
+        "--diffusion-model",
+        "/models/leejet/Z-Image-Turbo-GGUF/z_image_turbo-Q8_0.gguf",
+        "--vae",
+        "/models/black-forest-labs/FLUX.1-schnell/ae.safetensors",
+        "--llm",
+        "/models/unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-Q8_0.gguf",
+        "--cfg-scale",
+        "1.0",
+        "--steps",
+        "8",
+        "--sampling-method",
+        "euler",
+        "--diffusion-fa",
+        "--vae-tiling",
+        "--offload-to-cpu"
+      ],
+      "required_files": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "leejet/Z-Image-Turbo-GGUF",
+          "revision": "c61c0e422dc8b541b7548cf33a4ef8302b0f8085",
+          "path": "z_image_turbo-Q8_0.gguf",
+          "size": 6577440704,
+          "sha256": "df1c5baa86d1398c979495a6072dbcee79444fdb884a2445582ba0769c44e9a1",
+          "container_path": "/models/leejet/Z-Image-Turbo-GGUF/z_image_turbo-Q8_0.gguf"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "black-forest-labs/FLUX.1-schnell",
+          "revision": "741f7c3ce8b383c54771c7003378a50191e9efe9",
+          "path": "ae.safetensors",
+          "size": 335304388,
+          "sha256": "afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38",
+          "container_path": "/models/black-forest-labs/FLUX.1-schnell/ae.safetensors"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+          "revision": "a06e946bb6b655725eafa393f4a9745d460374c9",
+          "path": "Qwen3-4B-Instruct-2507-Q8_0.gguf",
+          "size": 4280405600,
+          "sha256": "391c1e410fd9f4cf2de2b510273b56a84c19ce18f4fa3bfb3774031dac4ef068",
+          "container_path": "/models/unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-Q8_0.gguf"
+        }
+      ]
+    },
+    {
+      "id": "qwen-image",
+      "display_name": "Qwen Image",
+      "family": "qwen",
+      "description": "High-quality text-to-image generation with strong text rendering",
+      "capabilities": [
+        "generation"
+      ],
+      "precision": "Q4_K_M target / Q4_K_M text encoder",
+      "license": "Apache-2.0",
+      "catalog_key": "qwen-image-q4",
+      "args": [
+        "--diffusion-model",
+        "/models/unsloth/Qwen-Image-GGUF/qwen-image-Q4_K_M.gguf",
+        "--vae",
+        "/models/Comfy-Org/Qwen-Image_ComfyUI/split_files/vae/qwen_image_vae.safetensors",
+        "--llm",
+        "/models/mradermacher/Qwen2.5-VL-7B-Instruct-GGUF/Qwen2.5-VL-7B-Instruct.Q4_K_M.gguf",
+        "--cfg-scale",
+        "2.5",
+        "--steps",
+        "50",
+        "--sampling-method",
+        "euler",
+        "--flow-shift",
+        "3",
+        "--diffusion-fa",
+        "--vae-tiling",
+        "--offload-to-cpu"
+      ],
+      "required_files": [
+        {
+          "role": "target",
+          "argument": "--diffusion-model",
+          "repo": "unsloth/Qwen-Image-GGUF",
+          "revision": "8aa13c32cf6dda8ad5cb5e3a1beb93150faa246b",
+          "path": "qwen-image-Q4_K_M.gguf",
+          "size": 13127088672,
+          "sha256": "eb2d4719dda7c73c52c1685673d173f4c1407e78688c2869352cef3ef7ba3819",
+          "container_path": "/models/unsloth/Qwen-Image-GGUF/qwen-image-Q4_K_M.gguf"
+        },
+        {
+          "role": "vae",
+          "argument": "--vae",
+          "repo": "Comfy-Org/Qwen-Image_ComfyUI",
+          "revision": "7beb7b647f04469fbe64ba8adc2bb0d7e5e9f73f",
+          "path": "split_files/vae/qwen_image_vae.safetensors",
+          "size": 253806246,
+          "sha256": "a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f",
+          "container_path": "/models/Comfy-Org/Qwen-Image_ComfyUI/split_files/vae/qwen_image_vae.safetensors"
+        },
+        {
+          "role": "text_encoder",
+          "argument": "--llm",
+          "repo": "mradermacher/Qwen2.5-VL-7B-Instruct-GGUF",
+          "revision": "cfa2baa09946b211c107e6e104948987a64dd2c1",
+          "path": "Qwen2.5-VL-7B-Instruct.Q4_K_M.gguf",
+          "size": 4683072512,
+          "sha256": "0f00a930ba3108b6861ddadf74d8ebbd82e257c63eba728e62c3e8970f5eed94",
+          "container_path": "/models/mradermacher/Qwen2.5-VL-7B-Instruct-GGUF/Qwen2.5-VL-7B-Instruct.Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "sdxl-1.0",
+      "display_name": "Stable Diffusion XL 1.0",
+      "family": "stability-ai",
+      "description": "Lightweight generation and maskless image-to-image fallback",
+      "capabilities": [
+        "generation",
+        "edit"
+      ],
+      "precision": "FP16",
+      "license": "CreativeML Open RAIL++-M",
+      "catalog_key": "sdxl-1.0-fp16",
+      "args": [
+        "--model",
+        "/models/stabilityai/stable-diffusion-xl-base-1.0/sd_xl_base_1.0.safetensors",
+        "--cfg-scale",
+        "7.0",
+        "--steps",
+        "30",
+        "--sampling-method",
+        "dpm++2m",
+        "--diffusion-fa",
+        "--vae-tiling",
+        "--offload-to-cpu"
+      ],
+      "required_files": [
+        {
+          "role": "checkpoint",
+          "argument": "--model",
+          "repo": "stabilityai/stable-diffusion-xl-base-1.0",
+          "revision": "462165984030d82259a11f4367a4eed129e94a7b",
+          "path": "sd_xl_base_1.0.safetensors",
+          "size": 6938078334,
+          "sha256": "31e35c80fc4829d14f90153f4c74cd59c90b779f6afe05a74cd6120b893f7e5b",
+          "container_path": "/models/stabilityai/stable-diffusion-xl-base-1.0/sd_xl_base_1.0.safetensors"
+        }
+      ]
+    }
+  ]
+}
