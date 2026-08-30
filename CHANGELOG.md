@@ -1,6 +1,11 @@
 # PreFer changelog
 
-## Current
+## sha-8e7430a
+
+- Images
+  - Llama CUDA: `ghcr.io/cvalusek/prefer:llama-cuda-sha-8e7430a@sha256:a76827503bfbeeefa31a4a6981df0ce9ef25f7c495a3a46daf8636a08cb08707` (`sha-8e7430a` points to the same index).
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-8e7430a@sha256:4cd8f5fca95a5e106ebedabb3ebbbd60df6a2f937c388edd13ff8e3e171d21ad`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-8e7430a@sha256:45888714b8df7dedf75b8a3c01a16b088c29c325a14af5b3fc2423cf6bf57a00`.
 
 - Runtime images
   - Llama: added `llama-cuda` and `llama-cuda-sha-<commit>` tags; existing `latest` and `sha-<commit>` tags remain unchanged.
