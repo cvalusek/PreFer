@@ -1,6 +1,10 @@
 # PreFer changelog
 
-## Current
+## sha-f231d5b
+
+- Images
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-f231d5b@sha256:448906ca2d7545e662fa7febb1fe2e218b30c366bb898d7f11bb045b53eaa13a`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-f231d5b@sha256:d08bc8b3daddeeb8fbd93d906e0ff35ee40d92409afd0adf1cf1aab0a7217698`.
 
 - Audio
   - Fixed CUDA and CPU first-start staging on RunPod and other root-owned external `/models` mounts.
