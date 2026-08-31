@@ -1,6 +1,9 @@
 # PreFer changelog
 
-## Current
+## sha-b25340c
+
+- Images
+  - Llama CUDA: `ghcr.io/cvalusek/prefer:llama-cuda-sha-b25340c@sha256:cad4427b94d5f06b0166b24cae4514a535ddbf38ec82bbfaafa7a2b878983008`.
 
 - Model guidance
   - Added prompt-ready behavioral profiles for every llama.cpp model currently provided by PreFer.
