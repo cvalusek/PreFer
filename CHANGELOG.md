@@ -1,5 +1,11 @@
 # PreFer changelog
 
+## Current
+
+- Audio
+  - Fixed CUDA and CPU first-start staging on RunPod and other root-owned external `/models` mounts.
+  - Kept weights, resumable transfer state, exact verification, and completion markers on persistent storage; no model, config, residency, or API behavior changed.
+
 ## sha-b25340c
 
 - Images

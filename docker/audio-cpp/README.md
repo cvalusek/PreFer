@@ -97,6 +97,12 @@ independent artifact paths and accepts 1 through 8. Shared paths are
 deduplicated before jobs launch, and failures are joined and reported in stable
 catalog order.
 
+The container stages as root because RunPod and other external mounts replace
+the image-layer ownership of `/models`. This matches the llama.cpp container
+and keeps lock files, Hugging Face resume state, verified staging files, final
+artifacts, and completion markers on the persistent volume. Do not replace this
+with a build-time `chown`: it is hidden as soon as an external volume is mounted.
+
 The default config registers all seven ids lazily, retains only one model at a
 time, and unloads an idle resident model after 30 minutes. Requests for another
 id evict the least-recently-used idle model and reload it. audio.cpp serializes

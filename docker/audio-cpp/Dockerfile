@@ -6,8 +6,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates python3-pip util-linux \
     && rm -rf /var/lib/apt/lists/* \
     && python3 -m pip install --no-cache-dir --break-system-packages -U "huggingface_hub[cli]" \
-    && mkdir -p /models /voices \
-    && chown ubuntu:ubuntu /models /voices
+    && mkdir -p /models /voices
 
 ENV HF_HOME=/models/.prefer-cache/huggingface \
     HF_XET_HIGH_PERFORMANCE=1 \
@@ -28,7 +27,7 @@ LABEL io.prefer.runtime="audio.cpp" \
       io.prefer.deployment-inventory.path="/deployment-inventory.json" \
       io.prefer.deployment-inventory.schema="prefer.audio-deployment-inventory.v1"
 
-USER ubuntu
+USER root
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=4h --retries=3 \
   CMD curl -fsS http://127.0.0.1:8080/health || exit 1

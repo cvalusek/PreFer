@@ -812,6 +812,16 @@ resolved and deduplicated to artifact IDs before batches launch. Batches join
 in catalog order, report the first failure in that stable order, and do not
 launch a later batch after a failed one.
 
+Both runtime entrypoints stage artifacts as root. External RunPod and other
+mounted model volumes replace image-layer ownership, so build-time `chown`
+cannot make a pre-existing root-owned `/models` tree writable to a later
+non-root `USER`. Keep Audio's final Docker user root like llama.cpp and Image;
+changing only the lock path is insufficient because Hugging Face resume state,
+staging files, final artifact directories, and verification markers all belong
+on the persistent volume. Never add a recursive startup `chown` over a populated
+model volume. If privilege separation is introduced later, staging must finish
+as root before only the server process drops privileges.
+
 Each artifact uses a stable hidden staging directory under
 `/models/.prefer-cache/downloads-v2/`. `hf download --local-dir` owns its
 resumable `.incomplete` state there; never add PID-scoped cleanup or delete the

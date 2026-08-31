@@ -175,6 +175,24 @@ class AudioCppTests(unittest.TestCase):
             self.assertNotIn("ENV AUDIO_PRESTAGE_MODELS", dockerfile_text)
             self.assertEqual(set(runtime["base_images"][variant]["platform_manifests"]), {"linux/amd64", "linux/arm64"})
 
+    def test_audio_images_stage_mounted_model_volumes_as_root(self) -> None:
+        for dockerfile in ("Dockerfile", "Dockerfile.cpu"):
+            dockerfile_text = (AUDIO_ROOT / dockerfile).read_text(encoding="utf-8")
+            user_directives = [
+                line.split(maxsplit=1)[1]
+                for line in dockerfile_text.splitlines()
+                if line.startswith("USER ")
+            ]
+            self.assertTrue(user_directives, dockerfile)
+            self.assertEqual(user_directives[-1], "root", dockerfile)
+            self.assertNotIn("chown ubuntu:ubuntu /models /voices", dockerfile_text)
+
+        entrypoint = (AUDIO_ROOT / "entrypoint.sh").read_text(encoding="utf-8")
+        self.assertLess(
+            entrypoint.index('audio_download_model_keys "${model_keys[@]}"'),
+            entrypoint.index("exec /app/entrypoint.sh server"),
+        )
+
     def test_generated_deployment_bundles_and_scenarios_are_controller_ready(self) -> None:
         inventory = json.loads(
             (AUDIO_ROOT / "deployment-inventory.generated.json").read_text(
