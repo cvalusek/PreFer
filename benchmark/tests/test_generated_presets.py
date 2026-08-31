@@ -124,6 +124,14 @@ class GeneratedPresetTests(unittest.TestCase):
     def test_deployment_inventory_resolves_every_generated_scenario(self) -> None:
         inventory = deployment_inventory()
         self.assertEqual(inventory["schema_version"], "prefer.deployment-inventory.v1")
+        self.assertEqual(
+            inventory["distribution"]["workflow_artifact_name_pattern"],
+            "prefer-release-<commit-sha>",
+        )
+        self.assertEqual(
+            inventory["distribution"]["release_inventory_asset"],
+            "prefer-llama-deployment-inventory.json",
+        )
         for key, model in inventory["models"].items():
             self.assertIn(model["request_model_id"], model["aliases"], key)
         deployments = inventory["deployments"]
@@ -159,7 +167,8 @@ class GeneratedPresetTests(unittest.TestCase):
         self.assertIn(
             "COPY docker/llama-cpp/deployment-inventory.generated.json /deployment-inventory.json", netskope
         )
-        self.assertIn("prefer-deployment-inventory-${{ github.sha }}", workflow)
+        self.assertIn("name: prefer-release-${{ github.sha }}", workflow)
+        self.assertIn("--llama-inventory", workflow)
         self.assertIn("io.prefer.deployment-inventory.path=/deployment-inventory.json", workflow)
 
     def test_runpod_inventory_uses_exact_gpu_ids_and_only_one_initial_multigpu_shape(self) -> None:

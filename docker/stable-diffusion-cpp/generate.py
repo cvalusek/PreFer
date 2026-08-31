@@ -419,7 +419,9 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
         "product": "PreFer",
         "distribution": {
             "embedded_image_path": "/deployment-inventory.json",
-            "workflow_artifact_name_pattern": "prefer-image-deployment-inventory-<commit-sha>",
+            "workflow_artifact_name_pattern": "prefer-release-<commit-sha>",
+            "github_release_tag_pattern": "sha-<short-commit>",
+            "release_inventory_asset": "prefer-image-deployment-inventory.json",
             "oci_labels": {"path": "io.prefer.deployment-inventory.path", "schema": "io.prefer.deployment-inventory.schema"},
         },
         "runtime": runtime["runtime"],

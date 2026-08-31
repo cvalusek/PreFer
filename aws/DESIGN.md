@@ -78,8 +78,7 @@ docker/llama-cpp/
   deployment-inventory.generated.json  controller-readable resolved deployments
   download-models.sh         S3 sync + preset-aware catalog downloads
 .github/workflows/
-  build-prefer.yml           llama container -> GHCR  [docker/llama-cpp/** only]
-  build-audio.yml            audio containers -> GHCR [docker/audio-cpp/** only]
+  build-prefer.yml           grouped llama/audio/image release -> GHCR + GitHub Release
   build-aws.yml              ami job (Packer, path-gated) -> cdk job (synth + release) [aws/**]
 ```
 
@@ -248,19 +247,20 @@ optionally CloudWatch Logs. No persistent-volume wiring. The IaC must also set
 **IMDS `HttpPutResponseHopLimit: 2`** so the container can reach the instance
 role's credentials (see S3 cache section).
 
-## CI isolation (builds scoped to what changed)
+## CI isolation and grouped runtime releases
 
-The hard requirement: a change in one area must not trigger unrelated builds.
+Runtime engines intentionally publish together; AWS infrastructure remains an
+independent release boundary.
 
 | Workflow | Triggers on | Produces |
 | -------- | ----------- | -------- |
-| `build-prefer.yml` (existing) | `docker/llama-cpp/**` | llama container → GHCR |
-| `build-audio.yml` | `docker/audio-cpp/**` | audio CPU/CUDA containers → GHCR |
+| `build-prefer.yml` | any llama/audio/image runtime or release-contract path | all runtime images → GHCR plus one grouped GitHub release and inventory bundle |
 | `build-aws.yml` (new) | `aws/**`, self | public AMI (us-east-1 + us-east-2) and/or `template-latest` release |
 
-The key decoupler: **the container is pulled at boot, not baked**, so the
-container build and the AMI build never need to trigger each other — that's why
-the container stays in its own workflow.
+The key decoupler: **runtime containers are pulled at boot, not baked**, so the
+grouped runtime build and the AMI build never need to trigger each other. A
+runtime change rebuilds all engine images to preserve one PreFer version; it
+does not rebuild the AMI.
 
 Within `build-aws.yml`, the AMI and template *are* coupled (the template embeds
 the AMI ids), so they're **ordered jobs** rather than separate workflows: a
@@ -269,8 +269,9 @@ and the `cdk` job `needs:` it. This expresses the dependency natively — no
 cross-run `workflow_run`/artifact-polling — while still skipping the AMI build
 for CDK-only edits.
 
-- Edit a preset / Dockerfile → `build-prefer.yml` only → new image in GHCR →
-  picked up on the next instance **start** (no AMI rebuild).
+- Edit any runtime preset / Dockerfile → `build-prefer.yml` → one grouped
+  llama/audio/image release in GHCR and GitHub → selected images are picked up
+  on the next instance **start** (no AMI rebuild).
 - Edit boot scripts / Packer → `build-aws.yml`: `ami` job builds, then `cdk` job
   re-releases the template with the new AMI ids.
 - Edit IaC → `build-aws.yml`: `ami` job skipped, `cdk` job re-synths and

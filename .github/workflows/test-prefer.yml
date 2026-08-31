@@ -9,11 +9,13 @@ on:
       - 'docker/llama-cpp/**'
       - 'docker/audio-cpp/**'
       - 'docker/stable-diffusion-cpp/**'
+      - 'release/**'
       - 'docker-compose.yml'
       - '.env.example'
       - 'README.md'
       - 'AGENTS.md'
       - '.github/workflows/test-prefer.yml'
+      - '.github/workflows/build-prefer.yml'
   pull_request:
     paths:
       - 'prefer_bench/**'
@@ -21,11 +23,13 @@ on:
       - 'docker/llama-cpp/**'
       - 'docker/audio-cpp/**'
       - 'docker/stable-diffusion-cpp/**'
+      - 'release/**'
       - 'docker-compose.yml'
       - '.env.example'
       - 'README.md'
       - 'AGENTS.md'
       - '.github/workflows/test-prefer.yml'
+      - '.github/workflows/build-prefer.yml'
   workflow_dispatch:
 
 jobs:

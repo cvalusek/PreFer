@@ -13,9 +13,32 @@ Gemma 4, Qwen3.5/Qwen3.6/Qwen3.8,
 Ornith 1.5, Nemotron 3.5 Lightning, Muse Glimmer, GLM, and DeepSeek V4 routes via
 `llama-server` router mode, with models
 downloaded from Hugging Face on first start. `docker/audio-cpp/` is a separate
-speech/music runtime with its own API, inventory, model volume, and release
-tags. `docker/stable-diffusion-cpp/` provides image generation/editing with a
-separate API, inventory, model volume, and release tags.
+speech/music runtime with its own API, inventory, model volume, and image
+variants. `docker/stable-diffusion-cpp/` provides image generation/editing with
+a separate API, inventory, and model volume. All three engines publish as one
+grouped PreFer release.
+
+## Grouped release contract
+
+`build-prefer.yml` is the only runtime-image workflow. A change under any of
+the three runtime folders rebuilds and publishes llama CUDA, Audio CUDA/CPU,
+and Image CUDA together under the same seven-character source SHA. Do not add
+engine-specific image workflows or path-gate individual engine jobs: the
+atomic release is deliberate so downstream controllers never have to compose
+different PreFer versions.
+
+After all four immutable image indexes publish, the workflow creates the
+GitHub release `sha-<short-commit>` and the matching
+`prefer-release-<full-commit>` Actions artifact. Both contain
+`prefer-release.json`, its schema, the exact three deployment inventories, and
+checksums. `release/build-release.py` owns that manifest. It must reference the
+resolved OCI index digests returned by the four build jobs, never moving tags.
+Each runtime image still embeds its own `/deployment-inventory.json`.
+
+The grouped release contains metadata only. Model weights must never be copied
+into a Docker build context, container image, AMI, GitHub release, or workflow
+artifact. They continue to stage at runtime onto the engine's external model
+storage.
 
 ## Published change reference
 
@@ -26,11 +49,12 @@ hosted-model or preset change by adding a populated `Current` section at the
 top. `Current` describes the changes already merged while their image is still
 building; never leave an empty `Current` section in the file.
 
-After CI publishes the immutable image, make a root-only follow-up commit that
+After CI publishes the grouped immutable release, make a root-only follow-up commit that
 changes the `Current` heading to the resulting `sha-<short-commit>` tag and
-adds the exact image identity. Do not rewrite the approved change bullets
-during finalization. Image workflows watch their runtime folders, so this root
-changelog-only commit does not create another image. Include additions,
+adds all four exact image identities from that release: llama CUDA, Audio CUDA,
+Audio CPU, and Image CUDA. Do not rewrite the approved change bullets during
+finalization. The grouped workflow watches runtime and release implementation
+paths, so this root changelog-only commit does not create another build. Include additions,
 removals, and exact context/concurrency deltas, plus quant, speculative,
 prestaging, or compatibility changes only when they actually changed. Keep
 entries concise, user-facing, nested by platform and instance, and limited to
@@ -167,8 +191,8 @@ AWS, RunPod, and generic local hardware presets are generated, not hand-edited:
   `deployment-inventory.generated.json`. Run it after any source change; CI
   runs `generate-presets.py --check`.
 - The deployment inventory is copied into the image as
-  `/deployment-inventory.json`, published as a commit-named workflow artifact,
-  and identified by OCI labels. It is the machine-readable NeurOn contract for
+  `/deployment-inventory.json`, included in the grouped PreFer release, and
+  identified by OCI labels. It is the machine-readable NeurOn contract for
   runtime, model/quant, provider GPU ID/count, effective settings, preset path,
   prestaging, and model-selection guidance. `model_profiles` is deduplicated by
   logical `model_slug`; quant and deployment entries reference it through
@@ -550,8 +574,8 @@ Image catalog ownership mirrors the other generated runtimes:
   with `--check`.
 
 The release inventory is embedded at `/deployment-inventory.json`, labeled
-with schema `prefer.image-deployment-inventory.v1`, and uploaded as
-`prefer-image-deployment-inventory-<commit-sha>`. NeurOn should select
+with schema `prefer.image-deployment-inventory.v1`, and included as
+`prefer-image-deployment-inventory.json` in the grouped release. NeurOn should select
 `IMAGE_SERVER_CONFIG` and leave `IMAGE_PRESTAGE_MODELS` blank to follow its
 sidecar. A nonblank override wins; `none` intentionally skips downloads. The
 local Compose route is Hugging Face-only and does not pass S3 settings.
@@ -882,8 +906,8 @@ a Packer-built public AMI (DLAMI Base GPU Ubuntu 24.04 base, resolved via SSM) +
 systemd boot unit (stage instance-store NVMe at `/opt/dlami/nvme`, `docker run`
 with `/models` on NVMe) + a CDK stack distributed as synthesized CloudFormation.
 The container is pulled at boot (not baked), and CI is path-filtered so AWS
-changes never rebuild the container (`build-prefer.yml` is `docker/llama-cpp/**`
-only; `build-aws.yml` covers `aws/`). `build-aws.yml` is one workflow with
+changes never rebuild the grouped runtime release (`build-prefer.yml` watches
+all three runtime folders; `build-aws.yml` covers `aws/`). `build-aws.yml` is one workflow with
 ordered jobs — a paths-filtered `ami` job (Packer; public AMI built into
 us-east-1 + us-east-2) hands its `ami-map` artifact to a `cdk` job that bakes it
 into the template's RegionMap and publishes the `template-latest` release. A
@@ -985,9 +1009,9 @@ Qwen speech/voice models; TITAN X exposes the full catalog based on the owner
 smokes below. A route appearing in a configuration-only scenario is not proof
 of fit, useful latency, or quality on that exact card.
 
-Every audio release embeds the resolved catalog at
+Every audio image embeds the resolved catalog at
 `/deployment-inventory.json`, identifies it with OCI path/schema labels, and
-uploads `prefer-audio-deployment-inventory-<commit-sha>`. NeurOn should use the
+includes `prefer-audio-deployment-inventory.json` in the grouped release. NeurOn should use the
 inventory's provider hardware ID, image tag, `AUDIO_SERVER_CONFIG`, model IDs,
 staged artifact bytes, compatibility, and verification status rather than
 parsing these docs or guessing from VRAM.

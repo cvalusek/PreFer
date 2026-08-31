@@ -9,8 +9,8 @@ music-generation, and speech-to-speech routes behind a separate audio API. Its
 stable-diffusion.cpp image provides curated image generation and editing behind
 OpenAI-style image endpoints without requiring ComfyUI workflows.
 
-Published hosted-model and preset changes are recorded by immutable container
-SHA in the [PreFer changelog](CHANGELOG.md).
+Published runtime, hosted-model, and preset changes are recorded by immutable
+grouped release SHA in the [PreFer changelog](CHANGELOG.md).
 
 The current llama.cpp catalog covers Gemma 4, Qwen3.5/Qwen3.6/Qwen3.8, Ornith 1.5,
 Nemotron 3.5 Lightning, Muse Glimmer, GLM, and DeepSeek V4
@@ -58,7 +58,8 @@ docker/
     deployment-inventory.generated.json  controller-readable image inventory
     generate.py               deterministic config/downloader/inventory generator
 aws/                  EC2 deployment (AMI + boot scripts + CDK); see aws/DESIGN.md
-.github/workflows/    Build workflows (container, AMI, and IaC build independently)
+release/              grouped-release manifest builder and public JSON schema
+.github/workflows/    grouped runtime release plus independent AMI/IaC workflows
 ```
 
 ## Quick Start
@@ -205,22 +206,31 @@ docker compose -f docker-compose.yml -f docker-compose.netskope.yml up prefer
 
 Certificate files under `docker/certs/` are ignored by git.
 
-## Images
+## Grouped releases and images
 
-GitHub Actions publish all runtimes to `ghcr.io/cvalusek/prefer`. The existing
-`latest` and `sha-<commit>` tags remain llama.cpp compatibility tags; explicit
-llama tags are `llama-cuda` and `llama-cuda-sha-<commit>`. Audio publishes
-`audio-cuda12`, `audio-cuda12-sha-<commit>`, `audio-cpu`, and
-`audio-cpu-sha-<commit>` without changing `latest`. Image generation publishes
-`image-cuda12` and `image-cuda12-sha-<commit>` for Linux AMD64; the pinned
-upstream CUDA base does not currently publish an ARM64 runtime.
+GitHub Actions build all three runtimes as one PreFer release whenever any
+runtime changes. One `sha-<commit>` release therefore identifies the exact
+llama CUDA, Audio CUDA/CPU, and Image CUDA images produced from the same source
+revision. The existing `latest` and `sha-<commit>` tags remain llama.cpp
+compatibility tags; explicit tags are `llama-cuda[-sha-<commit>]`,
+`audio-cuda12[-sha-<commit>]`, `audio-cpu[-sha-<commit>]`, and
+`image-cuda12[-sha-<commit>]`. Image generation remains Linux AMD64 only;
+Audio publishes Linux AMD64 and ARM64 variants.
+
+The immutable GitHub release and the commit-named
+`prefer-release-<full-commit>` workflow artifact contain one
+`prefer-release.json`, its public schema, all three deployment inventories, and
+checksums. Controllers select the needed engine/backend from that manifest and
+then use the referenced inventory for its model, hardware, and configuration
+choices. The manifest binds exact image digests; it does not contain model
+weights. Models continue to stage at runtime on external persistent storage.
 
 Additional llama models and deployment shapes
 belong in `models/` and `preset-scenarios/`; regenerate and commit their
-deterministic outputs. Every image contains the resolved inventory at
-`/deployment-inventory.json`, carries an OCI label naming that path and schema,
-and publishes the same JSON as a commit-named workflow artifact. NeurOn can use
-it to select the exact preset, prestage keys, runtime, provider GPU ID, GPU
+deterministic outputs. Every image contains its resolved inventory at
+`/deployment-inventory.json` and carries an OCI label naming that path and
+schema. The grouped release publishes all three inventories together. NeurOn
+can use them to select the exact preset, prestage keys, runtime, provider GPU ID, GPU
 count, context, concurrency, cache types, and API-safe `request_model_id`
 without parsing the documentation. The inventory's `section` field is the INI
 configuration identity and must not be used as the warmup model ID.
@@ -228,14 +238,14 @@ configuration identity and must not be used as the warmup model ID.
 The audio release follows the same controller contract. Its inventory adds
 AWS, local, and exact RunPod card choices; all-capabilities, related-capability,
 and single-model configs; exact staging bytes; and the selected
-`AUDIO_SERVER_CONFIG`. It is embedded at the same image path and also published
-as `prefer-audio-deployment-inventory-<commit-sha>` for provisioning screens.
+`AUDIO_SERVER_CONFIG`. It is embedded at the same image path and included as
+`prefer-audio-deployment-inventory.json` in the grouped release.
 
 The image release uses the same inventory path and controller pattern. It adds
 exact pipeline components and hashes, generation/edit capabilities, background
 prestaging, one-model residency, AWS/local/RunPod hardware choices, and the
-selected `IMAGE_SERVER_CONFIG`. CI publishes the JSON as
-`prefer-image-deployment-inventory-<commit-sha>`.
+selected `IMAGE_SERVER_CONFIG`. The grouped release includes it as
+`prefer-image-deployment-inventory.json`.
 
 RunPod presets are organized as `presets/runpod/<gpu>/1x/`; the initial
 multi-GPU exception is

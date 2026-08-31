@@ -119,7 +119,11 @@ class AudioCppTests(unittest.TestCase):
         )
         self.assertEqual(
             inventory["distribution"]["workflow_artifact_name_pattern"],
-            "prefer-audio-deployment-inventory-<commit-sha>",
+            "prefer-release-<commit-sha>",
+        )
+        self.assertEqual(
+            inventory["distribution"]["release_inventory_asset"],
+            "prefer-audio-deployment-inventory.json",
         )
         self.assertEqual(len(inventory["models"]["minimax-music-3-q4"]["artifacts"]), 13)
         self.assertEqual(
@@ -277,8 +281,7 @@ class AudioCppTests(unittest.TestCase):
 
     def test_compose_and_workflow_keep_product_compatibility_and_distinct_variants(self) -> None:
         compose = (REPO_ROOT / "docker-compose.yml").read_text(encoding="utf-8")
-        workflow = (REPO_ROOT / ".github" / "workflows" / "build-audio.yml").read_text(encoding="utf-8")
-        llama_workflow = (REPO_ROOT / ".github" / "workflows" / "build-prefer.yml").read_text(encoding="utf-8")
+        workflow = (REPO_ROOT / ".github" / "workflows" / "build-prefer.yml").read_text(encoding="utf-8")
         self.assertIn("container_name: prefer-llama", compose)
         self.assertIn("container_name: prefer-audio", compose)
         self.assertNotIn("profiles: [audio]", compose)
@@ -287,12 +290,14 @@ class AudioCppTests(unittest.TestCase):
         self.assertIn("AUDIO_PRESTAGE_MODELS=${AUDIO_PRESTAGE_MODELS:-}", compose)
         self.assertIn("AUDIO_DOWNLOAD_JOBS=${AUDIO_DOWNLOAD_JOBS:-4}", compose)
         self.assertIn("HF_XET_HIGH_PERFORMANCE=${HF_XET_HIGH_PERFORMANCE:-1}", compose)
-        self.assertIn("type=raw,value=audio-${{ matrix.variant }}", workflow)
-        self.assertIn("type=sha,prefix=audio-${{ matrix.variant }}-sha-", workflow)
-        self.assertIn("prefer-audio-deployment-inventory-${{ github.sha }}", workflow)
+        self.assertIn("type=raw,value=audio-cuda12", workflow)
+        self.assertIn("type=sha,prefix=audio-cuda12-sha-", workflow)
+        self.assertIn("type=raw,value=audio-cpu", workflow)
+        self.assertIn("type=sha,prefix=audio-cpu-sha-", workflow)
+        self.assertIn("name: prefer-release-${{ github.sha }}", workflow)
         self.assertIn("benchmark.tests.test_artifact_downloads", workflow)
-        self.assertIn("type=raw,value=latest", llama_workflow)
-        self.assertIn("type=raw,value=llama-cuda", llama_workflow)
+        self.assertIn("type=raw,value=latest", workflow)
+        self.assertIn("type=raw,value=llama-cuda", workflow)
 
 
 if __name__ == "__main__":

@@ -677,6 +677,17 @@ def render_inventory(
     inventory = OrderedDict(
         schema_version="prefer.deployment-inventory.v1",
         catalog_fingerprint=catalog_fingerprint,
+        product="PreFer",
+        distribution=OrderedDict(
+            embedded_image_path="/deployment-inventory.json",
+            workflow_artifact_name_pattern="prefer-release-<commit-sha>",
+            github_release_tag_pattern="sha-<short-commit>",
+            release_inventory_asset="prefer-llama-deployment-inventory.json",
+            oci_labels=OrderedDict(
+                path="io.prefer.deployment-inventory.path",
+                schema="io.prefer.deployment-inventory.schema",
+            ),
+        ),
         runtime=catalog["runtime"],
         model_profiles=model_profiles,
         models=inventory_models,

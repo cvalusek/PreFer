@@ -4,7 +4,9 @@
   "product": "PreFer",
   "distribution": {
     "embedded_image_path": "/deployment-inventory.json",
-    "workflow_artifact_name_pattern": "prefer-audio-deployment-inventory-<commit-sha>",
+    "workflow_artifact_name_pattern": "prefer-release-<commit-sha>",
+    "github_release_tag_pattern": "sha-<short-commit>",
+    "release_inventory_asset": "prefer-audio-deployment-inventory.json",
     "oci_labels": {
       "path": "io.prefer.deployment-inventory.path",
       "schema": "io.prefer.deployment-inventory.schema"

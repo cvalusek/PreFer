@@ -1,30 +1,58 @@
-name: Build PreFer llama.cpp image
+name: Build PreFer release
 
 on:
   push:
     branches: [main]
     paths:
       - 'docker/llama-cpp/**'
+      - 'docker/audio-cpp/**'
+      - 'docker/stable-diffusion-cpp/**'
+      - 'release/**'
       - '.github/workflows/build-prefer.yml'
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  DOCKER_METADATA_SHORT_SHA_LENGTH: 7
 
 jobs:
-  build-and-push:
+  verify:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify generated presets
-        run: python docker/llama-cpp/generate-presets.py --check
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify all generated runtime configuration and inventories
+        run: |
+          python docker/llama-cpp/generate-presets.py --check
+          python docker/audio-cpp/generate.py --check
+          python docker/stable-diffusion-cpp/generate.py --check
+
+      - name: Test shared artifact staging and grouped release contract
+        run: |
+          python -m unittest benchmark.tests.test_artifact_downloads -v
+          python -m unittest benchmark.tests.test_release_bundle -v
+
+      - name: Test lazy image router
+        run: python -m unittest discover -s docker/stable-diffusion-cpp/tests -v
+
+  llama:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -48,22 +76,230 @@ jobs:
             type=sha,prefix=llama-cuda-sha-,format=short
           labels: |
             io.prefer.runtime=llama.cpp
+            io.prefer.release.revision=${{ github.sha }}
             io.prefer.deployment-inventory.path=/deployment-inventory.json
             io.prefer.deployment-inventory.schema=prefer.deployment-inventory.v1
 
-      - name: Build and push
+      - name: Build and push llama.cpp
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: docker/llama-cpp
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=llama-cuda
+          cache-to: type=gha,scope=llama-cuda,mode=max
 
-      - name: Upload deployment inventory
+  audio_cuda:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=audio-cuda12
+            type=sha,prefix=audio-cuda12-sha-,format=short
+          labels: |
+            io.prefer.runtime=audio.cpp
+            io.prefer.audio.backend=cuda12
+            io.prefer.release.revision=${{ github.sha }}
+            io.prefer.deployment-inventory.path=/deployment-inventory.json
+            io.prefer.deployment-inventory.schema=prefer.audio-deployment-inventory.v1
+
+      - name: Build and push Audio CUDA 12
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/audio-cpp
+          file: docker/audio-cpp/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=audio-cuda12
+          cache-to: type=gha,scope=audio-cuda12,mode=max
+
+  audio_cpu:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=audio-cpu
+            type=sha,prefix=audio-cpu-sha-,format=short
+          labels: |
+            io.prefer.runtime=audio.cpp
+            io.prefer.audio.backend=cpu
+            io.prefer.release.revision=${{ github.sha }}
+            io.prefer.deployment-inventory.path=/deployment-inventory.json
+            io.prefer.deployment-inventory.schema=prefer.audio-deployment-inventory.v1
+
+      - name: Build and push Audio CPU
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/audio-cpp
+          file: docker/audio-cpp/Dockerfile.cpu
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=audio-cpu
+          cache-to: type=gha,scope=audio-cpu,mode=max
+
+  image:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=image-cuda12
+            type=sha,prefix=image-cuda12-sha-,format=short
+          labels: |
+            io.prefer.runtime=stable-diffusion.cpp
+            io.prefer.image.backend=cuda12
+            io.prefer.release.revision=${{ github.sha }}
+            io.prefer.deployment-inventory.path=/deployment-inventory.json
+            io.prefer.deployment-inventory.schema=prefer.image-deployment-inventory.v1
+
+      - name: Build and push Image CUDA 12
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/stable-diffusion-cpp
+          file: docker/stable-diffusion-cpp/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=image-cuda12
+          cache-to: type=gha,scope=image-cuda12,mode=max
+
+  release:
+    needs: [llama, audio_cuda, audio_cpu, image]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      LLAMA_DIGEST: ${{ needs.llama.outputs.digest }}
+      AUDIO_CUDA_DIGEST: ${{ needs.audio_cuda.outputs.digest }}
+      AUDIO_CPU_DIGEST: ${{ needs.audio_cpu.outputs.digest }}
+      IMAGE_DIGEST: ${{ needs.image.outputs.digest }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Assemble grouped PreFer release
+        shell: bash
+        run: |
+          set -euo pipefail
+          image_repository="ghcr.io/${GITHUB_REPOSITORY,,}"
+          python release/build-release.py \
+            --commit "$GITHUB_SHA" \
+            --source-repository "https://github.com/$GITHUB_REPOSITORY" \
+            --image-repository "$image_repository" \
+            --llama-digest "$LLAMA_DIGEST" \
+            --audio-cuda-digest "$AUDIO_CUDA_DIGEST" \
+            --audio-cpu-digest "$AUDIO_CPU_DIGEST" \
+            --image-digest "$IMAGE_DIGEST" \
+            --llama-inventory docker/llama-cpp/deployment-inventory.generated.json \
+            --audio-inventory docker/audio-cpp/deployment-inventory.generated.json \
+            --image-inventory docker/stable-diffusion-cpp/deployment-inventory.generated.json \
+            --output-dir prefer-release
+          cp release/prefer-release.schema.json prefer-release/
+          sha256sum prefer-release/*.json > prefer-release/SHA256SUMS
+
+      - name: Upload grouped deployment release
         uses: actions/upload-artifact@v4
         with:
-          name: prefer-deployment-inventory-${{ github.sha }}
-          path: docker/llama-cpp/deployment-inventory.generated.json
+          name: prefer-release-${{ github.sha }}
+          path: prefer-release/
           if-no-files-found: error
+
+      - name: Publish immutable GitHub release
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_tag="sha-${GITHUB_SHA::7}"
+          release_title="PreFer $release_tag"
+          release_notes="Grouped PreFer runtime release for commit $GITHUB_SHA. Download prefer-release.json to select exact llama.cpp, audio.cpp, and stable-diffusion.cpp images and inventories. Model weights are staged separately at runtime."
+          if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" --title "$release_title" --notes "$release_notes"
+          else
+            gh release create "$release_tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$release_title" --notes "$release_notes"
+          fi
+          gh release upload "$release_tag" prefer-release/* --repo "$GITHUB_REPOSITORY" --clobber

@@ -7,8 +7,9 @@ name: Build PreFer AWS
 #
 # A paths filter gates the expensive AMI job: a CDK-only change re-synths and
 # re-releases the template WITHOUT rebuilding the AMI (it reuses the map from the
-# last release). The container build (build-prefer.yml) stays separate — it's
-# pulled at boot, never baked, so it never needs to trigger an AMI rebuild.
+# last release). The grouped runtime build (build-prefer.yml) stays separate —
+# its images are pulled at boot, never baked, so it never needs to trigger an
+# AMI rebuild.
 on:
   push:
     branches: [main]

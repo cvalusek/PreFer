@@ -1,6 +1,17 @@
 {
   "schema_version": "prefer.deployment-inventory.v1",
   "catalog_fingerprint": "d9e22364739599188c0cdc11c8aeee0fb6ba05b28c0a06e8d228c4a1cd5a283b",
+  "product": "PreFer",
+  "distribution": {
+    "embedded_image_path": "/deployment-inventory.json",
+    "workflow_artifact_name_pattern": "prefer-release-<commit-sha>",
+    "github_release_tag_pattern": "sha-<short-commit>",
+    "release_inventory_asset": "prefer-llama-deployment-inventory.json",
+    "oci_labels": {
+      "path": "io.prefer.deployment-inventory.path",
+      "schema": "io.prefer.deployment-inventory.schema"
+    }
+  },
   "runtime": {
     "llama_cpp_tag": "b10362",
     "source_revision": "4801e3c567d5131dd41b387df5f2d4b1370d92be",

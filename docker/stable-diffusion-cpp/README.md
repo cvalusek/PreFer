@@ -168,8 +168,8 @@ python -m unittest benchmark.tests.test_artifact_downloads -v
 ```
 
 The image embeds the NeurOn provisioning contract at
-`/deployment-inventory.json`. Releases also publish it as
-`prefer-image-deployment-inventory-<commit-sha>`. It includes runtime identity,
+`/deployment-inventory.json`. The grouped PreFer release includes the same
+bytes as `prefer-image-deployment-inventory.json`. It includes runtime identity,
 platform, exact artifacts, configured request IDs, capabilities, provider GPU
 IDs, staged bytes, config paths, prestaging, residency, and verification state.
 

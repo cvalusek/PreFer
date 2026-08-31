@@ -1,5 +1,17 @@
 # PreFer changelog
 
+## Current
+
+- Release packaging
+  - Replaced separate llama, Audio, and Image builds with one grouped PreFer release.
+  - Every release now publishes llama CUDA, Audio CUDA/CPU, and Image CUDA under one source revision.
+  - Added one machine-readable release manifest, public schema, checksum file, and bundle containing all three deployment inventories.
+  - Added an immutable `sha-<commit>` GitHub release so controllers can select the appropriate engine combination from one version.
+- Model storage
+  - Model weights remain excluded from container images, AMIs, and release artifacts and continue to stage at runtime on external storage.
+- Runtime behavior
+  - No model, quant, preset, context, concurrency, cache, routing, or API default changed.
+
 ## sha-f231d5b
 
 - Images

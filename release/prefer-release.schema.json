@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/cvalusek/PreFer/blob/main/release/prefer-release.schema.json",
+  "title": "PreFer grouped runtime release",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "product",
+    "release",
+    "distribution",
+    "engines"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "prefer.release.v1"
+    },
+    "product": {
+      "const": "PreFer"
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_revision",
+        "source_repository",
+        "source_url",
+        "artifact_name"
+      ],
+      "properties": {
+        "id": {
+          "pattern": "^sha-[0-9a-f]{7}$"
+        },
+        "source_revision": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "source_repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_url": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifact_name": {
+          "pattern": "^prefer-release-[0-9a-f]{40}$"
+        }
+      }
+    },
+    "distribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_weights_embedded",
+        "models_stage_at_runtime",
+        "all_engine_images_share_release_revision"
+      ],
+      "properties": {
+        "model_weights_embedded": {
+          "const": false
+        },
+        "models_stage_at_runtime": {
+          "const": true
+        },
+        "all_engine_images_share_release_revision": {
+          "const": true
+        }
+      }
+    },
+    "engines": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "llama",
+        "audio",
+        "image"
+      ],
+      "properties": {
+        "llama": {
+          "$ref": "#/$defs/engine"
+        },
+        "audio": {
+          "$ref": "#/$defs/engine"
+        },
+        "image": {
+          "$ref": "#/$defs/engine"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtime",
+        "inventory",
+        "images"
+      ],
+      "properties": {
+        "runtime": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inventory": {
+          "$ref": "#/$defs/inventory"
+        },
+        "images": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "$ref": "#/$defs/image"
+          }
+        }
+      }
+    },
+    "inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "asset",
+        "schema_version",
+        "catalog_fingerprint",
+        "sha256"
+      ],
+      "properties": {
+        "asset": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "catalog_fingerprint": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tag",
+        "digest",
+        "reference",
+        "platforms"
+      ],
+      "properties": {
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "reference": {
+          "pattern": "@sha256:[0-9a-f]{64}$"
+        },
+        "platforms": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "pattern": "^linux/(amd64|arm64)$"
+          }
+        }
+      }
+    }
+  }
+}

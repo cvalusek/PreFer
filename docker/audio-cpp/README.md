@@ -284,6 +284,7 @@ paired prestage manifest, the exact downloader, and
 identity, bundle definitions, exact model artifacts and precision, provider
 hardware IDs and observations, config/prestage paths, effective residency,
 staged bytes, and verification state. It is copied to
-`/deployment-inventory.json`, identified by OCI labels, and published as the
-commit-named `prefer-audio-deployment-inventory-<commit-sha>` workflow artifact
-for NeurOn or another provisioning controller.
+`/deployment-inventory.json` and identified by OCI labels. The grouped PreFer
+release includes the same bytes as `prefer-audio-deployment-inventory.json`
+beside the llama and image inventories for NeurOn or another provisioning
+controller.

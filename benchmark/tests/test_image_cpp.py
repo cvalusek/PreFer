@@ -59,6 +59,14 @@ class ImageCppTests(unittest.TestCase):
         self.assertEqual(len(inventory["catalog_fingerprint"]), 64)
         self.assertEqual(inventory["platforms"], ["linux/amd64"])
         self.assertEqual(
+            inventory["distribution"]["workflow_artifact_name_pattern"],
+            "prefer-release-<commit-sha>",
+        )
+        self.assertEqual(
+            inventory["distribution"]["release_inventory_asset"],
+            "prefer-image-deployment-inventory.json",
+        )
+        self.assertEqual(
             inventory["api"],
             {
                 "health": "GET /health",
@@ -159,9 +167,10 @@ class ImageCppTests(unittest.TestCase):
         dockerfile = (IMAGE_ROOT / "Dockerfile").read_text(encoding="utf-8")
         downloader = (IMAGE_ROOT / "model-downloads.generated.sh").read_text(encoding="utf-8")
         compose = (REPO_ROOT / "docker-compose.yml").read_text(encoding="utf-8")
-        workflow = (REPO_ROOT / ".github" / "workflows" / "build-image.yml").read_text(
+        workflow = (REPO_ROOT / ".github" / "workflows" / "build-prefer.yml").read_text(
             encoding="utf-8"
         )
+        image_job = workflow.split("\n  image:\n", 1)[1].split("\n  release:\n", 1)[0]
 
         self.assertIn(runtime["base_image"]["reference"], dockerfile)
         self.assertIn('"huggingface_hub[cli]"', dockerfile)
@@ -171,11 +180,12 @@ class ImageCppTests(unittest.TestCase):
         self.assertIn("IMAGE_SERVER_CONFIG=${IMAGE_SERVER_CONFIG:-}", compose)
         self.assertIn("IMAGE_PRESTAGE_MODELS=${IMAGE_PRESTAGE_MODELS:-}", compose)
         self.assertIn("IMAGE_DOWNLOAD_JOBS=${IMAGE_DOWNLOAD_JOBS:-4}", compose)
-        self.assertIn("type=raw,value=image-cuda12", workflow)
-        self.assertIn("type=sha,prefix=image-cuda12-sha-", workflow)
-        self.assertIn("platforms: linux/amd64", workflow)
-        self.assertNotIn("linux/arm64", workflow)
-        self.assertIn("prefer-image-deployment-inventory-${{ github.sha }}", workflow)
+        self.assertIn("type=raw,value=image-cuda12", image_job)
+        self.assertIn("type=sha,prefix=image-cuda12-sha-", image_job)
+        self.assertIn("platforms: linux/amd64", image_job)
+        self.assertNotIn("linux/arm64", image_job)
+        self.assertIn("name: prefer-release-${{ github.sha }}", workflow)
+        self.assertIn("--image-inventory", workflow)
         self.assertIn("benchmark.tests.test_artifact_downloads", workflow)
         self.assertIn("prefer_download_hf_artifact", downloader)
         self.assertIn("image_download_model_keys", downloader)
