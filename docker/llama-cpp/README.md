@@ -40,8 +40,9 @@ smallest tier if VRAM is below all of them. Override with
 Provider and hardware presets are generated under `presets/aws/`,
 `presets/runpod/`, and `presets/local/`; they are always selected explicitly.
 Each logical model lives at `models/<family>/<model>/model.json`, with its
-deployable quant lanes in a `quants` dictionary. Model-wide provenance and
-settings common to multiple quant lanes live once in `shared`. Small nested files under
+prompt-ready behavioral guidance in `profile` and its deployable quant lanes
+in a `quants` dictionary. Model-wide provenance and settings common to multiple
+quant lanes live once in `shared`. Small nested files under
 `preset-scenarios/<provider>/<hardware>/` own deployment shape and may inherit
 an existing shape when only the provider/card identity differs. Then run:
 
@@ -59,6 +60,32 @@ prestage keys for every generated deployment. Controllers must use each
 model's `request_model_id` for warmup and API requests. `section` is the INI
 configuration identity and may differ from the model ID that llama.cpp
 advertises and accepts after quant-name normalization.
+
+### Model selection profiles
+
+Every logical model has one human-curated profile rather than one description
+per quant. The profile records a short system-prompt-ready summary, architecture,
+native versus currently configured input modalities, native context, reasoning
+control, preferred/capable/avoid role tags, behavioral strengths and limits,
+prompting guidance, and the evidence basis behind the judgment.
+
+The generated deployment inventory exposes these once in `model_profiles`, keyed
+by `model_slug`. Quant records and deployment model entries carry `profile_id`,
+so a controller can select a deployment and include guidance only for its
+available models. A compact model-router prompt normally needs `display_name`,
+`prompt_summary`, and the three `roles` lists; add `strengths`, `limitations`,
+and `prompting` when the router benefits from the extra nuance.
+
+`configured_input_modalities` means the checked-in PreFer route packages the
+required model components. It is not a substitute for the deployment's
+`verification` state or an end-to-end modality smoke. Profiles are routing
+guidance, not a universal benchmark ranking: role fit, prompt compatibility,
+and operational envelope can make a lower-scoring model the better choice.
+They intentionally do not bundle third-party scores, rankings, or provider
+throughput measurements. Consumers such as NeurOn can add current, attributed
+external evaluations separately and should use their own deployment benchmarks
+for measured speed. Words such as `fast` in a profile are relative qualitative
+guidance derived from architecture, published behavior, and operator experience.
 
 | Preset | VRAM tier | Models | `models-max` | Notes |
 | ------ | --------- | ------ | ------------- | ----- |

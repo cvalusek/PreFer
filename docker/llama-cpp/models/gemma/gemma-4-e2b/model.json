@@ -2,6 +2,41 @@
   "schema_version": 1,
   "family": "gemma",
   "model_slug": "gemma-4-e2b",
+  "profile": {
+    "display_name": "Gemma 4 E2B",
+    "prompt_summary": "Tiny, very fast QAT generalist for tightly scoped rewriting, extraction, classification, captions, and light image understanding; use a larger model for reasoning, coding, or research authority.",
+    "architecture": {
+      "kind": "dense"
+    },
+    "capabilities": {
+      "native_input_modalities": ["text", "image", "audio"],
+      "configured_input_modalities": ["text", "image"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 131072,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["routing", "classification", "extraction", "simple-writing", "image-captioning"],
+      "capable": ["summarization", "translation"],
+      "avoid": ["complex-reasoning", "coding-agent", "autonomous-tools", "research-authority"]
+    },
+    "strengths": [
+      "Very fast, low-cost QAT first pass for simple language and visual tasks.",
+      "Gemma-style prose is often more natural than similarly small utility models."
+    ],
+    "limitations": [
+      "Limited depth, coding reliability, and multi-step tool persistence.",
+      "Native audio capability is not exposed by the current llama.cpp package."
+    ],
+    "prompting": [
+      "Give one explicit task, the output shape, and a short example; do not rely on hidden planning."
+    ],
+    "evidence": {
+      "confidence": "mixed",
+      "basis": ["official", "inference"],
+      "notes": "Capability facts are publisher-backed; role fit is a conservative product inference pending broader local use."
+    }
+  },
   "shared": {
     "aliases": [
       "gemma-4-e2b"

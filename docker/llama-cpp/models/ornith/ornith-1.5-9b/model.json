@@ -2,6 +2,43 @@
   "schema_version": 1,
   "family": "ornith",
   "model_slug": "ornith-1.5-9b",
+  "profile": {
+    "display_name": "Ornith 1.5 9B",
+    "prompt_summary": "Economical coding and tool subagent for narrow, executable objectives such as patching, repository navigation, and parallel implementation; do not use it as the final architect or research authority.",
+    "architecture": {
+      "kind": "dense",
+      "total_parameters_b": 9,
+      "active_parameters_b": 9
+    },
+    "capabilities": {
+      "native_input_modalities": ["text", "image"],
+      "configured_input_modalities": ["text", "image"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 262144,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["patching", "repository-navigation", "tool-research", "parallel-implementation"],
+      "capable": ["small-coding", "visual-qa", "structured-output"],
+      "avoid": ["final-architecture", "nuanced-writing", "critical-conclusions"]
+    },
+    "strengths": [
+      "Publisher tuning targets terminal coding agents and self-improving tool workflows.",
+      "Small enough to use as an inexpensive focused worker with a packaged image projector."
+    ],
+    "limitations": [
+      "Independent validation is still thin, especially for visual behavior and long agent loops.",
+      "Not intended to own final architectural or high-stakes conclusions."
+    ],
+    "prompting": [
+      "Preserve the model's modified chat and think/tool format, lower temperature for precise coding, and give one executable objective."
+    ],
+    "evidence": {
+      "confidence": "mixed",
+      "basis": ["official", "inference"],
+      "notes": "The publisher model card and harness support the coding role; independent route and behavior validation remains limited."
+    }
+  },
   "shared": {
     "aliases": [
       "ornith-1.5",

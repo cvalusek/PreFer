@@ -2,6 +2,43 @@
   "schema_version": 1,
   "family": "muse",
   "model_slug": "muse-glimmer-30b",
+  "profile": {
+    "display_name": "Muse Glimmer 30B",
+    "prompt_summary": "Eager visual and tool agent for screenshots, OCR, documents, visual workflows, and schema-driven actions; give it strict tool boundaries and stopping rules rather than unrestricted autonomy.",
+    "architecture": {
+      "kind": "dense",
+      "total_parameters_b": 29.6,
+      "active_parameters_b": 29.6
+    },
+    "capabilities": {
+      "native_input_modalities": ["text", "image"],
+      "configured_input_modalities": ["text", "image"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 131072,
+      "reasoning_control": "prompted"
+    },
+    "roles": {
+      "preferred": ["screenshot-understanding", "ocr", "document-analysis", "visual-workflows", "agentic-tools"],
+      "capable": ["coding", "research-synthesis", "multilingual-work"],
+      "avoid": ["unrestricted-tools", "prose-first-writing", "safety-critical-actions"]
+    },
+    "strengths": [
+      "Purpose-built for local multimodal agents, with publisher-documented visual and agentic training targets.",
+      "Controllable reasoning strength and failure-recovery training suit bounded interactive workflows."
+    ],
+    "limitations": [
+      "Operator reports indicate that tool use can become over-eager or inconsistent without clear boundaries.",
+      "It is not the natural first choice for prose-only work when Gemma is available."
+    ],
+    "prompting": [
+      "Set `Reasoning strength` explicitly, limit the tool budget, require confirmation for irreversible actions, and define a stop condition."
+    ],
+    "evidence": {
+      "confidence": "mixed",
+      "basis": ["official", "operator"],
+      "notes": "Architecture, modalities, quant quality, and intended roles are publisher-documented; tool eagerness comes from early operator reports."
+    }
+  },
   "shared": {
     "aliases": [
       "muse-glimmer",

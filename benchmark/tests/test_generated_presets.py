@@ -73,6 +73,8 @@ class GeneratedPresetTests(unittest.TestCase):
             family, model_slug, _ = path.relative_to(PREFER_ROOT / "models").parts
             self.assertEqual(source["family"], family, path)
             self.assertEqual(source["model_slug"], model_slug, path)
+            self.assertTrue(source["profile"]["prompt_summary"], path)
+            self.assertTrue(source["profile"]["roles"]["preferred"], path)
             self.assertTrue(source["quants"], path)
             for lane in source["quants"].values():
                 self.assertNotIn(lane["key"], seen_keys, lane["key"])
@@ -85,6 +87,39 @@ class GeneratedPresetTests(unittest.TestCase):
         self.assertEqual(muse["shared"]["settings"]["spec-type"], "draft-dflash")
         self.assertEqual(set(muse["quants"]["ud-q4-k-xl"]["settings"]), {"model"})
         self.assertEqual(set(muse["quants"]["ud-q6-k-xl"]["settings"]), {"model"})
+
+    def test_model_profiles_are_prompt_ready_and_deployment_addressable(self) -> None:
+        inventory = deployment_inventory()
+        profiles = inventory["model_profiles"]
+        self.assertEqual(len(profiles), 18)
+
+        for profile_id, profile in profiles.items():
+            self.assertEqual(profile_id, profile["model_slug"])
+            self.assertTrue(profile["display_name"], profile_id)
+            self.assertTrue(profile["prompt_summary"], profile_id)
+            self.assertTrue(profile["roles"]["preferred"], profile_id)
+            self.assertTrue(profile["strengths"], profile_id)
+            self.assertTrue(profile["limitations"], profile_id)
+            self.assertTrue(profile["prompting"], profile_id)
+            self.assertTrue(profile["quant_keys"], profile_id)
+            self.assertNotIn("benchmarks", profile, profile_id)
+            self.assertNotIn("benchmark", profile["evidence"]["basis"], profile_id)
+            self.assertTrue(set(profile["capabilities"]["configured_input_modalities"]) <= set(
+                profile["capabilities"]["native_input_modalities"]
+            ), profile_id)
+            for key in profile["quant_keys"]:
+                self.assertEqual(inventory["models"][key]["profile_id"], profile_id)
+
+        for deployment in inventory["deployments"]:
+            for model in deployment["models"]:
+                self.assertIn(model["profile_id"], profiles, deployment["id"])
+
+        gemma = profiles["gemma-4-12b"]
+        self.assertIn("general-writing", gemma["roles"]["preferred"])
+        self.assertIn("image", gemma["capabilities"]["configured_input_modalities"])
+        qwen = profiles["qwen-3.8-27b"]
+        self.assertEqual(qwen["capabilities"]["configured_input_modalities"], ["text"])
+        self.assertIn("repository-coding", qwen["roles"]["preferred"])
 
     def test_deployment_inventory_resolves_every_generated_scenario(self) -> None:
         inventory = deployment_inventory()

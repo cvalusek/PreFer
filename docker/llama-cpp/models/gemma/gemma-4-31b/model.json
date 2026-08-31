@@ -2,6 +2,43 @@
   "schema_version": 1,
   "family": "gemma",
   "model_slug": "gemma-4-31b",
+  "profile": {
+    "display_name": "Gemma 4 31B",
+    "prompt_summary": "Careful editor and high-quality visual or general analyst; prefer it for nuanced writing, critique, summarization, and image understanding when latency is secondary.",
+    "architecture": {
+      "kind": "dense",
+      "total_parameters_b": 30.7,
+      "active_parameters_b": 30.7
+    },
+    "capabilities": {
+      "native_input_modalities": ["text", "image", "video"],
+      "configured_input_modalities": ["text", "image"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 262144,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["nuanced-writing", "critique", "summarization", "image-understanding"],
+      "capable": ["deep-reasoning", "long-context-synthesis", "coding"],
+      "avoid": ["latency-sensitive-work", "default-autonomous-coding"]
+    },
+    "strengths": [
+      "Strongest Gemma lane for polished prose, careful interpretation, and visual analysis.",
+      "Good at separating evidence, observations, and conclusions when asked explicitly."
+    ],
+    "limitations": [
+      "Dense execution is slower than the 26B-A4B lane and throughput-oriented MoE alternatives.",
+      "It should not be selected solely by size for autonomous coding or tool orchestration."
+    ],
+    "prompting": [
+      "Specify audience and tone, and ask it to separate direct observations from conclusions."
+    ],
+    "evidence": {
+      "confidence": "mixed",
+      "basis": ["official", "operator"],
+      "notes": "Official family results support the quality tier; prose and image preference is reinforced by recurring operator experience."
+    }
+  },
   "shared": {
     "aliases": [
       "gemma-4-31b"

@@ -2,6 +2,41 @@
   "schema_version": 1,
   "family": "smol",
   "model_slug": "smollm2-135m",
+  "profile": {
+    "display_name": "SmolLM2 135M",
+    "prompt_summary": "Tiny text helper for health checks, simple labels, formatting, and toy completions only; never treat it as a reasoning, coding, research, tool, or writing model.",
+    "architecture": {
+      "kind": "dense",
+      "total_parameters_b": 0.135,
+      "active_parameters_b": 0.135
+    },
+    "capabilities": {
+      "native_input_modalities": ["text"],
+      "configured_input_modalities": ["text"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 8192,
+      "reasoning_control": "none"
+    },
+    "roles": {
+      "preferred": ["health-checks", "simple-labels", "formatting", "toy-completions"],
+      "capable": [],
+      "avoid": ["reasoning", "coding", "research", "nuanced-writing", "tools", "vision"]
+    },
+    "strengths": [
+      "Starts quickly and cheaply enough to validate basic serving and request plumbing."
+    ],
+    "limitations": [
+      "Its tiny capacity is unsuitable for meaningful assistant quality or contract-rich tool use."
+    ],
+    "prompting": [
+      "Give one short task, a strict output shape, one example, low temperature, and a short output limit."
+    ],
+    "evidence": {
+      "confidence": "high",
+      "basis": ["official", "inference"],
+      "notes": "Model size and text capability are official; the smoke-test-only role is an explicit PreFer product decision."
+    }
+  },
   "shared": {
     "aliases": [
       "smol",

@@ -61,6 +61,9 @@ def load_catalog() -> dict[str, Any]:
             raise CatalogError(f"{relative.as_posix()}: shared must be an object")
         if "settings" in shared and not isinstance(shared["settings"], dict):
             raise CatalogError(f"{relative.as_posix()}: shared.settings must be an object")
+        profile = source.get("profile")
+        if not isinstance(profile, dict):
+            raise CatalogError(f"{relative.as_posix()}: profile must be an object")
 
         for quant_slug, lane in quants.items():
             if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", quant_slug):
@@ -92,6 +95,7 @@ def load_catalog() -> dict[str, Any]:
                     for name, value in settings.items()
                     if name not in {"model", "model-draft", "mmproj"}
                 )
+            model["profile"] = copy.deepcopy(profile)
             model["_catalog"] = OrderedDict(
                 family=family,
                 model_slug=model_slug,
@@ -116,6 +120,97 @@ DECIMAL_SETTINGS = {
     "repeat-penalty",
     "presence-penalty",
 }
+
+PROFILE_MODALITIES = {"text", "image", "audio", "video"}
+PROFILE_REASONING_CONTROL = {"none", "prompted", "request-selectable", "always-on", "unknown"}
+PROFILE_ARCHITECTURES = {"dense", "moe", "hybrid-moe"}
+PROFILE_CONFIDENCE = {"high", "medium", "low", "mixed"}
+PROFILE_EVIDENCE_BASIS = {"official", "operator", "maintainer", "inference"}
+
+
+def validate_string_list(value: Any, label: str, *, allow_empty: bool = False) -> list[str]:
+    if not isinstance(value, list) or (not value and not allow_empty):
+        raise CatalogError(f"{label} must be a {'possibly empty ' if allow_empty else 'non-empty '}list of strings")
+    if any(not isinstance(item, str) or not item.strip() for item in value):
+        raise CatalogError(f"{label} must contain only non-empty strings")
+    if len(value) != len(set(value)):
+        raise CatalogError(f"{label} must not contain duplicates")
+    return value
+
+
+def validate_model_profile(key: str, profile: Any) -> None:
+    if not isinstance(profile, dict):
+        raise CatalogError(f"{key}: profile must be an object")
+    for name in ("display_name", "prompt_summary"):
+        if not isinstance(profile.get(name), str) or not profile[name].strip():
+            raise CatalogError(f"{key}: profile.{name} must be a non-empty string")
+
+    architecture = profile.get("architecture")
+    if not isinstance(architecture, dict) or architecture.get("kind") not in PROFILE_ARCHITECTURES:
+        raise CatalogError(f"{key}: profile.architecture.kind must name a supported architecture")
+    for name in ("total_parameters_b", "active_parameters_b"):
+        value = architecture.get(name)
+        if value is not None and (not isinstance(value, (int, float)) or isinstance(value, bool) or value <= 0):
+            raise CatalogError(f"{key}: profile.architecture.{name} must be a positive number when present")
+    if (
+        architecture.get("active_parameters_b") is not None
+        and architecture.get("total_parameters_b") is not None
+        and architecture["active_parameters_b"] > architecture["total_parameters_b"]
+    ):
+        raise CatalogError(f"{key}: active parameters cannot exceed total parameters")
+
+    capabilities = profile.get("capabilities")
+    if not isinstance(capabilities, dict):
+        raise CatalogError(f"{key}: profile.capabilities must be an object")
+    native_inputs = validate_string_list(
+        capabilities.get("native_input_modalities"), f"{key}: profile.capabilities.native_input_modalities"
+    )
+    configured_inputs = validate_string_list(
+        capabilities.get("configured_input_modalities"), f"{key}: profile.capabilities.configured_input_modalities"
+    )
+    outputs = validate_string_list(
+        capabilities.get("output_modalities"), f"{key}: profile.capabilities.output_modalities"
+    )
+    for name, modalities in (
+        ("native_input_modalities", native_inputs),
+        ("configured_input_modalities", configured_inputs),
+        ("output_modalities", outputs),
+    ):
+        unknown = sorted(set(modalities) - PROFILE_MODALITIES)
+        if unknown:
+            raise CatalogError(f"{key}: profile.capabilities.{name} has unsupported modality {unknown[0]!r}")
+    if not set(configured_inputs).issubset(native_inputs):
+        raise CatalogError(f"{key}: configured input modalities must be a subset of native input modalities")
+    context = capabilities.get("native_context_tokens")
+    if not isinstance(context, int) or isinstance(context, bool) or context <= 0:
+        raise CatalogError(f"{key}: profile.capabilities.native_context_tokens must be a positive integer")
+    if capabilities.get("reasoning_control") not in PROFILE_REASONING_CONTROL:
+        raise CatalogError(f"{key}: profile.capabilities.reasoning_control is unsupported")
+
+    roles = profile.get("roles")
+    if not isinstance(roles, dict):
+        raise CatalogError(f"{key}: profile.roles must be an object")
+    role_sets: dict[str, set[str]] = {}
+    for name in ("preferred", "capable", "avoid"):
+        values = validate_string_list(roles.get(name), f"{key}: profile.roles.{name}", allow_empty=name != "preferred")
+        if any(not re.fullmatch(r"[a-z0-9][a-z0-9-]*", value) for value in values):
+            raise CatalogError(f"{key}: profile.roles.{name} must use lowercase slug values")
+        role_sets[name] = set(values)
+    if any(role_sets[left] & role_sets[right] for left, right in (("preferred", "capable"), ("preferred", "avoid"), ("capable", "avoid"))):
+        raise CatalogError(f"{key}: profile role lists must not overlap")
+
+    for name in ("strengths", "limitations", "prompting"):
+        validate_string_list(profile.get(name), f"{key}: profile.{name}")
+
+    evidence = profile.get("evidence")
+    if not isinstance(evidence, dict) or evidence.get("confidence") not in PROFILE_CONFIDENCE:
+        raise CatalogError(f"{key}: profile.evidence.confidence is unsupported")
+    basis = validate_string_list(evidence.get("basis"), f"{key}: profile.evidence.basis")
+    unknown_basis = sorted(set(basis) - PROFILE_EVIDENCE_BASIS)
+    if unknown_basis:
+        raise CatalogError(f"{key}: profile.evidence.basis has unsupported value {unknown_basis[0]!r}")
+    if not isinstance(evidence.get("notes"), str) or not evidence["notes"].strip():
+        raise CatalogError(f"{key}: profile.evidence.notes must be a non-empty string")
 
 
 def ini_value(value: Any, name: str | None = None) -> str:
@@ -167,6 +262,7 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
         request_model_id = model.get("request_model_id")
         if request_model_id not in aliases:
             raise CatalogError(f"{key}: request_model_id must name one of the configured aliases")
+        validate_model_profile(key, model.get("profile"))
         identity = model.get("_catalog", {})
         if set(identity) != {"family", "model_slug", "quant_slug", "source"}:
             raise CatalogError(f"{key}: generated catalog identity is incomplete")
@@ -463,18 +559,42 @@ def render_downloads(catalog: dict[str, Any]) -> str:
 def render_inventory(
     catalog: dict[str, Any], scenario_records: list[tuple[dict[str, Any], dict[str, Any], Path]]
 ) -> str:
+    model_profiles: OrderedDict[str, dict[str, Any]] = OrderedDict()
     inventory_models: OrderedDict[str, dict[str, Any]] = OrderedDict()
     for key, model in catalog["models"].items():
         identity = model["_catalog"]
+        profile_id = identity["model_slug"]
+        if profile_id not in model_profiles:
+            profile = OrderedDict(
+                family=identity["family"],
+                model_slug=profile_id,
+                aliases=copy.deepcopy(model["aliases"]),
+                request_model_id=model["request_model_id"],
+                quant_keys=[],
+            )
+            profile.update(copy.deepcopy(model["profile"]))
+            model_profiles[profile_id] = profile
+        else:
+            profile = model_profiles[profile_id]
+            if (
+                profile["family"] != identity["family"]
+                or profile["aliases"] != model["aliases"]
+                or profile["request_model_id"] != model["request_model_id"]
+                or any(profile[name] != model["profile"][name] for name in model["profile"])
+            ):
+                raise CatalogError(f"{key}: logical model profile differs across quant lanes")
+        model_profiles[profile_id]["quant_keys"].append(key)
+
         item = OrderedDict(
             key=key,
             family=identity["family"],
             model_slug=identity["model_slug"],
             quant_slug=identity["quant_slug"],
             source=identity["source"],
+            profile_id=profile_id,
         )
         for name, value in model.items():
-            if name != "_catalog":
+            if name not in {"_catalog", "profile"}:
                 item[name] = value
         item["download_fingerprint"] = model_download_fingerprint(key, model)
         sizes = [artifact.get("size") for artifact in model["artifacts"]]
@@ -484,6 +604,7 @@ def render_inventory(
     catalog_payload = OrderedDict(
         runtime=catalog["runtime"],
         legacy_default_prestage=catalog["legacy_default_prestage"],
+        model_profiles=model_profiles,
         models=inventory_models,
     )
     catalog_fingerprint = hashlib.sha256(
@@ -520,6 +641,7 @@ def render_inventory(
                     family=identity["family"],
                     model_slug=identity["model_slug"],
                     quant_slug=identity["quant_slug"],
+                    profile_id=identity["model_slug"],
                     section=section,
                     request_model_id=effective_request_model_id(model, entry),
                     aliases=entry.get("aliases", model.get("aliases", [])),
@@ -556,6 +678,7 @@ def render_inventory(
         schema_version="prefer.deployment-inventory.v1",
         catalog_fingerprint=catalog_fingerprint,
         runtime=catalog["runtime"],
+        model_profiles=model_profiles,
         models=inventory_models,
         deployments=deployments,
     )

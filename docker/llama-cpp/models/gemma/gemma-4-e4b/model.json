@@ -2,6 +2,41 @@
   "schema_version": 1,
   "family": "gemma",
   "model_slug": "gemma-4-e4b",
+  "profile": {
+    "display_name": "Gemma 4 E4B",
+    "prompt_summary": "Fast compact QAT assistant for short-form writing, translation, summarization, and document or image extraction; more coherent than E2B but still not an unattended agent or large-code model.",
+    "architecture": {
+      "kind": "dense"
+    },
+    "capabilities": {
+      "native_input_modalities": ["text", "image", "video", "audio"],
+      "configured_input_modalities": ["text", "image"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 131072,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["summarization", "translation", "short-writing", "document-extraction", "image-understanding"],
+      "capable": ["code-explanation", "general-assistance"],
+      "avoid": ["autonomous-agents", "repository-coding", "deep-planning"]
+    },
+    "strengths": [
+      "Very fast QAT route with a useful balance of readable prose and multimodal extraction.",
+      "Good intermediate choice when E2B is too shallow and 12B is unnecessary."
+    ],
+    "limitations": [
+      "Not dependable for long tool chains, deep planning, or final technical judgment.",
+      "Native audio and video are not exposed by the current llama.cpp package."
+    ],
+    "prompting": [
+      "Use direct natural-language instructions and specify the desired concision and deliverable."
+    ],
+    "evidence": {
+      "confidence": "mixed",
+      "basis": ["official", "operator", "inference"],
+      "notes": "Hard capabilities are official; relative writing and role guidance combine operator experience with family-level inference."
+    }
+  },
   "shared": {
     "aliases": [
       "gemma-4-e4b"

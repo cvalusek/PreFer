@@ -2,6 +2,43 @@
   "schema_version": 1,
   "family": "glm",
   "model_slug": "glm-4.7-flash",
+  "profile": {
+    "display_name": "GLM-4.7-Flash",
+    "prompt_summary": "Fast one-card reasoning and coding helper for bounded implementation, search, tools, drafting, and synthesis; use GLM-5.2 or another supervisor for the hardest long-horizon work.",
+    "architecture": {
+      "kind": "moe",
+      "total_parameters_b": 30,
+      "active_parameters_b": 3
+    },
+    "capabilities": {
+      "native_input_modalities": ["text"],
+      "configured_input_modalities": ["text"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 202752,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["bounded-coding", "search", "tool-use", "drafting", "synthesis"],
+      "capable": ["reasoning", "research-helper", "agent-steps"],
+      "avoid": ["vision", "final-research-authority", "unbounded-orchestration"]
+    },
+    "strengths": [
+      "Its three-billion-active MoE architecture makes it a fast coding, browsing, and agent worker for its total size.",
+      "Useful qualitative quality-throughput balance for a single 96 GB deployment."
+    ],
+    "limitations": [
+      "Not the preferred final authority when larger high-intelligence routes are available.",
+      "Agent behavior depends on preserving its thinking and tool-template semantics."
+    ],
+    "prompting": [
+      "Use the exact GLM template and tool schema; preserve thinking across multi-turn agent tasks and define a bounded completion condition."
+    ],
+    "evidence": {
+      "confidence": "mixed",
+      "basis": ["official", "inference"],
+      "notes": "Architecture and intended capabilities are publisher-backed; precise PreFer role and speed judgment still needs route-level experience."
+    }
+  },
   "shared": {
     "aliases": [
       "glm-4.7-flash"

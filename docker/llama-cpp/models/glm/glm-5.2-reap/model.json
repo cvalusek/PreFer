@@ -2,6 +2,42 @@
   "schema_version": 1,
   "family": "glm",
   "model_slug": "glm-5.2-reap",
+  "profile": {
+    "display_name": "GLM-5.2 REAP 504B",
+    "prompt_summary": "Fit-optimized GLM-5.2 derivative for constrained high-end planning and reasoning; prefer the full model for rare knowledge or quality-critical authority unless this exact derivative has been compared.",
+    "architecture": {
+      "kind": "moe",
+      "total_parameters_b": 504
+    },
+    "capabilities": {
+      "native_input_modalities": ["text"],
+      "configured_input_modalities": ["text"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 1048576,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["constrained-planning", "constrained-reasoning"],
+      "capable": ["research-synthesis", "coding-design"],
+      "avoid": ["rare-knowledge-authority", "quality-critical-decisions", "vision"]
+    },
+    "strengths": [
+      "Expert pruning opens a materially smaller multi-GPU deployment while retaining the GLM-5.2 interface.",
+      "Useful when the full 753B route is operationally unavailable."
+    ],
+    "limitations": [
+      "Behavioral equivalence to full GLM-5.2 is not established and the model card reports a higher loop rate.",
+      "The current GGUF uses a compatibility workaround for shared sparse-attention indexer tensors."
+    ],
+    "prompting": [
+      "Use the base GLM template, pin the exact derivative, and require explicit evidence checks for quality-critical conclusions."
+    ],
+    "evidence": {
+      "confidence": "low",
+      "basis": ["maintainer", "inference"],
+      "notes": "Artifact and pruning facts are documented; practical behavioral equivalence remains a verification item."
+    }
+  },
   "shared": {
     "aliases": [
       "glm-5.2-reap"

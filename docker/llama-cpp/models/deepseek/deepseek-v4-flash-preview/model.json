@@ -2,6 +2,43 @@
   "schema_version": 1,
   "family": "deepseek",
   "model_slug": "deepseek-v4-flash-preview",
+  "profile": {
+    "display_name": "DeepSeek V4 Flash Preview",
+    "prompt_summary": "Deliberate text planner retained for compatibility, long-context synthesis, and regression comparisons; route new high-end work to the 0731 successor when its client protocol is supported.",
+    "architecture": {
+      "kind": "moe",
+      "total_parameters_b": 284,
+      "active_parameters_b": 13
+    },
+    "capabilities": {
+      "native_input_modalities": ["text"],
+      "configured_input_modalities": ["text"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 1048576,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["legacy-evaluations", "planning", "research", "long-context-synthesis"],
+      "capable": ["coding-design", "difficult-reasoning"],
+      "avoid": ["new-default-routing", "cheap-drafting", "constrained-hardware"]
+    },
+    "strengths": [
+      "Known compatibility route with strong reasoning and unusually affordable long context for its size.",
+      "Useful as the stable comparison point for newer DeepSeek V4 releases."
+    ],
+    "limitations": [
+      "It is the Preview lineage rather than the current preferred successor.",
+      "The preserved route is target-only and lacks the newer DSpark acceleration path."
+    ],
+    "prompting": [
+      "Use the exact Preview chat protocol, allow adequate reasoning space, and keep tool turns consistent with its preserved template."
+    ],
+    "evidence": {
+      "confidence": "mixed",
+      "basis": ["official", "operator"],
+      "notes": "The route has direct operational history; its present role is primarily compatibility and regression comparison."
+    }
+  },
   "shared": {
     "aliases": [
       "deepseek-v4-flash"

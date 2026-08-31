@@ -1,5 +1,18 @@
 # PreFer changelog
 
+## Current
+
+- Model guidance
+  - Added prompt-ready behavioral profiles for every llama.cpp model currently provided by PreFer.
+  - Profiles now distinguish native capabilities from the modalities configured by the packaged route.
+  - Added preferred, capable, and avoid role tags plus strengths, limitations, prompting guidance, and evidence confidence.
+  - Added qualitative speed and role guidance while keeping third-party scores and deployment measurements outside the release inventory.
+- Deployment inventory
+  - Added a deduplicated `model_profiles` catalog keyed by logical model slug.
+  - Added `profile_id` references to quant and deployment model records for straightforward system-prompt assembly.
+- Runtime behavior
+  - No model artifact, quant, preset, context, concurrency, cache, routing, or default changed.
+
 ## sha-8b234f4
 
 - Images

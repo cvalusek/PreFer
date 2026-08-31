@@ -2,6 +2,44 @@
   "schema_version": 1,
   "family": "gemma",
   "model_slug": "gemma-4-12b",
+  "profile": {
+    "display_name": "Gemma 4 12B",
+    "prompt_summary": "Fast one-card QAT writer and visual analyst; prefer it for polished prose, editing, image recognition, and document synthesis when maximum coding or agentic ability is not required.",
+    "architecture": {
+      "kind": "dense",
+      "total_parameters_b": 11.95,
+      "active_parameters_b": 11.95
+    },
+    "capabilities": {
+      "native_input_modalities": ["text", "image", "video", "audio"],
+      "configured_input_modalities": ["text", "image"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 262144,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["general-writing", "editing", "image-understanding", "document-synthesis"],
+      "capable": ["moderate-reasoning", "code-explanation", "general-assistance"],
+      "avoid": ["long-horizon-coding", "tool-orchestration", "hardest-reasoning"]
+    },
+    "strengths": [
+      "Produces polished, natural prose and follows tone or audience instructions well.",
+      "Strong practical image recognition and document inspection for its deployment size.",
+      "The official QAT-derived deployment is notably fast for its quality tier."
+    ],
+    "limitations": [
+      "Less reliable than coding-focused models on long autonomous implementation and tool loops.",
+      "Native audio and video are not exposed by the current llama.cpp package."
+    ],
+    "prompting": [
+      "State the audience and tone, and name the visual evidence or document details that must be inspected."
+    ],
+    "evidence": {
+      "confidence": "mixed",
+      "basis": ["official", "operator"],
+      "notes": "Native and configured capabilities are publisher-backed; the writing, image, and speed guidance reflects recurring owner experience."
+    }
+  },
   "shared": {
     "aliases": [
       "gemma-4-12b"

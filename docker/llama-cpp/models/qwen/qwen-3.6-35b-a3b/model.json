@@ -2,6 +2,43 @@
   "schema_version": 1,
   "family": "qwen",
   "model_slug": "qwen-3.6-35b-a3b",
+  "profile": {
+    "display_name": "Qwen3.6 35B-A3B",
+    "prompt_summary": "Fast implementation and tool-execution worker for coding, code search, structured tools, and parallel subagents; give final planning or architectural judgment to a stronger supervisor.",
+    "architecture": {
+      "kind": "hybrid-moe",
+      "total_parameters_b": 35,
+      "active_parameters_b": 3
+    },
+    "capabilities": {
+      "native_input_modalities": ["text", "image", "video"],
+      "configured_input_modalities": ["text"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 262144,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["coding", "code-search", "structured-tools", "parallel-workers"],
+      "capable": ["repository-fixes", "routine-reasoning", "research-helper"],
+      "avoid": ["sole-planner", "final-architecture", "long-horizon-orchestration"]
+    },
+    "strengths": [
+      "Low active parameter count makes it a high-throughput coding and tool worker.",
+      "Publisher guidance and practical use favor concrete repository tasks and explicit tests."
+    ],
+    "limitations": [
+      "Can look capable early in a nested workflow and still lose the larger orchestration thread.",
+      "The current PreFer artifact omits its native visual projector and is configured text-only."
+    ],
+    "prompting": [
+      "Use the exact Qwen tool format, define acceptance tests, and keep the objective concrete and bounded."
+    ],
+    "evidence": {
+      "confidence": "mixed",
+      "basis": ["official", "operator", "maintainer"],
+      "notes": "Coding and tool surfaces are official; the worker-versus-orchestrator distinction is reinforced by operator and agent-harness experience."
+    }
+  },
   "shared": {
     "aliases": [
       "qwen-3.6",

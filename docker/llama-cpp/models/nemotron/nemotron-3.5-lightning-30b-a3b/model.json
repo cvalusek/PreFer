@@ -2,6 +2,43 @@
   "schema_version": 1,
   "family": "nemotron",
   "model_slug": "nemotron-3.5-lightning-30b-a3b",
+  "profile": {
+    "display_name": "Nemotron 3.5 Lightning 30B-A3B",
+    "prompt_summary": "Throughput-first text worker for bulk summarization, extraction, classification, rewriting, and routing; select a quality-focused model for final adjudication or difficult reasoning.",
+    "architecture": {
+      "kind": "hybrid-moe",
+      "total_parameters_b": 30,
+      "active_parameters_b": 3
+    },
+    "capabilities": {
+      "native_input_modalities": ["text"],
+      "configured_input_modalities": ["text"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 1048576,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["bulk-summarization", "extraction", "classification", "rewriting", "routing"],
+      "capable": ["routine-coding", "structured-output", "tool-use"],
+      "avoid": ["vision", "final-adjudication", "quality-first-reasoning"]
+    },
+    "strengths": [
+      "Three active billion parameters and speculative decoding make it attractive for high-throughput text work.",
+      "Configurable thinking permits a speed-versus-quality choice without changing models."
+    ],
+    "limitations": [
+      "It is a throughput role, not the strongest intelligence point in the current roster.",
+      "Hybrid state, long-context, and tool behavior remain more runtime-sensitive than ordinary dense text models."
+    ],
+    "prompting": [
+      "Keep routine jobs bounded and non-thinking; enable thinking only when the added latency is justified by task difficulty."
+    ],
+    "evidence": {
+      "confidence": "mixed",
+      "basis": ["official", "inference"],
+      "notes": "Architecture, context, and throughput positioning are publisher-backed; exact local tool behavior remains a verification item."
+    }
+  },
   "shared": {
     "aliases": [
       "nemotron-3.5-lightning",

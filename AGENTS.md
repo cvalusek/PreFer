@@ -148,7 +148,10 @@ AWS, RunPod, and generic local hardware presets are generated, not hand-edited:
   prestage default.
 - `models/<family>/<model>/model.json` owns model sections, aliases, exact
   download revisions, files, sizes, hashes, companions, and model-specific
-  settings. One logical model file contains a `quants` dictionary; each quant
+  settings. Its root `profile` owns the logical model's prompt-ready selection
+  guidance: concise summary, architecture, native and configured modalities,
+  context/reasoning controls, role fit, strengths, limitations, prompting notes,
+  and evidence confidence. One logical model file contains a `quants` dictionary; each quant
   lane has a globally unique catalog key used by scenarios and staging.
   Model-wide aliases/license/lineage/runtime facts belong in `shared`; settings
   shared by multiple quant lanes may also live there, with lane settings merged
@@ -167,7 +170,21 @@ AWS, RunPod, and generic local hardware presets are generated, not hand-edited:
   `/deployment-inventory.json`, published as a commit-named workflow artifact,
   and identified by OCI labels. It is the machine-readable NeurOn contract for
   runtime, model/quant, provider GPU ID/count, effective settings, preset path,
-  and prestaging.
+  prestaging, and model-selection guidance. `model_profiles` is deduplicated by
+  logical `model_slug`; quant and deployment entries reference it through
+  `profile_id`.
+- Treat profiles as product routing judgment, not benchmark leaderboards. Keep
+  native capability separate from what the checked-in artifacts configure, and
+  keep both separate from scenario verification. Record meaningful behavioral
+  differences such as prose quality, visual interpretation, tool persistence,
+  orchestration fit, and prompt-family needs. Mark mixed or inferential evidence
+  honestly, but do not erase useful operator knowledge merely because a broad
+  matched benchmark is unavailable. Do not copy third-party evaluation scores,
+  rankings, or provider throughput into the release inventory. A profile may
+  state a rough qualitative conclusion, but consumers must inject current
+  external data through a separately attributed source. NeurOn's route-level
+  measurements are authoritative for deployed speed; catalog speed language is
+  deliberately qualitative.
 - Every catalog lane owns an explicit `request_model_id` that must be one of
   its configured aliases. Controllers use it for warmup and API requests.
   `section` remains the exact generated INI header and is not request-safe:

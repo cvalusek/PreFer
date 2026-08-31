@@ -2,6 +2,43 @@
   "schema_version": 1,
   "family": "gemma",
   "model_slug": "gemma-4-26b-a4b",
+  "profile": {
+    "display_name": "Gemma 4 26B-A4B",
+    "prompt_summary": "Very fast 3.8B-active QAT multimodal synthesizer for writing, visual analysis, extraction, and medium-complexity planning; choose it when Gemma quality matters but dense 31B latency does not.",
+    "architecture": {
+      "kind": "moe",
+      "total_parameters_b": 25.2,
+      "active_parameters_b": 3.8
+    },
+    "capabilities": {
+      "native_input_modalities": ["text", "image", "video"],
+      "configured_input_modalities": ["text", "image"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 262144,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["general-writing", "visual-analysis", "synthesis", "extraction"],
+      "capable": ["medium-planning", "coding", "tool-use"],
+      "avoid": ["difficult-repository-coding", "persistent-tool-loops", "final-architecture"]
+    },
+    "strengths": [
+      "Preserves Gemma's prose and visual strengths with very fast low-active-parameter QAT inference.",
+      "Good quality-throughput compromise for general multimodal assistance."
+    ],
+    "limitations": [
+      "Does not automatically replace a coding specialist or the dense 31B quality lane.",
+      "Configured vision still depends on the packaged projector and deployment verification."
+    ],
+    "prompting": [
+      "Give explicit acceptance criteria for synthesis or planning; speculative decoding changes speed, not model behavior."
+    ],
+    "evidence": {
+      "confidence": "mixed",
+      "basis": ["official", "operator"],
+      "notes": "Architecture and family behavior are publisher-backed; practical role and speed guidance reflects product and operator judgment."
+    }
+  },
   "shared": {
     "aliases": [
       "gemma-4",

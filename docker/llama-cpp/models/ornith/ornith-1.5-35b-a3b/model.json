@@ -2,6 +2,43 @@
   "schema_version": 1,
   "family": "ornith",
   "model_slug": "ornith-1.5-35b-a3b",
+  "profile": {
+    "display_name": "Ornith 1.5 35B-A3B",
+    "prompt_summary": "Persistent, fast agentic coder for bounded multi-file implementation, repository or browser agents, and structured tool loops; validate it before trusting prose, visual judgment, or final architecture.",
+    "architecture": {
+      "kind": "hybrid-moe",
+      "total_parameters_b": 35,
+      "active_parameters_b": 3
+    },
+    "capabilities": {
+      "native_input_modalities": ["text", "image"],
+      "configured_input_modalities": ["text", "image"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 262144,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["multi-file-coding", "repository-agents", "browser-agents", "tool-loops"],
+      "capable": ["structured-execution", "research-helper", "visual-qa"],
+      "avoid": ["prose-first-writing", "final-architecture", "quality-critical-visual-judgment"]
+    },
+    "strengths": [
+      "Low active compute supports persistent, multi-step implementation at useful throughput.",
+      "Publisher training and harness focus directly on coding agents and tool use."
+    ],
+    "limitations": [
+      "Publisher quality claims should not be assumed to transfer unchanged to PreFer's llama.cpp route.",
+      "The configured projector and long tool loops still need route-specific validation."
+    ],
+    "prompting": [
+      "Use the exact bundled template and parser, pin the artifact, and provide bounded tools with explicit acceptance tests."
+    ],
+    "evidence": {
+      "confidence": "mixed",
+      "basis": ["official", "inference"],
+      "notes": "Publisher documentation targets agentic coding; local artifact, parser, and visual stability remain verification items."
+    }
+  },
   "shared": {
     "aliases": [
       "ornith-1.5-35b-a3b"

@@ -2,6 +2,44 @@
   "schema_version": 1,
   "family": "qwen",
   "model_slug": "qwen-3.8-27b",
+  "profile": {
+    "display_name": "Qwen3.8 27B",
+    "prompt_summary": "High-intelligence dense coder and generalist for repository work, debugging, tools, research synthesis, difficult reasoning, and bounded planning; its template defaults to xhigh reasoning, so choose a lower mode only when the task or latency goal calls for it.",
+    "architecture": {
+      "kind": "dense",
+      "total_parameters_b": 27,
+      "active_parameters_b": 27
+    },
+    "capabilities": {
+      "native_input_modalities": ["text", "image", "video"],
+      "configured_input_modalities": ["text"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 262144,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["repository-coding", "debugging", "tool-use", "research-synthesis", "difficult-reasoning"],
+      "capable": ["bounded-planning", "long-context-review", "architecture-review", "structured-output"],
+      "avoid": ["latency-sensitive-fanout", "configured-vision"]
+    },
+    "strengths": [
+      "Strong practical coding, tool use, synthesis, and controllable reasoning in a one-card quality lane.",
+      "Dense execution favors quality and consistency over the 35B-A3B route's throughput."
+    ],
+    "limitations": [
+      "Xhigh reasoning can carry substantial token and latency costs, but difficult planning, proofs, or architecture work may benefit materially.",
+      "The pinned PreFer Q6 route intentionally omits the optional projector and is configured text-only."
+    ],
+    "prompting": [
+      "Disable thinking for work that should not reason. With thinking enabled, use only low, medium, or xhigh: low asks for brief focused thinking, medium adds no effort instruction, and xhigh is the careful-validation default.",
+      "On the pinned b10362 runtime, pass reasoning control through the template kwargs path and verify it is rendered; do not assume an OpenAI-style top-level reasoning_effort field is forwarded."
+    ],
+    "evidence": {
+      "confidence": "high",
+      "basis": ["official", "operator"],
+      "notes": "Capabilities and supported reasoning values come from the released model and template; role guidance is qualitative product judgment reinforced by operator experience."
+    }
+  },
   "shared": {
     "aliases": [
       "qwen-3.8-27b"

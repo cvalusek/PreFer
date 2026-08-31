@@ -2,6 +2,43 @@
   "schema_version": 1,
   "family": "deepseek",
   "model_slug": "deepseek-v4-flash-0731",
+  "profile": {
+    "display_name": "DeepSeek V4 Flash 0731",
+    "prompt_summary": "High-end text planner and research supervisor for complex plans, coding design, long synthesis, and tool orchestration; hand routine implementation to faster workers and preserve its version-specific protocol.",
+    "architecture": {
+      "kind": "moe",
+      "total_parameters_b": 284,
+      "active_parameters_b": 13
+    },
+    "capabilities": {
+      "native_input_modalities": ["text"],
+      "configured_input_modalities": ["text"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 1048576,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["complex-planning", "research", "coding-design", "long-synthesis", "tool-orchestration"],
+      "capable": ["autonomous-exploration", "difficult-reasoning", "architecture-review"],
+      "avoid": ["casual-chat", "low-latency-work", "protocol-incompatible-clients"]
+    },
+    "strengths": [
+      "Strong release-specific agent and coding evidence with very long native context.",
+      "DSpark can materially improve decode speed on the configured two-GPU quality route."
+    ],
+    "limitations": [
+      "Large artifacts and a specialized encoding or tool protocol make it a poor generic drop-in.",
+      "It is expensive for routine work and should supervise rather than absorb every implementation task."
+    ],
+    "prompting": [
+      "Use the versioned response and tool format, preserve reasoning content across tool turns, and state the desired reasoning mode and completion boundary."
+    ],
+    "evidence": {
+      "confidence": "mixed",
+      "basis": ["official", "operator"],
+      "notes": "Protocol and model capabilities are official; quality and DSpark gains remain workload- and runtime-dependent."
+    }
+  },
   "shared": {
     "aliases": [
       "deepseek-v4-flash",

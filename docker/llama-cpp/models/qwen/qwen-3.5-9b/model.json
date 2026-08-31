@@ -2,6 +2,43 @@
   "schema_version": 1,
   "family": "qwen",
   "model_slug": "qwen-3.5-9b",
+  "profile": {
+    "display_name": "Qwen3.5 9B",
+    "prompt_summary": "Compact multimodal worker for small coding tasks, extraction, translation, visual questions, and routine reasoning; use a larger model for architecture, broad orchestration, or research authority.",
+    "architecture": {
+      "kind": "dense",
+      "total_parameters_b": 9.65,
+      "active_parameters_b": 9.65
+    },
+    "capabilities": {
+      "native_input_modalities": ["text", "image", "video"],
+      "configured_input_modalities": ["text", "image"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 262144,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["small-coding", "extraction", "translation", "visual-qa", "routine-reasoning"],
+      "capable": ["tool-use", "research-helper", "structured-output"],
+      "avoid": ["architecture-authority", "large-repository-orchestration", "high-stakes-research"]
+    },
+    "strengths": [
+      "Strong coding, structured-output, and multimodal utility for a small deployment.",
+      "Useful as a focused worker that can be run more cheaply or in parallel."
+    ],
+    "limitations": [
+      "Not a dependable final strategist for complex systems or long autonomous workflows.",
+      "Its prose is generally more utilitarian than the comparable Gemma writing lanes."
+    ],
+    "prompting": [
+      "Enable thinking for difficult work and use non-thinking mode for routine transformations; provide an exact output contract."
+    ],
+    "evidence": {
+      "confidence": "mixed",
+      "basis": ["official", "inference"],
+      "notes": "Capabilities and publisher results are official; role boundaries partly extrapolate from Qwen family behavior."
+    }
+  },
   "shared": {
     "aliases": [
       "qwen-3.5",

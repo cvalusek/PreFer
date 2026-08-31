@@ -2,6 +2,43 @@
   "schema_version": 1,
   "family": "glm",
   "model_slug": "glm-5.2",
+  "profile": {
+    "display_name": "GLM-5.2",
+    "prompt_summary": "High-end text supervisor for difficult reasoning, research synthesis, coding design, and long-context planning; reserve it for high-leverage work rather than cheap fan-out.",
+    "architecture": {
+      "kind": "moe",
+      "total_parameters_b": 753,
+      "active_parameters_b": 40
+    },
+    "capabilities": {
+      "native_input_modalities": ["text"],
+      "configured_input_modalities": ["text"],
+      "output_modalities": ["text"],
+      "native_context_tokens": 1048576,
+      "reasoning_control": "request-selectable"
+    },
+    "roles": {
+      "preferred": ["difficult-reasoning", "research-synthesis", "coding-design", "long-context-planning"],
+      "capable": ["orchestration", "architecture-review", "complex-coding"],
+      "avoid": ["cheap-fanout", "latency-sensitive-work", "vision"]
+    },
+    "strengths": [
+      "Flagship long-horizon model with flexible thinking effort and a publisher-supported one-million-token context.",
+      "Good supervisor candidate for complex plans, evidence synthesis, and coding architecture."
+    ],
+    "limitations": [
+      "Its multi-accelerator footprint and latency make it wasteful for routine worker tasks.",
+      "The local GGUF route still needs contract, tool, and long-context validation on target hardware."
+    ],
+    "prompting": [
+      "Provide the objective, evidence requirements, decision criteria, and sufficient reasoning budget; keep the exact GLM template."
+    ],
+    "evidence": {
+      "confidence": "mixed",
+      "basis": ["official", "maintainer"],
+      "notes": "Flagship capabilities are publisher-backed; local quality, speed, and route behavior remain deployment-specific."
+    }
+  },
   "shared": {
     "aliases": [
       "glm-5.2"
