@@ -1,6 +1,12 @@
 # PreFer changelog
 
-## Current
+## sha-bb19fde
+
+- Images
+  - Llama CUDA: `ghcr.io/cvalusek/prefer:llama-cuda-sha-bb19fde@sha256:da3adb1f092f9aaedc69c8d5901fcf5444ad3d0474bf2364d1e80cea7c703bd6`.
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-bb19fde@sha256:6b13b74524e9c70ee57e457e6d164e2586f952070c9d9d6f1bcfa7c09c4abb13`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-bb19fde@sha256:e1a8b302db8eaa4d2bcbb88a16c790ffeb295f6bad04ace969ec13ce84a25a2c`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-bb19fde@sha256:7a860ef680d28203868ca955fa3e15090f0a67da009a3252c0e358cdd7be9bc0`.
 
 - Release packaging
   - Replaced separate llama, Audio, and Image builds with one grouped PreFer release.
