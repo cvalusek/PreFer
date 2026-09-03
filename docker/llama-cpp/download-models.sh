@@ -42,6 +42,7 @@ fi
 # Hugging Face cache bookkeeping from both directions. Unset (local / RunPod)
 # remains HF-only and sequential by default.
 S3_BUCKET_NAME="${S3_BUCKET_NAME:-}"
+MARKER_BUCKET_NAME="${S3_BUCKET_NAME:--}"
 if [ -n "$S3_BUCKET_NAME" ]; then
   echo "[download-models] S3 cache enabled: s3://$S3_BUCKET_NAME"
   DEFAULT_MODEL_DOWNLOAD_JOBS=4
@@ -150,7 +151,7 @@ marker_metadata_is_fresh() {
     MARKER_REASON="schema changed"
     return 1
   fi
-  if [ "$bucket" != "$S3_BUCKET_NAME" ]; then
+  if [ "$bucket" != "$MARKER_BUCKET_NAME" ]; then
     MARKER_REASON="bucket changed"
     return 1
   fi
@@ -226,7 +227,7 @@ write_model_marker() {
   mkdir -p "$MODEL_CACHE_MARKER_DIR"
   fingerprint="$(model_key_fingerprint "$model_key")"
   temp_marker="$(mktemp "$MODEL_CACHE_MARKER_DIR/.$model_key.XXXXXX")"
-  printf 'v1\t%s\t%s\t%s\n' "$S3_BUCKET_NAME" "$fingerprint" "$(date +%s)" > "$temp_marker"
+  printf 'v1\t%s\t%s\t%s\n' "$MARKER_BUCKET_NAME" "$fingerprint" "$(date +%s)" > "$temp_marker"
   while IFS= read -r artifact; do
     if [ ! -f "$MODELS_DIR/$artifact" ]; then
       echo "[download-models] $model_key: required artifact missing after download: $artifact" >&2

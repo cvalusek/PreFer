@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "runtime": "sglang",
+  "host": "0.0.0.0",
+  "port": 30000,
+  "model_path": "/models/RadixArk/Qwen3.8-27B-NVFP4",
+  "served_model_name": "qwen3.8-27b",
+  "command": [
+    "python3",
+    "-m",
+    "sglang.launch_server",
+    "--host",
+    "0.0.0.0",
+    "--port",
+    "30000",
+    "--model-path",
+    "/models/RadixArk/Qwen3.8-27B-NVFP4",
+    "--served-model-name",
+    "qwen3.8-27b",
+    "--trust-remote-code",
+    "--quantization",
+    "modelopt_fp4",
+    "--tp-size",
+    "1",
+    "--context-length",
+    "131072",
+    "--mem-fraction-static",
+    "0.9",
+    "--max-running-requests",
+    "1",
+    "--cuda-graph-max-bs",
+    "1",
+    "--chunked-prefill-size",
+    "2048",
+    "--attention-backend",
+    "flashinfer",
+    "--kv-cache-dtype",
+    "fp8_e4m3",
+    "--mamba-ssm-dtype",
+    "bfloat16",
+    "--mamba-full-memory-ratio",
+    "1.5",
+    "--mamba-radix-cache-strategy",
+    "extra_buffer_lazy",
+    "--max-mamba-cache-size",
+    "24",
+    "--reasoning-parser",
+    "qwen3",
+    "--tool-call-parser",
+    "qwen3_coder",
+    "--speculative-algorithm",
+    "NEXTN",
+    "--speculative-num-steps",
+    "3",
+    "--speculative-eagle-topk",
+    "1",
+    "--speculative-num-draft-tokens",
+    "4"
+  ],
+  "server": {
+    "served_model_name": "qwen3.8-27b",
+    "quantization": "modelopt_fp4",
+    "kv_cache_dtype": "fp8_e4m3",
+    "attention_backend": "flashinfer",
+    "context_length": 131072,
+    "tp_size": 1,
+    "chunked_prefill_size": 2048,
+    "mamba_ssm_dtype": "bfloat16",
+    "reasoning_parser": "qwen3",
+    "tool_call_parser": "qwen3_coder",
+    "trust_remote_code": true,
+    "mem_fraction_static": 0.9,
+    "max_running_requests": 1,
+    "cuda_graph_max_bs": 1,
+    "mamba_full_memory_ratio": 1.5,
+    "mamba_radix_cache_strategy": "extra_buffer_lazy",
+    "max_mamba_cache_size": 24,
+    "speculative": {
+      "enabled": true,
+      "algorithm": "NEXTN",
+      "num_steps": 3,
+      "eagle_topk": 1,
+      "num_draft_tokens": 4
+    }
+  },
+  "models": [
+    {
+      "key": "qwen3.8-27b-nvfp4",
+      "request_model_id": "qwen3.8-27b",
+      "aliases": [
+        "qwen3.8-27b"
+      ],
+      "profile_id": "qwen3.8-27b",
+      "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
+      "capabilities": [
+        "chat",
+        "completion",
+        "reasoning",
+        "tools",
+        "structured-output",
+        "streaming",
+        "image",
+        "video"
+      ],
+      "modalities": {
+        "native": [
+          "text",
+          "image",
+          "video"
+        ],
+        "configured": [
+          "text",
+          "image",
+          "video"
+        ],
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "native_context_length": 262144,
+      "max_context_length": 1048576
+    }
+  ]
+}

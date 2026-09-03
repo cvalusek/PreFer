@@ -19,6 +19,7 @@ class GroupedReleaseTests(unittest.TestCase):
             "audio_cuda": "sha256:" + "2" * 64,
             "audio_cpu": "sha256:" + "3" * 64,
             "image": image_digest or "sha256:" + "4" * 64,
+            "sglang": "sha256:" + "5" * 64,
         }
         return subprocess.run(
             [
@@ -38,6 +39,8 @@ class GroupedReleaseTests(unittest.TestCase):
                 digests["audio_cpu"],
                 "--image-digest",
                 digests["image"],
+                "--sglang-digest",
+                digests["sglang"],
                 "--llama-inventory",
                 str(REPO_ROOT / "docker" / "llama-cpp" / "deployment-inventory.generated.json"),
                 "--audio-inventory",
@@ -47,6 +50,13 @@ class GroupedReleaseTests(unittest.TestCase):
                     REPO_ROOT
                     / "docker"
                     / "stable-diffusion-cpp"
+                    / "deployment-inventory.generated.json"
+                ),
+                "--sglang-inventory",
+                str(
+                    REPO_ROOT
+                    / "docker"
+                    / "sglang"
                     / "deployment-inventory.generated.json"
                 ),
                 "--output-dir",
@@ -73,7 +83,7 @@ class GroupedReleaseTests(unittest.TestCase):
             )
             self.assertFalse(manifest["distribution"]["model_weights_embedded"])
             self.assertTrue(manifest["distribution"]["models_stage_at_runtime"])
-            self.assertEqual(set(manifest["engines"]), {"llama", "audio", "image"})
+            self.assertEqual(set(manifest["engines"]), {"llama", "audio", "image", "sglang"})
 
             expected_images = {
                 ("llama", "cuda"): (
@@ -92,6 +102,10 @@ class GroupedReleaseTests(unittest.TestCase):
                     "image-cuda12-sha-abcdef0",
                     ["linux/amd64"],
                 ),
+                ("sglang", "cuda13"): (
+                    "sglang-cuda13-sha-abcdef0",
+                    ["linux/amd64", "linux/arm64"],
+                ),
             }
             for (engine, variant), (tag, platforms) in expected_images.items():
                 image = manifest["engines"][engine]["images"][variant]
@@ -105,6 +119,10 @@ class GroupedReleaseTests(unittest.TestCase):
                 "image": REPO_ROOT
                 / "docker"
                 / "stable-diffusion-cpp"
+                / "deployment-inventory.generated.json",
+                "sglang": REPO_ROOT
+                / "docker"
+                / "sglang"
                 / "deployment-inventory.generated.json",
             }
             for engine, source in sources.items():
@@ -127,6 +145,7 @@ class GroupedReleaseTests(unittest.TestCase):
             "docker/llama-cpp/**",
             "docker/audio-cpp/**",
             "docker/stable-diffusion-cpp/**",
+            "docker/sglang/**",
             "release/**",
         ):
             self.assertIn(watched_path, workflow)
@@ -135,9 +154,10 @@ class GroupedReleaseTests(unittest.TestCase):
             "audio-cuda12-sha-",
             "audio-cpu-sha-",
             "image-cuda12-sha-",
+            "sglang-cuda13-sha-",
         ):
             self.assertIn(immutable_tag, workflow)
-        self.assertIn("needs: [llama, audio_cuda, audio_cpu, image]", workflow)
+        self.assertIn("needs: [llama, audio_cuda, audio_cpu, image, sglang]", workflow)
         self.assertIn("name: prefer-release-${{ github.sha }}", workflow)
         self.assertIn("gh release create", workflow)
         self.assertIn("prefer-release.json", workflow)
@@ -171,7 +191,10 @@ class GroupedReleaseTests(unittest.TestCase):
             (REPO_ROOT / "release" / "prefer-release.schema.json").read_text(encoding="utf-8")
         )
         self.assertEqual(schema["properties"]["schema_version"]["const"], "prefer.release.v1")
-        self.assertEqual(set(schema["properties"]["engines"]["required"]), {"llama", "audio", "image"})
+        self.assertEqual(
+            set(schema["properties"]["engines"]["required"]),
+            {"llama", "audio", "image", "sglang"},
+        )
 
 
 if __name__ == "__main__":

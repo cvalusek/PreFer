@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assemble one immutable PreFer release from the three runtime inventories."""
+"""Assemble one immutable PreFer release from all runtime inventories."""
 
 from __future__ import annotations
 
@@ -24,9 +24,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--audio-cuda-digest", required=True)
     parser.add_argument("--audio-cpu-digest", required=True)
     parser.add_argument("--image-digest", required=True)
+    parser.add_argument("--sglang-digest", required=True)
     parser.add_argument("--llama-inventory", type=Path, required=True)
     parser.add_argument("--audio-inventory", type=Path, required=True)
     parser.add_argument("--image-inventory", type=Path, required=True)
+    parser.add_argument("--sglang-inventory", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     return parser.parse_args()
 
@@ -106,6 +108,12 @@ def build_manifest(args: argparse.Namespace) -> dict[str, object]:
         "prefer-image-deployment-inventory.json",
         "prefer.image-deployment-inventory.v1",
     )
+    sglang_inventory = inventory_asset(
+        args.sglang_inventory,
+        args.output_dir,
+        "prefer-sglang-deployment-inventory.json",
+        "prefer.sglang-deployment-inventory.v1",
+    )
 
     return {
         "schema_version": "prefer.release.v1",
@@ -162,6 +170,18 @@ def build_manifest(args: argparse.Namespace) -> dict[str, object]:
                         f"image-cuda12-{release_id}",
                         args.image_digest,
                         ["linux/amd64"],
+                    )
+                },
+            },
+            "sglang": {
+                "runtime": "sglang",
+                "inventory": sglang_inventory,
+                "images": {
+                    "cuda13": image_entry(
+                        image_repository,
+                        f"sglang-cuda13-{release_id}",
+                        args.sglang_digest,
+                        ["linux/amd64", "linux/arm64"],
                     )
                 },
             },

@@ -170,7 +170,7 @@ class ImageCppTests(unittest.TestCase):
         workflow = (REPO_ROOT / ".github" / "workflows" / "build-prefer.yml").read_text(
             encoding="utf-8"
         )
-        image_job = workflow.split("\n  image:\n", 1)[1].split("\n  release:\n", 1)[0]
+        image_job = workflow.split("\n  image:\n", 1)[1].split("\n  sglang:\n", 1)[0]
 
         self.assertIn(runtime["base_image"]["reference"], dockerfile)
         self.assertIn('"huggingface_hub[cli]"', dockerfile)

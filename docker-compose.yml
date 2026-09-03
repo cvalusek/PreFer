@@ -23,6 +23,45 @@ services:
       - LLAMA_ARG_MODELS_PRESET=${LLAMA_ARG_MODELS_PRESET:-}
       - LLAMA_ARG_MODELS_MAX=${LLAMA_ARG_MODELS_MAX:-1}
       - PRESTAGE_MODELS=${PRESTAGE_MODELS:-}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-}
+      - S3_MODEL_PREFIX=${S3_MODEL_PREFIX:-}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  sglang:
+    profiles: [sglang]
+    container_name: prefer-sglang
+    build:
+      context: ./docker/sglang
+      dockerfile: Dockerfile
+    image: prefer:sglang-cuda13-local
+    ports:
+      - "${SGLANG_PORT:-8083}:30000"
+    volumes:
+      - prefer-sglang-model-cache:/models
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - HF_HUB_DISABLE_XET=${HF_HUB_DISABLE_XET:-}
+      - HF_XET_HIGH_PERFORMANCE=${HF_XET_HIGH_PERFORMANCE:-1}
+      - HF_XET_FIXED_DOWNLOAD_CONCURRENCY=${HF_XET_FIXED_DOWNLOAD_CONCURRENCY:-}
+      - HF_XET_DATA_MAX_CONCURRENT_FILE_DOWNLOADS=${HF_XET_DATA_MAX_CONCURRENT_FILE_DOWNLOADS:-}
+      - HF_XET_RECONSTRUCTION_DOWNLOAD_BUFFER_SIZE=${HF_XET_RECONSTRUCTION_DOWNLOAD_BUFFER_SIZE:-}
+      - HF_XET_RECONSTRUCTION_DOWNLOAD_BUFFER_PERFILE_SIZE=${HF_XET_RECONSTRUCTION_DOWNLOAD_BUFFER_PERFILE_SIZE:-}
+      - HF_XET_RECONSTRUCTION_DOWNLOAD_BUFFER_LIMIT=${HF_XET_RECONSTRUCTION_DOWNLOAD_BUFFER_LIMIT:-}
+      - SGLANG_SERVER_CONFIG=${SGLANG_SERVER_CONFIG:-}
+      - SGLANG_PRESTAGE_MODELS=${SGLANG_PRESTAGE_MODELS:-}
+      - SGLANG_DOWNLOAD_JOBS=${SGLANG_DOWNLOAD_JOBS:-4}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-}
+      - S3_MODEL_PREFIX=${S3_MODEL_PREFIX:-}
+      - SGLANG_S3_BUCKET_NAME=${SGLANG_S3_BUCKET_NAME:-}
+      - SGLANG_S3_MODEL_PREFIX=${SGLANG_S3_MODEL_PREFIX:-}
+      - PRESTAGE_MODELS=${PRESTAGE_MODELS:-}
+      - MODEL_DOWNLOAD_JOBS=${MODEL_DOWNLOAD_JOBS:-}
     deploy:
       resources:
         reservations:
@@ -101,3 +140,5 @@ volumes:
     name: ${PREFER_AUDIO_VOICE_VOLUME:-prefer-audio-voices}
   prefer-image-model-cache:
     name: ${PREFER_IMAGE_MODEL_VOLUME:-prefer-image-model-cache}
+  prefer-sglang-model-cache:
+    name: ${PREFER_SGLANG_MODEL_VOLUME:-prefer-model-cache}

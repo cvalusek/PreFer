@@ -10,6 +10,15 @@
 - Runtime behavior
   - No model, quant, preset, context, concurrency, cache, routing, or API default changed.
   - Model weights remain runtime downloads and are not embedded in release images or artifacts.
+- Images
+  - Added the opt-in SGLang CUDA 13 image for modern NVIDIA Blackwell GPUs; grouped stable and preview releases now publish llama CUDA, Audio CUDA/CPU, Image CUDA, and SGLang CUDA together.
+- SGLang
+  - Added Qwen3.8-27B NVFP4 with native text, image, and video inputs, Qwen reasoning controls, Qwen3 tool parsing, and in-checkpoint MTP on the larger Blackwell profiles.
+  - Added 524K per-request, four-slot FP8-KV performance shapes for 96/128 GB Blackwell hardware, target-only controls, BF16-KV single-user fidelity alternates, and a bounded 128K RTX 5090 NEXTN experiment while retaining the 262K target-only starting route.
+  - Set the canonical SGLang route to FP8 E4M3 KV with FlashInfer, BF16 recurrent state, chunked prefill, CUDA graphs, and native NEXTN; retained explicit fidelity and target-only fallbacks while keeping the exact-target DFlash2 experiment prefill-graph-gated and Qwen3.8-Flash on its separate custom experimental lineage.
+- Model storage
+  - Kept SGLang downloads on the shared-compatible `/models/<repository>/<path>` layout with resumable, SHA-256-verified staging and llama.cpp prestage/environment aliases; the default Compose cache is the existing `prefer-model-cache` volume.
+  - Added optional AWS S3 read-through from the shared bucket/prefix convention with exact object verification and clean fallback to the pinned Hugging Face snapshot; local and RunPod scenarios remain HF-only by default.
 
 ## sha-bb19fde
 

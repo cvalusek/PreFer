@@ -49,6 +49,7 @@ class AwsBootContractTest(unittest.TestCase):
         passthrough = re.search(r"for v in (?P<variables>[^;]+); do", runner)
         self.assertIsNotNone(passthrough)
         self.assertIn("LLAMA_ARG_MODELS_MAX", passthrough.group("variables"))
+        self.assertIn("S3_MODEL_PREFIX", passthrough.group("variables"))
         self.assertIn("MODEL_CACHE_RECHECK_DAYS", passthrough.group("variables"))
         self.assertIn("MODEL_DOWNLOAD_JOBS", passthrough.group("variables"))
 

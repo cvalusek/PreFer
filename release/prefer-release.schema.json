@@ -74,7 +74,8 @@
       "required": [
         "llama",
         "audio",
-        "image"
+        "image",
+        "sglang"
       ],
       "properties": {
         "llama": {
@@ -84,6 +85,9 @@
           "$ref": "#/$defs/engine"
         },
         "image": {
+          "$ref": "#/$defs/engine"
+        },
+        "sglang": {
           "$ref": "#/$defs/engine"
         }
       }

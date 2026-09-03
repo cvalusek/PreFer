@@ -7,6 +7,7 @@ on:
       - 'docker/llama-cpp/**'
       - 'docker/audio-cpp/**'
       - 'docker/stable-diffusion-cpp/**'
+      - 'docker/sglang/**'
       - 'release/**'
       - '.github/workflows/build-prefer.yml'
   workflow_dispatch:
@@ -41,6 +42,7 @@ jobs:
           python docker/llama-cpp/generate-presets.py --check
           python docker/audio-cpp/generate.py --check
           python docker/stable-diffusion-cpp/generate.py --check
+          python docker/sglang/generate.py --check
 
       - name: Test shared artifact staging and grouped release contract
         run: |
@@ -49,6 +51,9 @@ jobs:
 
       - name: Test lazy image router
         run: python -m unittest discover -s docker/stable-diffusion-cpp/tests -v
+
+      - name: Test SGLang catalog and downloader contract
+        run: python -m unittest benchmark.tests.test_sglang -v
 
   llama:
     needs: verify
@@ -251,8 +256,60 @@ jobs:
           cache-from: type=gha,scope=image-cuda12
           cache-to: type=gha,scope=image-cuda12,mode=max
 
+  sglang:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sglang-cuda13-sha-,format=short
+          labels: |
+            io.prefer.runtime=sglang
+            io.prefer.sglang.backend=cuda13
+            io.prefer.release.revision=${{ github.sha }}
+            io.prefer.deployment-inventory.path=/deployment-inventory.json
+            io.prefer.deployment-inventory.schema=prefer.sglang-deployment-inventory.v1
+
+      - name: Build and push SGLang
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/sglang
+          file: docker/sglang/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=sglang-cuda13
+          cache-to: type=gha,scope=sglang-cuda13,mode=max
+
   release:
-    needs: [llama, audio_cuda, audio_cpu, image]
+    needs: [llama, audio_cuda, audio_cpu, image, sglang]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -262,6 +319,7 @@ jobs:
       AUDIO_CUDA_DIGEST: ${{ needs.audio_cuda.outputs.digest }}
       AUDIO_CPU_DIGEST: ${{ needs.audio_cpu.outputs.digest }}
       IMAGE_DIGEST: ${{ needs.image.outputs.digest }}
+      SGLANG_DIGEST: ${{ needs.sglang.outputs.digest }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
@@ -290,9 +348,11 @@ jobs:
             --audio-cuda-digest "$AUDIO_CUDA_DIGEST" \
             --audio-cpu-digest "$AUDIO_CPU_DIGEST" \
             --image-digest "$IMAGE_DIGEST" \
+            --sglang-digest "$SGLANG_DIGEST" \
             --llama-inventory docker/llama-cpp/deployment-inventory.generated.json \
             --audio-inventory docker/audio-cpp/deployment-inventory.generated.json \
             --image-inventory docker/stable-diffusion-cpp/deployment-inventory.generated.json \
+            --sglang-inventory docker/sglang/deployment-inventory.generated.json \
             --output-dir prefer-release
           cp release/prefer-release.schema.json prefer-release/
           sha256sum prefer-release/*.json > prefer-release/SHA256SUMS
@@ -323,6 +383,9 @@ jobs:
             docker buildx imagetools create \
               --tag "$image_repository:image-cuda12" \
               "$image_repository@$IMAGE_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:sglang-cuda" \
+              "$image_repository@$SGLANG_DIGEST"
           elif [[ "$GITHUB_REF_NAME" == "develop" ]]; then
             docker buildx imagetools create \
               --tag "$image_repository:preview" \
@@ -337,6 +400,9 @@ jobs:
             docker buildx imagetools create \
               --tag "$image_repository:image-cuda12-preview" \
               "$image_repository@$IMAGE_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:sglang-cuda-preview" \
+              "$image_repository@$SGLANG_DIGEST"
           else
             echo "Unsupported release branch: $GITHUB_REF_NAME" >&2
             exit 1
@@ -356,7 +422,7 @@ jobs:
             exit 1
           fi
           release_title="PreFer $release_tag ($release_channel)"
-          release_notes="Grouped PreFer $release_channel release for commit $GITHUB_SHA. Download prefer-release.json to select exact llama.cpp, audio.cpp, and stable-diffusion.cpp images and inventories. Model weights are staged separately at runtime."
+          release_notes="Grouped PreFer $release_channel release for commit $GITHUB_SHA. Download prefer-release.json to select exact llama.cpp, audio.cpp, stable-diffusion.cpp, and SGLang images and inventories. Model weights are staged separately at runtime."
           if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             if [[ "$release_channel" == "stable" ]]; then
               gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" --title "$release_title" --notes "$release_notes" --prerelease=false --latest

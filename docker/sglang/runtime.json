@@ -1,0 +1,324 @@
+{
+  "schema_version": 1,
+  "runtime": {
+    "name": "sglang",
+    "source_repo": "sgl-project/sglang",
+    "source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e",
+    "source_revision_role": "Upstream compatibility contract for the quantized DFlash2 target-lm-head path; the official image build revision is recorded separately.",
+    "lineage": "official-upstream"
+  },
+  "base_image": {
+    "reference": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+    "index_digest": "sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+    "build_revision": "5f55db35e926d50676f75b812640ea2410b0fe0e",
+    "build_revision_source": "https://hub.docker.com/layers/lmsysorg/sglang/dev-cu13-qwen38-27b-dflash2/images/sha256-088ce12e606cb39b4fc2a20f0bd7c44c512126a29ebbb5c717a1ca0889f093c9?tab=layers",
+    "build_revision_note": "The official OCI label identifies this image build as a descendant of the source contract revision; this is not the jpezzulli/sglang-rtxpro6000 custom fork.",
+    "platform_manifests": {
+      "linux/amd64": "sha256:b91d664a8e4825afc16ab831c6035a6c88ac20ef8bd26da4fe2b9813a9f44376",
+      "linux/arm64": "sha256:088ce12e606cb39b4fc2a20f0bd7c44c512126a29ebbb5c717a1ca0889f093c9"
+    }
+  },
+  "requirements": {
+    "platforms": ["linux/amd64", "linux/arm64"],
+    "cuda_major": 13,
+    "minimum_compute_capability": "sm_100",
+    "supported_compute_capabilities": ["sm_100", "sm_120", "sm_121"],
+    "gpu_architecture": "NVIDIA Blackwell",
+    "minimum_flashinfer": "0.6.15.post2",
+    "fp4_gemm_backend": "auto",
+    "fp4_gemm_backend_sm100": "flashinfer_cutlass",
+    "fp4_gemm_backend_sm120": "flashinfer_cudnn",
+    "fp4_gemm_backend_sm120_status": "preferred-but-smoke-gated",
+    "fp4_gemm_backend_cuda_requirement": "CUDA 13.x and cuDNN 9.15 or newer for the SM120 cuDNN backend; the pinned official image reports cuDNN 9.14.0.64, so auto selection and exact-card smoke determine availability"
+  },
+  "staging": {
+    "hf": {
+      "source": "huggingface",
+      "home": "/models",
+      "layout": "/models/<repository>/<path>",
+      "verification": "exact catalog size and SHA-256 before atomic publication"
+    },
+    "aws_s3": {
+      "source": "s3-then-huggingface",
+      "scope": "optional AWS read-through",
+      "bucket_env": "S3_BUCKET_NAME",
+      "bucket_alias_env": "SGLANG_S3_BUCKET_NAME",
+      "prefix_env": "S3_MODEL_PREFIX",
+      "prefix_alias_env": "SGLANG_S3_MODEL_PREFIX",
+      "object_layout": "s3://<bucket>/<prefix>/<repository>/<path>",
+      "fallback": "huggingface",
+      "s5cmd_version": "2.2.2",
+      "compatibility": "An empty prefix maps to the same s3://<bucket>/<repository>/<path> object layout used by llama.cpp.",
+      "read_policy": ["s3:GetObject", "s3:ListBucket"],
+      "write_policy": [],
+      "local_layout": "/models/<repository>/<path>",
+      "marker_layout": "/models/.prefer-cache/downloads-v2/verified/<artifact-id>.complete"
+    }
+  },
+  "features": {
+    "attention_backend": "flashinfer",
+    "chunked_prefill": {
+      "default_size": 2048,
+      "status": "configured"
+    },
+    "cuda_graphs": {
+      "status": "ordinary decode graphs configured per scenario",
+      "recovery_graphs": "not included in the official stock lineage; verify before enabling"
+    },
+    "parsers": ["qwen3", "qwen3_coder"],
+    "hicache_nixl": {
+      "status": "optional-not-enabled",
+      "reason": "Enable only when storage, connector, and recovery behavior are explicitly configured and smoked."
+    }
+  },
+  "provenance_audit": {
+    "status": "owner-review-required",
+    "pinned_image_lineage": {
+      "kind": "official-upstream",
+      "source_repo": "sgl-project/sglang",
+      "source_contract_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e",
+      "image_build_revision": "5f55db35e926d50676f75b812640ea2410b0fe0e",
+      "custom_fork_code_included": false
+    },
+    "feature_matrix": [
+      {
+        "feature": "Native NEXTN/MTP on the pinned RadixArk NVFP4 checkpoint",
+        "official_pinned_image": {
+          "status": "configured-verify",
+          "details": "The checkpoint declares one embedded MTP layer, and the generated 96/128 GB performance configs expose the upstream NEXTN path with three steps, top-k one, and four draft tokens. The 5090 route remains separately bounded.",
+          "source_refs": [
+            "https://huggingface.co/RadixArk/Qwen3.8-27B-NVFP4",
+            "https://github.com/sgl-project/sglang/blob/main/docs/advanced_features/server_arguments.md"
+          ]
+        },
+        "jpezzulli_custom_fork": {
+          "status": "custom-qualified-separate-route",
+          "details": "The fork's Flash-Next route uses RadixArk/Qwen3.8-Flash-Next-NVFP4, while its 27B route uses DFlash2; neither campaign is this qwen3.8-27b NVFP4 artifact.",
+          "source_repo": "jpezzulli/sglang-rtxpro6000",
+          "source_branch": "pennyroyal-main-sm120-final",
+          "source_revision": "fb1216c6c459cb024e709eba892d9e7ded103688"
+        },
+        "decision": "Keep native NEXTN as the stock portable performance lane and do not attribute custom-fork results to this image."
+      },
+      {
+        "feature": "DFlash2 speculation",
+        "official_pinned_image": {
+          "status": "upstream-present-but-prefill-graph-blocked",
+          "details": "The official build contains the upstream DFlash2 path and quantized target-lm-head support, so RadixArk NVFP4 plus an exact incoai DFlash2 draft is a format-compatible candidate. Upstream issue #35437 reports prefill CUDA-graph failures for that pair; the route is therefore not enabled in canonical configs.",
+          "source_refs": [
+            "https://github.com/sgl-project/sglang/pull/35371",
+            "https://github.com/sgl-project/sglang/pull/35496",
+            "https://github.com/sgl-project/sglang/issues/35437"
+          ]
+        },
+        "jpezzulli_custom_fork": {
+          "status": "custom-fork-different-target-format",
+          "details": "The published 27B DFlash2 campaign pairs an orcarouter block-FP8 E4M3 target with incoai/Qwen3.8-27B-DFlash2. Its target format and patched runtime differ from the pinned RadixArk NVFP4 lane.",
+          "source_repo": "jpezzulli/sglang-rtxpro6000",
+          "source_branch": "pennyroyal-main-sm120-final",
+          "source_revision": "fb1216c6c459cb024e709eba892d9e7ded103688"
+        },
+        "decision": "Keep DFlash2 as an explicit upstream verification experiment; do not import the custom FP8 campaign's throughput or settings."
+      },
+      {
+        "feature": "FP8 E4M3 KV cache",
+        "official_pinned_image": {
+          "status": "configured-fidelity-gate",
+          "details": "The stock configs use FP8 E4M3 KV for performance. The pinned checkpoint declares FP8 KV but has no separate scale parameter file, so the runtime default scale of 1.0 is not an accuracy validation.",
+          "source_refs": [
+            "https://github.com/sgl-project/sglang/blob/main/docs/advanced_features/server_arguments.md",
+            "https://huggingface.co/RadixArk/Qwen3.8-27B-NVFP4"
+          ]
+        },
+        "jpezzulli_custom_fork": {
+          "status": "custom-configured",
+          "details": "The custom campaigns also use FP8 E4M3 KV, but their calibrated capacity, backend selection, and persistence behavior are fork-specific.",
+          "source_repo": "jpezzulli/sglang-rtxpro6000",
+          "source_revision": "fb1216c6c459cb024e709eba892d9e7ded103688"
+        },
+        "decision": "Retain FP8 as the performance default, target-only FP8 as the MTP control, and BF16-KV single-user alternates for fidelity checks on roomy devices."
+      },
+      {
+        "feature": "BF16 recurrent/GDN/Mamba state",
+        "official_pinned_image": {
+          "status": "supported-stock-configured",
+          "details": "The generated stock configs set mamba_ssm_dtype=bfloat16, extra_buffer_lazy scheduling, a bounded Mamba cache, and a scenario-specific full-memory ratio using documented SGLang arguments.",
+          "source_refs": [
+            "https://github.com/sgl-project/sglang/blob/main/docs/advanced_features/server_arguments.md"
+          ]
+        },
+        "jpezzulli_custom_fork": {
+          "status": "route-specific-custom",
+          "details": "The fork's Flash-Next matrix uses BF16 recurrent state while its DFlash2 matrix uses FP32 SSM state; this difference is not a portable default for the stock image.",
+          "source_repo": "jpezzulli/sglang-rtxpro6000",
+          "source_revision": "fb1216c6c459cb024e709eba892d9e7ded103688"
+        },
+        "decision": "Use BF16 recurrent state in the stock performance and fidelity shapes, with exact-card smoke required before production."
+      },
+      {
+        "feature": "Attention, MoE, and prefill backends",
+        "official_pinned_image": {
+          "status": "portable-baseline",
+          "details": "The stock route declares FlashInfer attention, chunked prefill, and the ModelOpt FP4 quantization path. It does not claim custom SM120 TRTLLM-MHA/XQA, QSA, Triton-MoE, or CUTLASS resolution until the pinned image is smoked.",
+          "source_refs": [
+            "https://github.com/sgl-project/sglang/blob/main/docs/advanced_features/server_arguments.md"
+          ]
+        },
+        "jpezzulli_custom_fork": {
+          "status": "custom-backend-resolution",
+          "details": "The fork documents fixed-width TRTLLM-MHA/XQA, QSA, Triton FP8 MoE for its FP8 target, and FlashInfer CUTLASS MoE for Flash-Next.",
+          "source_repo": "jpezzulli/sglang-rtxpro6000",
+          "source_revision": "fb1216c6c459cb024e709eba892d9e7ded103688"
+        },
+        "decision": "Keep only the portable stock flags in this image; treat target-specific backend resolution as a separate lineage qualification."
+      },
+      {
+        "feature": "CUDA graphs and speculative recovery",
+        "official_pinned_image": {
+          "status": "basic-graphs-configured",
+          "details": "The stock image exposes ordinary CUDA-graph batch bounds per scenario. DFlash2 prefill graphs are not assumed safe because upstream issue #35437 reproduces startup and first-request failures with the RadixArk pair.",
+          "source_refs": [
+            "https://github.com/sgl-project/sglang/issues/35437"
+          ]
+        },
+        "jpezzulli_custom_fork": {
+          "status": "custom-recovery-graphs",
+          "details": "The fork claims separate target, draft, verify, prefill, and accepted-state recovery graphs. Those source changes are not present in this official image.",
+          "source_repo": "jpezzulli/sglang-rtxpro6000",
+          "source_revision": "fb1216c6c459cb024e709eba892d9e7ded103688"
+        },
+        "decision": "Do not describe stock CUDA-graph batch bounds as custom recovery-graph support."
+      },
+      {
+        "feature": "524K context and KV capacity",
+        "official_pinned_image": {
+          "status": "configured-only",
+          "details": "Roomy stock scenarios set a 524,288-token per-request maximum and four configured request slots backed by a dynamically shared pool. Effective admitted concurrency and total pool size remain unknown until exact-card smoke.",
+          "source_refs": [
+            "https://huggingface.co/RadixArk/Qwen3.8-27B-NVFP4"
+          ]
+        },
+        "jpezzulli_custom_fork": {
+          "status": "custom-qualified-capacity",
+          "details": "The fork documents factor-2 YaRN and measured GPU KV pools for its separate campaigns; those capacity numbers are not portable to the stock image or current artifact.",
+          "source_repo": "jpezzulli/sglang-rtxpro6000",
+          "source_revision": "fb1216c6c459cb024e709eba892d9e7ded103688"
+        },
+        "decision": "Keep the explicit 524K ceiling and dynamic-pool wording without claiming a fixed 4x524K allocation or borrowed capacity result."
+      },
+      {
+        "feature": "Qwen vision, reasoning, tools, and parsers",
+        "official_pinned_image": {
+          "status": "declared-verify",
+          "details": "The stock catalog retains the checkpoint's text/image/video modalities, Qwen reasoning controls, and qwen3/qwen3_coder parser settings; multimodal and tool correctness still require target-card smoke.",
+          "source_refs": [
+            "https://huggingface.co/Qwen/Qwen3.8-27B",
+            "https://huggingface.co/RadixArk/Qwen3.8-27B-NVFP4"
+          ]
+        },
+        "jpezzulli_custom_fork": {
+          "status": "custom-qualified",
+          "details": "The fork reports exact vision, reasoning, and tools qualification on one RTX PRO 6000, but that evidence belongs to its own model/runtime combinations.",
+          "source_repo": "jpezzulli/sglang-rtxpro6000",
+          "source_revision": "fb1216c6c459cb024e709eba892d9e7ded103688"
+        },
+        "decision": "Keep the stock capability declarations while keeping verification status configuration-only."
+      },
+      {
+        "feature": "HiCache/NIXL and complete hybrid-state persistence",
+        "official_pinned_image": {
+          "status": "optional-not-enabled",
+          "details": "The stock image does not enable HiCache/NIXL, storage connectors, or restart recovery in its generated configurations.",
+          "source_refs": [
+            "https://github.com/sgl-project/sglang/blob/main/docs/advanced_features/server_arguments.md"
+          ]
+        },
+        "jpezzulli_custom_fork": {
+          "status": "custom-only",
+          "details": "The fork adds NIXL persistence for target KV plus recurrent, multimodal, and speculative side state; this is not a stock-image capability claim.",
+          "source_repo": "jpezzulli/sglang-rtxpro6000",
+          "source_revision": "fb1216c6c459cb024e709eba892d9e7ded103688"
+        },
+        "decision": "Leave HiCache/NIXL disabled until a separate storage, connector, and recovery contract is pinned and smoked."
+      }
+    ],
+    "upstream_changes_outside_pinned_image": [
+      {
+        "id": "sglang/#36806",
+        "feature": "Exact SM120 QSA sparse-decode routing",
+        "merge_target": "qwen4-main-squashed",
+        "status": "merged-upstream-after-image-build",
+        "image_status": "absent from official build 5f55db35e926d50676f75b812640ea2410b0fe0e",
+        "source_ref": "https://github.com/sgl-project/sglang/pull/36806",
+        "decision": "The current stock catalog does not claim the custom fork's SM120 QSA/XQA resolution."
+      },
+      {
+        "id": "sglang/#35821",
+        "feature": "Mamba radix-cache ghost-node and speculative tracking fix",
+        "merge_target": "qwen_optimize",
+        "status": "merged-upstream-after-image-build",
+        "image_status": "absent from official build 5f55db35e926d50676f75b812640ea2410b0fe0e",
+        "source_ref": "https://github.com/sgl-project/sglang/pull/35821",
+        "decision": "The stock image's Mamba settings remain configuration-only; do not infer long-run speculative stability from the later fork sync."
+      },
+      {
+        "id": "sglang/#35744",
+        "feature": "Three-axis Qwen mRoPE fused-kernel fix",
+        "merge_target": "main",
+        "status": "open-not-in-image",
+        "image_status": "absent from official build 5f55db35e926d50676f75b812640ea2410b0fe0e",
+        "source_ref": "https://github.com/sgl-project/sglang/pull/35744",
+        "decision": "The custom fork's mRoPE patch remains custom-only for this release."
+      }
+    ],
+    "lineage_recommendation": {
+      "current_lane": "official-upstream-pinned-image",
+      "portable_lane": "Keep the official image with native NEXTN, FP8 KV performance, BF16 recurrent state, generic FlashInfer, and explicit target-only controls; the performance ceiling remains lower or unknown until smoke.",
+      "high_performance_lane": "If parity with the RTX PRO 6000 custom campaign is required, publish a separate immutable image from jpezzulli/sglang-rtxpro6000 at fb1216c6c459cb024e709eba892d9e7ded103688 and keep its model/artifact pairs separate.",
+      "recommendation": "Use an immutable custom-fork image alongside this upstream portable lane for high-performance parity; do not silently replace the official image lineage.",
+      "owner_decision_required": true
+    }
+  },
+  "experimental_routes": {
+    "dflash2": {
+      "status": "upstream-verify-blocked",
+      "target_repo": "RadixArk/Qwen3.8-27B-NVFP4",
+      "target_revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+      "draft_repo": "incoai/Qwen3.8-27B-DFlash2",
+      "draft_revision": null,
+      "upstream_source_contract_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e",
+      "known_issue": "https://github.com/sgl-project/sglang/issues/35437",
+      "custom_campaign": {
+        "status": "custom-fork-only",
+        "target_repo": "orcarouter/Qwen3.8-27B-Uncensored-FP8",
+        "target_revision": "9228df5c6c9c509e1019f83b4e085cf643118bac",
+        "draft_repo": "incoai/Qwen3.8-27B-DFlash2",
+        "draft_revision": "adde41d8fde3a75dc905a7df0bd508d8a2a44b5a1",
+        "source_repo": "jpezzulli/sglang-rtxpro6000",
+        "source_branch": "pennyroyal-main-sm120-final",
+        "source_revision": "fb1216c6c459cb024e709eba892d9e7ded103688",
+        "applies_to_catalog_lane": false,
+        "throughput_attribution": "do-not-import"
+      },
+      "reason": "The stock image has an upstream RadixArk-plus-incoai DFlash2 path, but prefill CUDA graphs are not safe until the upstream issue is resolved. The separate high-performance campaign uses an FP8 block target and custom runtime, not this RadixArk NVFP4 artifact."
+    },
+    "flash_next": {
+      "status": "deferred-experimental",
+      "target_repo": "RadixArk/Qwen3.8-Flash-Next-NVFP4",
+      "source_repo": "jpezzulli/sglang-rtxpro6000",
+      "source_branch": "pennyroyal-main-sm120-final",
+      "source_revision": "fb1216c6c459cb024e709eba892d9e7ded103688",
+      "applies_to_catalog_lane": false,
+      "reason": "Preserve the RTX PRO 6000 Flash-Next route as a next experimental lane; its custom patches and artifact pair are not part of the canonical stock image."
+    }
+  },
+  "known_limitations": [
+    "H200 and other pre-Blackwell GPUs are not eligible for this NVFP4 lane because they do not provide the required FP4 tensor-core path.",
+    "The packaged server pins FP8 E4M3 KV cache instead of NVFP4 KV; upstream SGLang issues currently affect NVFP4 KV with speculative decoding.",
+    "The pinned checkpoint declares FP8 KV quantization but provides no explicit KV scaling parameter file; SGLang therefore uses its documented default scale of 1.0 until a calibrated parameter file is supplied and verified.",
+    "NVFP4 is the pinned GB10 target format, but no speed advantage over an FP8 target should be assumed without a matched target-only comparison on that device.",
+    "Native NEXTN is the canonical stock speculative path. The official RadixArk-plus-incoai DFlash2 route remains blocked on prefill-graph verification; the custom FP8 DFlash2 campaign is a separate lineage and must not be borrowed.",
+    "The official image predates later upstream QSA/Mamba fixes used by the custom fork; their presence in the fork does not make them available in this image.",
+    "Qwen3.8-Flash-Next is intentionally retained as a deferred experimental route until its custom source, separate artifact pair, parser, and graph behavior settle into a separately pinned release path."
+  ]
+}

@@ -6,8 +6,8 @@ read this before changing presets, the Dockerfile, or the detection scripts.
 
 ## Project overview
 
-PreFer: sibling llama.cpp, audio.cpp, and stable-diffusion.cpp containers for
-self-hosted inference.
+PreFer: sibling llama.cpp, audio.cpp, stable-diffusion.cpp, and SGLang
+containers for self-hosted inference.
 `docker/llama-cpp/` serves LLMs on local, RunPod, and AWS hardware and hosts
 Gemma 4, Qwen3.5/Qwen3.6/Qwen3.8,
 Ornith 1.5, Nemotron 3.5 Lightning, Muse Glimmer, GLM, and DeepSeek V4 routes via
@@ -15,14 +15,17 @@ Ornith 1.5, Nemotron 3.5 Lightning, Muse Glimmer, GLM, and DeepSeek V4 routes vi
 downloaded from Hugging Face on first start. `docker/audio-cpp/` is a separate
 speech/music runtime with its own API, inventory, model volume, and image
 variants. `docker/stable-diffusion-cpp/` provides image generation/editing with
-a separate API, inventory, and model volume. All three engines publish as one
-grouped PreFer release.
+a separate API, inventory, and model volume. All four engines publish as one
+grouped PreFer release. `docker/sglang/` is the opt-in CUDA 13 sibling for
+Qwen3.8-27B NVFP4 on modern NVIDIA Blackwell hardware; it has its own API,
+inventory, model catalog, and generated deployment configs while using the same
+`/models` artifact layout as llama.cpp.
 
 ## Grouped release contract
 
 `build-prefer.yml` is the only runtime-image workflow. A change under any of
-the three runtime folders rebuilds and publishes llama CUDA, Audio CUDA/CPU,
-and Image CUDA together under the same seven-character source SHA. Do not add
+the four runtime folders rebuilds and publishes llama CUDA, Audio CUDA/CPU,
+Image CUDA, and SGLang CUDA together under the same seven-character source SHA. Do not add
 engine-specific image workflows or path-gate individual engine jobs: the
 atomic release is deliberate so downstream controllers never have to compose
 different PreFer versions.
@@ -35,12 +38,12 @@ work by merging it to `main`, and merge any exceptional stable hotfix back into
 `develop` immediately so the lines do not drift. Do not publish a runtime
 commit directly to `main` merely to bypass preview validation.
 
-After all four immutable image indexes publish, the workflow creates the
+After all five immutable image indexes publish, the workflow creates the
 GitHub release `sha-<short-commit>` and the matching
 `prefer-release-<full-commit>` Actions artifact. Both contain
-`prefer-release.json`, its schema, the exact three deployment inventories, and
+`prefer-release.json`, its schema, the exact four deployment inventories, and
 checksums. `release/build-release.py` owns that manifest. It must reference the
-resolved OCI index digests returned by the four build jobs, never moving tags.
+resolved OCI index digests returned by the five build jobs, never moving tags.
 Each runtime image still embeds its own `/deployment-inventory.json`.
 
 The grouped release contains metadata only. Model weights must never be copied
@@ -59,12 +62,12 @@ building; never leave an empty `Current` section in the file.
 
 After CI publishes the grouped immutable release, make a root-only follow-up commit that
 changes the `Current` heading to the resulting `sha-<short-commit>` tag and
-adds all four exact image identities from that release: llama CUDA, Audio CUDA,
-Audio CPU, and Image CUDA. Do not rewrite the approved change bullets during
+adds all five exact image identities from that release: llama CUDA, Audio CUDA,
+Audio CPU, Image CUDA, and SGLang CUDA. Do not rewrite the approved change bullets during
 finalization. Suffix a preview heading with `(preview)` and a stable heading
 with `(stable)`; pre-channel headings without a suffix are stable. The grouped
-workflow watches runtime and release implementation
-paths, so this root changelog-only commit does not create another build. Include additions,
+workflow watches runtime and release implementation paths, so this root
+changelog-only commit does not create another build. Include additions,
 removals, and exact context/concurrency deltas, plus quant, speculative,
 prestaging, or compatibility changes only when they actually changed. Keep
 entries concise, user-facing, nested by platform and instance, and limited to
@@ -823,33 +826,34 @@ or tune DRY further before doing so.
   explicit no-E4B-draft compatibility preset is the b9843/Pascal fallback.
   Scrubbed evidence is under `benchmark/baselines/`.
 
-## Audio and image artifact downloads
+## Audio, image, and SGLang artifact downloads
 
-Audio and image deliberately share transfer behavior without sharing a Docker
-build context. `docker/audio-cpp/download-artifacts.sh` and
-`docker/stable-diffusion-cpp/download-artifacts.sh` are checked-in,
+Audio, image, and SGLang deliberately share transfer behavior without sharing a
+Docker build context. Their `download-artifacts.sh` files are checked-in,
 byte-for-byte copies; the downloader integration test enforces that parity.
-Keep both copies in the same change. Moving the helper to a root-level common
-path would require changing both Docker build contexts and both workflow path
+Keep all copies in the same change. Moving the helper to a root-level common
+path would require changing all Docker build contexts and all workflow path
 filters, otherwise a helper-only change could publish neither runtime. The
 generated `model-downloads.generated.sh` files remain runtime-owned maps from
 model keys to immutable artifact IDs and exact transfer metadata.
 
-Both runtime images install the same `hf` CLI used by llama.cpp, keep
-`HF_HOME` on their own `/models` volume, and enable Xet high-performance mode
-by default. Audio and image do not inherit llama's optional S3 cache. Compose
-passes `HF_TOKEN`, `HF_HUB_DISABLE_XET`, and the existing `HF_XET_*` tuning
-variables to each service. `AUDIO_DOWNLOAD_JOBS` and `IMAGE_DOWNLOAD_JOBS`
-default to four and accept only 1 through 8. Generators reject two immutable
+All three sibling images install the same `hf` CLI used by llama.cpp, keep
+`HF_HOME` on `/models`, and enable Xet high-performance mode by default. Audio
+and image remain HF-only; SGLang additionally supports an optional AWS-only,
+read-through S3 cache using the same `S3_BUCKET_NAME` convention as llama.cpp
+plus an optional `S3_MODEL_PREFIX` namespace. Compose passes
+`HF_TOKEN`, `HF_HUB_DISABLE_XET`, and the existing `HF_XET_*` tuning variables
+to each service. `AUDIO_DOWNLOAD_JOBS`, `IMAGE_DOWNLOAD_JOBS`, and
+`SGLANG_DOWNLOAD_JOBS` default to four and accept only 1 through 8. Generators reject two immutable
 identities that target the same final repository/path; selected model keys are
 resolved and deduplicated to artifact IDs before batches launch. Batches join
 in catalog order, report the first failure in that stable order, and do not
 launch a later batch after a failed one.
 
-Both runtime entrypoints stage artifacts as root. External RunPod and other
+All sibling runtime entrypoints stage artifacts as root. External RunPod and other
 mounted model volumes replace image-layer ownership, so build-time `chown`
 cannot make a pre-existing root-owned `/models` tree writable to a later
-non-root `USER`. Keep Audio's final Docker user root like llama.cpp and Image;
+non-root `USER`. Keep Audio and SGLang's final Docker user root like llama.cpp and Image;
 changing only the lock path is insufficient because Hugging Face resume state,
 staging files, final artifact directories, and verification markers all belong
 on the persistent volume. Never add a recursive startup `chown` over a populated
@@ -917,7 +921,7 @@ systemd boot unit (stage instance-store NVMe at `/opt/dlami/nvme`, `docker run`
 with `/models` on NVMe) + a CDK stack distributed as synthesized CloudFormation.
 The container is pulled at boot (not baked), and CI is path-filtered so AWS
 changes never rebuild the grouped runtime release (`build-prefer.yml` watches
-all three runtime folders; `build-aws.yml` covers `aws/`). `build-aws.yml` is one workflow with
+all four runtime folders; `build-aws.yml` covers `aws/`). `build-aws.yml` is one workflow with
 ordered jobs — a paths-filtered `ami` job (Packer; public AMI built into
 us-east-1 + us-east-2) hands its `ami-map` artifact to a `cdk` job that bakes it
 into the template's RegionMap and publishes the `template-latest` release. A
@@ -1086,3 +1090,80 @@ devices; it is not a concurrency claim. audio.cpp serializes calls per model,
 and new audio routes remain configuration-only until exact-card load, quality,
 API, and latency smoke tests pass. The upstream management UI is not enabled:
 PreFer stages only its pinned catalog artifacts and verifies size plus SHA-256.
+
+## SGLang sibling runtime
+
+`docker/sglang/` is an opt-in CUDA 13 sibling for Qwen3.8-27B. It is an
+alternative text backend to llama.cpp, not a replacement for the existing
+router. The Compose service uses profile `sglang`, listens on host port 8083 by
+default, and uses the same named `prefer-model-cache` volume as llama.cpp by
+default. Keep its container name, internal port 30000, model mount `/models`,
+and generated config/inventory paths distinct from the llama service so both
+can coexist when the operator intentionally has enough GPU capacity.
+
+The runtime source contract is SGLang commit
+`1cf2b8c54d81802abc15dcf23a29b9cc687bc01e`; the official base image is
+`lmsysorg/sglang:dev-qwen38-27b-dflash2` pinned to OCI index
+`sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe`
+and built from `5f55db35e926d50676f75b812640ea2410b0fe0e`. The source contract
+and image-build revisions are separate fields; this image does not contain the
+`jpezzulli/sglang-rtxpro6000` custom fork.
+The primary model is `RadixArk/Qwen3.8-27B-NVFP4` at immutable revision
+`319f741cce68d7914884900c138a1fbb70a42f30`, with Apache-2.0 Qwen lineage,
+native text/image/video input, 262,144 native context, request-selectable
+`reasoning_effort` (`low`, `medium`, `xhigh`), `preserve_thinking`, and an
+embedded MTP layer. The catalog must keep the exact model shard, tokenizer,
+template, multimodal preprocessor, license, and metadata file sizes and
+SHA-256 hashes; model weights stay on external `/models` storage.
+
+Only NVIDIA Blackwell SM100-or-newer shapes belong in this catalog. The
+provider-neutral `sglang/cuda13` entry is a runtime default, not a hardware
+scenario. The checked-in AWS/RunPod 96 GB Blackwell shapes expose a 524K
+per-request FP8 E4M3-KV performance route with four configured request slots,
+BF16 recurrent state, FlashInfer, chunked prefill, CUDA graphs, and native NEXTN
+(three steps, top-k one, four draft tokens), plus target-only and BF16-KV
+single-user controls. The 32 GB RTX 5090 keeps a 262K target-only starting route
+and a separate bounded 128K NEXTN experiment; the generic GB10 shape uses a
+0.80 static-memory fraction and also has a BF16-KV fidelity alternate. Every
+new shape is `configuration-only` until exact-card load, multimodal, context,
+API, MTP, and concurrency smokes pass. Do not add H200 or older architectures
+to the NVFP4 catalog without an authoritative kernel path, and do not treat
+generic local shapes as the operator's private inventory.
+
+The canonical SGLang configs use FP8 E4M3 KV for performance and do not claim
+that the checkpoint's implicit scale of 1.0 preserves fidelity: the pinned
+checkpoint has no explicit KV scale parameter file. The BF16-KV alternates
+avoid that scale dependency. Native NEXTN is the stock speculative lane;
+96/128 GB performance configs must keep it visible, while the 5090 retains a
+bounded experiment and a target-only control. The official image contains the
+upstream RadixArk-plus-incoai DFlash2 path from the DFlash2 and quantized-head
+changes, but its prefill CUDA-graph path is blocked by the upstream #35437
+failure and is not canonical. The published ~108.75 tok/s DFlash2 campaign is
+from the custom fork's block-FP8 target, not the current RadixArk NVFP4 artifact;
+the ~171 tok/s Flash-Next campaign uses a separate Flash-Next NVFP4 checkpoint,
+and the earlier ~146 tok/s C1 result is a separate runtime/state. Do not borrow
+any of those numbers. The RTX PRO 6000 Flash-Next route is retained as a next
+experimental lane, and HiCache/NIXL is optional but not enabled by default.
+
+The official image predates later upstream changes used by the custom fork,
+including the exact-SM120 QSA routing change (#36806) and Mamba radix-cache/
+speculative tracking fix (#35821); the three-axis Qwen mRoPE fix (#35744) is
+also outside the pinned image. Keep the full upstream-versus-custom feature
+matrix and lineage recommendation in `docker/sglang/runtime.json` and
+`docker/sglang/README.md`. If custom-fork parity is required, publish a separate
+immutable custom image alongside the upstream portable lane; changing image
+lineage requires owner review.
+
+SGLang's generated downloader must remain compatible with llama.cpp's staging
+contract: use the same `/models/<repo>/<path>` destinations, `hf download`,
+`HF_HOME=/models`, `PRESTAGE_MODELS` and `MODEL_DOWNLOAD_JOBS` aliases, and
+shared-volume defaults. With an explicit AWS S3 bucket, SGLang stages the exact
+catalog objects with the shared `s5cmd` helper, verifies size and SHA-256, and
+falls back to the pinned HF revision on an S3 miss or mismatch; it never writes
+to S3. An empty S3 prefix uses the same `s3://<bucket>/<repo>/<path>` object
+layout as llama.cpp. It may retain stricter per-file `downloads-v2` markers,
+but successful runs also write a llama-compatible model marker so either
+launcher can reuse the other runtime's completed files. The model-level marker
+uses `-` as the explicit local-cache bucket value; an empty tab field is not
+safe because Bash collapses tab whitespace while parsing it. Never copy model
+files into the SGLang Docker context or image.

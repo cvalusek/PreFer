@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "provider": "runpod",
+  "output_root": "runpod/rtx-pro-6000/1x",
+  "hardware": {
+    "provider_gpu_type_id": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+    "provider_sku": "rtx-pro-6000",
+    "gpu_slug": "rtx-pro-6000-blackwell",
+    "gpu_name": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+    "gpu_count": 1,
+    "vram_gb_each": 96,
+    "architecture": "Blackwell",
+    "compute_capability": "sm_120"
+  },
+  "compatibility": {
+    "container_runtime": "nvidia",
+    "cuda_major": 13,
+    "minimum_compute_capability": "sm_100",
+    "sglang_source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e"
+  },
+  "staging": {
+    "source": "huggingface-only",
+    "scope": "RunPod HF-only by default",
+    "reason": "S3 read-through is an AWS-only option; set it explicitly only on an AWS deployment."
+  },
+  "verification": "configuration-only",
+  "configs": [
+    {
+      "name": "balanced",
+      "description": "RTX PRO 6000 Blackwell performance route with 524K per-request context, four configured decode slots, FP8 E4M3 KV, BF16 recurrent state, FlashInfer, CUDA graphs, and in-checkpoint NEXTN MTP.",
+      "model_keys": ["qwen3.8-27b-nvfp4"],
+      "server": {
+        "context_length": 524288,
+        "mem_fraction_static": 0.92,
+        "max_running_requests": 4,
+        "cuda_graph_max_bs": 4,
+        "mamba_ssm_dtype": "bfloat16",
+        "mamba_full_memory_ratio": 2.29,
+        "mamba_radix_cache_strategy": "extra_buffer_lazy",
+        "max_mamba_cache_size": 150,
+        "speculative": {
+          "enabled": true,
+          "algorithm": "NEXTN",
+          "num_steps": 3,
+          "eagle_topk": 1,
+          "num_draft_tokens": 4
+        }
+      }
+    },
+    {
+      "name": "target-only",
+      "description": "RTX PRO 6000 FP8-KV target-only control with the same 524K per-request pool and concurrency envelope, isolating the target checkpoint from embedded MTP.",
+      "model_keys": ["qwen3.8-27b-nvfp4"],
+      "server": {
+        "context_length": 524288,
+        "max_running_requests": 4,
+        "cuda_graph_max_bs": 4,
+        "mem_fraction_static": 0.92,
+        "mamba_ssm_dtype": "bfloat16",
+        "mamba_full_memory_ratio": 2.29,
+        "mamba_radix_cache_strategy": "extra_buffer_lazy",
+        "max_mamba_cache_size": 150,
+        "speculative": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "name": "fidelity",
+      "description": "RTX PRO 6000 single-user BF16-KV fidelity alternate at 524K; no speculative decoding and no FP8 KV scale dependency.",
+      "model_keys": ["qwen3.8-27b-nvfp4"],
+      "server": {
+        "context_length": 524288,
+        "mem_fraction_static": 0.9,
+        "max_running_requests": 1,
+        "cuda_graph_max_bs": 1,
+        "kv_cache_dtype": "bfloat16",
+        "mamba_ssm_dtype": "bfloat16",
+        "mamba_full_memory_ratio": 2.0,
+        "mamba_radix_cache_strategy": "extra_buffer_lazy",
+        "max_mamba_cache_size": 24,
+        "speculative": {
+          "enabled": false
+        }
+      }
+    }
+  ]
+}
