@@ -256,7 +256,7 @@ jobs:
           cache-from: type=gha,scope=image-cuda12
           cache-to: type=gha,scope=image-cuda12,mode=max
 
-  sglang:
+  sglang_amd64:
     needs: verify
     runs-on: ubuntu-latest
     permissions:
@@ -267,6 +267,73 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Free runner disk space
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo rm -rf \
+            /usr/local/lib/android \
+            /usr/share/dotnet \
+            /opt/ghc \
+            /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/powershell \
+            /usr/local/share/chromium
+          sudo docker system prune --all --force --volumes
+          df -h /
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push SGLang amd64
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/sglang
+          file: docker/sglang/Dockerfile
+          platforms: linux/amd64
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          labels: |
+            io.prefer.runtime=sglang
+            io.prefer.sglang.backend=cuda13
+            io.prefer.release.revision=${{ github.sha }}
+            io.prefer.deployment-inventory.path=/deployment-inventory.json
+            io.prefer.deployment-inventory.schema=prefer.sglang-deployment-inventory.v1
+          cache-from: type=gha,scope=sglang-cuda13-amd64
+          cache-to: type=gha,scope=sglang-cuda13-amd64,mode=max
+
+  sglang_arm64:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free runner disk space
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo rm -rf \
+            /usr/local/lib/android \
+            /usr/share/dotnet \
+            /opt/ghc \
+            /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/powershell \
+            /usr/local/share/chromium
+          sudo docker system prune --all --force --volumes
+          df -h /
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -281,32 +348,81 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
+      - name: Build and push SGLang arm64
+        id: build
+        uses: docker/build-push-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=sha,prefix=sglang-cuda13-sha-,format=short
+          context: docker/sglang
+          file: docker/sglang/Dockerfile
+          platforms: linux/arm64
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           labels: |
             io.prefer.runtime=sglang
             io.prefer.sglang.backend=cuda13
             io.prefer.release.revision=${{ github.sha }}
             io.prefer.deployment-inventory.path=/deployment-inventory.json
             io.prefer.deployment-inventory.schema=prefer.sglang-deployment-inventory.v1
+          cache-from: type=gha,scope=sglang-cuda13-arm64
+          cache-to: type=gha,scope=sglang-cuda13-arm64,mode=max
 
-      - name: Build and push SGLang
-        id: build
-        uses: docker/build-push-action@v6
+  sglang:
+    needs: [sglang_amd64, sglang_arm64]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.merge.outputs.digest }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
-          context: docker/sglang
-          file: docker/sglang/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=sglang-cuda13
-          cache-to: type=gha,scope=sglang-cuda13,mode=max
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Merge and verify SGLang platform images
+        id: merge
+        shell: bash
+        env:
+          IMAGE_REPOSITORY: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          AMD64_DIGEST: ${{ needs.sglang_amd64.outputs.digest }}
+          ARM64_DIGEST: ${{ needs.sglang_arm64.outputs.digest }}
+        run: |
+          set -euo pipefail
+          for digest in "$AMD64_DIGEST" "$ARM64_DIGEST"; do
+            if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              echo "Invalid platform digest: $digest" >&2
+              exit 1
+            fi
+          done
+
+          image_tag="$IMAGE_REPOSITORY:sglang-cuda13-sha-${GITHUB_SHA::7}"
+          metadata_file="$RUNNER_TEMP/sglang-index-metadata.json"
+          docker buildx imagetools create \
+            --metadata-file "$metadata_file" \
+            --tag "$image_tag" \
+            "$IMAGE_REPOSITORY@$AMD64_DIGEST" \
+            "$IMAGE_REPOSITORY@$ARM64_DIGEST"
+
+          merged_digest="$(jq -er '."containerimage.descriptor".digest' "$metadata_file")"
+          if [[ ! "$merged_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "Could not resolve merged SGLang index digest" >&2
+            exit 1
+          fi
+          inspection="$(docker buildx imagetools inspect "$image_tag")"
+          printf '%s\n' "$inspection"
+          grep -q 'linux/amd64' <<<"$inspection"
+          grep -q 'linux/arm64' <<<"$inspection"
+          tagged_digest="$(awk '$1 == "Digest:" { print $2; exit }' <<<"$inspection")"
+          if [[ "$tagged_digest" != "$merged_digest" ]]; then
+            echo "Merged SGLang tag resolved to $tagged_digest, expected $merged_digest" >&2
+            exit 1
+          fi
+          echo "digest=$merged_digest" >> "$GITHUB_OUTPUT"
 
   release:
     needs: [llama, audio_cuda, audio_cpu, image, sglang]
