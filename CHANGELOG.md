@@ -1,5 +1,16 @@
 # PreFer changelog
 
+## Current
+
+- Release channels
+  - Kept `main` and all existing grouped releases on the stable line.
+  - Added `develop` as the opt-in preview line.
+  - Added branch-scoped stable and preview container aliases while preserving immutable `sha-<commit>` releases.
+  - Preview releases remain complete grouped releases containing every PreFer engine and deployment inventory.
+- Runtime behavior
+  - No model, quant, preset, context, concurrency, cache, routing, or API default changed.
+  - Model weights remain runtime downloads and are not embedded in release images or artifacts.
+
 ## sha-bb19fde
 
 - Images

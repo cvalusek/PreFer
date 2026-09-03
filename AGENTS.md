@@ -27,6 +27,14 @@ engine-specific image workflows or path-gate individual engine jobs: the
 atomic release is deliberate so downstream controllers never have to compose
 different PreFer versions.
 
+`main` is the stable line and `develop` is the preview integration line. New
+runtime work normally targets `develop`; every successful grouped build there
+is published as a GitHub prerelease and advances only the preview image aliases.
+Stable aliases advance only from a successful `main` build. Promote preview
+work by merging it to `main`, and merge any exceptional stable hotfix back into
+`develop` immediately so the lines do not drift. Do not publish a runtime
+commit directly to `main` merely to bypass preview validation.
+
 After all four immutable image indexes publish, the workflow creates the
 GitHub release `sha-<short-commit>` and the matching
 `prefer-release-<full-commit>` Actions artifact. Both contain
@@ -53,7 +61,9 @@ After CI publishes the grouped immutable release, make a root-only follow-up com
 changes the `Current` heading to the resulting `sha-<short-commit>` tag and
 adds all four exact image identities from that release: llama CUDA, Audio CUDA,
 Audio CPU, and Image CUDA. Do not rewrite the approved change bullets during
-finalization. The grouped workflow watches runtime and release implementation
+finalization. Suffix a preview heading with `(preview)` and a stable heading
+with `(stable)`; pre-channel headings without a suffix are stable. The grouped
+workflow watches runtime and release implementation
 paths, so this root changelog-only commit does not create another build. Include additions,
 removals, and exact context/concurrency deltas, plus quant, speculative,
 prestaging, or compatibility changes only when they actually changed. Keep

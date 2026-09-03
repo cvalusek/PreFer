@@ -142,6 +142,30 @@ class GroupedReleaseTests(unittest.TestCase):
         self.assertIn("gh release create", workflow)
         self.assertIn("prefer-release.json", workflow)
 
+    def test_release_channels_are_branch_scoped(self) -> None:
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("branches: [main, develop]", workflow)
+        self.assertIn("prefer-release-${{ github.ref_name }}", workflow)
+        for preview_tag in (
+            "llama-cuda-preview",
+            "audio-cuda12-preview",
+            "audio-cpu-preview",
+            "image-cuda12-preview",
+        ):
+            self.assertIn(preview_tag, workflow)
+        for stable_tag in (
+            '"$image_repository:latest"',
+            '"$image_repository:llama-cuda"',
+            '"$image_repository:audio-cuda12"',
+            '"$image_repository:audio-cpu"',
+            '"$image_repository:image-cuda12"',
+        ):
+            self.assertIn(stable_tag, workflow)
+        self.assertIn('release_channel="stable"', workflow)
+        self.assertIn('release_channel="preview"', workflow)
+        self.assertIn("--prerelease --latest=false", workflow)
+        self.assertIn("--prerelease=false --latest", workflow)
+
     def test_release_schema_is_checked_in_and_parseable(self) -> None:
         schema = json.loads(
             (REPO_ROOT / "release" / "prefer-release.schema.json").read_text(encoding="utf-8")

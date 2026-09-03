@@ -2,7 +2,7 @@ name: Build PreFer release
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - 'docker/llama-cpp/**'
       - 'docker/audio-cpp/**'
@@ -10,6 +10,10 @@ on:
       - 'release/**'
       - '.github/workflows/build-prefer.yml'
   workflow_dispatch:
+
+concurrency:
+  group: prefer-release-${{ github.ref_name }}
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
@@ -30,6 +34,10 @@ jobs:
 
       - name: Verify all generated runtime configuration and inventories
         run: |
+          if [[ "$GITHUB_REF_NAME" != "main" && "$GITHUB_REF_NAME" != "develop" ]]; then
+            echo "PreFer releases may only be built from main (stable) or develop (preview)." >&2
+            exit 1
+          fi
           python docker/llama-cpp/generate-presets.py --check
           python docker/audio-cpp/generate.py --check
           python docker/stable-diffusion-cpp/generate.py --check
@@ -70,9 +78,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest
             type=sha,format=short
-            type=raw,value=llama-cuda
             type=sha,prefix=llama-cuda-sha-,format=short
           labels: |
             io.prefer.runtime=llama.cpp
@@ -123,7 +129,6 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=audio-cuda12
             type=sha,prefix=audio-cuda12-sha-,format=short
           labels: |
             io.prefer.runtime=audio.cpp
@@ -176,7 +181,6 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=audio-cpu
             type=sha,prefix=audio-cpu-sha-,format=short
           labels: |
             io.prefer.runtime=audio.cpp
@@ -226,7 +230,6 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=image-cuda12
             type=sha,prefix=image-cuda12-sha-,format=short
           labels: |
             io.prefer.runtime=stable-diffusion.cpp
@@ -253,6 +256,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      packages: write
     env:
       LLAMA_DIGEST: ${{ needs.llama.outputs.digest }}
       AUDIO_CUDA_DIGEST: ${{ needs.audio_cuda.outputs.digest }}
@@ -262,6 +266,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Assemble grouped PreFer release
         shell: bash
@@ -290,16 +304,70 @@ jobs:
           path: prefer-release/
           if-no-files-found: error
 
+      - name: Publish release-channel image aliases
+        shell: bash
+        run: |
+          set -euo pipefail
+          image_repository="ghcr.io/${GITHUB_REPOSITORY,,}"
+          if [[ "$GITHUB_REF_NAME" == "main" ]]; then
+            docker buildx imagetools create \
+              --tag "$image_repository:latest" \
+              --tag "$image_repository:llama-cuda" \
+              "$image_repository@$LLAMA_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:audio-cuda12" \
+              "$image_repository@$AUDIO_CUDA_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:audio-cpu" \
+              "$image_repository@$AUDIO_CPU_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:image-cuda12" \
+              "$image_repository@$IMAGE_DIGEST"
+          elif [[ "$GITHUB_REF_NAME" == "develop" ]]; then
+            docker buildx imagetools create \
+              --tag "$image_repository:preview" \
+              --tag "$image_repository:llama-cuda-preview" \
+              "$image_repository@$LLAMA_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:audio-cuda12-preview" \
+              "$image_repository@$AUDIO_CUDA_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:audio-cpu-preview" \
+              "$image_repository@$AUDIO_CPU_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:image-cuda12-preview" \
+              "$image_repository@$IMAGE_DIGEST"
+          else
+            echo "Unsupported release branch: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+
       - name: Publish immutable GitHub release
         shell: bash
         run: |
           set -euo pipefail
           release_tag="sha-${GITHUB_SHA::7}"
-          release_title="PreFer $release_tag"
-          release_notes="Grouped PreFer runtime release for commit $GITHUB_SHA. Download prefer-release.json to select exact llama.cpp, audio.cpp, and stable-diffusion.cpp images and inventories. Model weights are staged separately at runtime."
-          if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" --title "$release_title" --notes "$release_notes"
+          if [[ "$GITHUB_REF_NAME" == "main" ]]; then
+            release_channel="stable"
+          elif [[ "$GITHUB_REF_NAME" == "develop" ]]; then
+            release_channel="preview"
           else
-            gh release create "$release_tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$release_title" --notes "$release_notes"
+            echo "Unsupported release branch: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          release_title="PreFer $release_tag ($release_channel)"
+          release_notes="Grouped PreFer $release_channel release for commit $GITHUB_SHA. Download prefer-release.json to select exact llama.cpp, audio.cpp, and stable-diffusion.cpp images and inventories. Model weights are staged separately at runtime."
+          if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            if [[ "$release_channel" == "stable" ]]; then
+              gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" --title "$release_title" --notes "$release_notes" --prerelease=false --latest
+            else
+              gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" --title "$release_title" --notes "$release_notes" --prerelease --latest=false
+            fi
+          else
+            if [[ "$release_channel" == "stable" ]]; then
+              gh release create "$release_tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$release_title" --notes "$release_notes" --latest
+            else
+              gh release create "$release_tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$release_title" --notes "$release_notes" --prerelease --latest=false
+            fi
           fi
           gh release upload "$release_tag" prefer-release/* --repo "$GITHUB_REPOSITORY" --clobber

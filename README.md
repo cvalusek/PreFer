@@ -209,10 +209,19 @@ Certificate files under `docker/certs/` are ignored by git.
 ## Grouped releases and images
 
 GitHub Actions build all three runtimes as one PreFer release whenever any
-runtime changes. One `sha-<commit>` release therefore identifies the exact
+runtime changes. The `main` branch is the stable line and `develop` is the
+opt-in preview line. One `sha-<commit>` release therefore identifies the exact
 llama CUDA, Audio CUDA/CPU, and Image CUDA images produced from the same source
-revision. The existing `latest` and `sha-<commit>` tags remain llama.cpp
-compatibility tags; explicit tags are `llama-cuda[-sha-<commit>]`,
+revision. Releases built from `develop` are GitHub prereleases; releases built
+from `main` are stable releases. Existing releases from before the channel
+split remain stable.
+
+Stable moving tags remain `latest`, `llama-cuda`, `audio-cuda12`, `audio-cpu`,
+and `image-cuda12`. Preview users opt in through `preview`,
+`llama-cuda-preview`, `audio-cuda12-preview`, `audio-cpu-preview`, or
+`image-cuda12-preview`. The generic `latest` and `preview` tags are llama.cpp
+compatibility aliases. Immutable tags remain `sha-<commit>` and
+`llama-cuda[-sha-<commit>]`,
 `audio-cuda12[-sha-<commit>]`, `audio-cpu[-sha-<commit>]`, and
 `image-cuda12[-sha-<commit>]`. Image generation remains Linux AMD64 only;
 Audio publishes Linux AMD64 and ARM64 variants.
@@ -224,6 +233,13 @@ checksums. Controllers select the needed engine/backend from that manifest and
 then use the referenced inventory for its model, hardware, and configuration
 choices. The manifest binds exact image digests; it does not contain model
 weights. Models continue to stage at runtime on external persistent storage.
+
+Controllers may expose `stable` and `preview` as a branch selector: resolve
+stable releases from `main` and preview releases from `develop`, then accept
+only a SHA whose grouped `prefer-release.json` was published successfully.
+They should deploy the immutable image references from that manifest rather
+than compose moving engine tags. Promote tested preview work by merging it to
+`main`; the resulting stable branch build publishes the stable grouped release.
 
 Additional llama models and deployment shapes
 belong in `models/` and `preset-scenarios/`; regenerate and commit their
