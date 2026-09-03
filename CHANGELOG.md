@@ -1,6 +1,6 @@
 # PreFer changelog
 
-## Current
+## sha-8d3c5c6 (preview)
 
 - Release channels
   - Kept `main` and all existing grouped releases on the stable line.
@@ -12,6 +12,11 @@
   - Model weights remain runtime downloads and are not embedded in release images or artifacts.
 - Images
   - Added the opt-in SGLang CUDA 13 image for modern NVIDIA Blackwell GPUs; grouped stable and preview releases now publish llama CUDA, Audio CUDA/CPU, Image CUDA, and SGLang CUDA together.
+  - Llama CUDA: `ghcr.io/cvalusek/prefer:llama-cuda-sha-8d3c5c6@sha256:91970b0d42991f079ff66e5f64fbe05dc5f424f891a257c4a73f6946c1508741`.
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-8d3c5c6@sha256:4b90eca589ee934a7d903e3b0351eee78aaa9e5a03a6c4656ae4e77bccb57bd9`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-8d3c5c6@sha256:61c3774b56c284aaf0b80c72edc7cde215bb6e19ebacc19e768e4b25860e8327`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-8d3c5c6@sha256:884a84791e2c2da24a7460926dfee467cf6e7f2e0987ddeb830840959621cd7e`.
+  - SGLang CUDA 13: `ghcr.io/cvalusek/prefer:sglang-cuda13-sha-8d3c5c6@sha256:44f940d2bd819e6b2292fa7a96f2e1cb3b454c0cca3b39ecaa7f9bd1da57417e`.
 - SGLang
   - Added Qwen3.8-27B NVFP4 with native text, image, and video inputs, Qwen reasoning controls, Qwen3 tool parsing, and in-checkpoint MTP on the larger Blackwell profiles.
   - Added 524K per-request, four-slot FP8-KV performance shapes for 96/128 GB Blackwell hardware, target-only controls, BF16-KV single-user fidelity alternates, and a bounded 128K RTX 5090 NEXTN experiment while retaining the 262K target-only starting route.
