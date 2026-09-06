@@ -1,6 +1,6 @@
 {
-  "schema_version": "prefer.sglang-deployment-inventory.v1",
-  "catalog_fingerprint": "77ffd2b6719204fb3015f132d9ed87eaf6a7c3221a623491b74f5a46babbd553",
+  "schema_version": "prefer.sglang-deployment-inventory.v2",
+  "catalog_fingerprint": "edf057ad7b67a01d1162079d1229ec54913efffd4d8f461f57dd139dfb4d7947",
   "product": "PreFer",
   "distribution": {
     "embedded_image_path": "/deployment-inventory.json",
@@ -15,19 +15,19 @@
   "runtime": {
     "name": "sglang",
     "source_repo": "sgl-project/sglang",
-    "source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e",
-    "source_revision_role": "Upstream compatibility contract for the quantized DFlash2 target-lm-head path; the official image build revision is recorded separately.",
+    "source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5",
+    "source_revision_role": "Pinned official SGLang nightly containing the CUDA 13 multimodal-generation server and the regular text server.",
     "lineage": "official-upstream"
   },
   "base_image": {
-    "reference": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
-    "index_digest": "sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
-    "build_revision": "5f55db35e926d50676f75b812640ea2410b0fe0e",
-    "build_revision_source": "https://hub.docker.com/layers/lmsysorg/sglang/dev-cu13-qwen38-27b-dflash2/images/sha256-088ce12e606cb39b4fc2a20f0bd7c44c512126a29ebbb5c717a1ca0889f093c9?tab=layers",
-    "build_revision_note": "The official OCI label identifies this image build as a descendant of the source contract revision; this is not the jpezzulli/sglang-rtxpro6000 custom fork.",
+    "reference": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
+    "index_digest": "sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
+    "build_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5",
+    "build_revision_source": "https://hub.docker.com/layers/lmsysorg/sglang/nightly-dev-20260814-c4271c3f/images/sha256-751156aa9d4d9955776dafc45d76eca8051c6e03bca76642886d3c8c7c815de6?tab=layers",
+    "build_revision_note": "The official OCI image contains both SGLang's regular text server and its multimodal-generation server; this is not the jpezzulli/sglang-rtxpro6000 custom fork.",
     "platform_manifests": {
-      "linux/amd64": "sha256:b91d664a8e4825afc16ab831c6035a6c88ac20ef8bd26da4fe2b9813a9f44376",
-      "linux/arm64": "sha256:088ce12e606cb39b4fc2a20f0bd7c44c512126a29ebbb5c717a1ca0889f093c9"
+      "linux/amd64": "sha256:751156aa9d4d9955776dafc45d76eca8051c6e03bca76642886d3c8c7c815de6",
+      "linux/arm64": "sha256:3c0abdf41ef22de9d7a859dc16ed71eae69452e36c91f071a25e60c85a6d1fc6"
     }
   },
   "requirements": {
@@ -38,11 +38,28 @@
     "cuda_major": 13,
     "minimum_compute_capability": "sm_100",
     "supported_compute_capabilities": [
+      "sm_86",
+      "sm_89",
+      "sm_90",
       "sm_100",
       "sm_120",
       "sm_121"
     ],
-    "gpu_architecture": "NVIDIA Blackwell",
+    "gpu_architecture": "NVIDIA CUDA GPU; text NVFP4 remains Blackwell-only",
+    "mode_overrides": {
+      "diffusion": {
+        "minimum_compute_capability": "sm_86",
+        "supported_compute_capabilities": [
+          "sm_86",
+          "sm_89",
+          "sm_90",
+          "sm_100",
+          "sm_120",
+          "sm_121"
+        ],
+        "reason": "The H3 INT8 ConvRot and NVFP4 text-encoder route is configured separately from the Qwen3.8 NVFP4 text route. Exact-card load and media smoke remain required."
+      }
+    },
     "minimum_flashinfer": "0.6.15.post2",
     "fp4_gemm_backend": "auto",
     "fp4_gemm_backend_sm100": "flashinfer_cutlass",
@@ -78,6 +95,26 @@
     }
   },
   "features": {
+    "runtime_modes": [
+      "text",
+      "diffusion"
+    ],
+    "diffusion_server": {
+      "cli": "sglang serve",
+      "api": "/v1/videos",
+      "model_variants": [
+        "fl2va",
+        "ref2va"
+      ],
+      "component_weight_overrides": true,
+      "local_file_inputs_only": true,
+      "output_container": "mp4",
+      "pin_cpu_memory_default": false,
+      "known_issue_refs": [
+        "https://github.com/sgl-project/sglang/issues/34902",
+        "https://github.com/sgl-project/sglang/issues/34954"
+      ]
+    },
     "attention_backend": "flashinfer",
     "chunked_prefill": {
       "default_size": 2048,
@@ -101,8 +138,8 @@
     "pinned_image_lineage": {
       "kind": "official-upstream",
       "source_repo": "sgl-project/sglang",
-      "source_contract_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e",
-      "image_build_revision": "5f55db35e926d50676f75b812640ea2410b0fe0e",
+      "source_contract_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5",
+      "image_build_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5",
       "custom_fork_code_included": false
     },
     "feature_matrix": [
@@ -273,7 +310,7 @@
         "feature": "Exact SM120 QSA sparse-decode routing",
         "merge_target": "qwen4-main-squashed",
         "status": "merged-upstream-after-image-build",
-        "image_status": "absent from official build 5f55db35e926d50676f75b812640ea2410b0fe0e",
+        "image_status": "absent from official build c4271c3fe1262fc2adbd162c33b25de5255251c5",
         "source_ref": "https://github.com/sgl-project/sglang/pull/36806",
         "decision": "The current stock catalog does not claim the custom fork's SM120 QSA/XQA resolution."
       },
@@ -282,7 +319,7 @@
         "feature": "Mamba radix-cache ghost-node and speculative tracking fix",
         "merge_target": "qwen_optimize",
         "status": "merged-upstream-after-image-build",
-        "image_status": "absent from official build 5f55db35e926d50676f75b812640ea2410b0fe0e",
+        "image_status": "absent from official build c4271c3fe1262fc2adbd162c33b25de5255251c5",
         "source_ref": "https://github.com/sgl-project/sglang/pull/35821",
         "decision": "The stock image's Mamba settings remain configuration-only; do not infer long-run speculative stability from the later fork sync."
       },
@@ -291,7 +328,7 @@
         "feature": "Three-axis Qwen mRoPE fused-kernel fix",
         "merge_target": "main",
         "status": "open-not-in-image",
-        "image_status": "absent from official build 5f55db35e926d50676f75b812640ea2410b0fe0e",
+        "image_status": "absent from official build c4271c3fe1262fc2adbd162c33b25de5255251c5",
         "source_ref": "https://github.com/sgl-project/sglang/pull/35744",
         "decision": "The custom fork's mRoPE patch remains custom-only for this release."
       }
@@ -311,7 +348,7 @@
       "target_revision": "319f741cce68d7914884900c138a1fbb70a42f30",
       "draft_repo": "incoai/Qwen3.8-27B-DFlash2",
       "draft_revision": null,
-      "upstream_source_contract_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e",
+      "upstream_source_contract_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5",
       "known_issue": "https://github.com/sgl-project/sglang/issues/35437",
       "custom_campaign": {
         "status": "custom-fork-only",
@@ -344,16 +381,136 @@
     "NVFP4 is the pinned GB10 target format, but no speed advantage over an FP8 target should be assumed without a matched target-only comparison on that device.",
     "Native NEXTN is the canonical stock speculative path. The official RadixArk-plus-incoai DFlash2 route remains blocked on prefill-graph verification; the custom FP8 DFlash2 campaign is a separate lineage and must not be borrowed.",
     "The official image predates later upstream QSA/Mamba fixes used by the custom fork; their presence in the fork does not make them available in this image.",
-    "Qwen3.8-Flash-Next is intentionally retained as a deferred experimental route until its custom source, separate artifact pair, parser, and graph behavior settle into a separately pinned release path."
+    "Qwen3.8-Flash-Next is intentionally retained as a deferred experimental route until its custom source, separate artifact pair, parser, and graph behavior settle into a separately pinned release path.",
+    "MiniMax H3 diffusion loading can stage large DiT state through host memory; the canonical configs disable pinned CPU memory, but exact host-RAM and cgroup headroom still require target-card smoke.",
+    "MiniMax H3 Turbo-LoRA and quality-high serving remain explicit experimental metadata; do not claim adapter or quality-tier support until the matching upstream audit path is verified."
+  ],
+  "runtime_modes": [
+    "diffusion",
+    "text"
   ],
   "api": {
     "health": "GET /health",
+    "ready": "GET /readyz",
     "models": "GET /v1/models",
     "chat_completions": "POST /v1/chat/completions",
     "completions": "POST /v1/completions",
-    "anthropic_messages": "POST /v1/messages"
+    "anthropic_messages": "POST /v1/messages",
+    "videos": "POST /v1/videos",
+    "video_status": "GET /v1/videos/{id}",
+    "video_content": "GET /v1/videos/{id}/content"
   },
   "model_profiles": {
+    "minimax-h3": {
+      "summary": "A quality-first synchronized audio-video route for MiniMax H3 text-to-video and first/last-frame generation.",
+      "architecture": "Diffusion transformer with Qwen3-VL text encoding, video VAE, audio VAE, and an INT8 ConvRot transformer derivative.",
+      "native_capabilities": [
+        "text-to-video",
+        "first-last-frame video",
+        "synchronized audio"
+      ],
+      "configured_capabilities": [
+        "MP4 delivery",
+        "first-last-frame video",
+        "reference-to-video",
+        "synchronized audio",
+        "text-to-video",
+        "video-to-video"
+      ],
+      "context": "The model uses duration and frame-conditioning controls rather than a text-server token context budget.",
+      "reasoning": "Generation is controlled by task, prompt, duration, resolution, and optional frame conditions; it is not a reasoning model.",
+      "role_fit": {
+        "preferred": [
+          "short narrated clips",
+          "storyboarded first/last-frame transitions",
+          "audio-video concept previews"
+        ],
+        "capable": [
+          "text-to-video",
+          "image-conditioned video",
+          "synchronized speech and effects"
+        ],
+        "avoid": [
+          "remote input URLs",
+          "production claims before exact-card smoke",
+          "Ref2VA requests on the FL2VA route"
+        ]
+      },
+      "limitations": [
+        "large component bundle",
+        "configuration-only until target-card load and media-contract smoke",
+        "community license terms apply"
+      ],
+      "prompting_notes": [
+        "Use a concrete scene, camera, motion, and audio description.",
+        "Use conditions with local file:// URIs or multipart uploads; the gateway rejects remote URLs."
+      ],
+      "model_slug": "minimax-h3-fl2va",
+      "profile_id": "minimax-h3",
+      "license": "MiniMax H3 Community License Agreement",
+      "lineage": {
+        "base_repo": "MiniMaxAI/MiniMax-H3",
+        "base_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "derivative_repo": "Comfy-Org/MiniMax-H3",
+        "derivative_revision": "3f57e8291d2ef846f9a074b1b76d2767db434abe"
+      },
+      "native_context_length": null,
+      "max_context_length": null,
+      "native_modalities": [
+        "text",
+        "image",
+        "audio",
+        "video"
+      ],
+      "configured_modalities": [
+        "text",
+        "image",
+        "video",
+        "audio"
+      ],
+      "runtime_modes": [
+        "diffusion"
+      ],
+      "tasks": [
+        "fl2va",
+        "ref2va",
+        "t2va"
+      ],
+      "input_contract": {
+        "conditions_field": "conditions",
+        "condition_types": [
+          "image",
+          "video"
+        ],
+        "allowed_frame_indices": [
+          [
+            0
+          ],
+          [
+            -1
+          ],
+          [
+            0,
+            -1
+          ]
+        ],
+        "max_conditions": 2,
+        "remote_uris": false,
+        "multipart_uploads": true
+      },
+      "output_contract": {
+        "container": "mp4",
+        "video_codec": "h264",
+        "fps": 24,
+        "audio_codec": "aac",
+        "audio_channels": 2,
+        "audio_sample_rate": 32000,
+        "duration_seconds": [
+          4,
+          15
+        ]
+      }
+    },
     "qwen3.8-27b": {
       "summary": "A high-intelligence multimodal Qwen route for modern Blackwell GPUs, with native image/video understanding and optional in-checkpoint MTP acceleration.",
       "architecture": "64-layer hybrid linear/full-attention vision-language model with 48 GDN layers, 16 full-attention layers, and one embedded MTP layer.",
@@ -412,6 +569,7 @@
       },
       "evidence_confidence": "high for upstream capability and artifact provenance; mixed for this repository's target-card fit and throughput until hardware smoke tests complete",
       "model_slug": "qwen3.8-27b",
+      "profile_id": "qwen3.8-27b",
       "license": "Apache-2.0",
       "lineage": {
         "repo": "Qwen/Qwen3.8-27B",
@@ -432,10 +590,403 @@
         "text",
         "image",
         "video"
-      ]
+      ],
+      "runtime_modes": [
+        "text"
+      ],
+      "tasks": [
+        "chat"
+      ],
+      "input_contract": {},
+      "output_contract": {}
     }
   },
   "models": {
+    "minimax-h3-fl2va-int8-convrot": {
+      "key": "minimax-h3-fl2va-int8-convrot",
+      "id": "minimax-h3-fl2va",
+      "request_model_id": "minimax-h3-fl2va",
+      "aliases": [
+        "minimax-h3-fl2va",
+        "minimax-h3-t2va",
+        "t2va",
+        "t2v",
+        "fl2va",
+        "i2v"
+      ],
+      "profile_id": "minimax-h3",
+      "runtime_mode": "diffusion",
+      "tasks": [
+        "t2va",
+        "fl2va"
+      ],
+      "capability_aliases": {
+        "t2v": "t2va",
+        "i2v": "fl2va"
+      },
+      "family": "minimax-h3",
+      "task": "video",
+      "mode": "video-audio-diffusion",
+      "description": "MiniMax H3 text-to-video and first/last-frame video-to-video route with synchronized H.264/AAC output.",
+      "precision": "INT8 ConvRot transformer + NVFP4 text encoder",
+      "primary": true,
+      "license": "MiniMax H3 Community License Agreement",
+      "lineage": {
+        "base_repo": "MiniMaxAI/MiniMax-H3",
+        "base_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "derivative_repo": "Comfy-Org/MiniMax-H3",
+        "derivative_revision": "3f57e8291d2ef846f9a074b1b76d2767db434abe"
+      },
+      "modalities": {
+        "native": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ],
+        "configured": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ],
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "video",
+          "audio"
+        ]
+      },
+      "input_contract": {
+        "conditions_field": "conditions",
+        "condition_types": [
+          "image",
+          "video"
+        ],
+        "allowed_frame_indices": [
+          [
+            0
+          ],
+          [
+            -1
+          ],
+          [
+            0,
+            -1
+          ]
+        ],
+        "max_conditions": 2,
+        "remote_uris": false,
+        "multipart_uploads": true
+      },
+      "output_contract": {
+        "container": "mp4",
+        "video_codec": "h264",
+        "fps": 24,
+        "audio_codec": "aac",
+        "audio_channels": 2,
+        "audio_sample_rate": 32000,
+        "duration_seconds": [
+          4,
+          15
+        ]
+      },
+      "base_model": {
+        "repo": "MiniMaxAI/MiniMax-H3",
+        "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "model_path": "MiniMaxAI/MiniMax-H3"
+      },
+      "native_context_length": null,
+      "max_context_length": null,
+      "reasoning_controls": {},
+      "template": {
+        "api": "/v1/videos",
+        "task_field": "task",
+        "prompt_field": "prompt"
+      },
+      "speculative": {
+        "supported": false
+      },
+      "kv_cache_scaling": null,
+      "artifact_variant": {
+        "label": "Comfy-Org INT8 ConvRot transformer plus NVFP4 text encoder",
+        "total_bytes": 42470585471
+      },
+      "lora_options": {
+        "balanced": {
+          "repo": "larryvrh/MiniMax-H3-Turbo-Lora",
+          "weight_name": "minimax_h3_turbo_v4_step600_ema.safetensors",
+          "steps": 9,
+          "scale": 1.0,
+          "applies_to": [
+            "fl2va"
+          ]
+        },
+        "aggressive": {
+          "repo": "lightx2v/Minimax-h3-Turbo",
+          "weight_name": "minimax_h3_fl2v_turbo_4step_v0.1.safetensors",
+          "steps": 5,
+          "scale": 1.0,
+          "alpha": 8,
+          "applies_to": [
+            "fl2va"
+          ]
+        }
+      },
+      "server_path": "/models/Comfy-Org/MiniMax-H3",
+      "server": {
+        "runtime_mode": "diffusion",
+        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_variant": "fl2va",
+        "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "num_gpus": 1,
+        "tp_size": 1,
+        "ulysses_degree": 1,
+        "encoder_parallel": "auto",
+        "performance_mode": "memory",
+        "attention_backend": "fa",
+        "layerwise_offload_components": "dit,text_encoder",
+        "dit_offload_prefetch_size": 1,
+        "dit_layerwise_resident_layers": 0,
+        "pin_cpu_memory": false,
+        "enable_torch_compile": false,
+        "output_path": "/outputs",
+        "max_running_requests": 1,
+        "component_weights_paths": {
+          "audio_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+          "text_encoder": "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+          "transformer": "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+          "video_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
+        }
+      },
+      "download_fingerprint": "18b5b58649aa12ad8151fc72d060c8fe5b1a13db1cce0bc89ca78fc27c3ffcc2",
+      "artifact_bytes": 42470585471,
+      "artifacts": [
+        {
+          "repo": "Comfy-Org/MiniMax-H3",
+          "revision": "3f57e8291d2ef846f9a074b1b76d2767db434abe",
+          "path": "diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+          "size": 20970379616,
+          "sha256": "e889202c41dafb67b10d67b97f0d8541508036a6090af23425a5c2615d03c47a",
+          "role": "fl2va-transformer",
+          "container_path": "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+          "download_id": "e5b6dcd60518d8d785f847cd73bc386e49d47bbd576b5d8700eb34570a4813de"
+        },
+        {
+          "repo": "Comfy-Org/MiniMax-H3",
+          "revision": "3f57e8291d2ef846f9a074b1b76d2767db434abe",
+          "path": "text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+          "size": 15687142551,
+          "sha256": "35a88d51044231fe332301d7a62aa81e3f2cba62febeb446e2c1e3e0ef76f2c6",
+          "role": "text-encoder",
+          "container_path": "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+          "download_id": "eb27812965db98bab9180298f41629add421020e807111c667f2ec6b801b2024"
+        },
+        {
+          "repo": "Comfy-Org/MiniMax-H3",
+          "revision": "3f57e8291d2ef846f9a074b1b76d2767db434abe",
+          "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+          "size": 605254808,
+          "sha256": "8e505d95dd1561d47abd43d4238fd40d9bb1ae9e147ed0a4cba778d76ae4db48",
+          "role": "audio-vae",
+          "container_path": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+          "download_id": "f8a4b810d64ac7aae80edf1a86dcac463d9e2d49a7443584a7bcc3bc87a1f1bf"
+        },
+        {
+          "repo": "Comfy-Org/MiniMax-H3",
+          "revision": "3f57e8291d2ef846f9a074b1b76d2767db434abe",
+          "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+          "size": 5207808496,
+          "sha256": "7c1f131492e7eddacaac9069a61b81bdd39de5cc96561e677c5eab1cdce5e522",
+          "role": "video-vae",
+          "container_path": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors",
+          "download_id": "8b05098bd8da92c5e326c4152fe9f29834aef2489b5a098192c088e0abdb64a6"
+        }
+      ]
+    },
+    "minimax-h3-ref2va-int8-convrot": {
+      "key": "minimax-h3-ref2va-int8-convrot",
+      "id": "minimax-h3-ref2va",
+      "request_model_id": "minimax-h3-ref2va",
+      "aliases": [
+        "minimax-h3-ref2va",
+        "minimax-h3-v2v",
+        "ref2va",
+        "v2v"
+      ],
+      "profile_id": "minimax-h3",
+      "runtime_mode": "diffusion",
+      "tasks": [
+        "ref2va"
+      ],
+      "capability_aliases": {
+        "v2v": "ref2va"
+      },
+      "family": "minimax-h3",
+      "task": "video",
+      "mode": "video-audio-diffusion",
+      "description": "MiniMax H3 reference-to-video route with synchronized H.264/AAC output.",
+      "precision": "INT8 ConvRot transformer + NVFP4 text encoder",
+      "primary": true,
+      "license": "MiniMax H3 Community License Agreement",
+      "lineage": {
+        "base_repo": "MiniMaxAI/MiniMax-H3",
+        "base_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "derivative_repo": "Comfy-Org/MiniMax-H3",
+        "derivative_revision": "3f57e8291d2ef846f9a074b1b76d2767db434abe"
+      },
+      "modalities": {
+        "native": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ],
+        "configured": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ],
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "video",
+          "audio"
+        ]
+      },
+      "input_contract": {
+        "conditions_field": "conditions",
+        "condition_types": [
+          "image",
+          "video"
+        ],
+        "allowed_frame_indices": [
+          [
+            0
+          ],
+          [
+            -1
+          ],
+          [
+            0,
+            -1
+          ]
+        ],
+        "max_conditions": 2,
+        "remote_uris": false,
+        "multipart_uploads": true
+      },
+      "output_contract": {
+        "container": "mp4",
+        "video_codec": "h264",
+        "fps": 24,
+        "audio_codec": "aac",
+        "audio_channels": 2,
+        "audio_sample_rate": 32000,
+        "duration_seconds": [
+          4,
+          15
+        ]
+      },
+      "base_model": {
+        "repo": "MiniMaxAI/MiniMax-H3",
+        "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "model_path": "MiniMaxAI/MiniMax-H3"
+      },
+      "native_context_length": null,
+      "max_context_length": null,
+      "reasoning_controls": {},
+      "template": {
+        "api": "/v1/videos",
+        "task_field": "task",
+        "prompt_field": "prompt"
+      },
+      "speculative": {
+        "supported": false
+      },
+      "kv_cache_scaling": null,
+      "artifact_variant": {
+        "label": "Comfy-Org INT8 ConvRot transformer plus NVFP4 text encoder",
+        "total_bytes": 42470585471
+      },
+      "lora_options": null,
+      "server_path": "/models/Comfy-Org/MiniMax-H3",
+      "server": {
+        "runtime_mode": "diffusion",
+        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_variant": "ref2va",
+        "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "num_gpus": 1,
+        "tp_size": 1,
+        "ulysses_degree": 1,
+        "encoder_parallel": "auto",
+        "performance_mode": "memory",
+        "attention_backend": "fa",
+        "layerwise_offload_components": "dit,text_encoder",
+        "dit_offload_prefetch_size": 1,
+        "dit_layerwise_resident_layers": 0,
+        "pin_cpu_memory": false,
+        "enable_torch_compile": false,
+        "output_path": "/outputs",
+        "max_running_requests": 1,
+        "component_weights_paths": {
+          "audio_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+          "text_encoder": "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+          "transformer": "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+          "video_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
+        }
+      },
+      "download_fingerprint": "a47768f488a5bd5a6fbccff6c2ba0c9ad6bc71b86fc36f98f23ab069e918a16a",
+      "artifact_bytes": 42470585471,
+      "artifacts": [
+        {
+          "repo": "Comfy-Org/MiniMax-H3",
+          "revision": "3f57e8291d2ef846f9a074b1b76d2767db434abe",
+          "path": "diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+          "size": 20970379616,
+          "sha256": "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779",
+          "role": "ref2va-transformer",
+          "container_path": "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+          "download_id": "3588902454f67912fd9d4dbbdd50aa71d22a89a3356854aa1c8904c696b51c95"
+        },
+        {
+          "repo": "Comfy-Org/MiniMax-H3",
+          "revision": "3f57e8291d2ef846f9a074b1b76d2767db434abe",
+          "path": "text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+          "size": 15687142551,
+          "sha256": "35a88d51044231fe332301d7a62aa81e3f2cba62febeb446e2c1e3e0ef76f2c6",
+          "role": "text-encoder",
+          "container_path": "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+          "download_id": "eb27812965db98bab9180298f41629add421020e807111c667f2ec6b801b2024"
+        },
+        {
+          "repo": "Comfy-Org/MiniMax-H3",
+          "revision": "3f57e8291d2ef846f9a074b1b76d2767db434abe",
+          "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+          "size": 605254808,
+          "sha256": "8e505d95dd1561d47abd43d4238fd40d9bb1ae9e147ed0a4cba778d76ae4db48",
+          "role": "audio-vae",
+          "container_path": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+          "download_id": "f8a4b810d64ac7aae80edf1a86dcac463d9e2d49a7443584a7bcc3bc87a1f1bf"
+        },
+        {
+          "repo": "Comfy-Org/MiniMax-H3",
+          "revision": "3f57e8291d2ef846f9a074b1b76d2767db434abe",
+          "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+          "size": 5207808496,
+          "sha256": "7c1f131492e7eddacaac9069a61b81bdd39de5cc96561e677c5eab1cdce5e522",
+          "role": "video-vae",
+          "container_path": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors",
+          "download_id": "8b05098bd8da92c5e326c4152fe9f29834aef2489b5a098192c088e0abdb64a6"
+        }
+      ]
+    },
     "qwen3.8-27b-nvfp4": {
       "key": "qwen3.8-27b-nvfp4",
       "id": "qwen3.8-27b",
@@ -444,6 +995,11 @@
         "qwen3.8-27b"
       ],
       "profile_id": "qwen3.8-27b",
+      "runtime_mode": "text",
+      "tasks": [
+        "chat"
+      ],
+      "capability_aliases": {},
       "family": "qwen3.8",
       "task": "chat",
       "mode": "multimodal-reasoning",
@@ -479,6 +1035,9 @@
           "text"
         ]
       },
+      "input_contract": {},
+      "output_contract": {},
+      "base_model": null,
       "native_context_length": 262144,
       "max_context_length": 1048576,
       "reasoning_controls": {
@@ -536,6 +1095,7 @@
         "total_bytes": 21945295265,
         "comparability_note": "This is not the earlier approximately 16.5 GB community variant; no throughput result from either variant is interchangeable without a matched smoke."
       },
+      "lora_options": null,
       "server_path": "/models/RadixArk/Qwen3.8-27B-NVFP4",
       "server": {
         "served_model_name": "qwen3.8-27b",
@@ -548,7 +1108,8 @@
         "mamba_ssm_dtype": "bfloat16",
         "reasoning_parser": "qwen3",
         "tool_call_parser": "qwen3_coder",
-        "trust_remote_code": true
+        "trust_remote_code": true,
+        "runtime_mode": "text"
       },
       "download_fingerprint": "0ce1f36e252e7cd623e9d7db41ddbcc29efc05b4eed83d1d682f10ea45295f3a",
       "artifact_bytes": 21945295265,
@@ -782,7 +1343,7 @@
       "runtime": "sglang",
       "backend": "cuda13",
       "image_tag": "sglang-cuda13",
-      "base_image": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
       "requires_gpu": true,
       "provider": "unspecified",
       "kind": "runtime-default",
@@ -794,7 +1355,10 @@
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
-        "model_mount": "/models"
+        "ready_path": "/readyz",
+        "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs"
       },
       "environment": {
         "SGLANG_SERVER_CONFIG": "/app/server.json",
@@ -812,6 +1376,7 @@
         "reasoning_parser": "qwen3",
         "tool_call_parser": "qwen3_coder",
         "trust_remote_code": true,
+        "runtime_mode": "text",
         "mem_fraction_static": 0.8,
         "max_running_requests": 1,
         "cuda_graph_max_bs": 1,
@@ -891,6 +1456,9 @@
         "source": "huggingface-only",
         "reason": "Provider-neutral runtime default; AWS S3 read-through requires an explicit AWS staging environment."
       },
+      "runtime_modes": [
+        "text"
+      ],
       "capabilities": [
         "chat",
         "completion",
@@ -909,6 +1477,11 @@
             "qwen3.8-27b"
           ],
           "profile_id": "qwen3.8-27b",
+          "runtime_mode": "text",
+          "tasks": [
+            "chat"
+          ],
+          "capability_aliases": {},
           "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
           "capabilities": [
             "chat",
@@ -952,11 +1525,234 @@
       "verification": "configuration-only"
     },
     {
+      "id": "aws/g6e/xlarge/h3-fl2va",
+      "runtime": "sglang",
+      "backend": "cuda13",
+      "image_tag": "sglang-cuda13",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
+      "requires_gpu": true,
+      "provider": "aws",
+      "hardware": {
+        "provider_sku": "g6e.xlarge",
+        "gpu_slug": "l40s",
+        "gpu_name": "NVIDIA L40S",
+        "gpu_count": 1,
+        "vram_gb_each": 48,
+        "architecture": "Ada Lovelace",
+        "compute_capability": "sm_89",
+        "vcpu": 4,
+        "local_nvme_gb": 250
+      },
+      "compatibility": {
+        "container_runtime": "nvidia",
+        "cuda_major": 13,
+        "minimum_compute_capability": "sm_86",
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5",
+        "comfy_kitchen": "0.2.32"
+      },
+      "kind": "single-model",
+      "selection_scope": "concrete-hardware-scenario",
+      "description": "AWS g6e MiniMax H3 FL2VA memory route with DIT and text-encoder offload; verify peak VRAM, output audio, and first/last-frame contract before production.",
+      "source": "deployment-scenarios/aws/g6e/xlarge.json",
+      "server_config": "/server-configs/aws/g6e/xlarge/h3-fl2va.json",
+      "prestage_manifest": "/server-configs/aws/g6e/xlarge/h3-fl2va.prestage",
+      "container": {
+        "name": "prefer-sglang",
+        "internal_port": 30000,
+        "health_path": "/health",
+        "ready_path": "/readyz",
+        "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
+        "server_config": "/server-configs/aws/g6e/xlarge/h3-fl2va.json",
+        "prestage_manifest": "/server-configs/aws/g6e/xlarge/h3-fl2va.prestage"
+      },
+      "environment": {
+        "SGLANG_SERVER_CONFIG": "/server-configs/aws/g6e/xlarge/h3-fl2va.json",
+        "SGLANG_PRESTAGE_MODELS": "",
+        "SGLANG_DOWNLOAD_JOBS": "4"
+      },
+      "server": {
+        "runtime_mode": "diffusion",
+        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_variant": "fl2va",
+        "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "num_gpus": 1,
+        "tp_size": 1,
+        "ulysses_degree": 1,
+        "encoder_parallel": "auto",
+        "performance_mode": "memory",
+        "attention_backend": "fa",
+        "layerwise_offload_components": "dit,text_encoder",
+        "dit_offload_prefetch_size": 1,
+        "dit_layerwise_resident_layers": 0,
+        "pin_cpu_memory": false,
+        "enable_torch_compile": false,
+        "output_path": "/outputs",
+        "max_running_requests": 1,
+        "component_weights_paths": {
+          "audio_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+          "text_encoder": "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+          "transformer": "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+          "video_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
+        }
+      },
+      "server_command": [
+        "sglang",
+        "serve",
+        "--model-type",
+        "diffusion",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30001",
+        "--model-path",
+        "MiniMaxAI/MiniMax-H3",
+        "--model-variant",
+        "fl2va",
+        "--revision",
+        "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "--num-gpus",
+        "1",
+        "--tp-size",
+        "1",
+        "--ulysses-degree",
+        "1",
+        "--encoder-parallel",
+        "auto",
+        "--performance-mode",
+        "memory",
+        "--attention-backend",
+        "fa",
+        "--layerwise-offload-components",
+        "dit,text_encoder",
+        "--dit-offload-prefetch-size",
+        "1",
+        "--dit-layerwise-resident-layers",
+        "0",
+        "--pin-cpu-memory",
+        "false",
+        "--output-path",
+        "/outputs",
+        "--component-weights-paths.audio_vae",
+        "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+        "--component-weights-paths.text_encoder",
+        "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "--component-weights-paths.transformer",
+        "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+        "--component-weights-paths.video_vae",
+        "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors",
+        "--enable-torch-compile",
+        "false"
+      ],
+      "residency": {
+        "runtime_mode": "diffusion",
+        "max_running_requests": 1,
+        "gpu_parallelism": {
+          "num_gpus": 1,
+          "tp_size": 1,
+          "sp_degree": null,
+          "ulysses_degree": 1,
+          "encoder_parallel": "auto"
+        },
+        "offload": {
+          "components": "dit,text_encoder",
+          "prefetch_size": 1,
+          "resident_layers": 0
+        },
+        "effective_admitted_concurrency": "unknown-until-smoke"
+      },
+      "staging": {
+        "source": "s3-then-huggingface",
+        "scope": "optional AWS read-through",
+        "bucket_env": "S3_BUCKET_NAME",
+        "prefix_env": "S3_MODEL_PREFIX",
+        "fallback": "huggingface",
+        "iam": [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ],
+        "writes": false
+      },
+      "capabilities": [
+        "audio-generation",
+        "first-last-frame-video",
+        "synchronized-audio-video",
+        "text-to-video",
+        "video-generation"
+      ],
+      "runtime_modes": [
+        "diffusion"
+      ],
+      "models": [
+        {
+          "key": "minimax-h3-fl2va-int8-convrot",
+          "request_model_id": "minimax-h3-fl2va",
+          "aliases": [
+            "minimax-h3-fl2va",
+            "minimax-h3-t2va",
+            "t2va",
+            "t2v",
+            "fl2va",
+            "i2v"
+          ],
+          "profile_id": "minimax-h3",
+          "runtime_mode": "diffusion",
+          "tasks": [
+            "t2va",
+            "fl2va"
+          ],
+          "capability_aliases": {
+            "t2v": "t2va",
+            "i2v": "fl2va"
+          },
+          "precision": "INT8 ConvRot transformer + NVFP4 text encoder",
+          "capabilities": [
+            "video-generation",
+            "audio-generation",
+            "synchronized-audio-video",
+            "text-to-video",
+            "first-last-frame-video"
+          ],
+          "modalities": {
+            "native": [
+              "text",
+              "image",
+              "audio",
+              "video"
+            ],
+            "configured": [
+              "text",
+              "image",
+              "video",
+              "audio"
+            ],
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "video",
+              "audio"
+            ]
+          },
+          "native_context_length": null,
+          "max_context_length": null
+        }
+      ],
+      "prestage_models": [
+        "minimax-h3-fl2va-int8-convrot"
+      ],
+      "staged_artifact_bytes": 42470585471,
+      "verification_status": "configuration-only",
+      "verification": "configuration-only"
+    },
+    {
       "id": "aws/g7e/2xlarge/balanced",
       "runtime": "sglang",
       "backend": "cuda13",
       "image_tag": "sglang-cuda13",
-      "base_image": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
       "requires_gpu": true,
       "provider": "aws",
       "hardware": {
@@ -974,7 +1770,7 @@
         "container_runtime": "nvidia",
         "cuda_major": 13,
         "minimum_compute_capability": "sm_100",
-        "sglang_source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e"
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
       },
       "kind": "single-model",
       "selection_scope": "concrete-hardware-scenario",
@@ -986,7 +1782,10 @@
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
+        "ready_path": "/readyz",
         "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
         "server_config": "/server-configs/aws/g7e/2xlarge/balanced.json",
         "prestage_manifest": "/server-configs/aws/g7e/2xlarge/balanced.prestage"
       },
@@ -1007,6 +1806,7 @@
         "reasoning_parser": "qwen3",
         "tool_call_parser": "qwen3_coder",
         "trust_remote_code": true,
+        "runtime_mode": "text",
         "mem_fraction_static": 0.92,
         "max_running_requests": 4,
         "cuda_graph_max_bs": 4,
@@ -1120,6 +1920,9 @@
         "tools",
         "video"
       ],
+      "runtime_modes": [
+        "text"
+      ],
       "models": [
         {
           "key": "qwen3.8-27b-nvfp4",
@@ -1128,6 +1931,11 @@
             "qwen3.8-27b"
           ],
           "profile_id": "qwen3.8-27b",
+          "runtime_mode": "text",
+          "tasks": [
+            "chat"
+          ],
+          "capability_aliases": {},
           "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
           "capabilities": [
             "chat",
@@ -1175,7 +1983,7 @@
       "runtime": "sglang",
       "backend": "cuda13",
       "image_tag": "sglang-cuda13",
-      "base_image": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
       "requires_gpu": true,
       "provider": "aws",
       "hardware": {
@@ -1193,7 +2001,7 @@
         "container_runtime": "nvidia",
         "cuda_major": 13,
         "minimum_compute_capability": "sm_100",
-        "sglang_source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e"
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
       },
       "kind": "single-model",
       "selection_scope": "concrete-hardware-scenario",
@@ -1205,7 +2013,10 @@
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
+        "ready_path": "/readyz",
         "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
         "server_config": "/server-configs/aws/g7e/2xlarge/target-only.json",
         "prestage_manifest": "/server-configs/aws/g7e/2xlarge/target-only.prestage"
       },
@@ -1226,6 +2037,7 @@
         "reasoning_parser": "qwen3",
         "tool_call_parser": "qwen3_coder",
         "trust_remote_code": true,
+        "runtime_mode": "text",
         "mem_fraction_static": 0.92,
         "max_running_requests": 4,
         "cuda_graph_max_bs": 4,
@@ -1323,6 +2135,9 @@
         "tools",
         "video"
       ],
+      "runtime_modes": [
+        "text"
+      ],
       "models": [
         {
           "key": "qwen3.8-27b-nvfp4",
@@ -1331,6 +2146,11 @@
             "qwen3.8-27b"
           ],
           "profile_id": "qwen3.8-27b",
+          "runtime_mode": "text",
+          "tasks": [
+            "chat"
+          ],
+          "capability_aliases": {},
           "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
           "capabilities": [
             "chat",
@@ -1378,7 +2198,7 @@
       "runtime": "sglang",
       "backend": "cuda13",
       "image_tag": "sglang-cuda13",
-      "base_image": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
       "requires_gpu": true,
       "provider": "aws",
       "hardware": {
@@ -1396,7 +2216,7 @@
         "container_runtime": "nvidia",
         "cuda_major": 13,
         "minimum_compute_capability": "sm_100",
-        "sglang_source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e"
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
       },
       "kind": "single-model",
       "selection_scope": "concrete-hardware-scenario",
@@ -1408,7 +2228,10 @@
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
+        "ready_path": "/readyz",
         "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
         "server_config": "/server-configs/aws/g7e/2xlarge/fidelity.json",
         "prestage_manifest": "/server-configs/aws/g7e/2xlarge/fidelity.prestage"
       },
@@ -1429,6 +2252,7 @@
         "reasoning_parser": "qwen3",
         "tool_call_parser": "qwen3_coder",
         "trust_remote_code": true,
+        "runtime_mode": "text",
         "mem_fraction_static": 0.9,
         "max_running_requests": 1,
         "cuda_graph_max_bs": 1,
@@ -1526,6 +2350,9 @@
         "tools",
         "video"
       ],
+      "runtime_modes": [
+        "text"
+      ],
       "models": [
         {
           "key": "qwen3.8-27b-nvfp4",
@@ -1534,6 +2361,11 @@
             "qwen3.8-27b"
           ],
           "profile_id": "qwen3.8-27b",
+          "runtime_mode": "text",
+          "tasks": [
+            "chat"
+          ],
+          "capability_aliases": {},
           "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
           "capabilities": [
             "chat",
@@ -1577,11 +2409,440 @@
       "verification": "configuration-only"
     },
     {
+      "id": "aws/g7e/2xlarge/h3-fl2va",
+      "runtime": "sglang",
+      "backend": "cuda13",
+      "image_tag": "sglang-cuda13",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
+      "requires_gpu": true,
+      "provider": "aws",
+      "hardware": {
+        "provider_sku": "g7e.2xlarge",
+        "gpu_slug": "rtx-pro-6000-blackwell",
+        "gpu_name": "NVIDIA RTX PRO 6000 Blackwell",
+        "gpu_count": 1,
+        "vram_gb_each": 96,
+        "architecture": "Blackwell",
+        "compute_capability": "sm_120",
+        "vcpu": 8,
+        "local_nvme_gb": 1900
+      },
+      "compatibility": {
+        "container_runtime": "nvidia",
+        "cuda_major": 13,
+        "minimum_compute_capability": "sm_100",
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
+      },
+      "kind": "single-model",
+      "selection_scope": "concrete-hardware-scenario",
+      "description": "AWS g7e MiniMax H3 FL2VA route with full-GPU speed settings; configuration-only until exact-card media and output-contract smoke.",
+      "source": "deployment-scenarios/aws/g7e/2xlarge.json",
+      "server_config": "/server-configs/aws/g7e/2xlarge/h3-fl2va.json",
+      "prestage_manifest": "/server-configs/aws/g7e/2xlarge/h3-fl2va.prestage",
+      "container": {
+        "name": "prefer-sglang",
+        "internal_port": 30000,
+        "health_path": "/health",
+        "ready_path": "/readyz",
+        "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
+        "server_config": "/server-configs/aws/g7e/2xlarge/h3-fl2va.json",
+        "prestage_manifest": "/server-configs/aws/g7e/2xlarge/h3-fl2va.prestage"
+      },
+      "environment": {
+        "SGLANG_SERVER_CONFIG": "/server-configs/aws/g7e/2xlarge/h3-fl2va.json",
+        "SGLANG_PRESTAGE_MODELS": "",
+        "SGLANG_DOWNLOAD_JOBS": "4"
+      },
+      "server": {
+        "runtime_mode": "diffusion",
+        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_variant": "fl2va",
+        "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "num_gpus": 1,
+        "tp_size": 1,
+        "ulysses_degree": 1,
+        "encoder_parallel": "auto",
+        "performance_mode": "speed",
+        "attention_backend": "fa",
+        "layerwise_offload_components": null,
+        "dit_offload_prefetch_size": null,
+        "dit_layerwise_resident_layers": null,
+        "pin_cpu_memory": false,
+        "enable_torch_compile": true,
+        "output_path": "/outputs",
+        "max_running_requests": 1,
+        "component_weights_paths": {
+          "audio_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+          "text_encoder": "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+          "transformer": "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+          "video_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
+        }
+      },
+      "server_command": [
+        "sglang",
+        "serve",
+        "--model-type",
+        "diffusion",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30001",
+        "--model-path",
+        "MiniMaxAI/MiniMax-H3",
+        "--model-variant",
+        "fl2va",
+        "--revision",
+        "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "--num-gpus",
+        "1",
+        "--tp-size",
+        "1",
+        "--ulysses-degree",
+        "1",
+        "--encoder-parallel",
+        "auto",
+        "--performance-mode",
+        "speed",
+        "--attention-backend",
+        "fa",
+        "--pin-cpu-memory",
+        "false",
+        "--output-path",
+        "/outputs",
+        "--component-weights-paths.audio_vae",
+        "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+        "--component-weights-paths.text_encoder",
+        "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "--component-weights-paths.transformer",
+        "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+        "--component-weights-paths.video_vae",
+        "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors",
+        "--enable-torch-compile",
+        "true"
+      ],
+      "residency": {
+        "runtime_mode": "diffusion",
+        "max_running_requests": 1,
+        "gpu_parallelism": {
+          "num_gpus": 1,
+          "tp_size": 1,
+          "sp_degree": null,
+          "ulysses_degree": 1,
+          "encoder_parallel": "auto"
+        },
+        "offload": {
+          "components": null,
+          "prefetch_size": null,
+          "resident_layers": null
+        },
+        "effective_admitted_concurrency": "unknown-until-smoke"
+      },
+      "staging": {
+        "source": "s3-then-huggingface",
+        "scope": "optional AWS read-through",
+        "bucket_env": "S3_BUCKET_NAME",
+        "prefix_env": "S3_MODEL_PREFIX",
+        "fallback": "huggingface",
+        "iam": [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ],
+        "writes": false
+      },
+      "capabilities": [
+        "audio-generation",
+        "first-last-frame-video",
+        "synchronized-audio-video",
+        "text-to-video",
+        "video-generation"
+      ],
+      "runtime_modes": [
+        "diffusion"
+      ],
+      "models": [
+        {
+          "key": "minimax-h3-fl2va-int8-convrot",
+          "request_model_id": "minimax-h3-fl2va",
+          "aliases": [
+            "minimax-h3-fl2va",
+            "minimax-h3-t2va",
+            "t2va",
+            "t2v",
+            "fl2va",
+            "i2v"
+          ],
+          "profile_id": "minimax-h3",
+          "runtime_mode": "diffusion",
+          "tasks": [
+            "t2va",
+            "fl2va"
+          ],
+          "capability_aliases": {
+            "t2v": "t2va",
+            "i2v": "fl2va"
+          },
+          "precision": "INT8 ConvRot transformer + NVFP4 text encoder",
+          "capabilities": [
+            "video-generation",
+            "audio-generation",
+            "synchronized-audio-video",
+            "text-to-video",
+            "first-last-frame-video"
+          ],
+          "modalities": {
+            "native": [
+              "text",
+              "image",
+              "audio",
+              "video"
+            ],
+            "configured": [
+              "text",
+              "image",
+              "video",
+              "audio"
+            ],
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "video",
+              "audio"
+            ]
+          },
+          "native_context_length": null,
+          "max_context_length": null
+        }
+      ],
+      "prestage_models": [
+        "minimax-h3-fl2va-int8-convrot"
+      ],
+      "staged_artifact_bytes": 42470585471,
+      "verification_status": "configuration-only",
+      "verification": "configuration-only"
+    },
+    {
+      "id": "aws/g7e/2xlarge/h3-ref2va",
+      "runtime": "sglang",
+      "backend": "cuda13",
+      "image_tag": "sglang-cuda13",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
+      "requires_gpu": true,
+      "provider": "aws",
+      "hardware": {
+        "provider_sku": "g7e.2xlarge",
+        "gpu_slug": "rtx-pro-6000-blackwell",
+        "gpu_name": "NVIDIA RTX PRO 6000 Blackwell",
+        "gpu_count": 1,
+        "vram_gb_each": 96,
+        "architecture": "Blackwell",
+        "compute_capability": "sm_120",
+        "vcpu": 8,
+        "local_nvme_gb": 1900
+      },
+      "compatibility": {
+        "container_runtime": "nvidia",
+        "cuda_major": 13,
+        "minimum_compute_capability": "sm_100",
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
+      },
+      "kind": "single-model",
+      "selection_scope": "concrete-hardware-scenario",
+      "description": "AWS g7e MiniMax H3 Ref2VA route with full-GPU speed settings; configuration-only until exact-card reference-video and output-contract smoke.",
+      "source": "deployment-scenarios/aws/g7e/2xlarge.json",
+      "server_config": "/server-configs/aws/g7e/2xlarge/h3-ref2va.json",
+      "prestage_manifest": "/server-configs/aws/g7e/2xlarge/h3-ref2va.prestage",
+      "container": {
+        "name": "prefer-sglang",
+        "internal_port": 30000,
+        "health_path": "/health",
+        "ready_path": "/readyz",
+        "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
+        "server_config": "/server-configs/aws/g7e/2xlarge/h3-ref2va.json",
+        "prestage_manifest": "/server-configs/aws/g7e/2xlarge/h3-ref2va.prestage"
+      },
+      "environment": {
+        "SGLANG_SERVER_CONFIG": "/server-configs/aws/g7e/2xlarge/h3-ref2va.json",
+        "SGLANG_PRESTAGE_MODELS": "",
+        "SGLANG_DOWNLOAD_JOBS": "4"
+      },
+      "server": {
+        "runtime_mode": "diffusion",
+        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_variant": "ref2va",
+        "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "num_gpus": 1,
+        "tp_size": 1,
+        "ulysses_degree": 1,
+        "encoder_parallel": "auto",
+        "performance_mode": "speed",
+        "attention_backend": "fa",
+        "layerwise_offload_components": null,
+        "dit_offload_prefetch_size": null,
+        "dit_layerwise_resident_layers": null,
+        "pin_cpu_memory": false,
+        "enable_torch_compile": true,
+        "output_path": "/outputs",
+        "max_running_requests": 1,
+        "component_weights_paths": {
+          "audio_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+          "text_encoder": "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+          "transformer": "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+          "video_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
+        }
+      },
+      "server_command": [
+        "sglang",
+        "serve",
+        "--model-type",
+        "diffusion",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30001",
+        "--model-path",
+        "MiniMaxAI/MiniMax-H3",
+        "--model-variant",
+        "ref2va",
+        "--revision",
+        "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "--num-gpus",
+        "1",
+        "--tp-size",
+        "1",
+        "--ulysses-degree",
+        "1",
+        "--encoder-parallel",
+        "auto",
+        "--performance-mode",
+        "speed",
+        "--attention-backend",
+        "fa",
+        "--pin-cpu-memory",
+        "false",
+        "--output-path",
+        "/outputs",
+        "--component-weights-paths.audio_vae",
+        "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+        "--component-weights-paths.text_encoder",
+        "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "--component-weights-paths.transformer",
+        "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+        "--component-weights-paths.video_vae",
+        "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors",
+        "--enable-torch-compile",
+        "true"
+      ],
+      "residency": {
+        "runtime_mode": "diffusion",
+        "max_running_requests": 1,
+        "gpu_parallelism": {
+          "num_gpus": 1,
+          "tp_size": 1,
+          "sp_degree": null,
+          "ulysses_degree": 1,
+          "encoder_parallel": "auto"
+        },
+        "offload": {
+          "components": null,
+          "prefetch_size": null,
+          "resident_layers": null
+        },
+        "effective_admitted_concurrency": "unknown-until-smoke"
+      },
+      "staging": {
+        "source": "s3-then-huggingface",
+        "scope": "optional AWS read-through",
+        "bucket_env": "S3_BUCKET_NAME",
+        "prefix_env": "S3_MODEL_PREFIX",
+        "fallback": "huggingface",
+        "iam": [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ],
+        "writes": false
+      },
+      "capabilities": [
+        "audio-generation",
+        "reference-to-video",
+        "synchronized-audio-video",
+        "video-generation",
+        "video-to-video"
+      ],
+      "runtime_modes": [
+        "diffusion"
+      ],
+      "models": [
+        {
+          "key": "minimax-h3-ref2va-int8-convrot",
+          "request_model_id": "minimax-h3-ref2va",
+          "aliases": [
+            "minimax-h3-ref2va",
+            "minimax-h3-v2v",
+            "ref2va",
+            "v2v"
+          ],
+          "profile_id": "minimax-h3",
+          "runtime_mode": "diffusion",
+          "tasks": [
+            "ref2va"
+          ],
+          "capability_aliases": {
+            "v2v": "ref2va"
+          },
+          "precision": "INT8 ConvRot transformer + NVFP4 text encoder",
+          "capabilities": [
+            "video-generation",
+            "audio-generation",
+            "synchronized-audio-video",
+            "reference-to-video",
+            "video-to-video"
+          ],
+          "modalities": {
+            "native": [
+              "text",
+              "image",
+              "audio",
+              "video"
+            ],
+            "configured": [
+              "text",
+              "image",
+              "video",
+              "audio"
+            ],
+            "input": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output": [
+              "video",
+              "audio"
+            ]
+          },
+          "native_context_length": null,
+          "max_context_length": null
+        }
+      ],
+      "prestage_models": [
+        "minimax-h3-ref2va-int8-convrot"
+      ],
+      "staged_artifact_bytes": 42470585471,
+      "verification_status": "configuration-only",
+      "verification": "configuration-only"
+    },
+    {
       "id": "local/gb10/1x/balanced",
       "runtime": "sglang",
       "backend": "cuda13",
       "image_tag": "sglang-cuda13",
-      "base_image": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
       "requires_gpu": true,
       "provider": "local",
       "hardware": {
@@ -1596,7 +2857,7 @@
         "container_runtime": "nvidia",
         "cuda_major": 13,
         "minimum_compute_capability": "sm_100",
-        "sglang_source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e"
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
       },
       "kind": "single-model",
       "selection_scope": "concrete-hardware-scenario",
@@ -1608,7 +2869,10 @@
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
+        "ready_path": "/readyz",
         "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
         "server_config": "/server-configs/local/gb10/1x/balanced.json",
         "prestage_manifest": "/server-configs/local/gb10/1x/balanced.prestage"
       },
@@ -1629,6 +2893,7 @@
         "reasoning_parser": "qwen3",
         "tool_call_parser": "qwen3_coder",
         "trust_remote_code": true,
+        "runtime_mode": "text",
         "mem_fraction_static": 0.8,
         "max_running_requests": 4,
         "cuda_graph_max_bs": 4,
@@ -1735,6 +3000,9 @@
         "tools",
         "video"
       ],
+      "runtime_modes": [
+        "text"
+      ],
       "models": [
         {
           "key": "qwen3.8-27b-nvfp4",
@@ -1743,6 +3011,11 @@
             "qwen3.8-27b"
           ],
           "profile_id": "qwen3.8-27b",
+          "runtime_mode": "text",
+          "tasks": [
+            "chat"
+          ],
+          "capability_aliases": {},
           "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
           "capabilities": [
             "chat",
@@ -1790,7 +3063,7 @@
       "runtime": "sglang",
       "backend": "cuda13",
       "image_tag": "sglang-cuda13",
-      "base_image": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
       "requires_gpu": true,
       "provider": "local",
       "hardware": {
@@ -1805,7 +3078,7 @@
         "container_runtime": "nvidia",
         "cuda_major": 13,
         "minimum_compute_capability": "sm_100",
-        "sglang_source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e"
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
       },
       "kind": "single-model",
       "selection_scope": "concrete-hardware-scenario",
@@ -1817,7 +3090,10 @@
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
+        "ready_path": "/readyz",
         "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
         "server_config": "/server-configs/local/gb10/1x/target-only.json",
         "prestage_manifest": "/server-configs/local/gb10/1x/target-only.prestage"
       },
@@ -1838,6 +3114,7 @@
         "reasoning_parser": "qwen3",
         "tool_call_parser": "qwen3_coder",
         "trust_remote_code": true,
+        "runtime_mode": "text",
         "mem_fraction_static": 0.8,
         "max_running_requests": 4,
         "cuda_graph_max_bs": 4,
@@ -1928,6 +3205,9 @@
         "tools",
         "video"
       ],
+      "runtime_modes": [
+        "text"
+      ],
       "models": [
         {
           "key": "qwen3.8-27b-nvfp4",
@@ -1936,6 +3216,11 @@
             "qwen3.8-27b"
           ],
           "profile_id": "qwen3.8-27b",
+          "runtime_mode": "text",
+          "tasks": [
+            "chat"
+          ],
+          "capability_aliases": {},
           "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
           "capabilities": [
             "chat",
@@ -1983,7 +3268,7 @@
       "runtime": "sglang",
       "backend": "cuda13",
       "image_tag": "sglang-cuda13",
-      "base_image": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
       "requires_gpu": true,
       "provider": "local",
       "hardware": {
@@ -1998,7 +3283,7 @@
         "container_runtime": "nvidia",
         "cuda_major": 13,
         "minimum_compute_capability": "sm_100",
-        "sglang_source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e"
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
       },
       "kind": "single-model",
       "selection_scope": "concrete-hardware-scenario",
@@ -2010,7 +3295,10 @@
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
+        "ready_path": "/readyz",
         "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
         "server_config": "/server-configs/local/gb10/1x/fidelity.json",
         "prestage_manifest": "/server-configs/local/gb10/1x/fidelity.prestage"
       },
@@ -2031,6 +3319,7 @@
         "reasoning_parser": "qwen3",
         "tool_call_parser": "qwen3_coder",
         "trust_remote_code": true,
+        "runtime_mode": "text",
         "mem_fraction_static": 0.8,
         "max_running_requests": 1,
         "cuda_graph_max_bs": 1,
@@ -2121,6 +3410,9 @@
         "tools",
         "video"
       ],
+      "runtime_modes": [
+        "text"
+      ],
       "models": [
         {
           "key": "qwen3.8-27b-nvfp4",
@@ -2129,6 +3421,11 @@
             "qwen3.8-27b"
           ],
           "profile_id": "qwen3.8-27b",
+          "runtime_mode": "text",
+          "tasks": [
+            "chat"
+          ],
+          "capability_aliases": {},
           "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
           "capabilities": [
             "chat",
@@ -2172,11 +3469,224 @@
       "verification": "configuration-only"
     },
     {
+      "id": "local/rtx-4090/1x/h3-fl2va",
+      "runtime": "sglang",
+      "backend": "cuda13",
+      "image_tag": "sglang-cuda13",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
+      "requires_gpu": true,
+      "provider": "local",
+      "hardware": {
+        "gpu_slug": "rtx-4090",
+        "gpu_name": "NVIDIA GeForce RTX 4090",
+        "gpu_count": 1,
+        "vram_gb_each": 24,
+        "architecture": "Ada Lovelace",
+        "compute_capability": "sm_89"
+      },
+      "compatibility": {
+        "container_runtime": "nvidia",
+        "cuda_major": 13,
+        "minimum_compute_capability": "sm_86",
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5",
+        "comfy_kitchen": "0.2.32"
+      },
+      "kind": "single-model",
+      "selection_scope": "concrete-hardware-scenario",
+      "description": "RTX 4090 MiniMax H3 FL2VA memory route using layerwise DIT and text-encoder offload; verify exact peak VRAM and audio-video output before use.",
+      "source": "deployment-scenarios/local/rtx-4090/1x.json",
+      "server_config": "/server-configs/local/rtx-4090/1x/h3-fl2va.json",
+      "prestage_manifest": "/server-configs/local/rtx-4090/1x/h3-fl2va.prestage",
+      "container": {
+        "name": "prefer-sglang",
+        "internal_port": 30000,
+        "health_path": "/health",
+        "ready_path": "/readyz",
+        "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
+        "server_config": "/server-configs/local/rtx-4090/1x/h3-fl2va.json",
+        "prestage_manifest": "/server-configs/local/rtx-4090/1x/h3-fl2va.prestage"
+      },
+      "environment": {
+        "SGLANG_SERVER_CONFIG": "/server-configs/local/rtx-4090/1x/h3-fl2va.json",
+        "SGLANG_PRESTAGE_MODELS": "",
+        "SGLANG_DOWNLOAD_JOBS": "4"
+      },
+      "server": {
+        "runtime_mode": "diffusion",
+        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_variant": "fl2va",
+        "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "num_gpus": 1,
+        "tp_size": 1,
+        "ulysses_degree": 1,
+        "encoder_parallel": "auto",
+        "performance_mode": "memory",
+        "attention_backend": "fa",
+        "layerwise_offload_components": "dit,text_encoder",
+        "dit_offload_prefetch_size": 1,
+        "dit_layerwise_resident_layers": 0,
+        "pin_cpu_memory": false,
+        "enable_torch_compile": false,
+        "output_path": "/outputs",
+        "max_running_requests": 1,
+        "component_weights_paths": {
+          "audio_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+          "text_encoder": "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+          "transformer": "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+          "video_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
+        }
+      },
+      "server_command": [
+        "sglang",
+        "serve",
+        "--model-type",
+        "diffusion",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30001",
+        "--model-path",
+        "MiniMaxAI/MiniMax-H3",
+        "--model-variant",
+        "fl2va",
+        "--revision",
+        "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "--num-gpus",
+        "1",
+        "--tp-size",
+        "1",
+        "--ulysses-degree",
+        "1",
+        "--encoder-parallel",
+        "auto",
+        "--performance-mode",
+        "memory",
+        "--attention-backend",
+        "fa",
+        "--layerwise-offload-components",
+        "dit,text_encoder",
+        "--dit-offload-prefetch-size",
+        "1",
+        "--dit-layerwise-resident-layers",
+        "0",
+        "--pin-cpu-memory",
+        "false",
+        "--output-path",
+        "/outputs",
+        "--component-weights-paths.audio_vae",
+        "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+        "--component-weights-paths.text_encoder",
+        "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "--component-weights-paths.transformer",
+        "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+        "--component-weights-paths.video_vae",
+        "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors",
+        "--enable-torch-compile",
+        "false"
+      ],
+      "residency": {
+        "runtime_mode": "diffusion",
+        "max_running_requests": 1,
+        "gpu_parallelism": {
+          "num_gpus": 1,
+          "tp_size": 1,
+          "sp_degree": null,
+          "ulysses_degree": 1,
+          "encoder_parallel": "auto"
+        },
+        "offload": {
+          "components": "dit,text_encoder",
+          "prefetch_size": 1,
+          "resident_layers": 0
+        },
+        "effective_admitted_concurrency": "unknown-until-smoke"
+      },
+      "staging": {
+        "source": "huggingface-only",
+        "scope": "local HF-only by default",
+        "reason": "The video component bundle is staged into the shared model volume and verified before the server starts."
+      },
+      "capabilities": [
+        "audio-generation",
+        "first-last-frame-video",
+        "synchronized-audio-video",
+        "text-to-video",
+        "video-generation"
+      ],
+      "runtime_modes": [
+        "diffusion"
+      ],
+      "models": [
+        {
+          "key": "minimax-h3-fl2va-int8-convrot",
+          "request_model_id": "minimax-h3-fl2va",
+          "aliases": [
+            "minimax-h3-fl2va",
+            "minimax-h3-t2va",
+            "t2va",
+            "t2v",
+            "fl2va",
+            "i2v"
+          ],
+          "profile_id": "minimax-h3",
+          "runtime_mode": "diffusion",
+          "tasks": [
+            "t2va",
+            "fl2va"
+          ],
+          "capability_aliases": {
+            "t2v": "t2va",
+            "i2v": "fl2va"
+          },
+          "precision": "INT8 ConvRot transformer + NVFP4 text encoder",
+          "capabilities": [
+            "video-generation",
+            "audio-generation",
+            "synchronized-audio-video",
+            "text-to-video",
+            "first-last-frame-video"
+          ],
+          "modalities": {
+            "native": [
+              "text",
+              "image",
+              "audio",
+              "video"
+            ],
+            "configured": [
+              "text",
+              "image",
+              "video",
+              "audio"
+            ],
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "video",
+              "audio"
+            ]
+          },
+          "native_context_length": null,
+          "max_context_length": null
+        }
+      ],
+      "prestage_models": [
+        "minimax-h3-fl2va-int8-convrot"
+      ],
+      "staged_artifact_bytes": 42470585471,
+      "verification_status": "configuration-only",
+      "verification": "configuration-only"
+    },
+    {
       "id": "local/rtx-5090/1x/target-only",
       "runtime": "sglang",
       "backend": "cuda13",
       "image_tag": "sglang-cuda13",
-      "base_image": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
       "requires_gpu": true,
       "provider": "local",
       "hardware": {
@@ -2191,7 +3701,7 @@
         "container_runtime": "nvidia",
         "cuda_major": 13,
         "minimum_compute_capability": "sm_100",
-        "sglang_source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e"
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
       },
       "kind": "single-model",
       "selection_scope": "concrete-hardware-scenario",
@@ -2203,7 +3713,10 @@
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
+        "ready_path": "/readyz",
         "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
         "server_config": "/server-configs/local/rtx-5090/1x/target-only.json",
         "prestage_manifest": "/server-configs/local/rtx-5090/1x/target-only.prestage"
       },
@@ -2224,6 +3737,7 @@
         "reasoning_parser": "qwen3",
         "tool_call_parser": "qwen3_coder",
         "trust_remote_code": true,
+        "runtime_mode": "text",
         "mem_fraction_static": 0.9,
         "max_running_requests": 1,
         "cuda_graph_max_bs": 1,
@@ -2314,6 +3828,9 @@
         "tools",
         "video"
       ],
+      "runtime_modes": [
+        "text"
+      ],
       "models": [
         {
           "key": "qwen3.8-27b-nvfp4",
@@ -2322,6 +3839,11 @@
             "qwen3.8-27b"
           ],
           "profile_id": "qwen3.8-27b",
+          "runtime_mode": "text",
+          "tasks": [
+            "chat"
+          ],
+          "capability_aliases": {},
           "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
           "capabilities": [
             "chat",
@@ -2369,7 +3891,7 @@
       "runtime": "sglang",
       "backend": "cuda13",
       "image_tag": "sglang-cuda13",
-      "base_image": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
       "requires_gpu": true,
       "provider": "local",
       "hardware": {
@@ -2384,7 +3906,7 @@
         "container_runtime": "nvidia",
         "cuda_major": 13,
         "minimum_compute_capability": "sm_100",
-        "sglang_source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e"
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
       },
       "kind": "single-model",
       "selection_scope": "concrete-hardware-scenario",
@@ -2396,7 +3918,10 @@
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
+        "ready_path": "/readyz",
         "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
         "server_config": "/server-configs/local/rtx-5090/1x/performance.json",
         "prestage_manifest": "/server-configs/local/rtx-5090/1x/performance.prestage"
       },
@@ -2417,6 +3942,7 @@
         "reasoning_parser": "qwen3",
         "tool_call_parser": "qwen3_coder",
         "trust_remote_code": true,
+        "runtime_mode": "text",
         "mem_fraction_static": 0.9,
         "max_running_requests": 1,
         "cuda_graph_max_bs": 1,
@@ -2523,6 +4049,9 @@
         "tools",
         "video"
       ],
+      "runtime_modes": [
+        "text"
+      ],
       "models": [
         {
           "key": "qwen3.8-27b-nvfp4",
@@ -2531,6 +4060,11 @@
             "qwen3.8-27b"
           ],
           "profile_id": "qwen3.8-27b",
+          "runtime_mode": "text",
+          "tasks": [
+            "chat"
+          ],
+          "capability_aliases": {},
           "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
           "capabilities": [
             "chat",
@@ -2578,7 +4112,7 @@
       "runtime": "sglang",
       "backend": "cuda13",
       "image_tag": "sglang-cuda13",
-      "base_image": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
       "requires_gpu": true,
       "provider": "runpod",
       "hardware": {
@@ -2595,7 +4129,7 @@
         "container_runtime": "nvidia",
         "cuda_major": 13,
         "minimum_compute_capability": "sm_100",
-        "sglang_source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e"
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
       },
       "kind": "single-model",
       "selection_scope": "concrete-hardware-scenario",
@@ -2607,7 +4141,10 @@
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
+        "ready_path": "/readyz",
         "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
         "server_config": "/server-configs/runpod/rtx-5090/1x/target-only.json",
         "prestage_manifest": "/server-configs/runpod/rtx-5090/1x/target-only.prestage"
       },
@@ -2628,6 +4165,7 @@
         "reasoning_parser": "qwen3",
         "tool_call_parser": "qwen3_coder",
         "trust_remote_code": true,
+        "runtime_mode": "text",
         "mem_fraction_static": 0.9,
         "max_running_requests": 1,
         "cuda_graph_max_bs": 1,
@@ -2718,6 +4256,9 @@
         "tools",
         "video"
       ],
+      "runtime_modes": [
+        "text"
+      ],
       "models": [
         {
           "key": "qwen3.8-27b-nvfp4",
@@ -2726,6 +4267,11 @@
             "qwen3.8-27b"
           ],
           "profile_id": "qwen3.8-27b",
+          "runtime_mode": "text",
+          "tasks": [
+            "chat"
+          ],
+          "capability_aliases": {},
           "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
           "capabilities": [
             "chat",
@@ -2773,7 +4319,7 @@
       "runtime": "sglang",
       "backend": "cuda13",
       "image_tag": "sglang-cuda13",
-      "base_image": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
       "requires_gpu": true,
       "provider": "runpod",
       "hardware": {
@@ -2790,7 +4336,7 @@
         "container_runtime": "nvidia",
         "cuda_major": 13,
         "minimum_compute_capability": "sm_100",
-        "sglang_source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e"
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
       },
       "kind": "single-model",
       "selection_scope": "concrete-hardware-scenario",
@@ -2802,7 +4348,10 @@
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
+        "ready_path": "/readyz",
         "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
         "server_config": "/server-configs/runpod/rtx-5090/1x/performance.json",
         "prestage_manifest": "/server-configs/runpod/rtx-5090/1x/performance.prestage"
       },
@@ -2823,6 +4372,7 @@
         "reasoning_parser": "qwen3",
         "tool_call_parser": "qwen3_coder",
         "trust_remote_code": true,
+        "runtime_mode": "text",
         "mem_fraction_static": 0.9,
         "max_running_requests": 1,
         "cuda_graph_max_bs": 1,
@@ -2929,6 +4479,9 @@
         "tools",
         "video"
       ],
+      "runtime_modes": [
+        "text"
+      ],
       "models": [
         {
           "key": "qwen3.8-27b-nvfp4",
@@ -2937,6 +4490,11 @@
             "qwen3.8-27b"
           ],
           "profile_id": "qwen3.8-27b",
+          "runtime_mode": "text",
+          "tasks": [
+            "chat"
+          ],
+          "capability_aliases": {},
           "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
           "capabilities": [
             "chat",
@@ -2984,7 +4542,7 @@
       "runtime": "sglang",
       "backend": "cuda13",
       "image_tag": "sglang-cuda13",
-      "base_image": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
       "requires_gpu": true,
       "provider": "runpod",
       "hardware": {
@@ -3001,7 +4559,7 @@
         "container_runtime": "nvidia",
         "cuda_major": 13,
         "minimum_compute_capability": "sm_100",
-        "sglang_source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e"
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
       },
       "kind": "single-model",
       "selection_scope": "concrete-hardware-scenario",
@@ -3013,7 +4571,10 @@
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
+        "ready_path": "/readyz",
         "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
         "server_config": "/server-configs/runpod/rtx-pro-6000/1x/balanced.json",
         "prestage_manifest": "/server-configs/runpod/rtx-pro-6000/1x/balanced.prestage"
       },
@@ -3034,6 +4595,7 @@
         "reasoning_parser": "qwen3",
         "tool_call_parser": "qwen3_coder",
         "trust_remote_code": true,
+        "runtime_mode": "text",
         "mem_fraction_static": 0.92,
         "max_running_requests": 4,
         "cuda_graph_max_bs": 4,
@@ -3140,6 +4702,9 @@
         "tools",
         "video"
       ],
+      "runtime_modes": [
+        "text"
+      ],
       "models": [
         {
           "key": "qwen3.8-27b-nvfp4",
@@ -3148,6 +4713,11 @@
             "qwen3.8-27b"
           ],
           "profile_id": "qwen3.8-27b",
+          "runtime_mode": "text",
+          "tasks": [
+            "chat"
+          ],
+          "capability_aliases": {},
           "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
           "capabilities": [
             "chat",
@@ -3195,7 +4765,7 @@
       "runtime": "sglang",
       "backend": "cuda13",
       "image_tag": "sglang-cuda13",
-      "base_image": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
       "requires_gpu": true,
       "provider": "runpod",
       "hardware": {
@@ -3212,7 +4782,7 @@
         "container_runtime": "nvidia",
         "cuda_major": 13,
         "minimum_compute_capability": "sm_100",
-        "sglang_source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e"
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
       },
       "kind": "single-model",
       "selection_scope": "concrete-hardware-scenario",
@@ -3224,7 +4794,10 @@
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
+        "ready_path": "/readyz",
         "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
         "server_config": "/server-configs/runpod/rtx-pro-6000/1x/target-only.json",
         "prestage_manifest": "/server-configs/runpod/rtx-pro-6000/1x/target-only.prestage"
       },
@@ -3245,6 +4818,7 @@
         "reasoning_parser": "qwen3",
         "tool_call_parser": "qwen3_coder",
         "trust_remote_code": true,
+        "runtime_mode": "text",
         "max_running_requests": 4,
         "cuda_graph_max_bs": 4,
         "mem_fraction_static": 0.92,
@@ -3335,6 +4909,9 @@
         "tools",
         "video"
       ],
+      "runtime_modes": [
+        "text"
+      ],
       "models": [
         {
           "key": "qwen3.8-27b-nvfp4",
@@ -3343,6 +4920,11 @@
             "qwen3.8-27b"
           ],
           "profile_id": "qwen3.8-27b",
+          "runtime_mode": "text",
+          "tasks": [
+            "chat"
+          ],
+          "capability_aliases": {},
           "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
           "capabilities": [
             "chat",
@@ -3390,7 +4972,7 @@
       "runtime": "sglang",
       "backend": "cuda13",
       "image_tag": "sglang-cuda13",
-      "base_image": "lmsysorg/sglang:dev-qwen38-27b-dflash2@sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
       "requires_gpu": true,
       "provider": "runpod",
       "hardware": {
@@ -3407,7 +4989,7 @@
         "container_runtime": "nvidia",
         "cuda_major": 13,
         "minimum_compute_capability": "sm_100",
-        "sglang_source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e"
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
       },
       "kind": "single-model",
       "selection_scope": "concrete-hardware-scenario",
@@ -3419,7 +5001,10 @@
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
+        "ready_path": "/readyz",
         "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
         "server_config": "/server-configs/runpod/rtx-pro-6000/1x/fidelity.json",
         "prestage_manifest": "/server-configs/runpod/rtx-pro-6000/1x/fidelity.prestage"
       },
@@ -3440,6 +5025,7 @@
         "reasoning_parser": "qwen3",
         "tool_call_parser": "qwen3_coder",
         "trust_remote_code": true,
+        "runtime_mode": "text",
         "mem_fraction_static": 0.9,
         "max_running_requests": 1,
         "cuda_graph_max_bs": 1,
@@ -3530,6 +5116,9 @@
         "tools",
         "video"
       ],
+      "runtime_modes": [
+        "text"
+      ],
       "models": [
         {
           "key": "qwen3.8-27b-nvfp4",
@@ -3538,6 +5127,11 @@
             "qwen3.8-27b"
           ],
           "profile_id": "qwen3.8-27b",
+          "runtime_mode": "text",
+          "tasks": [
+            "chat"
+          ],
+          "capability_aliases": {},
           "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
           "capabilities": [
             "chat",
@@ -3577,6 +5171,419 @@
         "qwen3.8-27b-nvfp4"
       ],
       "staged_artifact_bytes": 21945295265,
+      "verification_status": "configuration-only",
+      "verification": "configuration-only"
+    },
+    {
+      "id": "runpod/rtx-pro-6000/1x/h3-fl2va",
+      "runtime": "sglang",
+      "backend": "cuda13",
+      "image_tag": "sglang-cuda13",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
+      "requires_gpu": true,
+      "provider": "runpod",
+      "hardware": {
+        "provider_gpu_type_id": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+        "provider_sku": "rtx-pro-6000",
+        "gpu_slug": "rtx-pro-6000-blackwell",
+        "gpu_name": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+        "gpu_count": 1,
+        "vram_gb_each": 96,
+        "architecture": "Blackwell",
+        "compute_capability": "sm_120"
+      },
+      "compatibility": {
+        "container_runtime": "nvidia",
+        "cuda_major": 13,
+        "minimum_compute_capability": "sm_100",
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
+      },
+      "kind": "single-model",
+      "selection_scope": "concrete-hardware-scenario",
+      "description": "RTX PRO 6000 MiniMax H3 FL2VA route with full-GPU speed settings; verify image input, synchronized audio, LoRA acceptance, and one-request stability before production.",
+      "source": "deployment-scenarios/runpod/rtx-pro-6000/1x.json",
+      "server_config": "/server-configs/runpod/rtx-pro-6000/1x/h3-fl2va.json",
+      "prestage_manifest": "/server-configs/runpod/rtx-pro-6000/1x/h3-fl2va.prestage",
+      "container": {
+        "name": "prefer-sglang",
+        "internal_port": 30000,
+        "health_path": "/health",
+        "ready_path": "/readyz",
+        "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
+        "server_config": "/server-configs/runpod/rtx-pro-6000/1x/h3-fl2va.json",
+        "prestage_manifest": "/server-configs/runpod/rtx-pro-6000/1x/h3-fl2va.prestage"
+      },
+      "environment": {
+        "SGLANG_SERVER_CONFIG": "/server-configs/runpod/rtx-pro-6000/1x/h3-fl2va.json",
+        "SGLANG_PRESTAGE_MODELS": "",
+        "SGLANG_DOWNLOAD_JOBS": "4"
+      },
+      "server": {
+        "runtime_mode": "diffusion",
+        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_variant": "fl2va",
+        "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "num_gpus": 1,
+        "tp_size": 1,
+        "ulysses_degree": 1,
+        "encoder_parallel": "auto",
+        "performance_mode": "speed",
+        "attention_backend": "fa",
+        "layerwise_offload_components": null,
+        "dit_offload_prefetch_size": null,
+        "dit_layerwise_resident_layers": null,
+        "pin_cpu_memory": false,
+        "enable_torch_compile": true,
+        "output_path": "/outputs",
+        "max_running_requests": 1,
+        "component_weights_paths": {
+          "audio_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+          "text_encoder": "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+          "transformer": "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+          "video_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
+        }
+      },
+      "server_command": [
+        "sglang",
+        "serve",
+        "--model-type",
+        "diffusion",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30001",
+        "--model-path",
+        "MiniMaxAI/MiniMax-H3",
+        "--model-variant",
+        "fl2va",
+        "--revision",
+        "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "--num-gpus",
+        "1",
+        "--tp-size",
+        "1",
+        "--ulysses-degree",
+        "1",
+        "--encoder-parallel",
+        "auto",
+        "--performance-mode",
+        "speed",
+        "--attention-backend",
+        "fa",
+        "--pin-cpu-memory",
+        "false",
+        "--output-path",
+        "/outputs",
+        "--component-weights-paths.audio_vae",
+        "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+        "--component-weights-paths.text_encoder",
+        "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "--component-weights-paths.transformer",
+        "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+        "--component-weights-paths.video_vae",
+        "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors",
+        "--enable-torch-compile",
+        "true"
+      ],
+      "residency": {
+        "runtime_mode": "diffusion",
+        "max_running_requests": 1,
+        "gpu_parallelism": {
+          "num_gpus": 1,
+          "tp_size": 1,
+          "sp_degree": null,
+          "ulysses_degree": 1,
+          "encoder_parallel": "auto"
+        },
+        "offload": {
+          "components": null,
+          "prefetch_size": null,
+          "resident_layers": null
+        },
+        "effective_admitted_concurrency": "unknown-until-smoke"
+      },
+      "staging": {
+        "source": "huggingface-only",
+        "scope": "RunPod HF-only by default",
+        "reason": "S3 read-through is an AWS-only option; set it explicitly only on an AWS deployment."
+      },
+      "capabilities": [
+        "audio-generation",
+        "first-last-frame-video",
+        "synchronized-audio-video",
+        "text-to-video",
+        "video-generation"
+      ],
+      "runtime_modes": [
+        "diffusion"
+      ],
+      "models": [
+        {
+          "key": "minimax-h3-fl2va-int8-convrot",
+          "request_model_id": "minimax-h3-fl2va",
+          "aliases": [
+            "minimax-h3-fl2va",
+            "minimax-h3-t2va",
+            "t2va",
+            "t2v",
+            "fl2va",
+            "i2v"
+          ],
+          "profile_id": "minimax-h3",
+          "runtime_mode": "diffusion",
+          "tasks": [
+            "t2va",
+            "fl2va"
+          ],
+          "capability_aliases": {
+            "t2v": "t2va",
+            "i2v": "fl2va"
+          },
+          "precision": "INT8 ConvRot transformer + NVFP4 text encoder",
+          "capabilities": [
+            "video-generation",
+            "audio-generation",
+            "synchronized-audio-video",
+            "text-to-video",
+            "first-last-frame-video"
+          ],
+          "modalities": {
+            "native": [
+              "text",
+              "image",
+              "audio",
+              "video"
+            ],
+            "configured": [
+              "text",
+              "image",
+              "video",
+              "audio"
+            ],
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "video",
+              "audio"
+            ]
+          },
+          "native_context_length": null,
+          "max_context_length": null
+        }
+      ],
+      "prestage_models": [
+        "minimax-h3-fl2va-int8-convrot"
+      ],
+      "staged_artifact_bytes": 42470585471,
+      "verification_status": "configuration-only",
+      "verification": "configuration-only"
+    },
+    {
+      "id": "runpod/rtx-pro-6000/1x/h3-ref2va",
+      "runtime": "sglang",
+      "backend": "cuda13",
+      "image_tag": "sglang-cuda13",
+      "base_image": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
+      "requires_gpu": true,
+      "provider": "runpod",
+      "hardware": {
+        "provider_gpu_type_id": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+        "provider_sku": "rtx-pro-6000",
+        "gpu_slug": "rtx-pro-6000-blackwell",
+        "gpu_name": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+        "gpu_count": 1,
+        "vram_gb_each": 96,
+        "architecture": "Blackwell",
+        "compute_capability": "sm_120"
+      },
+      "compatibility": {
+        "container_runtime": "nvidia",
+        "cuda_major": 13,
+        "minimum_compute_capability": "sm_100",
+        "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
+      },
+      "kind": "single-model",
+      "selection_scope": "concrete-hardware-scenario",
+      "description": "RTX PRO 6000 MiniMax H3 Ref2VA route with full-GPU speed settings; verify local reference-video input, synchronized audio, and one-request stability before production.",
+      "source": "deployment-scenarios/runpod/rtx-pro-6000/1x.json",
+      "server_config": "/server-configs/runpod/rtx-pro-6000/1x/h3-ref2va.json",
+      "prestage_manifest": "/server-configs/runpod/rtx-pro-6000/1x/h3-ref2va.prestage",
+      "container": {
+        "name": "prefer-sglang",
+        "internal_port": 30000,
+        "health_path": "/health",
+        "ready_path": "/readyz",
+        "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
+        "server_config": "/server-configs/runpod/rtx-pro-6000/1x/h3-ref2va.json",
+        "prestage_manifest": "/server-configs/runpod/rtx-pro-6000/1x/h3-ref2va.prestage"
+      },
+      "environment": {
+        "SGLANG_SERVER_CONFIG": "/server-configs/runpod/rtx-pro-6000/1x/h3-ref2va.json",
+        "SGLANG_PRESTAGE_MODELS": "",
+        "SGLANG_DOWNLOAD_JOBS": "4"
+      },
+      "server": {
+        "runtime_mode": "diffusion",
+        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_variant": "ref2va",
+        "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "num_gpus": 1,
+        "tp_size": 1,
+        "ulysses_degree": 1,
+        "encoder_parallel": "auto",
+        "performance_mode": "speed",
+        "attention_backend": "fa",
+        "layerwise_offload_components": null,
+        "dit_offload_prefetch_size": null,
+        "dit_layerwise_resident_layers": null,
+        "pin_cpu_memory": false,
+        "enable_torch_compile": true,
+        "output_path": "/outputs",
+        "max_running_requests": 1,
+        "component_weights_paths": {
+          "audio_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+          "text_encoder": "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+          "transformer": "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+          "video_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
+        }
+      },
+      "server_command": [
+        "sglang",
+        "serve",
+        "--model-type",
+        "diffusion",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "30001",
+        "--model-path",
+        "MiniMaxAI/MiniMax-H3",
+        "--model-variant",
+        "ref2va",
+        "--revision",
+        "5d9b308a59ab12e67147f191e184baf704185bd1",
+        "--num-gpus",
+        "1",
+        "--tp-size",
+        "1",
+        "--ulysses-degree",
+        "1",
+        "--encoder-parallel",
+        "auto",
+        "--performance-mode",
+        "speed",
+        "--attention-backend",
+        "fa",
+        "--pin-cpu-memory",
+        "false",
+        "--output-path",
+        "/outputs",
+        "--component-weights-paths.audio_vae",
+        "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+        "--component-weights-paths.text_encoder",
+        "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "--component-weights-paths.transformer",
+        "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+        "--component-weights-paths.video_vae",
+        "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors",
+        "--enable-torch-compile",
+        "true"
+      ],
+      "residency": {
+        "runtime_mode": "diffusion",
+        "max_running_requests": 1,
+        "gpu_parallelism": {
+          "num_gpus": 1,
+          "tp_size": 1,
+          "sp_degree": null,
+          "ulysses_degree": 1,
+          "encoder_parallel": "auto"
+        },
+        "offload": {
+          "components": null,
+          "prefetch_size": null,
+          "resident_layers": null
+        },
+        "effective_admitted_concurrency": "unknown-until-smoke"
+      },
+      "staging": {
+        "source": "huggingface-only",
+        "scope": "RunPod HF-only by default",
+        "reason": "S3 read-through is an AWS-only option; set it explicitly only on an AWS deployment."
+      },
+      "capabilities": [
+        "audio-generation",
+        "reference-to-video",
+        "synchronized-audio-video",
+        "video-generation",
+        "video-to-video"
+      ],
+      "runtime_modes": [
+        "diffusion"
+      ],
+      "models": [
+        {
+          "key": "minimax-h3-ref2va-int8-convrot",
+          "request_model_id": "minimax-h3-ref2va",
+          "aliases": [
+            "minimax-h3-ref2va",
+            "minimax-h3-v2v",
+            "ref2va",
+            "v2v"
+          ],
+          "profile_id": "minimax-h3",
+          "runtime_mode": "diffusion",
+          "tasks": [
+            "ref2va"
+          ],
+          "capability_aliases": {
+            "v2v": "ref2va"
+          },
+          "precision": "INT8 ConvRot transformer + NVFP4 text encoder",
+          "capabilities": [
+            "video-generation",
+            "audio-generation",
+            "synchronized-audio-video",
+            "reference-to-video",
+            "video-to-video"
+          ],
+          "modalities": {
+            "native": [
+              "text",
+              "image",
+              "audio",
+              "video"
+            ],
+            "configured": [
+              "text",
+              "image",
+              "video",
+              "audio"
+            ],
+            "input": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output": [
+              "video",
+              "audio"
+            ]
+          },
+          "native_context_length": null,
+          "max_context_length": null
+        }
+      ],
+      "prestage_models": [
+        "minimax-h3-ref2va-int8-convrot"
+      ],
+      "staged_artifact_bytes": 42470585471,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     }

@@ -7,6 +7,8 @@ LEGACY_SMALL_MODELS=$SGLANG_GENERATED_MODEL_KEYS
 
 model_key_fingerprint() {
   case "$1" in
+  minimax-h3-fl2va-int8-convrot) printf '%s\n' 18b5b58649aa12ad8151fc72d060c8fe5b1a13db1cce0bc89ca78fc27c3ffcc2 ;;
+  minimax-h3-ref2va-int8-convrot) printf '%s\n' a47768f488a5bd5a6fbccff6c2ba0c9ad6bc71b86fc36f98f23ab069e918a16a ;;
   qwen3.8-27b-nvfp4) printf '%s\n' 0ce1f36e252e7cd623e9d7db41ddbcc29efc05b4eed83d1d682f10ea45295f3a ;;
     *) echo "[sglang-download] unknown model key: $1" >&2; return 2 ;;
   esac
@@ -14,6 +16,18 @@ model_key_fingerprint() {
 
 model_key_artifacts() {
   case "$1" in
+  minimax-h3-fl2va-int8-convrot)
+      printf '%s\n' "Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors"
+      printf '%s\n' "Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
+      printf '%s\n' "Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors"
+      printf '%s\n' "Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
+      ;;
+  minimax-h3-ref2va-int8-convrot)
+      printf '%s\n' "Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors"
+      printf '%s\n' "Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
+      printf '%s\n' "Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors"
+      printf '%s\n' "Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
+      ;;
   qwen3.8-27b-nvfp4)
       printf '%s\n' "RadixArk/Qwen3.8-27B-NVFP4/.gitattributes"
       printf '%s\n' "RadixArk/Qwen3.8-27B-NVFP4/.quant_summary.txt"
@@ -44,6 +58,18 @@ model_key_artifacts() {
 
 model_key_artifact_records() {
   case "$1" in
+  minimax-h3-fl2va-int8-convrot)
+      printf '%s\t%s\n' 20970379616 "Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors"
+      printf '%s\t%s\n' 15687142551 "Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
+      printf '%s\t%s\n' 605254808 "Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors"
+      printf '%s\t%s\n' 5207808496 "Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
+      ;;
+  minimax-h3-ref2va-int8-convrot)
+      printf '%s\t%s\n' 20970379616 "Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors"
+      printf '%s\t%s\n' 15687142551 "Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
+      printf '%s\t%s\n' 605254808 "Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors"
+      printf '%s\t%s\n' 5207808496 "Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
+      ;;
   qwen3.8-27b-nvfp4)
       printf '%s\t%s\n' 1570 "RadixArk/Qwen3.8-27B-NVFP4/.gitattributes"
       printf '%s\t%s\n' 314291 "RadixArk/Qwen3.8-27B-NVFP4/.quant_summary.txt"
@@ -74,6 +100,12 @@ model_key_artifact_records() {
 
 sglang_model_artifact_ids() {
   case "$1" in
+  minimax-h3-fl2va-int8-convrot)
+    printf '%s\n' "e5b6dcd60518d8d785f847cd73bc386e49d47bbd576b5d8700eb34570a4813de" "eb27812965db98bab9180298f41629add421020e807111c667f2ec6b801b2024" "f8a4b810d64ac7aae80edf1a86dcac463d9e2d49a7443584a7bcc3bc87a1f1bf" "8b05098bd8da92c5e326c4152fe9f29834aef2489b5a098192c088e0abdb64a6"
+    ;;
+  minimax-h3-ref2va-int8-convrot)
+    printf '%s\n' "3588902454f67912fd9d4dbbdd50aa71d22a89a3356854aa1c8904c696b51c95" "eb27812965db98bab9180298f41629add421020e807111c667f2ec6b801b2024" "f8a4b810d64ac7aae80edf1a86dcac463d9e2d49a7443584a7bcc3bc87a1f1bf" "8b05098bd8da92c5e326c4152fe9f29834aef2489b5a098192c088e0abdb64a6"
+    ;;
   qwen3.8-27b-nvfp4)
     printf '%s\n' "7730912859c10cda3ca68bae6dccbf7d20a4bb4d903a716ff03fe21825f713b7" "9fcf0e3d01dddeb0706cee411148baafecf6d838014603887e9853bf20ba99ab" "0df27f305811c8941e9c6d993da0de3e301e372a9d78fa2c757ea307655ac872" "fdeab13bd6cb362cd5ea348ef47485f5f2293b6af4addd400b80a48aeb3e1647" "1872540f100537b1a3934324582e5d9a5088aeed741a555bc27e960a482355a4" "bd4d870488e327b76b72c88c8720083052627fbb0b93f1fa10ff858ebb155b2c" "f9749a4da39e1c3dc1433dbd28b6f6346575eb8438190a76628d90e7b728fdd8" "919d7ee15a0fadbddfc063ea3ab00cd3e40eff57da0e06367feb477d0dfd7c05" "3e6b53eec281228ca50a1417d3d768d33ee1d8578aeafb516fe50aa81401db7d" "e7e3e7f9a82fa7f51aabb6ade09bb28fa48f5d0c182c27058d4429e42c93435a" "93758408a062a258fd549c4e4ba9e28bfa2b045e2ab55cd6b27487fb01afc3db" "1b005625d88e08b27423395b98ec92f1bc2fcc747355bba89a8581f61e25757b" "68ad6bf748e17568538d93aa614efd5cd86ae3b458364276787fc87ae98aa167" "8a0d6be7fd2bcbb0483918329bc56b1ab010eb4e59d92332a4ebdd81ebfb226b" "ba5d8f1df983d9283c17076c60f2426e27f4917cfdd25e4e436826bdc563245c" "09d26ecac6b59b0885c1fcb494a6031690f16c9f21cdce8a43e3a1a6e522609c" "3c2618df1abcadf08501a56b79ac294b4d83bce17b57d1602a994635d5bcf4d1" "af8df8fb4997b9844e57f120f63408396d6852fc16472ff0fcd8542eaa94be8f" "3001036477fa91b75a2b38182de57581aa886607f24a1a4fddea200e1b4c291b" "f3c3ca7e0bd239424a4fea839b50a052e6727c3c89c8fefaa7d1811a94bcfa63" "d46158d901e1e5079969870d919555b038173ce4ef182146087ac682bc638785" "1d6ee74940f64d6aae63bf1f31e9f5c07fb279da96d73c9744736b58e4b96163"
     ;;
@@ -83,6 +115,21 @@ sglang_model_artifact_ids() {
 
 sglang_download_artifact_id() {
   case "$1" in
+  e5b6dcd60518d8d785f847cd73bc386e49d47bbd576b5d8700eb34570a4813de)
+    prefer_download_hf_artifact "sglang-download" "$1" "Comfy-Org/MiniMax-H3" "3f57e8291d2ef846f9a074b1b76d2767db434abe" "diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors" 20970379616 "e889202c41dafb67b10d67b97f0d8541508036a6090af23425a5c2615d03c47a"
+    ;;
+  eb27812965db98bab9180298f41629add421020e807111c667f2ec6b801b2024)
+    prefer_download_hf_artifact "sglang-download" "$1" "Comfy-Org/MiniMax-H3" "3f57e8291d2ef846f9a074b1b76d2767db434abe" "text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors" 15687142551 "35a88d51044231fe332301d7a62aa81e3f2cba62febeb446e2c1e3e0ef76f2c6"
+    ;;
+  f8a4b810d64ac7aae80edf1a86dcac463d9e2d49a7443584a7bcc3bc87a1f1bf)
+    prefer_download_hf_artifact "sglang-download" "$1" "Comfy-Org/MiniMax-H3" "3f57e8291d2ef846f9a074b1b76d2767db434abe" "vae/minimax_h3_audio_vae_fp32.safetensors" 605254808 "8e505d95dd1561d47abd43d4238fd40d9bb1ae9e147ed0a4cba778d76ae4db48"
+    ;;
+  8b05098bd8da92c5e326c4152fe9f29834aef2489b5a098192c088e0abdb64a6)
+    prefer_download_hf_artifact "sglang-download" "$1" "Comfy-Org/MiniMax-H3" "3f57e8291d2ef846f9a074b1b76d2767db434abe" "vae/minimax_h3_video_vae_fp16.safetensors" 5207808496 "7c1f131492e7eddacaac9069a61b81bdd39de5cc96561e677c5eab1cdce5e522"
+    ;;
+  3588902454f67912fd9d4dbbdd50aa71d22a89a3356854aa1c8904c696b51c95)
+    prefer_download_hf_artifact "sglang-download" "$1" "Comfy-Org/MiniMax-H3" "3f57e8291d2ef846f9a074b1b76d2767db434abe" "diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors" 20970379616 "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779"
+    ;;
   7730912859c10cda3ca68bae6dccbf7d20a4bb4d903a716ff03fe21825f713b7)
     prefer_download_hf_artifact "sglang-download" "$1" "RadixArk/Qwen3.8-27B-NVFP4" "319f741cce68d7914884900c138a1fbb70a42f30" ".gitattributes" 1570 "34448b82c17d60fec9b65b1f093c115ddbaadc04beb1b0140b6bfed2e012a930"
     ;;
@@ -159,6 +206,21 @@ sglang_s3_download_artifact_id() {
     return 2
   fi
   case "$1" in
+  e5b6dcd60518d8d785f847cd73bc386e49d47bbd576b5d8700eb34570a4813de)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Comfy-Org/MiniMax-H3" "diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors" 20970379616 "e889202c41dafb67b10d67b97f0d8541508036a6090af23425a5c2615d03c47a" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  eb27812965db98bab9180298f41629add421020e807111c667f2ec6b801b2024)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Comfy-Org/MiniMax-H3" "text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors" 15687142551 "35a88d51044231fe332301d7a62aa81e3f2cba62febeb446e2c1e3e0ef76f2c6" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  f8a4b810d64ac7aae80edf1a86dcac463d9e2d49a7443584a7bcc3bc87a1f1bf)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Comfy-Org/MiniMax-H3" "vae/minimax_h3_audio_vae_fp32.safetensors" 605254808 "8e505d95dd1561d47abd43d4238fd40d9bb1ae9e147ed0a4cba778d76ae4db48" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  8b05098bd8da92c5e326c4152fe9f29834aef2489b5a098192c088e0abdb64a6)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Comfy-Org/MiniMax-H3" "vae/minimax_h3_video_vae_fp16.safetensors" 5207808496 "7c1f131492e7eddacaac9069a61b81bdd39de5cc96561e677c5eab1cdce5e522" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  3588902454f67912fd9d4dbbdd50aa71d22a89a3356854aa1c8904c696b51c95)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Comfy-Org/MiniMax-H3" "diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors" 20970379616 "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
   7730912859c10cda3ca68bae6dccbf7d20a4bb4d903a716ff03fe21825f713b7)
     prefer_download_s3_artifact "sglang-s3" "$1" "RadixArk/Qwen3.8-27B-NVFP4" ".gitattributes" 1570 "34448b82c17d60fec9b65b1f093c115ddbaadc04beb1b0140b6bfed2e012a930" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
     ;;

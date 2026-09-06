@@ -23,6 +23,7 @@ REPO_PATTERN = re.compile(
 SHA1_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 STAGING_SOURCES = {"huggingface-only", "s3-then-huggingface"}
+RUNTIME_MODES = {"text", "diffusion"}
 
 
 def load_json(path: Path) -> dict:
@@ -102,6 +103,38 @@ def model_lanes() -> list[dict]:
         model_id = shared.get("id")
         if not isinstance(model_id, str) or not model_id:
             raise ValueError(f"{path}: shared.id must be a non-empty string")
+        runtime_mode = shared.get("runtime_mode", "text")
+        if runtime_mode not in RUNTIME_MODES:
+            raise ValueError(f"{path}: shared.runtime_mode must be text or diffusion")
+        profile_id = shared.get("profile_id", model_slug)
+        if not isinstance(profile_id, str) or not profile_id:
+            raise ValueError(f"{path}: shared.profile_id must be a non-empty string")
+        base_model = shared.get("base_model")
+        if base_model is not None:
+            if not isinstance(base_model, dict):
+                raise ValueError(f"{path}: shared.base_model must be an object")
+            if not REPO_PATTERN.fullmatch(str(base_model.get("repo", ""))):
+                raise ValueError(f"{path}: shared.base_model.repo must be a safe owner/name")
+            if not SHA1_PATTERN.fullmatch(str(base_model.get("revision", ""))):
+                raise ValueError(f"{path}: shared.base_model.revision must be an immutable SHA")
+            if not isinstance(base_model.get("model_path", base_model["repo"]), str):
+                raise ValueError(f"{path}: shared.base_model.model_path must be a string")
+        tasks = shared.get("tasks", [shared.get("task")])
+        if (
+            not isinstance(tasks, list)
+            or not tasks
+            or any(not isinstance(task, str) or not task for task in tasks)
+        ):
+            raise ValueError(f"{path}: shared.tasks must be a non-empty list of strings")
+        capability_aliases = shared.get("capability_aliases", {})
+        if not isinstance(capability_aliases, dict) or any(
+            not isinstance(key, str)
+            or not isinstance(value, str)
+            or not key
+            or not value
+            for key, value in capability_aliases.items()
+        ):
+            raise ValueError(f"{path}: shared.capability_aliases must map strings to strings")
         quants = source.get("quants")
         if not isinstance(quants, dict) or not quants:
             raise ValueError(f"{path}: quants must be a non-empty object")
@@ -150,6 +183,12 @@ def model_lanes() -> list[dict]:
             if not isinstance(server, dict) or not isinstance(quant_server, dict):
                 raise ValueError(f"{key}: server settings must be objects")
             server.update(copy.deepcopy(quant_server))
+            server.setdefault("runtime_mode", runtime_mode)
+            if runtime_mode == "diffusion":
+                server.setdefault("model_path", base_model.get("model_path") if base_model else None)
+                server.setdefault("model_revision", base_model.get("revision") if base_model else None)
+                if not server.get("model_path") or not server.get("model_revision"):
+                    raise ValueError(f"{key}: diffusion lanes require server model_path and model_revision")
             request_model_id = quant.get("request_model_id", model_id)
             if not isinstance(request_model_id, str) or not request_model_id:
                 raise ValueError(f"{key}: request_model_id must be a non-empty string")
@@ -170,6 +209,13 @@ def model_lanes() -> list[dict]:
                 "aliases": aliases,
                 "family": family,
                 "model_slug": model_slug,
+                "profile_id": profile_id,
+                "runtime_mode": runtime_mode,
+                "tasks": copy.deepcopy(tasks),
+                "capability_aliases": copy.deepcopy(capability_aliases),
+                "base_model": copy.deepcopy(base_model),
+                "input_contract": copy.deepcopy(shared.get("input_contract", {})),
+                "output_contract": copy.deepcopy(shared.get("output_contract", {})),
                 **shared,
                 "artifacts": copy.deepcopy(artifacts),
                 "server_path": server_path,
@@ -283,6 +329,64 @@ def default_server_overrides() -> dict:
 
 
 def server_command(lane: dict, server: dict) -> list[str]:
+    if lane.get("runtime_mode", "text") == "diffusion":
+        command = [
+            "sglang",
+            "serve",
+            "--model-type",
+            "diffusion",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            "30001",
+            "--model-path",
+            str(server["model_path"]),
+            "--model-variant",
+            str(server["model_variant"]),
+            "--revision",
+            str(server["model_revision"]),
+        ]
+        for key, flag in (
+            ("num_gpus", "--num-gpus"),
+            ("tp_size", "--tp-size"),
+            ("sp_degree", "--sp-degree"),
+            ("ulysses_degree", "--ulysses-degree"),
+            ("encoder_parallel", "--encoder-parallel"),
+            ("performance_mode", "--performance-mode"),
+            ("quantization", "--quantization"),
+            ("attention_backend", "--attention-backend"),
+            ("layerwise_offload_components", "--layerwise-offload-components"),
+            ("dit_offload_prefetch_size", "--dit-offload-prefetch-size"),
+            ("dit_layerwise_resident_layers", "--dit-layerwise-resident-layers"),
+            ("pin_cpu_memory", "--pin-cpu-memory"),
+            ("output_path", "--output-path"),
+            ("lora_path", "--lora-path"),
+            ("lora_weight_name", "--lora-weight-name"),
+            ("lora_nickname", "--lora-nickname"),
+            ("lora_scale", "--lora-scale"),
+            ("lora_alpha", "--lora-alpha"),
+            ("lora_merge_mode", "--lora-merge-mode"),
+        ):
+            value = server.get(key)
+            if value is None:
+                continue
+            if isinstance(value, bool):
+                value = str(value).lower()
+            command.extend([flag, str(value)])
+        component_paths = server.get("component_weights_paths", {})
+        if component_paths is not None:
+            if not isinstance(component_paths, dict):
+                raise ValueError(f"{lane['key']}: component_weights_paths must be an object")
+            for component, path in sorted(component_paths.items()):
+                if not isinstance(component, str) or not component or not isinstance(path, str) or not path:
+                    raise ValueError(f"{lane['key']}: component weight paths must be non-empty strings")
+                command.extend([f"--component-weights-paths.{component}", path])
+        if "enable_torch_compile" in server:
+            command.extend(["--enable-torch-compile", str(server["enable_torch_compile"]).lower()])
+        if server.get("trust_remote_code", False):
+            command.append("--trust-remote-code")
+        return command
+
     command = [
         "python3",
         "-m",
@@ -344,7 +448,10 @@ def model_config_record(lane: dict) -> dict:
         "key": lane["key"],
         "request_model_id": lane["request_model_id"],
         "aliases": lane["aliases"],
-        "profile_id": lane["model_slug"],
+        "profile_id": lane.get("profile_id", lane["model_slug"]),
+        "runtime_mode": lane.get("runtime_mode", "text"),
+        "tasks": lane.get("tasks", [lane["task"]]),
+        "capability_aliases": lane.get("capability_aliases", {}),
         "precision": lane["precision"],
         "capabilities": lane["capabilities"],
         "modalities": lane["modalities"],
@@ -358,17 +465,30 @@ def server_config(lanes: list[dict], overrides: dict | None = None) -> dict:
         raise ValueError("SGLang server configs must contain exactly one model")
     lane = lanes[0]
     server = effective_server(lane, overrides)
-    return {
-        "schema_version": 1,
+    runtime_mode = lane.get("runtime_mode", "text")
+    model_path = server.get("model_path", lane["container_path"])
+    config = {
+        "schema_version": 2,
         "runtime": "sglang",
+        "mode": runtime_mode,
         "host": "0.0.0.0",
         "port": 30000,
-        "model_path": lane["container_path"],
-        "served_model_name": lane["request_model_id"],
+        "model_path": model_path,
         "command": server_command(lane, server),
         "server": server,
         "models": [model_config_record(lane)],
     }
+    if runtime_mode == "text":
+        config["served_model_name"] = lane["request_model_id"]
+    else:
+        config["gateway"] = {
+            "upstream_host": "127.0.0.1",
+            "upstream_port": 30001,
+            "model_id": lane["request_model_id"],
+            "input_mount": "/inputs",
+            "output_mount": "/outputs",
+        }
+    return config
 
 
 def lane_inventory(lane: dict) -> dict:
@@ -386,7 +506,10 @@ def lane_inventory(lane: dict) -> dict:
         "id": lane["id"],
         "request_model_id": lane["request_model_id"],
         "aliases": lane["aliases"],
-        "profile_id": lane["model_slug"],
+        "profile_id": lane.get("profile_id", lane["model_slug"]),
+        "runtime_mode": lane.get("runtime_mode", "text"),
+        "tasks": lane.get("tasks", [lane["task"]]),
+        "capability_aliases": lane.get("capability_aliases", {}),
         "family": lane["family"],
         "task": lane["task"],
         "mode": lane["mode"],
@@ -396,6 +519,9 @@ def lane_inventory(lane: dict) -> dict:
         "license": lane["license"],
         "lineage": lane["lineage"],
         "modalities": lane["modalities"],
+        "input_contract": copy.deepcopy(lane.get("input_contract", {})),
+        "output_contract": copy.deepcopy(lane.get("output_contract", {})),
+        "base_model": copy.deepcopy(lane.get("base_model")),
         "native_context_length": lane["native_context_length"],
         "max_context_length": lane["max_context_length"],
         "reasoning_controls": lane["reasoning_controls"],
@@ -403,6 +529,7 @@ def lane_inventory(lane: dict) -> dict:
         "speculative": lane["speculative"],
         "kv_cache_scaling": copy.deepcopy(lane.get("kv_cache_scaling")),
         "artifact_variant": copy.deepcopy(lane.get("artifact_variant")),
+        "lora_options": copy.deepcopy(lane.get("lora_options")),
         "server_path": lane["container_path"],
         "server": lane["server"],
         "download_fingerprint": download_fingerprint,
@@ -425,6 +552,24 @@ def lane_download_fingerprint(lane: dict) -> str:
 
 
 def residency(server: dict) -> dict:
+    if server.get("runtime_mode") == "diffusion":
+        return {
+            "runtime_mode": "diffusion",
+            "max_running_requests": server.get("max_running_requests", 1),
+            "gpu_parallelism": {
+                "num_gpus": server.get("num_gpus"),
+                "tp_size": server.get("tp_size"),
+                "sp_degree": server.get("sp_degree"),
+                "ulysses_degree": server.get("ulysses_degree"),
+                "encoder_parallel": server.get("encoder_parallel"),
+            },
+            "offload": {
+                "components": server.get("layerwise_offload_components"),
+                "prefetch_size": server.get("dit_offload_prefetch_size"),
+                "resident_layers": server.get("dit_layerwise_resident_layers"),
+            },
+            "effective_admitted_concurrency": "unknown-until-smoke",
+        }
     speculative = server.get("speculative", {})
     return {
         "context_length": server.get("context_length"),
@@ -452,7 +597,10 @@ def container_metadata() -> dict:
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
+        "ready_path": "/readyz",
         "model_mount": "/models",
+        "input_mount": "/inputs",
+        "output_mount": "/outputs",
     }
 
 
@@ -462,28 +610,48 @@ def deployment_model_records(lanes: list[dict]) -> list[dict]:
 
 def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]) -> dict:
     primary = [lane for lane in lanes if lane["primary"]]
+    text_primary = [lane for lane in primary if lane.get("runtime_mode", "text") == "text"]
     primary_by_key = {lane["key"]: lane for lane in primary}
     models = {lane["key"]: lane_inventory(lane) for lane in lanes}
     profiles = {}
     for lane in primary:
+        profile_id = lane.get("profile_id", lane["model_slug"])
         profile = copy.deepcopy(lane["profile"])
         profile.update(
             {
                 "model_slug": lane["model_slug"],
+                "profile_id": profile_id,
                 "license": lane["license"],
                 "lineage": lane["lineage"],
                 "native_context_length": lane["native_context_length"],
                 "max_context_length": lane["max_context_length"],
                 "native_modalities": lane["modalities"]["native"],
                 "configured_modalities": lane["modalities"]["configured"],
+                "runtime_modes": [lane.get("runtime_mode", "text")],
+                "tasks": copy.deepcopy(lane.get("tasks", [lane["task"]])),
+                "input_contract": copy.deepcopy(lane.get("input_contract", {})),
+                "output_contract": copy.deepcopy(lane.get("output_contract", {})),
             }
         )
-        profiles[lane["model_slug"]] = profile
+        if profile_id in profiles:
+            existing = profiles[profile_id]
+            existing["runtime_modes"] = sorted(
+                set(existing.get("runtime_modes", [])) | {lane.get("runtime_mode", "text")}
+            )
+            existing["tasks"] = sorted(set(existing.get("tasks", [])) | set(profile["tasks"]))
+            existing["configured_capabilities"] = sorted(
+                set(existing.get("configured_capabilities", []))
+                | set(profile.get("configured_capabilities", []))
+            )
+        else:
+            profiles[profile_id] = profile
 
     default_overrides = default_server_overrides()
-    default_config = server_config(primary, default_overrides)
+    if not text_primary:
+        raise ValueError("at least one primary text model is required for /app/server.json")
+    default_config = server_config([text_primary[0]], default_overrides)
     default_artifact_bytes = sum(
-        artifact["size"] for lane in primary for artifact in lane["artifacts"]
+        artifact["size"] for lane in text_primary for artifact in lane["artifacts"]
     )
     deployments = [
         {
@@ -502,7 +670,7 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
             "container": container_metadata(),
             "environment": {
                 "SGLANG_SERVER_CONFIG": "/app/server.json",
-                "SGLANG_PRESTAGE_MODELS": ",".join(lane["key"] for lane in primary),
+                "SGLANG_PRESTAGE_MODELS": ",".join(lane["key"] for lane in text_primary),
             },
             "server": default_config["server"],
             "server_command": default_config["command"],
@@ -511,9 +679,10 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
                 "source": "huggingface-only",
                 "reason": "Provider-neutral runtime default; AWS S3 read-through requires an explicit AWS staging environment.",
             },
-            "capabilities": sorted({capability for lane in primary for capability in lane["capabilities"]}),
-            "models": deployment_model_records(primary),
-            "prestage_models": [lane["key"] for lane in primary],
+            "runtime_modes": ["text"],
+            "capabilities": sorted({capability for lane in text_primary for capability in lane["capabilities"]}),
+            "models": deployment_model_records([text_primary[0]]),
+            "prestage_models": [text_primary[0]["key"]],
             "staged_artifact_bytes": default_artifact_bytes,
             "verification_status": "configuration-only",
             "verification": "configuration-only",
@@ -561,6 +730,7 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
                 "capabilities": sorted(
                     {capability for lane in selected for capability in lane["capabilities"]}
                 ),
+                "runtime_modes": sorted({lane.get("runtime_mode", "text") for lane in selected}),
                 "models": deployment_model_records(selected),
                 "prestage_models": scenario["model_keys"],
                 "staged_artifact_bytes": artifact_bytes,
@@ -579,7 +749,7 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
         json.dumps(catalog_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
     return {
-        "schema_version": "prefer.sglang-deployment-inventory.v1",
+        "schema_version": "prefer.sglang-deployment-inventory.v2",
         "catalog_fingerprint": catalog_fingerprint,
         "product": "PreFer",
         "distribution": {
@@ -600,12 +770,17 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
         "provenance_audit": runtime.get("provenance_audit", {}),
         "experimental_routes": runtime.get("experimental_routes", {}),
         "known_limitations": runtime["known_limitations"],
+        "runtime_modes": sorted({lane.get("runtime_mode", "text") for lane in lanes}),
         "api": {
             "health": "GET /health",
+            "ready": "GET /readyz",
             "models": "GET /v1/models",
             "chat_completions": "POST /v1/chat/completions",
             "completions": "POST /v1/completions",
             "anthropic_messages": "POST /v1/messages",
+            "videos": "POST /v1/videos",
+            "video_status": "GET /v1/videos/{id}",
+            "video_content": "GET /v1/videos/{id}/content",
         },
         "model_profiles": profiles,
         "models": models,
@@ -614,7 +789,11 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
 
 
 def download_script(lanes: list[dict]) -> str:
-    primary_keys = ",".join(lane["key"] for lane in lanes if lane["primary"])
+    primary_keys = ",".join(
+        lane["key"]
+        for lane in lanes
+        if lane["primary"] and lane.get("runtime_mode", "text") == "text"
+    )
     model_cases = []
     for lane in lanes:
         artifact_ids = " ".join(
@@ -757,15 +936,16 @@ def rendered_outputs() -> dict[Path, str]:
         raise ValueError("runtime.json schema_version must be 1")
     lanes = model_lanes()
     primary = [lane for lane in lanes if lane["primary"]]
+    text_primary = [lane for lane in primary if lane.get("runtime_mode", "text") == "text"]
     primary_by_key = {lane["key"]: lane for lane in primary}
     scenarios = load_scenarios(primary_by_key)
     default_overrides = default_server_overrides()
     outputs: dict[Path, str] = {
         ROOT / "server.generated.json": json.dumps(
-            server_config(primary, default_overrides), indent=2
+            server_config([text_primary[0]], default_overrides), indent=2
         )
         + "\n",
-        ROOT / "server.generated.prestage": ",".join(lane["key"] for lane in primary) + "\n",
+        ROOT / "server.generated.prestage": ",".join(lane["key"] for lane in text_primary) + "\n",
         ROOT / "deployment-inventory.generated.json": json.dumps(
             deployment_inventory(runtime, lanes, scenarios), indent=2
         )

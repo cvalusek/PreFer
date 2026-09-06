@@ -112,7 +112,7 @@ def build_manifest(args: argparse.Namespace) -> dict[str, object]:
         args.sglang_inventory,
         args.output_dir,
         "prefer-sglang-deployment-inventory.json",
-        "prefer.sglang-deployment-inventory.v1",
+        "prefer.sglang-deployment-inventory.v2",
     )
 
     return {

@@ -1,10 +1,10 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "runtime": "sglang",
+  "mode": "text",
   "host": "0.0.0.0",
   "port": 30000,
   "model_path": "/models/RadixArk/Qwen3.8-27B-NVFP4",
-  "served_model_name": "qwen3.8-27b",
   "command": [
     "python3",
     "-m",
@@ -69,6 +69,7 @@
     "reasoning_parser": "qwen3",
     "tool_call_parser": "qwen3_coder",
     "trust_remote_code": true,
+    "runtime_mode": "text",
     "mem_fraction_static": 0.92,
     "max_running_requests": 4,
     "cuda_graph_max_bs": 4,
@@ -91,6 +92,11 @@
         "qwen3.8-27b"
       ],
       "profile_id": "qwen3.8-27b",
+      "runtime_mode": "text",
+      "tasks": [
+        "chat"
+      ],
+      "capability_aliases": {},
       "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
       "capabilities": [
         "chat",
@@ -125,5 +131,6 @@
       "native_context_length": 262144,
       "max_context_length": 1048576
     }
-  ]
+  ],
+  "served_model_name": "qwen3.8-27b"
 }

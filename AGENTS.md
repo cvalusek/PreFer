@@ -1093,20 +1093,21 @@ PreFer stages only its pinned catalog artifacts and verifies size plus SHA-256.
 
 ## SGLang sibling runtime
 
-`docker/sglang/` is an opt-in CUDA 13 sibling for Qwen3.8-27B. It is an
-alternative text backend to llama.cpp, not a replacement for the existing
-router. The Compose service uses profile `sglang`, listens on host port 8083 by
-default, and uses the same named `prefer-model-cache` volume as llama.cpp by
-default. Keep its container name, internal port 30000, model mount `/models`,
-and generated config/inventory paths distinct from the llama service so both
-can coexist when the operator intentionally has enough GPU capacity.
+`docker/sglang/` is an opt-in CUDA 13 sibling for Qwen3.8-27B text serving and
+MiniMax H3 diffusion video serving. It is an alternative backend to llama.cpp,
+not a replacement for the existing router. The Compose service uses profile
+`sglang`, listens on host port 8083 by default, and uses the same named
+`prefer-model-cache` volume as llama.cpp by default. Keep its container name,
+internal gateway port 30000, model mount `/models`, video input mount
+`/inputs`, video output mount `/outputs`, and generated config/inventory
+paths distinct from the llama service so both can coexist when the operator
+intentionally has enough GPU capacity.
 
-The runtime source contract is SGLang commit
-`1cf2b8c54d81802abc15dcf23a29b9cc687bc01e`; the official base image is
-`lmsysorg/sglang:dev-qwen38-27b-dflash2` pinned to OCI index
-`sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe`
-and built from `5f55db35e926d50676f75b812640ea2410b0fe0e`. The source contract
-and image-build revisions are separate fields; this image does not contain the
+The runtime source and image-build revision is
+`c4271c3fe1262fc2adbd162c33b25de5255251c5`; the official base image is
+`lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f` pinned to OCI index
+`sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc`.
+The image is official upstream and does not contain the
 `jpezzulli/sglang-rtxpro6000` custom fork.
 The primary model is `RadixArk/Qwen3.8-27B-NVFP4` at immutable revision
 `319f741cce68d7914884900c138a1fbb70a42f30`, with Apache-2.0 Qwen lineage,
@@ -1116,9 +1117,10 @@ embedded MTP layer. The catalog must keep the exact model shard, tokenizer,
 template, multimodal preprocessor, license, and metadata file sizes and
 SHA-256 hashes; model weights stay on external `/models` storage.
 
-Only NVIDIA Blackwell SM100-or-newer shapes belong in this catalog. The
-provider-neutral `sglang/cuda13` entry is a runtime default, not a hardware
-scenario. The checked-in AWS/RunPod 96 GB Blackwell shapes expose a 524K
+Only the Qwen3.8 text lane is restricted to NVIDIA Blackwell SM100-or-newer
+shapes. MiniMax H3 diffusion shapes use a separate SM86-or-newer compatibility
+gate for the INT8/NVFP4 component route. The provider-neutral `sglang/cuda13`
+entry is a runtime default, not a hardware scenario. The checked-in AWS/RunPod 96 GB Blackwell shapes expose a 524K
 per-request FP8 E4M3-KV performance route with four configured request slots,
 BF16 recurrent state, FlashInfer, chunked prefill, CUDA graphs, and native NEXTN
 (three steps, top-k one, four draft tokens), plus target-only and BF16-KV
@@ -1167,3 +1169,20 @@ launcher can reuse the other runtime's completed files. The model-level marker
 uses `-` as the explicit local-cache bucket value; an empty tab field is not
 safe because Bash collapses tab whitespace while parsing it. Never copy model
 files into the SGLang Docker context or image.
+
+Video mode is explicit in generated SGLang schema v2 configs. `server.json`
+continues to launch the text server directly; diffusion configs launch
+`sglang serve` on internal port 30001 behind
+`docker/sglang/video_gateway.py`. The gateway owns the public port, model and
+task aliases, local-file/multipart input policy, warmup-aware `/readyz`, and
+the `/v1/videos` proxy. It must not add `--served-model-name` to diffusion
+commands because the upstream diffusion CLI rejects that text-server flag.
+MiniMax H3 uses the immutable official base revision plus exact Comfy-Org
+component artifacts, accepts `fl2va` and `ref2va`, and keeps the official H3
+community-license and 24 fps H.264/AAC output contract visible in the catalog.
+The generated H3 commands set `--pin-cpu-memory false` because upstream
+diffusion loading can stage substantial DiT state through host memory; exact
+host-RAM and cgroup headroom remain configuration-only gates.
+Turbo LoRA recipes are recorded as optional FL2VA metadata; they are not
+staged or enabled by default until their exact immutable weight revisions and
+hashes are cataloged.

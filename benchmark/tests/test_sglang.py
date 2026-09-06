@@ -70,12 +70,13 @@ class SGLangTests(unittest.TestCase):
         inventory = json.loads(
             (SGLANG_ROOT / "deployment-inventory.generated.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(inventory["schema_version"], "prefer.sglang-deployment-inventory.v1")
+        self.assertEqual(inventory["schema_version"], "prefer.sglang-deployment-inventory.v2")
         self.assertEqual(inventory["runtime"]["source_revision"], runtime["runtime"]["source_revision"])
         self.assertEqual(inventory["base_image"]["index_digest"], runtime["base_image"]["index_digest"])
+        self.assertTrue(inventory["base_image"]["platform_manifests"]["linux/arm64"])
         self.assertEqual(
             inventory["base_image"]["build_revision"],
-            "5f55db35e926d50676f75b812640ea2410b0fe0e",
+            "c4271c3fe1262fc2adbd162c33b25de5255251c5",
         )
         self.assertEqual(inventory["requirements"]["minimum_compute_capability"], "sm_100")
         self.assertEqual(inventory["requirements"]["cuda_major"], 13)
@@ -117,16 +118,10 @@ class SGLangTests(unittest.TestCase):
         self.assertEqual(upstream_changes["sglang/#36806"]["status"], "merged-upstream-after-image-build")
         self.assertEqual(upstream_changes["sglang/#35821"]["status"], "merged-upstream-after-image-build")
         self.assertTrue(audit["lineage_recommendation"]["owner_decision_required"])
-        self.assertEqual(
-            inventory["api"],
-            {
-                "health": "GET /health",
-                "models": "GET /v1/models",
-                "chat_completions": "POST /v1/chat/completions",
-                "completions": "POST /v1/completions",
-                "anthropic_messages": "POST /v1/messages",
-            },
-        )
+        self.assertEqual(inventory["api"]["health"], "GET /health")
+        self.assertEqual(inventory["api"]["ready"], "GET /readyz")
+        self.assertEqual(inventory["api"]["videos"], "POST /v1/videos")
+        self.assertEqual(inventory["runtime_modes"], ["diffusion", "text"])
         profile = inventory["model_profiles"]["qwen3.8-27b"]
         self.assertEqual(profile["native_modalities"], ["text", "image", "video"])
         self.assertEqual(inventory["models"]["qwen3.8-27b-nvfp4"]["profile_id"], "qwen3.8-27b")
@@ -185,13 +180,20 @@ class SGLangTests(unittest.TestCase):
             self.assertEqual(config["runtime"], "sglang")
             self.assertEqual(config["port"], 30000)
             self.assertEqual(len(config["models"]), 1)
+            prestage_path = config_path.with_suffix(".prestage")
+            self.assertTrue(prestage_path.is_file())
+            if config["mode"] == "diffusion":
+                self.assertEqual(config["command"][0:2], ["sglang", "serve"])
+                self.assertIn("--model-variant", config["command"])
+                self.assertIn("--revision", config["command"])
+                self.assertNotIn("--served-model-name", config["command"])
+                self.assertEqual(config["models"][0]["runtime_mode"], "diffusion")
+                continue
             self.assertIn(config["server"]["kv_cache_dtype"], {"fp8_e4m3", "bfloat16"})
             self.assertIn("--kv-cache-dtype", config["command"])
             self.assertIn(config["server"]["kv_cache_dtype"], config["command"])
             self.assertIn("--mamba-ssm-dtype", config["command"])
             self.assertIn("bfloat16", config["command"])
-            prestage_path = config_path.with_suffix(".prestage")
-            self.assertTrue(prestage_path.is_file())
             self.assertEqual(prestage_path.read_text(encoding="utf-8").strip(), "qwen3.8-27b-nvfp4")
         balanced = json.loads(
             (SGLANG_ROOT / "server-configs" / "aws" / "g7e" / "2xlarge" / "balanced.json").read_text(
@@ -243,7 +245,7 @@ class SGLangTests(unittest.TestCase):
         self.assertIn("HF_HOME=/models", dockerfile)
         self.assertIn("S5CMD_VERSION=2.2.2", dockerfile)
         self.assertIn("TARGETARCH", dockerfile)
-        self.assertIn('io.prefer.sglang.image-build-revision="5f55db35e926d50676f75b812640ea2410b0fe0e"', dockerfile)
+        self.assertIn('io.prefer.sglang.image-build-revision="c4271c3fe1262fc2adbd162c33b25de5255251c5"', dockerfile)
         self.assertIn('io.prefer.sglang.lineage="official-upstream"', dockerfile)
         self.assertIn("COPY download-artifacts.sh /prefer-download-artifacts.sh", dockerfile)
 

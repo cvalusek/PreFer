@@ -53,7 +53,7 @@ jobs:
         run: python -m unittest discover -s docker/stable-diffusion-cpp/tests -v
 
       - name: Test SGLang catalog and downloader contract
-        run: python -m unittest benchmark.tests.test_sglang -v
+        run: python -m unittest benchmark.tests.test_sglang benchmark.tests.test_sglang_video -v
 
   llama:
     needs: verify
@@ -310,7 +310,7 @@ jobs:
             io.prefer.sglang.backend=cuda13
             io.prefer.release.revision=${{ github.sha }}
             io.prefer.deployment-inventory.path=/deployment-inventory.json
-            io.prefer.deployment-inventory.schema=prefer.sglang-deployment-inventory.v1
+            io.prefer.deployment-inventory.schema=prefer.sglang-deployment-inventory.v2
           cache-from: type=gha,scope=sglang-cuda13-amd64
           cache-to: type=gha,scope=sglang-cuda13-amd64,mode=max
 
@@ -371,7 +371,7 @@ jobs:
             io.prefer.sglang.backend=cuda13
             io.prefer.release.revision=${{ github.sha }}
             io.prefer.deployment-inventory.path=/deployment-inventory.json
-            io.prefer.deployment-inventory.schema=prefer.sglang-deployment-inventory.v1
+            io.prefer.deployment-inventory.schema=prefer.sglang-deployment-inventory.v2
           cache-from: type=gha,scope=sglang-cuda13-arm64
           cache-to: type=gha,scope=sglang-cuda13-arm64,mode=max
 

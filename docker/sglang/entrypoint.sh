@@ -115,5 +115,10 @@ with open(config_path, encoding="utf-8") as handle:
 command = config.get("command")
 if not isinstance(command, list) or not command or any(not isinstance(item, str) for item in command):
     raise SystemExit(f"[sglang-entrypoint] invalid command in {config_path}")
+if config.get("mode") == "diffusion":
+    os.execvp(
+        "python3",
+        ["python3", "/prefer-sglang-video-gateway.py", config_path, *extra_args],
+    )
 os.execvp(command[0], [*command, *extra_args])
 PY

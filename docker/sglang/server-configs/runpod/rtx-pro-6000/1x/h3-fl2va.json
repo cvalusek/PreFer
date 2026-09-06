@@ -1,0 +1,138 @@
+{
+  "schema_version": 2,
+  "runtime": "sglang",
+  "mode": "diffusion",
+  "host": "0.0.0.0",
+  "port": 30000,
+  "model_path": "MiniMaxAI/MiniMax-H3",
+  "command": [
+    "sglang",
+    "serve",
+    "--model-type",
+    "diffusion",
+    "--host",
+    "0.0.0.0",
+    "--port",
+    "30001",
+    "--model-path",
+    "MiniMaxAI/MiniMax-H3",
+    "--model-variant",
+    "fl2va",
+    "--revision",
+    "5d9b308a59ab12e67147f191e184baf704185bd1",
+    "--num-gpus",
+    "1",
+    "--tp-size",
+    "1",
+    "--ulysses-degree",
+    "1",
+    "--encoder-parallel",
+    "auto",
+    "--performance-mode",
+    "speed",
+    "--attention-backend",
+    "fa",
+    "--pin-cpu-memory",
+    "false",
+    "--output-path",
+    "/outputs",
+    "--component-weights-paths.audio_vae",
+    "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+    "--component-weights-paths.text_encoder",
+    "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+    "--component-weights-paths.transformer",
+    "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+    "--component-weights-paths.video_vae",
+    "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors",
+    "--enable-torch-compile",
+    "true"
+  ],
+  "server": {
+    "runtime_mode": "diffusion",
+    "model_path": "MiniMaxAI/MiniMax-H3",
+    "model_variant": "fl2va",
+    "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+    "num_gpus": 1,
+    "tp_size": 1,
+    "ulysses_degree": 1,
+    "encoder_parallel": "auto",
+    "performance_mode": "speed",
+    "attention_backend": "fa",
+    "layerwise_offload_components": null,
+    "dit_offload_prefetch_size": null,
+    "dit_layerwise_resident_layers": null,
+    "pin_cpu_memory": false,
+    "enable_torch_compile": true,
+    "output_path": "/outputs",
+    "max_running_requests": 1,
+    "component_weights_paths": {
+      "audio_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors",
+      "text_encoder": "/models/Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "transformer": "/models/Comfy-Org/MiniMax-H3/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "video_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
+    }
+  },
+  "models": [
+    {
+      "key": "minimax-h3-fl2va-int8-convrot",
+      "request_model_id": "minimax-h3-fl2va",
+      "aliases": [
+        "minimax-h3-fl2va",
+        "minimax-h3-t2va",
+        "t2va",
+        "t2v",
+        "fl2va",
+        "i2v"
+      ],
+      "profile_id": "minimax-h3",
+      "runtime_mode": "diffusion",
+      "tasks": [
+        "t2va",
+        "fl2va"
+      ],
+      "capability_aliases": {
+        "t2v": "t2va",
+        "i2v": "fl2va"
+      },
+      "precision": "INT8 ConvRot transformer + NVFP4 text encoder",
+      "capabilities": [
+        "video-generation",
+        "audio-generation",
+        "synchronized-audio-video",
+        "text-to-video",
+        "first-last-frame-video"
+      ],
+      "modalities": {
+        "native": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ],
+        "configured": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ],
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "video",
+          "audio"
+        ]
+      },
+      "native_context_length": null,
+      "max_context_length": null
+    }
+  ],
+  "gateway": {
+    "upstream_host": "127.0.0.1",
+    "upstream_port": 30001,
+    "model_id": "minimax-h3-fl2va",
+    "input_mount": "/inputs",
+    "output_mount": "/outputs"
+  }
+}

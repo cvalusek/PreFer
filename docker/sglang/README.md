@@ -1,18 +1,16 @@
 # PreFer SGLang
 
-This sibling image serves Qwen3.8-27B through SGLang's OpenAI-compatible API.
-It is a modern-NVIDIA alternative to the llama.cpp Qwen3.8 route and is kept
+This sibling image serves Qwen3.8-27B through SGLang's OpenAI-compatible API
+and MiniMax H3 through SGLang's multimodal-generation video API. It is kept
 behind the `sglang` Compose profile so starting the default PreFer application
-does not reserve a second text-serving GPU.
+does not reserve a second text- or video-serving GPU.
 
 ## Pinned runtime and model
 
-- SGLang source contract: `1cf2b8c54d81802abc15dcf23a29b9cc687bc01e`.
-- Base image: `lmsysorg/sglang:dev-qwen38-27b-dflash2` at OCI index
-  `sha256:616a3e97f45191af975896cfa644279096cb31bd408a071c2e99ca7209c3cafe`.
-- Official image build revision: `5f55db35e926d50676f75b812640ea2410b0fe0e`.
-  The source contract is an upstream compatibility pin; the image's OCI build
-  revision is tracked separately. This image is not built from the
+- SGLang source and image build revision: `c4271c3fe1262fc2adbd162c33b25de5255251c5`.
+- Base image: `lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f` at OCI index
+  `sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc`.
+  The image is official upstream and is not built from the
   `jpezzulli/sglang-rtxpro6000` fork.
 - Model: `RadixArk/Qwen3.8-27B-NVFP4` at revision
   `319f741cce68d7914884900c138a1fbb70a42f30`.
@@ -22,6 +20,22 @@ does not reserve a second text-serving GPU.
 - The derivative is Apache-2.0 and records its Qwen base lineage at
   `Qwen/Qwen3.8-27B` revision
   `e13a4f0e35203116364e3b3f3f0c82f6ef1afd3c`.
+
+The same image carries two explicit MiniMax H3 diffusion lanes:
+
+- `minimax-h3-fl2va-int8-convrot`: text-to-video plus first/last-frame video
+  conditioning, with aliases `minimax-h3-fl2va`, `t2va`, `t2v`, and `i2v`.
+- `minimax-h3-ref2va-int8-convrot`: reference/video-to-video conditioning,
+  with aliases `minimax-h3-ref2va`, `ref2va`, and `v2v`.
+
+Both use the official H3 base revision
+`5d9b308a59ab12e67147f191e184baf704185bd1`, Comfy-Org's immutable INT8
+ConvRot transformer and NVFP4 text encoder artifacts, and synchronized MP4
+H.264/AAC output at 24 fps. The exact staged component bundle is external to
+the image and recorded in the generated inventory. The H3 Community License
+applies. The generated H3 commands disable pinned CPU memory because the
+diffusion loader can stage substantial DiT state through host memory; exact
+host-RAM headroom remains a configuration-only gate.
 
 The checkpoint accepts text, image, and video inputs, has a native 262,144-token
 context, and carries one trained MTP layer. The packaged profiles use FP8 E4M3
@@ -36,8 +50,10 @@ retained to isolate the target checkpoint from MTP.
 
 ## Hardware contract
 
-This lane is for NVIDIA Blackwell GPUs with compute capability SM100 or newer,
-and the image is CUDA 13 based. The checked-in shapes are:
+The Qwen3.8 text lane is for NVIDIA Blackwell GPUs with compute capability
+SM100 or newer. The MiniMax H3 diffusion lane has a separate CUDA 13
+compatibility gate starting at SM86 for its INT8/NVFP4 component route. The
+checked-in shapes are:
 
 - AWS `g7e.2xlarge`: one 96 GB RTX PRO 6000 Blackwell.
 - RunPod `NVIDIA RTX PRO 6000 Blackwell Server Edition`: one 96 GB card.
@@ -45,6 +61,10 @@ and the image is CUDA 13 based. The checked-in shapes are:
   route and a separate bounded 128K NEXTN throughput experiment.
 - Generic local GB10: one 128 GB unified-memory device, with the documented
   0.80 static-memory fraction and a BF16-KV single-user fidelity alternate.
+- AWS g6e.xlarge / local RTX 4090: one 48/24 GB-class card using the H3
+  memory/offload route.
+- AWS g7e.2xlarge / RunPod RTX PRO 6000: one 96 GB card using the H3 full-GPU
+  speed route.
 
 The provider-neutral `sglang/cuda13` entry is a runtime default, not a concrete
 hardware scenario. Every concrete shape is marked `configuration-only` until it
@@ -143,6 +163,18 @@ single-user alternate. The 5090 `performance.json` is deliberately bounded to
 128K until exact-card smoke supports a larger speculative envelope.
 The request model ID is `qwen3.8-27b`. The health endpoint is `GET /health`;
 chat, completion, and Anthropic messages use the `/v1` API.
+
+For H3, select a generated configuration such as
+`/server-configs/aws/g7e/2xlarge/h3-fl2va.json` or
+`/server-configs/aws/g7e/2xlarge/h3-ref2va.json`. The gateway keeps the stable
+PreFer port while the diffusion server runs internally on port `30001`. Use
+`GET /readyz` for warmup-aware readiness, `GET /v1/models` for capability
+discovery, `POST /v1/videos` to submit a job, and the returned video ID for
+`GET /v1/videos/{id}` and `GET /v1/videos/{id}/content`. Inputs must be local
+`file://` paths under `/inputs` or multipart uploads; remote URLs are rejected.
+Generated output is written under `/outputs` and the Compose profile provides
+separate persistent input/output volumes. The gateway normalizes `t2v`, `i2v`,
+and `v2v` aliases to SGLang's `t2va`, `fl2va`, and `ref2va` tasks.
 
 Qwen's template enables thinking by default. Requests may use
 `reasoning_effort` values `low`, `medium`, or `xhigh`, and may use the Qwen

@@ -9,7 +9,8 @@ music-generation, and speech-to-speech routes behind a separate audio API. Its
 stable-diffusion.cpp image provides curated image generation and editing behind
 OpenAI-style image endpoints without requiring ComfyUI workflows.
 Its opt-in SGLang image serves Qwen3.8-27B NVFP4 on modern NVIDIA Blackwell
-GPUs through a separate OpenAI-compatible text API.
+GPUs through a separate OpenAI-compatible text API and MiniMax H3 through a
+local-file-aware video API.
 
 Published runtime, hosted-model, and preset changes are recorded by immutable
 grouped release SHA in the [PreFer changelog](CHANGELOG.md).
@@ -59,7 +60,7 @@ docker/
     models/<family>/<model>/  immutable image pipelines and quant lanes
     deployment-inventory.generated.json  controller-readable image inventory
     generate.py               deterministic config/downloader/inventory generator
-  sglang/             PreFer's opt-in SGLang CUDA 13 text image
+  sglang/             PreFer's opt-in SGLang CUDA 13 text and video image
     runtime.json              pinned SGLang image, source, and GPU requirements
     models/<family>/<model>/  immutable NVFP4 model artifacts and lineage
     deployment-inventory.generated.json  controller-readable SGLang inventory
@@ -124,13 +125,16 @@ starts the selected worker and the router retains only one model. See
 [the image runtime guide](docker/stable-diffusion-cpp/README.md) for request
 examples and hardware lanes.
 
-The SGLang service is an opt-in alternative text backend for Qwen3.8-27B. It
-uses a shared-compatible `/models` layout and defaults to the same named model
-volume as llama.cpp, but has its own generated server configs and stricter
-per-file verification. Matching repository/path/revision files can be reused by
-either launcher; model keys and server configs remain runtime-specific. AWS can
-optionally use the same S3 bucket convention as llama.cpp for exact read-through
-staging with HF fallback; local and RunPod scenarios remain HF-only by default.
+The SGLang service is an opt-in alternative text backend for Qwen3.8-27B and a
+MiniMax H3 video backend. It uses a shared-compatible `/models` layout and
+defaults to the same named model volume as llama.cpp, but has its own generated
+server configs and stricter per-file verification. Matching
+repository/path/revision files can be reused by either launcher; model keys and
+server configs remain runtime-specific. AWS can optionally use the same S3
+bucket convention as llama.cpp for exact read-through staging with HF fallback;
+local and RunPod scenarios remain HF-only by default. H3 uses `/inputs` and
+`/outputs` volumes, rejects remote media URLs, and exposes `/v1/videos`
+through a warmup-aware gateway.
 See
 [the SGLang runtime guide](docker/sglang/README.md)
 for Blackwell shapes, model controls, and its deliberately deferred Flash lane.
@@ -179,6 +183,10 @@ Useful knobs:
   8 (default `4`). Image discovery remains available while those jobs run.
 - `PREFER_IMAGE_MODEL_VOLUME` names the persistent image `/models` volume.
 - `SGLANG_PORT` sets the opt-in SGLang host port (default `8083`).
+- `PREFER_SGLANG_VIDEO_INPUT_VOLUME` and
+  `PREFER_SGLANG_VIDEO_OUTPUT_VOLUME` name the persistent H3 media volumes.
+- `SGLANG_VIDEO_MAX_INPUT_BYTES`, `SGLANG_READY_DELAY_SECONDS`, and
+  `SGLANG_READY_PROBE_SECONDS` bound uploads and warmup polling.
 - `SGLANG_SERVER_CONFIG` selects a generated SGLang deployment config. Blank
   uses the safe target-only default; the selected config also selects its
   `.prestage` sidecar when `SGLANG_PRESTAGE_MODELS` is blank.
@@ -242,7 +250,7 @@ Certificate files under `docker/certs/` are ignored by git.
 
 ## Grouped releases and images
 
-GitHub Actions build all four runtimes as one PreFer release whenever any
+GitHub Actions build all five runtime images as one PreFer release whenever any
 runtime changes. The `main` branch is the stable line and `develop` is the
 opt-in preview line. One `sha-<commit>` release therefore identifies the exact
 llama CUDA, Audio CUDA/CPU, Image CUDA, and SGLang CUDA images produced from the
@@ -298,10 +306,11 @@ selected `IMAGE_SERVER_CONFIG`. The grouped release includes it as
 `prefer-image-deployment-inventory.json`.
 
 The SGLang release follows the same inventory contract. Its inventory adds the
-Qwen3.8-27B NVFP4 lineage, exact safetensor and multimodal asset hashes,
-Blackwell hardware gates, generated context/concurrency/cache settings, Qwen
-reasoning and tool-parser controls, and the separate `prefer-sglang` Compose
-profile. The grouped release includes it as
+Qwen3.8-27B NVFP4 and MiniMax H3 lineages, exact safetensor and multimodal
+asset hashes, text and diffusion hardware gates, generated
+context/concurrency/cache settings, Qwen reasoning/tool-parser controls,
+video task aliases, local-file input policy, and the separate
+`prefer-sglang` Compose profile. The grouped release includes it as
 `prefer-sglang-deployment-inventory.json`.
 
 RunPod presets are organized as `presets/runpod/<gpu>/1x/`; the initial
@@ -315,4 +324,4 @@ details, preset tiers, aliases, and operational notes, and
 [the audio.cpp runtime guide](docker/audio-cpp/README.md) for speech and music
 details, and [the image runtime guide](docker/stable-diffusion-cpp/README.md)
 for image generation and editing, and [the SGLang runtime guide](docker/sglang/README.md)
-for the Qwen3.8-27B Blackwell route.
+for the Qwen3.8-27B Blackwell and MiniMax H3 video routes.

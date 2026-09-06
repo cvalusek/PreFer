@@ -54,7 +54,7 @@ jobs:
           python docker/stable-diffusion-cpp/generate.py --check
           python docker/sglang/generate.py --check
           python -m unittest discover -s docker/stable-diffusion-cpp/tests -v
-          python -m unittest benchmark.tests.test_sglang -v
+          python -m unittest benchmark.tests.test_sglang benchmark.tests.test_sglang_video -v
 
       - name: Validate versioned schemas, fixtures, corpus, and preset aliases
         run: python -m prefer_bench validate

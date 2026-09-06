@@ -16,7 +16,7 @@
     "container_runtime": "nvidia",
     "cuda_major": 13,
     "minimum_compute_capability": "sm_100",
-    "sglang_source_revision": "1cf2b8c54d81802abc15dcf23a29b9cc687bc01e"
+    "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
   },
   "staging": {
     "source": "huggingface-only",
@@ -82,6 +82,40 @@
         "speculative": {
           "enabled": false
         }
+      }
+    },
+    {
+      "name": "h3-fl2va",
+      "description": "RTX PRO 6000 MiniMax H3 FL2VA route with full-GPU speed settings; verify image input, synchronized audio, LoRA acceptance, and one-request stability before production.",
+      "model_keys": ["minimax-h3-fl2va-int8-convrot"],
+      "server": {
+        "num_gpus": 1,
+        "tp_size": 1,
+        "ulysses_degree": 1,
+        "encoder_parallel": "auto",
+        "performance_mode": "speed",
+        "layerwise_offload_components": null,
+        "dit_offload_prefetch_size": null,
+        "dit_layerwise_resident_layers": null,
+        "enable_torch_compile": true,
+        "max_running_requests": 1
+      }
+    },
+    {
+      "name": "h3-ref2va",
+      "description": "RTX PRO 6000 MiniMax H3 Ref2VA route with full-GPU speed settings; verify local reference-video input, synchronized audio, and one-request stability before production.",
+      "model_keys": ["minimax-h3-ref2va-int8-convrot"],
+      "server": {
+        "num_gpus": 1,
+        "tp_size": 1,
+        "ulysses_degree": 1,
+        "encoder_parallel": "auto",
+        "performance_mode": "speed",
+        "layerwise_offload_components": null,
+        "dit_offload_prefetch_size": null,
+        "dit_layerwise_resident_layers": null,
+        "enable_torch_compile": true,
+        "max_running_requests": 1
       }
     }
   ]
