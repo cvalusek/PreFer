@@ -372,8 +372,8 @@ parallelism and vision support. Do not set `draft-mtp` on that GGUF: b10257
 rejects it because it contains no MTP layers. Qwen3.8-27B replaces the former
 Qwen3.6-27B route with the immutable Unsloth UD-Q6_K_XL artifact at
 `4604b899a826000505a834e623272db5b7fd62f6`; it retains embedded MTP with
-`spec-draft-n-max=2`, but intentionally does not configure the optional
-projector. The model's native 262K context, thinking sampler, and existing
+`spec-draft-n-max=2` and packages the pinned same-repository F16 projector for
+image input. The model's native 262K context, thinking sampler, and existing
 192K/256K deployment shapes did not require a preset-setting change. Its
 embedded template exposes `reasoning_effort` (`low`, `medium`, and `xhigh`,
 defaulting to `xhigh`) and defaults to preserving prior thinking; those remain
@@ -786,7 +786,8 @@ or tune DRY further before doing so.
   variants. F16 was chosen over BF16 as the safer default for Pascal-era
   cards (Titan X Pascal / GTX 1070), and over F32 because F32 roughly doubles
   projector size with no known practical quality benefit for this setup.
-  Qwen repos also publish mmproj files, but only Gemma is wired up today.
+  Qwen3.5-9B and Qwen3.8-27B also package their pinned F16 projectors.
+  Qwen3.6-35B-A3B remains configured text-only.
 - **gemma-4-E2B/E4B** (added for speed — same family, 2B/4B "effective
   params", 128K max context). **Confirmed on disk** (2026-06-15):
   `gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf` (2.62 GB) +

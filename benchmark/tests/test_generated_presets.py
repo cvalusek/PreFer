@@ -118,7 +118,7 @@ class GeneratedPresetTests(unittest.TestCase):
         self.assertIn("general-writing", gemma["roles"]["preferred"])
         self.assertIn("image", gemma["capabilities"]["configured_input_modalities"])
         qwen = profiles["qwen-3.8-27b"]
-        self.assertEqual(qwen["capabilities"]["configured_input_modalities"], ["text"])
+        self.assertEqual(qwen["capabilities"]["configured_input_modalities"], ["text", "image"])
         self.assertIn("repository-coding", qwen["roles"]["preferred"])
 
     def test_deployment_inventory_resolves_every_generated_scenario(self) -> None:
@@ -335,7 +335,7 @@ class GeneratedPresetTests(unittest.TestCase):
         self.assertIn("mmproj = /models/unsloth/Qwen3.5-9B-GGUF/mmproj-F16.gguf", preset)
         self.assertNotIn("unsloth/Qwen3.5-9B-MTP-GGUF", preset)
 
-    def test_qwen_38_27b_uses_pinned_q6_with_embedded_mtp(self) -> None:
+    def test_qwen_38_27b_uses_pinned_q6_with_embedded_mtp_and_vision(self) -> None:
         catalog = {"models": catalog_models()}
         self.assertNotIn("qwen-3.6-27b", catalog["models"])
         qwen = catalog["models"]["qwen-3.8-27b"]
@@ -344,19 +344,38 @@ class GeneratedPresetTests(unittest.TestCase):
         self.assertTrue(qwen["embedded_mtp"])
         self.assertEqual(qwen["settings"]["spec-type"], "draft-mtp")
         self.assertEqual(qwen["settings"]["spec-draft-n-max"], 2)
-        self.assertNotIn("mmproj", qwen["settings"])
+        self.assertEqual(
+            qwen["settings"]["mmproj"],
+            "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
+        )
         self.assertEqual(qwen["downloads"], [{
             "repo": "unsloth/Qwen3.8-27B-GGUF",
             "revision": "4604b899a826000505a834e623272db5b7fd62f6",
-            "include": ["Qwen3.8-27B-UD-Q6_K_XL.gguf"],
+            "include": ["Qwen3.8-27B-UD-Q6_K_XL.gguf", "mmproj-F16.gguf"],
         }])
-        self.assertEqual(qwen["artifacts"], [{
-            "role": "model",
-            "repo": "unsloth/Qwen3.8-27B-GGUF",
-            "path": "Qwen3.8-27B-UD-Q6_K_XL.gguf",
-            "size": 25924152384,
-            "sha256": "739202186fd9389bb58497c58b56c8a0d4253d99d20131e6a0427e363e678fc8",
-        }])
+        self.assertEqual(qwen["artifacts"], [
+            {
+                "role": "model",
+                "repo": "unsloth/Qwen3.8-27B-GGUF",
+                "path": "Qwen3.8-27B-UD-Q6_K_XL.gguf",
+                "size": 25924152384,
+                "sha256": "739202186fd9389bb58497c58b56c8a0d4253d99d20131e6a0427e363e678fc8",
+            },
+            {
+                "role": "projector",
+                "repo": "unsloth/Qwen3.8-27B-GGUF",
+                "path": "mmproj-F16.gguf",
+                "size": 927607488,
+                "sha256": "cbb841a9ee0636b2ec172f5bb8df2ea8dfeb01e90fe7c6126581d662a0b4e43e",
+            },
+        ])
+        preset = (
+            PREFER_ROOT / "presets" / "aws" / "g6e" / "xlarge" / "qwen-27b.ini"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            "mmproj = /models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
+            preset,
+        )
 
     def test_ornith_and_nemotron_lanes_are_immutable_and_bounded(self) -> None:
         models = catalog_models()
