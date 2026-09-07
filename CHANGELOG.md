@@ -1,6 +1,14 @@
 # PreFer changelog
 
-## Current
+## sha-3de6861 (preview)
+
+- Images
+  - Llama CUDA: `ghcr.io/cvalusek/prefer:llama-cuda-sha-3de6861@sha256:fa1a8f9ab4cffab18568c1ec853555f37004383b3b2778f0fa98cd1f690d772d`.
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-3de6861@sha256:2ee643bcad570560ad3d81aec43542ed29be536d9968c205578cc4b8bba10e05`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-3de6861@sha256:057fefed0f244fa7f4b9e690ed1fe1eac10ca38a4d72e0c184e71a7a9ed2bbf9`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-3de6861@sha256:18ad28e51f6abdaec2d9cc77ada8b6772a3db56beaf176967e0f31a7ba5e2dd4`.
+  - SGLang CUDA 13: `ghcr.io/cvalusek/prefer:sglang-cuda13-sha-3de6861@sha256:365934062933b5d619f9703aa69e9ab42bac28603b12cfb2adc5d84be3eb93ba`.
+  - vLLM CUDA 13: `ghcr.io/cvalusek/prefer:vllm-cuda13-sha-3de6861@sha256:f980dfc63d207ce4ddfd972ddd7a65d62dac8b75f0ad3fea9ddaf54279b8bdff`.
 
 - SGLang video
   - Staged the pinned official H3 configuration and tokenizer metadata locally before startup, preventing SGLang from downloading the full official variant weight tree in addition to the selected 42.5 GB component bundle.
