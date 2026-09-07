@@ -32,8 +32,15 @@ Both use the official H3 base revision
 `5d9b308a59ab12e67147f191e184baf704185bd1`, Comfy-Org's immutable INT8
 ConvRot transformer and NVFP4 text encoder artifacts, and synchronized MP4
 H.264/AAC output at 24 fps. The exact staged component bundle is external to
-the image and recorded in the generated inventory. The H3 Community License
-applies. The generated H3 commands disable pinned CPU memory because the
+the image and recorded in the generated inventory. Each route also stages 50
+pinned non-weight files from its official FL2VA or Ref2VA subtree and serves
+them from `/models/MiniMaxAI/MiniMax-H3`; this prevents SGLang from downloading
+the official full-precision weight tree before applying the Comfy component
+overrides. FL2VA stages exactly `42,505,255,506` bytes and Ref2VA exactly
+`42,505,255,494` bytes (about 39.6 GiB each). A shared volume containing both
+routes uses `63,510,305,145` unique bytes (about 59.1 GiB), so allow additional
+free space for in-progress downloads. The H3 Community License applies. The
+generated H3 commands disable pinned CPU memory because the
 diffusion loader can stage substantial DiT state through host memory; exact
 host-RAM headroom remains a configuration-only gate.
 This runtime parses the dynamic `--component-weights-paths.<component>` options

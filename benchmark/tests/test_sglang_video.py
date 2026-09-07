@@ -40,8 +40,8 @@ class SGLangVideoTests(unittest.TestCase):
         self.assertEqual(ref2va["tasks"], ["ref2va"])
         self.assertEqual(fl2va["output_contract"]["container"], "mp4")
         self.assertEqual(fl2va["output_contract"]["fps"], 24)
-        self.assertEqual(fl2va["artifact_bytes"], 42470585471)
-        self.assertEqual(ref2va["artifact_bytes"], 42470585471)
+        self.assertEqual(fl2va["artifact_bytes"], 42505255506)
+        self.assertEqual(ref2va["artifact_bytes"], 42505255494)
         self.assertEqual(
             inventory["model_profiles"]["minimax-h3"]["runtime_modes"],
             ["diffusion"],
@@ -149,7 +149,7 @@ class SGLangVideoTests(unittest.TestCase):
                     "conditions": [{"uri": media.as_uri()}],
                 }
             )
-            self.assertEqual(normalized["model"], "MiniMaxAI/MiniMax-H3")
+            self.assertEqual(normalized["model"], "/models/MiniMaxAI/MiniMax-H3")
             self.assertEqual(normalized["task"], "fl2va")
             self.assertEqual(normalized["conditions"][0]["uri"], media.resolve().as_uri())
             with self.assertRaises(gateway_module.GatewayError) as context:

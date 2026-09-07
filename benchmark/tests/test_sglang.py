@@ -65,6 +65,95 @@ class SGLangTests(unittest.TestCase):
         self.assertIn("chat-template", roles)
         self.assertIn("license", roles)
 
+    def test_h3_stages_pinned_local_metadata_instead_of_remote_weight_trees(self) -> None:
+        cases = {
+            "fl2va": (
+                "minimax-h3-fl2va",
+                "FL2VA",
+                34670035,
+                42505255506,
+            ),
+            "ref2va": (
+                "minimax-h3-ref2va",
+                "Ref2VA",
+                34670023,
+                42505255494,
+            ),
+        }
+        inventory = json.loads(
+            (SGLANG_ROOT / "deployment-inventory.generated.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        for variant, (
+            model_slug,
+            metadata_folder,
+            metadata_bytes,
+            total_bytes,
+        ) in cases.items():
+            catalog_path = (
+                SGLANG_ROOT / "models" / "minimax" / model_slug / "model.json"
+            )
+            catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+            lane = catalog["quants"]["int8-convrot"]
+            local_model_root = "/models/MiniMaxAI/MiniMax-H3"
+
+            self.assertEqual(
+                catalog["shared"]["base_model"]["model_path"], local_model_root
+            )
+            self.assertEqual(
+                catalog["shared"]["server"]["model_path"], local_model_root
+            )
+            self.assertEqual(lane["server_repo"], "MiniMaxAI/MiniMax-H3")
+            self.assertEqual(len(lane["artifacts"]), 54)
+            self.assertEqual(sum(a["size"] for a in lane["artifacts"]), total_bytes)
+            self.assertEqual(
+                catalog["shared"]["artifact_variant"]["total_bytes"], total_bytes
+            )
+
+            metadata = [
+                artifact
+                for artifact in lane["artifacts"]
+                if artifact["repo"] == "MiniMaxAI/MiniMax-H3"
+            ]
+            self.assertEqual(len(metadata), 50)
+            self.assertEqual(sum(artifact["size"] for artifact in metadata), metadata_bytes)
+            self.assertTrue(
+                all(
+                    artifact["revision"]
+                    == "5d9b308a59ab12e67147f191e184baf704185bd1"
+                    and artifact["role"] == "base-metadata"
+                    for artifact in metadata
+                )
+            )
+            self.assertIn(
+                f"{metadata_folder}/model_index.json",
+                {artifact["path"] for artifact in metadata},
+            )
+            self.assertFalse(
+                any(".safetensors" in artifact["path"] for artifact in metadata)
+            )
+
+            model_key = lane["key"]
+            model_inventory = inventory["models"][model_key]
+            self.assertEqual(model_inventory["server_path"], local_model_root)
+            self.assertEqual(model_inventory["artifact_bytes"], total_bytes)
+
+            generated = json.loads(
+                (
+                    SGLANG_ROOT
+                    / "server-configs"
+                    / "runpod"
+                    / "rtx-pro-6000"
+                    / "1x"
+                    / f"h3-{variant}.json"
+                ).read_text(encoding="utf-8")
+            )
+            self.assertEqual(generated["model_path"], local_model_root)
+            self.assertEqual(generated["server"]["model_path"], local_model_root)
+            model_path_flag = generated["command"].index("--model-path")
+            self.assertEqual(generated["command"][model_path_flag + 1], local_model_root)
+
     def test_inventory_exposes_model_profiles_api_and_hardware_gates(self) -> None:
         runtime = json.loads((SGLANG_ROOT / "runtime.json").read_text(encoding="utf-8"))
         inventory = json.loads(

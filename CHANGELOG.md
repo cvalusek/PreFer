@@ -1,5 +1,10 @@
 # PreFer changelog
 
+## Current
+
+- SGLang video
+  - Staged the pinned official H3 configuration and tokenizer metadata locally before startup, preventing SGLang from downloading the full official variant weight tree in addition to the selected 42.5 GB component bundle.
+
 ## sha-23a3546 (preview)
 
 - Images

@@ -1180,6 +1180,14 @@ uses `-` as the explicit local-cache bucket value; an empty tab field is not
 safe because Bash collapses tab whitespace while parsing it. Never copy model
 files into the SGLang Docker context or image.
 
+A catalog lane normally takes its server root from its single artifact repository.
+A diffusion package that deliberately combines repositories must declare
+`server_repo`, and that value must name one of the package's artifact repositories;
+the generated server root remains `/models/<server_repo>/<server_path>`. MiniMax H3
+uses this exception because its exact ConvRot/NVFP4 weights come from Comfy-Org
+while its pipeline configuration, tokenizer, processor, and VAE support metadata
+come from the official MiniMax repository.
+
 Video mode is explicit in generated SGLang schema v2 configs. `server.json`
 continues to launch the text server directly; diffusion configs launch
 `sglang serve` on internal port 30001 behind
@@ -1190,6 +1198,17 @@ commands because the upstream diffusion CLI rejects that text-server flag.
 MiniMax H3 uses the immutable official base revision plus exact Comfy-Org
 component artifacts, accepts `fl2va` and `ref2va`, and keeps the official H3
 community-license and 24 fps H.264/AAC output contract visible in the catalog.
+Each H3 lane stages the 50 non-weight files in its selected official variant at
+revision `5d9b308a59ab12e67147f191e184baf704185bd1`, verifies every size and
+SHA-256, and passes the local root `/models/MiniMaxAI/MiniMax-H3` to SGLang.
+Do not switch that path back to the remote repository id: SGLang resolves the
+variant before applying component-weight overrides, so a remote path downloads
+the entire official variant weight tree (about 144 GB for FL2VA) in addition to
+the exact 42.47 GB Comfy bundle. The official safetensors index files are
+intentionally absent because they reference those omitted base shards. The exact
+staged totals are 42,505,255,506 bytes for FL2VA and 42,505,255,494 bytes for
+Ref2VA; staging both into one persistent model volume consumes 63,510,305,145
+unique bytes because the three shared Comfy components are reused.
 The generated H3 commands set `--pin-cpu-memory false` because upstream
 diffusion loading can stage substantial DiT state through host memory; exact
 host-RAM and cgroup headroom remain configuration-only gates.

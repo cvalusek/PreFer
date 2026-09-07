@@ -4,7 +4,7 @@
   "mode": "diffusion",
   "host": "0.0.0.0",
   "port": 30000,
-  "model_path": "MiniMaxAI/MiniMax-H3",
+  "model_path": "/models/MiniMaxAI/MiniMax-H3",
   "command": [
     "sglang",
     "serve",
@@ -15,7 +15,7 @@
     "--port",
     "30001",
     "--model-path",
-    "MiniMaxAI/MiniMax-H3",
+    "/models/MiniMaxAI/MiniMax-H3",
     "--model-variant",
     "fl2va",
     "--revision",
@@ -49,7 +49,7 @@
   ],
   "server": {
     "runtime_mode": "diffusion",
-    "model_path": "MiniMaxAI/MiniMax-H3",
+    "model_path": "/models/MiniMaxAI/MiniMax-H3",
     "model_variant": "fl2va",
     "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
     "num_gpus": 1,

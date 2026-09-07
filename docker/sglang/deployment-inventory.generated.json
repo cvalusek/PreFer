@@ -1,6 +1,6 @@
 {
   "schema_version": "prefer.sglang-deployment-inventory.v2",
-  "catalog_fingerprint": "5108957004e1abc7b6e5649f5d7e2912d5f1ce9fa9abb7c324fb09630b76efaa",
+  "catalog_fingerprint": "52941ddc7b8ef852e4abf65c17ffdb5169c5d832190988098d77d65a8091e889",
   "product": "PreFer",
   "distribution": {
     "embedded_image_path": "/deployment-inventory.json",
@@ -698,7 +698,7 @@
       "base_model": {
         "repo": "MiniMaxAI/MiniMax-H3",
         "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
-        "model_path": "MiniMaxAI/MiniMax-H3"
+        "model_path": "/models/MiniMaxAI/MiniMax-H3"
       },
       "native_context_length": null,
       "max_context_length": null,
@@ -713,8 +713,8 @@
       },
       "kv_cache_scaling": null,
       "artifact_variant": {
-        "label": "Comfy-Org INT8 ConvRot transformer plus NVFP4 text encoder",
-        "total_bytes": 42470585471
+        "label": "Comfy-Org INT8 ConvRot transformer plus NVFP4 text encoder with pinned official runtime metadata",
+        "total_bytes": 42505255506
       },
       "lora_options": {
         "balanced": {
@@ -737,10 +737,10 @@
           ]
         }
       },
-      "server_path": "/models/Comfy-Org/MiniMax-H3",
+      "server_path": "/models/MiniMaxAI/MiniMax-H3",
       "server": {
         "runtime_mode": "diffusion",
-        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_path": "/models/MiniMaxAI/MiniMax-H3",
         "model_variant": "fl2va",
         "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
         "num_gpus": 1,
@@ -763,9 +763,509 @@
           "video_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
         }
       },
-      "download_fingerprint": "18b5b58649aa12ad8151fc72d060c8fe5b1a13db1cce0bc89ca78fc27c3ffcc2",
-      "artifact_bytes": 42470585471,
+      "download_fingerprint": "45bf26078343977c9cf1c732a2f2e5ff5940ae5c2968fa9f0638df5adc255cbe",
+      "artifact_bytes": 42505255506,
       "artifacts": [
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/audio_vae/config.json",
+          "size": 1973,
+          "sha256": "d8f3bcc62e23c7e9806970fa63cca6139c06faa3797cf9c94034f60db8512771",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/audio_vae/config.json",
+          "download_id": "1777f61a0e519cd1c6f25d3a3c198aab1c7156e51d05b6cd4704f4342a28dcaf"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/audio_vae/config.yaml",
+          "size": 91,
+          "sha256": "259f675c9f71eedc24ca4f23965cd32a1b3878fc894f56664c40328d99831a5e",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/audio_vae/config.yaml",
+          "download_id": "65c5af92f79a33ebf74e1653335dfb014b0432b6824c32696b9b36aa33c06cd2"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/audio_vae/dac_activations.py",
+          "size": 2189,
+          "sha256": "74ca8bb9e8039f1ff362ca4219eee5240a7df9502f3dbdc3161d4e86fbd6dc04",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/audio_vae/dac_activations.py",
+          "download_id": "74e4a96615f4019b41426af74d2f8461c9c6b8b2ee3f9efd8cdb26e093f0fdb3"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/audio_vae/dac_alias_free_act.py",
+          "size": 835,
+          "sha256": "db8761e66c0eaf9fce2dcccb59162d52b22ca0de9f699cf7d21ec7cd507e86fd",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/audio_vae/dac_alias_free_act.py",
+          "download_id": "12d2e33e8a37667aa8562dd9e6333816e6b256d5a0c4850d938d126308b504a8"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/audio_vae/dac_alias_free_filter.py",
+          "size": 3300,
+          "sha256": "a369523cd7f14f4f299d8e2e47f3c473da76ed1910e6e9134fd7a9fce02537e8",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/audio_vae/dac_alias_free_filter.py",
+          "download_id": "585b982b6033a7b7802d19e00f2fefae992533db31ccd7539c07ff7dc3970e1b"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/audio_vae/dac_alias_free_resample.py",
+          "size": 1740,
+          "sha256": "fe35055893833c563e42adc5e5882cbe7628c82d48d33c300fcf0a9576997910",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/audio_vae/dac_alias_free_resample.py",
+          "download_id": "cb27447da00badd19e845cc0bd652bf117e7639f12fe1e818b94462c23150363"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/audio_vae/dac_attn_proj.py",
+          "size": 3317,
+          "sha256": "0e04556fa5fd38d4a71e62fcf4d3242fd9a2464fd72ed62baef2ec0980d910c6",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/audio_vae/dac_attn_proj.py",
+          "download_id": "132411c14b5a68f8e7aa54833084e99472933739a97bad3915512a10407b3cb1"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/audio_vae/dac_audio_vae.py",
+          "size": 7266,
+          "sha256": "ec04939602d4710d039e83f558a7572547669652f7fa967e3de0a3b6c48cfd48",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/audio_vae/dac_audio_vae.py",
+          "download_id": "5edacf4c1452d04f63fe2dae44c31ca11e90f1c10ab98a86bc9b3dc275cf9984"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/audio_vae/dac_bigvgan.py",
+          "size": 7102,
+          "sha256": "f5df4e6f633e74da479549ef7a6d2684964e4b65ac42c6765be42f9c7fcb7bd2",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/audio_vae/dac_bigvgan.py",
+          "download_id": "e5514befd3d59285ba8230c83434798535b662230ea9bc7158b9145e9406894d"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/audio_vae/dac_utils.py",
+          "size": 362,
+          "sha256": "74ef0ba2c2a11ca35a7c0cc166fe88e564de01230000a0bcc8429103312ad9f0",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/audio_vae/dac_utils.py",
+          "download_id": "86553a5dc3a221a942a8353419f515edf6ea96d995d071d78d8f21644a8b88c1"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/audio_vae/metadata.json",
+          "size": 440,
+          "sha256": "755d0529d43b2b5c83590f6f44ca659bc68e6a21b01d5669c93e8b2965749bff",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/audio_vae/metadata.json",
+          "download_id": "682596622db1a031acc40d8650f9055ebf9a667f2ea1e043171a127034c4b95f"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/audio_vae/minimax_h3_audio_vae.py",
+          "size": 3532,
+          "sha256": "63bc0dab6def69480cfd77ea820f9a9a84fc4bd6e56868e4f45ec1e1e200578f",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/audio_vae/minimax_h3_audio_vae.py",
+          "download_id": "d554befae3f4f0b0d2f5d49922adc7f4cc9c14b9b23cc4d3220a33a360b5355a"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/model_index.json",
+          "size": 719,
+          "sha256": "d1113e0f123c69f79cd0de35ca1771606ebc3ec924270d257b771f96f584aa6b",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/model_index.json",
+          "download_id": "33c1e445f8f76aafd3007982ea2de185ff922fd699f393c4ce7d05a5579b572e"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/processor/chat_template.json",
+          "size": 5499,
+          "sha256": "5c72a170d2a4a1a3bc5adad2e689ae28138a9700e5b8c96c0266331e86c0acce",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/processor/chat_template.json",
+          "download_id": "c06931442bda3ae6b4eb023186ab8f0ccfe7182849da5d21c388554497da184f"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/processor/merges.txt",
+          "size": 1671839,
+          "sha256": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/processor/merges.txt",
+          "download_id": "e50b640002d55043e92beca0067730a2e1c90c3e1c38078683148b4e6175c385"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/processor/preprocessor_config.json",
+          "size": 390,
+          "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/processor/preprocessor_config.json",
+          "download_id": "acad371f8de76cd6f99447ce10dfaeeb16d50ad21c380462e5b1ea001f8d6327"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/processor/tokenizer.json",
+          "size": 7032403,
+          "sha256": "a5d85b6dcc535e6b93115a9ef287e6132fdbf30270da6218194ba742261173c7",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/processor/tokenizer.json",
+          "download_id": "182bb3fd5685772a10d30760a53dc644239c6ef55a50361433cedcc167388ddf"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/processor/tokenizer_config.json",
+          "size": 11003,
+          "sha256": "a07e942ac874baa13758de8d1fbdb186683cc03416b5589e1b6671c6b3057c68",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/processor/tokenizer_config.json",
+          "download_id": "2a3fc60f23341e6b5080187e3b80530bd30267b736a989a2aa375b3bda77e0f3"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/processor/video_preprocessor_config.json",
+          "size": 385,
+          "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/processor/video_preprocessor_config.json",
+          "download_id": "180aa5aba7833eeaefd267deb0d74cd83e47baa2c13541ab39082d3a9f38d97a"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/processor/vocab.json",
+          "size": 2776833,
+          "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/processor/vocab.json",
+          "download_id": "12be3afbeaac13c2207e057b83d6819bceb6a9b25ab5279938c38c14de5cc4c2"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/text_encoder/chat_template.json",
+          "size": 5499,
+          "sha256": "5c72a170d2a4a1a3bc5adad2e689ae28138a9700e5b8c96c0266331e86c0acce",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/text_encoder/chat_template.json",
+          "download_id": "e5242ec7550f96cd1b7e54ce150ce9b1a04fc420a45b71203f3ecdb55648e893"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/text_encoder/config.json",
+          "size": 1474,
+          "sha256": "d2dd0c60d01b9e195d9447c52da61c7302d28828524914c044d9c6e1b81d0427",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/text_encoder/config.json",
+          "download_id": "a146fdf921da7d3564520a83f8ac1b5c6c6fe7d5b270dec423ec3ba6b17df88b"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/text_encoder/merges.txt",
+          "size": 1671839,
+          "sha256": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/text_encoder/merges.txt",
+          "download_id": "cd081462abb6cc09286fc578a5cfa48ad54109e9db46de00c791ce69fcabd2a2"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/text_encoder/preprocessor_config.json",
+          "size": 390,
+          "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/text_encoder/preprocessor_config.json",
+          "download_id": "9527f2b09c2128e85c7970b5703bb5abcf14658b160dbbe1a0329655bb8a687f"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/text_encoder/tokenizer.json",
+          "size": 7032403,
+          "sha256": "a5d85b6dcc535e6b93115a9ef287e6132fdbf30270da6218194ba742261173c7",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/text_encoder/tokenizer.json",
+          "download_id": "6b59e5daaff326aa639ab68c0fd2c509f28b898d926aefe27a38e080699c6e6f"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/text_encoder/tokenizer_config.json",
+          "size": 11003,
+          "sha256": "a07e942ac874baa13758de8d1fbdb186683cc03416b5589e1b6671c6b3057c68",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/text_encoder/tokenizer_config.json",
+          "download_id": "ca49770f9a004793fbf62e9e871b1c9b24b11d2c7eaa1d34654fcf37e5f5d38f"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/text_encoder/video_preprocessor_config.json",
+          "size": 385,
+          "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/text_encoder/video_preprocessor_config.json",
+          "download_id": "5cd730f0dd9d73a9465a71400a2f3866e476a9a6420bf7a77b5d3c6fc648b10d"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/text_encoder/vocab.json",
+          "size": 2776833,
+          "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/text_encoder/vocab.json",
+          "download_id": "43537d6a12f7199cca3363abdc998ceb1b59a992b52cfb65c116a0406fef819a"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/tokenizer/merges.txt",
+          "size": 1671839,
+          "sha256": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/tokenizer/merges.txt",
+          "download_id": "b12fa1eecd40a2eacf19da2471b87ec3f95f09599526e295828dd71deb44121c"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/tokenizer/tokenizer.json",
+          "size": 7032403,
+          "sha256": "a5d85b6dcc535e6b93115a9ef287e6132fdbf30270da6218194ba742261173c7",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/tokenizer/tokenizer.json",
+          "download_id": "9f8a56ad5a1728eaa3d2f5ba5395ef7787030164e2753890729ddfc6d57697b6"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/tokenizer/tokenizer_config.json",
+          "size": 11003,
+          "sha256": "a07e942ac874baa13758de8d1fbdb186683cc03416b5589e1b6671c6b3057c68",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/tokenizer/tokenizer_config.json",
+          "download_id": "56bb7fa0a62106df8fae689d4e4424429d8975da870afc5036fc62acc9877b78"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/tokenizer/vocab.json",
+          "size": 2776833,
+          "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/tokenizer/vocab.json",
+          "download_id": "66294d81c98fdeb69163690c5ea8377b4c237c6d569df32b615ec49235e5e733"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/transformer/config.json",
+          "size": 604,
+          "sha256": "f619093a231fcfbcc3d035bec26c50ad864e7331a500d5c519f5045dc1e50458",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/transformer/config.json",
+          "download_id": "44a3d3fb48f1594543a55f73582188437be0d6508f6ef57aeec1fa7950057a96"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/attention.py",
+          "size": 5785,
+          "sha256": "c9db8465c57f0bfb40c0194227be6e34b2c1ff7c5b5d63abca9964eed6283767",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/attention.py",
+          "download_id": "6b6a29a776697ef4d1515c26d7c05d506e71d057ab95236768531062e78bc3c4"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/base_module.py",
+          "size": 9520,
+          "sha256": "0e7ddf5086179a306298693ac461ffcbc27ccb28dbc786b1a05060de7a3357c0",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/base_module.py",
+          "download_id": "c942421964a2f4bacc2de46737ace7407c99213b734991ac9d80d6d8e27a9679"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/config.json",
+          "size": 1807,
+          "sha256": "3edd2cdd1ebc823c868be55ef917e1b3b8a398fde4d3150dae44a3bf05d9f627",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/config.json",
+          "download_id": "4550db48964f3030752e83e1c72125015166e98f29c3c2cb09fa2c738ed5bc55"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/conv.py",
+          "size": 4487,
+          "sha256": "b3adee35f27e5d372543242aa86ce5e0138f13b794b6c81f919001e3e2346723",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/conv.py",
+          "download_id": "b49379bdc2b29a7e55d66e7684b58ba278a8a7e7bba91931f53cd46b782c91fe"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/flash.py",
+          "size": 5763,
+          "sha256": "c1918463d303a16f278a670bb4f33d3f8d6f7653b0d473313ff5835699b86d04",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/flash.py",
+          "download_id": "14f02da9597c047b68e3a66256f4aa91c8982820e6f481aa1bbe02bd733f1c56"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/func.py",
+          "size": 5840,
+          "sha256": "0612c26a65f095699cc7acd51937cd153584fa5a0476956e46a4679aa575c22d",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/func.py",
+          "download_id": "f629f3c3b383a64e3baa5e4b2236c7aee47fa64a7d07caaa3b675d64ad2a7e83"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/klvae.py",
+          "size": 48594,
+          "sha256": "d05a22b4918ad303f147d6b0d0ae9038bd1af1f810a5553b04f3542ab9bcff96",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/klvae.py",
+          "download_id": "d496ab322578978b6448682a731f0c6dada347afcc2fd597a18907d85fb0e6ae"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/minimax_h3_video_vae.py",
+          "size": 5123,
+          "sha256": "77fdea69a48485b5434f65d08096657b5d78b78b7cdf24e1241038f237720138",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/minimax_h3_video_vae.py",
+          "download_id": "cd34bad0d66a513eed561bdfd3bb0b7a4fecc67c8d744261ac8ffafc18b82dad"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/norm.py",
+          "size": 10686,
+          "sha256": "258b120ca8d9a16366d7b811fe93eebf98fe1564db0995e8b7747229c651919a",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/norm.py",
+          "download_id": "5e3db574cfa0f50420376feaf9a39ee747867cb5731acfbe9d8f7c135a6a5ee1"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/normalize.py",
+          "size": 1200,
+          "sha256": "8db651acb9eb551c906a2850bbca8e9d851f00d07b30ccf66ceb6057da687a13",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/normalize.py",
+          "download_id": "32b9b5ea89a55cfbc3d09cbbc1aeb145117422608e69c75e7b6909c1bf9e5223"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/parallel.py",
+          "size": 12997,
+          "sha256": "7193522beafd65bc3dbe40b9843e360ab8da3a0bb211e9bfb67bb0d5d0e66919",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/parallel.py",
+          "download_id": "c53c9621700c63148a3c81b0d6ee069a3183d4965acecba9ca27284e859e6aa4"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/source/config.json",
+          "size": 1164,
+          "sha256": "66c68f541e6578ce613ce7a0fc985eb59097038829e49f7535e6d08e6d95ab12",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/source/config.json",
+          "download_id": "f71a833ef3fefe6757a402e4250da053eeffcfc51fdb3092be7df9532baa5fec"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/utils.py",
+          "size": 764,
+          "sha256": "309e45e9d9e33cd5516a10eac2d207eb9f940079a6d9bbe0ee80aaaf7eb42dcd",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/utils.py",
+          "download_id": "18fd4ffc22dd48fc381d994d5e7b919e1c57f611ff57ab4aff972032ed191df0"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/vae_cnn.py",
+          "size": 8836,
+          "sha256": "3949b701e6893bd2ea070cd5b18ed8135a7c21d884290df449b1997212d65b11",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/vae_cnn.py",
+          "download_id": "8740435bf7a3c37e2a213cd908fc49f7cfc37b2e4fe2339ae01ee355b3ba6d11"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/vae_module.py",
+          "size": 1884,
+          "sha256": "9558fb302e10a619f198e12e04701c68988e897d0b627f958f33d27fd2a30d94",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/vae_module.py",
+          "download_id": "e0d6b591aa86a90465d7197f112d48c2c78f97364fa19b03233290483444ae4e"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/vae_processor.py",
+          "size": 8369,
+          "sha256": "32870580a1802d9163104a4d68170e35a4772106867181e1bd343dff11f87d2e",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/vae_processor.py",
+          "download_id": "6b296624b2333131afd1d43b10a4874cfc52f882e954f4f95ba513710fec43d4"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "FL2VA/video_vae/vae_vit.py",
+          "size": 13490,
+          "sha256": "a372c28441b56ec2dbc6041dbd6ce2766c64c0e61b2c69a16594a97a11da3f58",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/FL2VA/video_vae/vae_vit.py",
+          "download_id": "197b3e0ff48d15f2552613724a6b2a64d85b40b04735db740c4f381a5fa1ddac"
+        },
         {
           "repo": "Comfy-Org/MiniMax-H3",
           "revision": "3f57e8291d2ef846f9a074b1b76d2767db434abe",
@@ -899,7 +1399,7 @@
       "base_model": {
         "repo": "MiniMaxAI/MiniMax-H3",
         "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
-        "model_path": "MiniMaxAI/MiniMax-H3"
+        "model_path": "/models/MiniMaxAI/MiniMax-H3"
       },
       "native_context_length": null,
       "max_context_length": null,
@@ -914,14 +1414,14 @@
       },
       "kv_cache_scaling": null,
       "artifact_variant": {
-        "label": "Comfy-Org INT8 ConvRot transformer plus NVFP4 text encoder",
-        "total_bytes": 42470585471
+        "label": "Comfy-Org INT8 ConvRot transformer plus NVFP4 text encoder with pinned official runtime metadata",
+        "total_bytes": 42505255494
       },
       "lora_options": null,
-      "server_path": "/models/Comfy-Org/MiniMax-H3",
+      "server_path": "/models/MiniMaxAI/MiniMax-H3",
       "server": {
         "runtime_mode": "diffusion",
-        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_path": "/models/MiniMaxAI/MiniMax-H3",
         "model_variant": "ref2va",
         "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
         "num_gpus": 1,
@@ -944,9 +1444,509 @@
           "video_vae": "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
         }
       },
-      "download_fingerprint": "a47768f488a5bd5a6fbccff6c2ba0c9ad6bc71b86fc36f98f23ab069e918a16a",
-      "artifact_bytes": 42470585471,
+      "download_fingerprint": "9e2c8ed8e1b63ded5c76a2870395c3b3b765d2efe456bd35fd2c452558c0399e",
+      "artifact_bytes": 42505255494,
       "artifacts": [
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/config.json",
+          "size": 1973,
+          "sha256": "d8f3bcc62e23c7e9806970fa63cca6139c06faa3797cf9c94034f60db8512771",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/audio_vae/config.json",
+          "download_id": "cefbdb47c26a2d9cfd7530197c97751b2fb838be3f7c4c6df474e8e7e472ab45"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/config.yaml",
+          "size": 91,
+          "sha256": "259f675c9f71eedc24ca4f23965cd32a1b3878fc894f56664c40328d99831a5e",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/audio_vae/config.yaml",
+          "download_id": "03164c445d7327ea4a0fbc01638920edf4056bfdeae1ea9203a60096169f5fdd"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_activations.py",
+          "size": 2189,
+          "sha256": "74ca8bb9e8039f1ff362ca4219eee5240a7df9502f3dbdc3161d4e86fbd6dc04",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/audio_vae/dac_activations.py",
+          "download_id": "90b3b7e679a6b856a3413d16c4636245a61fcf71463d968b4ecd63abc209f953"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_alias_free_act.py",
+          "size": 835,
+          "sha256": "db8761e66c0eaf9fce2dcccb59162d52b22ca0de9f699cf7d21ec7cd507e86fd",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/audio_vae/dac_alias_free_act.py",
+          "download_id": "247e72bfc485f160845f5522051c41d301884f3f35d0dcc1019b18b70d99a1c0"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_alias_free_filter.py",
+          "size": 3300,
+          "sha256": "a369523cd7f14f4f299d8e2e47f3c473da76ed1910e6e9134fd7a9fce02537e8",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/audio_vae/dac_alias_free_filter.py",
+          "download_id": "53a5efc78f1739519cfacdb528b7b2d5fc82024b85c34f5d4907c452a9788ac0"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_alias_free_resample.py",
+          "size": 1740,
+          "sha256": "fe35055893833c563e42adc5e5882cbe7628c82d48d33c300fcf0a9576997910",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/audio_vae/dac_alias_free_resample.py",
+          "download_id": "cb3c6a6aae91178f1d7d02aa097005898cabaa95cdd14b8d5b944c4a4e40582c"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_attn_proj.py",
+          "size": 3317,
+          "sha256": "0e04556fa5fd38d4a71e62fcf4d3242fd9a2464fd72ed62baef2ec0980d910c6",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/audio_vae/dac_attn_proj.py",
+          "download_id": "d33a505cba5eeb915a10f86fd60b87294c4e7ffdecb13c5e3d19a2420dacec36"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_audio_vae.py",
+          "size": 7266,
+          "sha256": "ec04939602d4710d039e83f558a7572547669652f7fa967e3de0a3b6c48cfd48",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/audio_vae/dac_audio_vae.py",
+          "download_id": "ed0fb2e418b2902b7ed1ab2b442355f7b1be46712b7912f4da2b60f6c14a4a9e"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_bigvgan.py",
+          "size": 7102,
+          "sha256": "f5df4e6f633e74da479549ef7a6d2684964e4b65ac42c6765be42f9c7fcb7bd2",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/audio_vae/dac_bigvgan.py",
+          "download_id": "97ebd718db0f02eda12ec5d669a0abed1cb3991966fab9564c7114622fcc6313"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_utils.py",
+          "size": 362,
+          "sha256": "74ef0ba2c2a11ca35a7c0cc166fe88e564de01230000a0bcc8429103312ad9f0",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/audio_vae/dac_utils.py",
+          "download_id": "127a5f54a82d01b4886f6e615c613bc424fd7af527be65932038052cf3391561"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/metadata.json",
+          "size": 440,
+          "sha256": "755d0529d43b2b5c83590f6f44ca659bc68e6a21b01d5669c93e8b2965749bff",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/audio_vae/metadata.json",
+          "download_id": "6d107783bd63177c9ee197c5477688c5e99113417578b7878651273d90ee3854"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/minimax_h3_audio_vae.py",
+          "size": 3532,
+          "sha256": "63bc0dab6def69480cfd77ea820f9a9a84fc4bd6e56868e4f45ec1e1e200578f",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/audio_vae/minimax_h3_audio_vae.py",
+          "download_id": "b9b1c527d89ec7ca1c89ecf6d1984d0f120e4cd23f11ac789c559b030ba317fd"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/model_index.json",
+          "size": 707,
+          "sha256": "b160b13700bf08aea7fce1bc3dd0d3a49ea15036298c50082ec107f87843b90c",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/model_index.json",
+          "download_id": "47b1d01b67fe2df13f9e39e79b101baec94ccfd8b4ece7c641322edb5a87728e"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/processor/chat_template.json",
+          "size": 5499,
+          "sha256": "5c72a170d2a4a1a3bc5adad2e689ae28138a9700e5b8c96c0266331e86c0acce",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/processor/chat_template.json",
+          "download_id": "def039a803ddc8227dcdbe8c702469483c29f2451b7ce38643579109d72689e2"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/processor/merges.txt",
+          "size": 1671839,
+          "sha256": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/processor/merges.txt",
+          "download_id": "35158b65febc07515ae249a6220e75c7f2c0d20c2dd413438fe05b61153e3bca"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/processor/preprocessor_config.json",
+          "size": 390,
+          "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/processor/preprocessor_config.json",
+          "download_id": "45744f4a728a958821b6e251f7111ddea3b655dd4b857184826433f796b165dc"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/processor/tokenizer.json",
+          "size": 7032403,
+          "sha256": "a5d85b6dcc535e6b93115a9ef287e6132fdbf30270da6218194ba742261173c7",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/processor/tokenizer.json",
+          "download_id": "bf2fec0c64575ab5bd8957ca68cd8ba8dad7c8ca75cd22265ad7f0460ead746a"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/processor/tokenizer_config.json",
+          "size": 11003,
+          "sha256": "a07e942ac874baa13758de8d1fbdb186683cc03416b5589e1b6671c6b3057c68",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/processor/tokenizer_config.json",
+          "download_id": "1cd77b434193822c3a7526db00d2a126ef7d39fcf022654ca0f4e4b0b84270e4"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/processor/video_preprocessor_config.json",
+          "size": 385,
+          "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/processor/video_preprocessor_config.json",
+          "download_id": "3ee7af87d088762a967a08df8ad5da0866ee6d1163469cd286d7ed3c84392ba8"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/processor/vocab.json",
+          "size": 2776833,
+          "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/processor/vocab.json",
+          "download_id": "c55222b12846cf5c8c8cebd81c42a537ab306888ada596806a30fd4a7d2618ab"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/chat_template.json",
+          "size": 5499,
+          "sha256": "5c72a170d2a4a1a3bc5adad2e689ae28138a9700e5b8c96c0266331e86c0acce",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/text_encoder/chat_template.json",
+          "download_id": "932d40a3d4b1fda3fe087cea99024be5dba4543d3a3089ec4caa0f9d530c7de0"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/config.json",
+          "size": 1474,
+          "sha256": "d2dd0c60d01b9e195d9447c52da61c7302d28828524914c044d9c6e1b81d0427",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/text_encoder/config.json",
+          "download_id": "a9c4f6a66c12e12134bc9168208b3dc49f334673e566a69b346a4f59e366147f"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/merges.txt",
+          "size": 1671839,
+          "sha256": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/text_encoder/merges.txt",
+          "download_id": "221d67d6e046f742e7e28172089cc96e81999eead245bad8fee5b85e14c239b0"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/preprocessor_config.json",
+          "size": 390,
+          "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/text_encoder/preprocessor_config.json",
+          "download_id": "4ea96b08125671598ae3abd1d087e8058ffe9b69b1fd2a7ccaff206f3247c2a3"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/tokenizer.json",
+          "size": 7032403,
+          "sha256": "a5d85b6dcc535e6b93115a9ef287e6132fdbf30270da6218194ba742261173c7",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/text_encoder/tokenizer.json",
+          "download_id": "e5d72605eb8b0067faa22b4dcbe8a589158782123f5ddd66fd4d6b2fb81709a5"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/tokenizer_config.json",
+          "size": 11003,
+          "sha256": "a07e942ac874baa13758de8d1fbdb186683cc03416b5589e1b6671c6b3057c68",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/text_encoder/tokenizer_config.json",
+          "download_id": "18cba62292ed3e4d1972e92649c1378ac11050edd6875112c27883b90ddc1977"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/video_preprocessor_config.json",
+          "size": 385,
+          "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/text_encoder/video_preprocessor_config.json",
+          "download_id": "94df1cfefc7cc274fd9d348449d026c75e59d61fcf09e6deaa78639bd80a8039"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/vocab.json",
+          "size": 2776833,
+          "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/text_encoder/vocab.json",
+          "download_id": "434a13d7eb7658186962af30c6ae511f718166834ad1073237298d1600fc71a5"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/tokenizer/merges.txt",
+          "size": 1671839,
+          "sha256": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/tokenizer/merges.txt",
+          "download_id": "58a285ae8c68cf5b24ceb6f7601df1f695f79cd86cc877833f03486827af1634"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/tokenizer/tokenizer.json",
+          "size": 7032403,
+          "sha256": "a5d85b6dcc535e6b93115a9ef287e6132fdbf30270da6218194ba742261173c7",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/tokenizer/tokenizer.json",
+          "download_id": "5e0b58636c189d3bc78aa642e7e1cb7483a3eef0c681f8cc01d54a5732fe265d"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/tokenizer/tokenizer_config.json",
+          "size": 11003,
+          "sha256": "a07e942ac874baa13758de8d1fbdb186683cc03416b5589e1b6671c6b3057c68",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/tokenizer/tokenizer_config.json",
+          "download_id": "ec574c3a9688759e09c150892060816f05b810433d824db5f4b2dd5f93ac86d9"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/tokenizer/vocab.json",
+          "size": 2776833,
+          "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/tokenizer/vocab.json",
+          "download_id": "b5cce8521d0922e7231cf395b12e4806cfdeafa1b647c395c65d6b77ed03cb5d"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/transformer/config.json",
+          "size": 604,
+          "sha256": "f619093a231fcfbcc3d035bec26c50ad864e7331a500d5c519f5045dc1e50458",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/transformer/config.json",
+          "download_id": "32987bba8301dab54f2125367cec44a10b81225b2f24e12f5ffe3b22ea1e2373"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/attention.py",
+          "size": 5785,
+          "sha256": "c9db8465c57f0bfb40c0194227be6e34b2c1ff7c5b5d63abca9964eed6283767",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/attention.py",
+          "download_id": "7c1f1541994d8adbb9acfc38cd23229b9c2145b18ec8684cd71b7f972ed40d0f"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/base_module.py",
+          "size": 9520,
+          "sha256": "0e7ddf5086179a306298693ac461ffcbc27ccb28dbc786b1a05060de7a3357c0",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/base_module.py",
+          "download_id": "a840bd7de4b572d9448bd4f828abf3202b2ec133a4398fb1b0e87526fb0729a9"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/config.json",
+          "size": 1807,
+          "sha256": "3edd2cdd1ebc823c868be55ef917e1b3b8a398fde4d3150dae44a3bf05d9f627",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/config.json",
+          "download_id": "b3af6d16005c0e1ce72958eeeb04925e42ed2c10e1479a12c69b4a4083fc4666"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/conv.py",
+          "size": 4487,
+          "sha256": "b3adee35f27e5d372543242aa86ce5e0138f13b794b6c81f919001e3e2346723",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/conv.py",
+          "download_id": "002655bb8c773c8226c896fee0936d54553b9fc704581764acc73ad2e26d224b"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/flash.py",
+          "size": 5763,
+          "sha256": "c1918463d303a16f278a670bb4f33d3f8d6f7653b0d473313ff5835699b86d04",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/flash.py",
+          "download_id": "ff9caea90791bcad5e43dbbfd55f051a13a5a798301bb7da866abf6c5cbcc775"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/func.py",
+          "size": 5840,
+          "sha256": "0612c26a65f095699cc7acd51937cd153584fa5a0476956e46a4679aa575c22d",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/func.py",
+          "download_id": "00edbf980322c706fe3e7438c1ad6654bf1e5635d4cba79590adbdaff6afc69d"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/klvae.py",
+          "size": 48594,
+          "sha256": "d05a22b4918ad303f147d6b0d0ae9038bd1af1f810a5553b04f3542ab9bcff96",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/klvae.py",
+          "download_id": "d8f14bf4d50a3dec20d44e8975f0d981dd97066ea5b11b68082bb642ca481d07"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/minimax_h3_video_vae.py",
+          "size": 5123,
+          "sha256": "77fdea69a48485b5434f65d08096657b5d78b78b7cdf24e1241038f237720138",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/minimax_h3_video_vae.py",
+          "download_id": "7ac94323cffd7ac2488a7fc167a6863a13f7b607d67e5c9dc6f9308d356af6d4"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/norm.py",
+          "size": 10686,
+          "sha256": "258b120ca8d9a16366d7b811fe93eebf98fe1564db0995e8b7747229c651919a",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/norm.py",
+          "download_id": "470810526fdaf745776eb0828072384bec39f89a65dc283d491ddbbe9b4f266d"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/normalize.py",
+          "size": 1200,
+          "sha256": "8db651acb9eb551c906a2850bbca8e9d851f00d07b30ccf66ceb6057da687a13",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/normalize.py",
+          "download_id": "5de0d62499dda586ca5b3880ee64383d7b9f68648f16a22df5aac706d132283c"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/parallel.py",
+          "size": 12997,
+          "sha256": "7193522beafd65bc3dbe40b9843e360ab8da3a0bb211e9bfb67bb0d5d0e66919",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/parallel.py",
+          "download_id": "da4ea9d0e87ab5d25d628f049ce35c1e649219ec2a53435c7e94302e52cdeb0b"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/source/config.json",
+          "size": 1164,
+          "sha256": "66c68f541e6578ce613ce7a0fc985eb59097038829e49f7535e6d08e6d95ab12",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/source/config.json",
+          "download_id": "643f218ae163bb85c7fd0084d30408090f16efbde14c7883ce260d6b5b5046a4"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/utils.py",
+          "size": 764,
+          "sha256": "309e45e9d9e33cd5516a10eac2d207eb9f940079a6d9bbe0ee80aaaf7eb42dcd",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/utils.py",
+          "download_id": "021324fb3d450a9a8e717049f7107543bb62c7133da03fb8db5a85a023bbb348"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/vae_cnn.py",
+          "size": 8836,
+          "sha256": "3949b701e6893bd2ea070cd5b18ed8135a7c21d884290df449b1997212d65b11",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/vae_cnn.py",
+          "download_id": "d29b0f89a1322f74b95bc1f6638eb9864eca0fd6b407c8ca35a27f77f97e7da3"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/vae_module.py",
+          "size": 1884,
+          "sha256": "9558fb302e10a619f198e12e04701c68988e897d0b627f958f33d27fd2a30d94",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/vae_module.py",
+          "download_id": "a32d7605df547188c02a488b3e7fec45ef6ed7ce03ff335f3300e43474de22a6"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/vae_processor.py",
+          "size": 8369,
+          "sha256": "32870580a1802d9163104a4d68170e35a4772106867181e1bd343dff11f87d2e",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/vae_processor.py",
+          "download_id": "01825b8b9e3577a377cb782bb8420455920dc1efada09ba1bd99e123729ceed2"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/vae_vit.py",
+          "size": 13490,
+          "sha256": "a372c28441b56ec2dbc6041dbd6ce2766c64c0e61b2c69a16594a97a11da3f58",
+          "role": "base-metadata",
+          "container_path": "/models/MiniMaxAI/MiniMax-H3/Ref2VA/video_vae/vae_vit.py",
+          "download_id": "473ebef86532b8d5a42f3bef95d5ba27d3fb63fe294922815dd20a9de28a1c6d"
+        },
         {
           "repo": "Comfy-Org/MiniMax-H3",
           "revision": "3f57e8291d2ef846f9a074b1b76d2767db434abe",
@@ -1576,7 +2576,7 @@
       },
       "server": {
         "runtime_mode": "diffusion",
-        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_path": "/models/MiniMaxAI/MiniMax-H3",
         "model_variant": "fl2va",
         "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
         "num_gpus": 1,
@@ -1609,7 +2609,7 @@
         "--port",
         "30001",
         "--model-path",
-        "MiniMaxAI/MiniMax-H3",
+        "/models/MiniMaxAI/MiniMax-H3",
         "--model-variant",
         "fl2va",
         "--revision",
@@ -1745,7 +2745,7 @@
       "prestage_models": [
         "minimax-h3-fl2va-int8-convrot"
       ],
-      "staged_artifact_bytes": 42470585471,
+      "staged_artifact_bytes": 42505255506,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -2459,7 +3459,7 @@
       },
       "server": {
         "runtime_mode": "diffusion",
-        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_path": "/models/MiniMaxAI/MiniMax-H3",
         "model_variant": "fl2va",
         "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
         "num_gpus": 1,
@@ -2492,7 +3492,7 @@
         "--port",
         "30001",
         "--model-path",
-        "MiniMaxAI/MiniMax-H3",
+        "/models/MiniMaxAI/MiniMax-H3",
         "--model-variant",
         "fl2va",
         "--revision",
@@ -2622,7 +3622,7 @@
       "prestage_models": [
         "minimax-h3-fl2va-int8-convrot"
       ],
-      "staged_artifact_bytes": 42470585471,
+      "staged_artifact_bytes": 42505255506,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -2675,7 +3675,7 @@
       },
       "server": {
         "runtime_mode": "diffusion",
-        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_path": "/models/MiniMaxAI/MiniMax-H3",
         "model_variant": "ref2va",
         "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
         "num_gpus": 1,
@@ -2708,7 +3708,7 @@
         "--port",
         "30001",
         "--model-path",
-        "MiniMaxAI/MiniMax-H3",
+        "/models/MiniMaxAI/MiniMax-H3",
         "--model-variant",
         "ref2va",
         "--revision",
@@ -2835,7 +3835,7 @@
       "prestage_models": [
         "minimax-h3-ref2va-int8-convrot"
       ],
-      "staged_artifact_bytes": 42470585471,
+      "staged_artifact_bytes": 42505255494,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -3517,7 +4517,7 @@
       },
       "server": {
         "runtime_mode": "diffusion",
-        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_path": "/models/MiniMaxAI/MiniMax-H3",
         "model_variant": "fl2va",
         "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
         "num_gpus": 1,
@@ -3550,7 +4550,7 @@
         "--port",
         "30001",
         "--model-path",
-        "MiniMaxAI/MiniMax-H3",
+        "/models/MiniMaxAI/MiniMax-H3",
         "--model-variant",
         "fl2va",
         "--revision",
@@ -3679,7 +4679,7 @@
       "prestage_models": [
         "minimax-h3-fl2va-int8-convrot"
       ],
-      "staged_artifact_bytes": 42470585471,
+      "staged_artifact_bytes": 42505255506,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -5224,7 +6224,7 @@
       },
       "server": {
         "runtime_mode": "diffusion",
-        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_path": "/models/MiniMaxAI/MiniMax-H3",
         "model_variant": "fl2va",
         "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
         "num_gpus": 1,
@@ -5257,7 +6257,7 @@
         "--port",
         "30001",
         "--model-path",
-        "MiniMaxAI/MiniMax-H3",
+        "/models/MiniMaxAI/MiniMax-H3",
         "--model-variant",
         "fl2va",
         "--revision",
@@ -5380,7 +6380,7 @@
       "prestage_models": [
         "minimax-h3-fl2va-int8-convrot"
       ],
-      "staged_artifact_bytes": 42470585471,
+      "staged_artifact_bytes": 42505255506,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -5432,7 +6432,7 @@
       },
       "server": {
         "runtime_mode": "diffusion",
-        "model_path": "MiniMaxAI/MiniMax-H3",
+        "model_path": "/models/MiniMaxAI/MiniMax-H3",
         "model_variant": "ref2va",
         "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
         "num_gpus": 1,
@@ -5465,7 +6465,7 @@
         "--port",
         "30001",
         "--model-path",
-        "MiniMaxAI/MiniMax-H3",
+        "/models/MiniMaxAI/MiniMax-H3",
         "--model-variant",
         "ref2va",
         "--revision",
@@ -5585,7 +6585,7 @@
       "prestage_models": [
         "minimax-h3-ref2va-int8-convrot"
       ],
-      "staged_artifact_bytes": 42470585471,
+      "staged_artifact_bytes": 42505255494,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     }

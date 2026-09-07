@@ -160,9 +160,21 @@ def model_lanes() -> list[dict]:
                     raise ValueError(f"{key}: every artifact must be an object")
                 validate_artifact(key, artifact, artifacts_by_destination)
             artifact_repos = {artifact["repo"] for artifact in artifacts}
-            if len(artifact_repos) != 1:
-                raise ValueError(f"{key}: all package artifacts must share one repository")
-            artifact_repo = next(iter(artifact_repos))
+            server_repo = quant.get("server_repo")
+            if server_repo is None:
+                if len(artifact_repos) != 1:
+                    raise ValueError(
+                        f"{key}: multi-repository packages require server_repo"
+                    )
+                server_repo = next(iter(artifact_repos))
+            elif (
+                not isinstance(server_repo, str)
+                or not REPO_PATTERN.fullmatch(server_repo)
+                or server_repo not in artifact_repos
+            ):
+                raise ValueError(
+                    f"{key}: server_repo must name one of the package artifact repositories"
+                )
             server_path = quant.get("server_path", ".")
             server_path_obj = PurePosixPath(str(server_path))
             if (
@@ -172,11 +184,11 @@ def model_lanes() -> list[dict]:
                 or server_path_obj.is_absolute()
                 or ".." in server_path_obj.parts
             ):
-                raise ValueError(f"{key}: server_path must stay inside the artifact repository")
+                raise ValueError(f"{key}: server_path must stay inside the server repository")
             container_path = (
-                f"/models/{artifact_repo}"
+                f"/models/{server_repo}"
                 if server_path == "."
-                else f"/models/{artifact_repo}/{server_path}"
+                else f"/models/{server_repo}/{server_path}"
             )
             server = copy.deepcopy(shared.get("server", {}))
             quant_server = quant.get("server", {})
@@ -218,6 +230,7 @@ def model_lanes() -> list[dict]:
                 "output_contract": copy.deepcopy(shared.get("output_contract", {})),
                 **shared,
                 "artifacts": copy.deepcopy(artifacts),
+                "server_repo": server_repo,
                 "server_path": server_path,
                 "container_path": container_path,
                 "server": server,

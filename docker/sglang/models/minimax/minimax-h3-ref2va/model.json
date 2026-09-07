@@ -21,7 +21,7 @@
     "base_model": {
       "repo": "MiniMaxAI/MiniMax-H3",
       "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
-      "model_path": "MiniMaxAI/MiniMax-H3"
+      "model_path": "/models/MiniMaxAI/MiniMax-H3"
     },
     "capabilities": [
       "video-generation",
@@ -73,12 +73,12 @@
     },
     "kv_cache_scaling": null,
     "artifact_variant": {
-      "label": "Comfy-Org INT8 ConvRot transformer plus NVFP4 text encoder",
-      "total_bytes": 42470585471
+      "label": "Comfy-Org INT8 ConvRot transformer plus NVFP4 text encoder with pinned official runtime metadata",
+      "total_bytes": 42505255494
     },
     "server": {
       "runtime_mode": "diffusion",
-      "model_path": "MiniMaxAI/MiniMax-H3",
+      "model_path": "/models/MiniMaxAI/MiniMax-H3",
       "model_variant": "ref2va",
       "model_revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
       "num_gpus": 1,
@@ -124,7 +124,408 @@
       "primary": true,
       "request_model_id": "minimax-h3-ref2va",
       "aliases": ["minimax-h3-ref2va", "minimax-h3-v2v", "ref2va", "v2v"],
+      "server_repo": "MiniMaxAI/MiniMax-H3",
       "artifacts": [
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/config.json",
+          "size": 1973,
+          "sha256": "d8f3bcc62e23c7e9806970fa63cca6139c06faa3797cf9c94034f60db8512771",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/config.yaml",
+          "size": 91,
+          "sha256": "259f675c9f71eedc24ca4f23965cd32a1b3878fc894f56664c40328d99831a5e",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_activations.py",
+          "size": 2189,
+          "sha256": "74ca8bb9e8039f1ff362ca4219eee5240a7df9502f3dbdc3161d4e86fbd6dc04",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_alias_free_act.py",
+          "size": 835,
+          "sha256": "db8761e66c0eaf9fce2dcccb59162d52b22ca0de9f699cf7d21ec7cd507e86fd",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_alias_free_filter.py",
+          "size": 3300,
+          "sha256": "a369523cd7f14f4f299d8e2e47f3c473da76ed1910e6e9134fd7a9fce02537e8",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_alias_free_resample.py",
+          "size": 1740,
+          "sha256": "fe35055893833c563e42adc5e5882cbe7628c82d48d33c300fcf0a9576997910",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_attn_proj.py",
+          "size": 3317,
+          "sha256": "0e04556fa5fd38d4a71e62fcf4d3242fd9a2464fd72ed62baef2ec0980d910c6",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_audio_vae.py",
+          "size": 7266,
+          "sha256": "ec04939602d4710d039e83f558a7572547669652f7fa967e3de0a3b6c48cfd48",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_bigvgan.py",
+          "size": 7102,
+          "sha256": "f5df4e6f633e74da479549ef7a6d2684964e4b65ac42c6765be42f9c7fcb7bd2",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/dac_utils.py",
+          "size": 362,
+          "sha256": "74ef0ba2c2a11ca35a7c0cc166fe88e564de01230000a0bcc8429103312ad9f0",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/metadata.json",
+          "size": 440,
+          "sha256": "755d0529d43b2b5c83590f6f44ca659bc68e6a21b01d5669c93e8b2965749bff",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/audio_vae/minimax_h3_audio_vae.py",
+          "size": 3532,
+          "sha256": "63bc0dab6def69480cfd77ea820f9a9a84fc4bd6e56868e4f45ec1e1e200578f",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/model_index.json",
+          "size": 707,
+          "sha256": "b160b13700bf08aea7fce1bc3dd0d3a49ea15036298c50082ec107f87843b90c",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/processor/chat_template.json",
+          "size": 5499,
+          "sha256": "5c72a170d2a4a1a3bc5adad2e689ae28138a9700e5b8c96c0266331e86c0acce",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/processor/merges.txt",
+          "size": 1671839,
+          "sha256": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/processor/preprocessor_config.json",
+          "size": 390,
+          "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/processor/tokenizer.json",
+          "size": 7032403,
+          "sha256": "a5d85b6dcc535e6b93115a9ef287e6132fdbf30270da6218194ba742261173c7",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/processor/tokenizer_config.json",
+          "size": 11003,
+          "sha256": "a07e942ac874baa13758de8d1fbdb186683cc03416b5589e1b6671c6b3057c68",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/processor/video_preprocessor_config.json",
+          "size": 385,
+          "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/processor/vocab.json",
+          "size": 2776833,
+          "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/chat_template.json",
+          "size": 5499,
+          "sha256": "5c72a170d2a4a1a3bc5adad2e689ae28138a9700e5b8c96c0266331e86c0acce",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/config.json",
+          "size": 1474,
+          "sha256": "d2dd0c60d01b9e195d9447c52da61c7302d28828524914c044d9c6e1b81d0427",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/merges.txt",
+          "size": 1671839,
+          "sha256": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/preprocessor_config.json",
+          "size": 390,
+          "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/tokenizer.json",
+          "size": 7032403,
+          "sha256": "a5d85b6dcc535e6b93115a9ef287e6132fdbf30270da6218194ba742261173c7",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/tokenizer_config.json",
+          "size": 11003,
+          "sha256": "a07e942ac874baa13758de8d1fbdb186683cc03416b5589e1b6671c6b3057c68",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/video_preprocessor_config.json",
+          "size": 385,
+          "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/text_encoder/vocab.json",
+          "size": 2776833,
+          "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/tokenizer/merges.txt",
+          "size": 1671839,
+          "sha256": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/tokenizer/tokenizer.json",
+          "size": 7032403,
+          "sha256": "a5d85b6dcc535e6b93115a9ef287e6132fdbf30270da6218194ba742261173c7",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/tokenizer/tokenizer_config.json",
+          "size": 11003,
+          "sha256": "a07e942ac874baa13758de8d1fbdb186683cc03416b5589e1b6671c6b3057c68",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/tokenizer/vocab.json",
+          "size": 2776833,
+          "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/transformer/config.json",
+          "size": 604,
+          "sha256": "f619093a231fcfbcc3d035bec26c50ad864e7331a500d5c519f5045dc1e50458",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/attention.py",
+          "size": 5785,
+          "sha256": "c9db8465c57f0bfb40c0194227be6e34b2c1ff7c5b5d63abca9964eed6283767",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/base_module.py",
+          "size": 9520,
+          "sha256": "0e7ddf5086179a306298693ac461ffcbc27ccb28dbc786b1a05060de7a3357c0",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/config.json",
+          "size": 1807,
+          "sha256": "3edd2cdd1ebc823c868be55ef917e1b3b8a398fde4d3150dae44a3bf05d9f627",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/conv.py",
+          "size": 4487,
+          "sha256": "b3adee35f27e5d372543242aa86ce5e0138f13b794b6c81f919001e3e2346723",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/flash.py",
+          "size": 5763,
+          "sha256": "c1918463d303a16f278a670bb4f33d3f8d6f7653b0d473313ff5835699b86d04",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/func.py",
+          "size": 5840,
+          "sha256": "0612c26a65f095699cc7acd51937cd153584fa5a0476956e46a4679aa575c22d",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/klvae.py",
+          "size": 48594,
+          "sha256": "d05a22b4918ad303f147d6b0d0ae9038bd1af1f810a5553b04f3542ab9bcff96",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/minimax_h3_video_vae.py",
+          "size": 5123,
+          "sha256": "77fdea69a48485b5434f65d08096657b5d78b78b7cdf24e1241038f237720138",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/norm.py",
+          "size": 10686,
+          "sha256": "258b120ca8d9a16366d7b811fe93eebf98fe1564db0995e8b7747229c651919a",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/normalize.py",
+          "size": 1200,
+          "sha256": "8db651acb9eb551c906a2850bbca8e9d851f00d07b30ccf66ceb6057da687a13",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/parallel.py",
+          "size": 12997,
+          "sha256": "7193522beafd65bc3dbe40b9843e360ab8da3a0bb211e9bfb67bb0d5d0e66919",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/source/config.json",
+          "size": 1164,
+          "sha256": "66c68f541e6578ce613ce7a0fc985eb59097038829e49f7535e6d08e6d95ab12",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/utils.py",
+          "size": 764,
+          "sha256": "309e45e9d9e33cd5516a10eac2d207eb9f940079a6d9bbe0ee80aaaf7eb42dcd",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/vae_cnn.py",
+          "size": 8836,
+          "sha256": "3949b701e6893bd2ea070cd5b18ed8135a7c21d884290df449b1997212d65b11",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/vae_module.py",
+          "size": 1884,
+          "sha256": "9558fb302e10a619f198e12e04701c68988e897d0b627f958f33d27fd2a30d94",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/vae_processor.py",
+          "size": 8369,
+          "sha256": "32870580a1802d9163104a4d68170e35a4772106867181e1bd343dff11f87d2e",
+          "role": "base-metadata"
+        },
+        {
+          "repo": "MiniMaxAI/MiniMax-H3",
+          "revision": "5d9b308a59ab12e67147f191e184baf704185bd1",
+          "path": "Ref2VA/video_vae/vae_vit.py",
+          "size": 13490,
+          "sha256": "a372c28441b56ec2dbc6041dbd6ce2766c64c0e61b2c69a16594a97a11da3f58",
+          "role": "base-metadata"
+        },
         {
           "repo": "Comfy-Org/MiniMax-H3",
           "revision": "3f57e8291d2ef846f9a074b1b76d2767db434abe",
