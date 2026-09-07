@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Shared download behavior for PreFer's generated Audio and Image artifact
+# Shared download behavior for PreFer's generated Audio, Image, and SGLang artifact
 # maps. This file is sourced by an entrypoint, so it intentionally does not
 # change the caller's shell options.
 
@@ -71,6 +71,125 @@ prefer_artifact_sha_matches() {
   actual_sha256="${actual_sha256%% *}"
   [ "$actual_sha256" = "$expected_sha256" ] || return 1
   return 0
+}
+
+prefer_s3_object_uri() {
+  local bucket="$1"
+  local prefix="$2"
+  local object="$3"
+  prefix="${prefix#/}"
+  prefix="${prefix%/}"
+  if [ -n "$prefix" ]; then
+    printf 's3://%s/%s/%s\n' "$bucket" "$prefix" "$object"
+  else
+    printf 's3://%s/%s\n' "$bucket" "$object"
+  fi
+}
+
+prefer_download_s3_artifact_locked() {
+  local log_prefix="$1"
+  local artifact_id="$2"
+  local repo="$3"
+  local artifact_path="$4"
+  local expected_size="$5"
+  local expected_sha256="$6"
+  local bucket="$7"
+  local prefix="$8"
+  local models_dir="${PREFER_MODELS_DIR:-/models}"
+  local destination="$models_dir/$repo/$artifact_path"
+  local staging_dir="$models_dir/.prefer-cache/downloads-v2/s3-staging/$artifact_id"
+  local staged_artifact="$staging_dir/$repo/$artifact_path"
+  local destination_dir="${destination%/*}"
+  local staged_dir="${staged_artifact%/*}"
+  local remote_uri=""
+  local status=0
+
+  if mkdir -p "$destination_dir" "$staged_dir"; then
+    :
+  else
+    status=$?
+    echo "[$log_prefix] $repo/$artifact_path: could not create S3 staging or destination directory" >&2
+    return "$status"
+  fi
+  if prefer_artifact_marker_matches "$destination" "$expected_size" "$artifact_id"; then
+    echo "[$log_prefix] $repo/$artifact_path: verified marker hit"
+    return 0
+  fi
+  if [ -f "$destination" ] && prefer_artifact_sha_matches "$destination" "$expected_size" "$expected_sha256"; then
+    if prefer_write_artifact_marker "$destination" "$artifact_id"; then
+      :
+    else
+      status=$?
+      echo "[$log_prefix] $repo/$artifact_path: existing S3 artifact verified but marker publication failed" >&2
+      return "$status"
+    fi
+    echo "[$log_prefix] $repo/$artifact_path: existing artifact verified"
+    return 0
+  fi
+
+  remote_uri="$(prefer_s3_object_uri "$bucket" "$prefix" "$repo/$artifact_path")"
+  rm -f "$staged_artifact"
+  echo "[$log_prefix] $repo/$artifact_path: staging exact S3 object"
+  if s5cmd cp "$remote_uri" "$staged_artifact"; then
+    status=0
+  else
+    status=$?
+    echo "[$log_prefix] $repo/$artifact_path: S3 object unavailable; falling back to Hugging Face" >&2
+    return "$status"
+  fi
+  if ! prefer_artifact_sha_matches "$staged_artifact" "$expected_size" "$expected_sha256"; then
+    echo "[$log_prefix] $repo/$artifact_path: S3 size or SHA-256 validation failed" >&2
+    rm -f "$staged_artifact" || true
+    return 1
+  fi
+  if mv -f "$staged_artifact" "$destination"; then
+    :
+  else
+    status=$?
+    echo "[$log_prefix] $repo/$artifact_path: verified S3 staging publication failed" >&2
+    return "$status"
+  fi
+  if prefer_write_artifact_marker "$destination" "$artifact_id"; then
+    :
+  else
+    status=$?
+    echo "[$log_prefix] $repo/$artifact_path: S3 artifact published but marker publication failed" >&2
+    return "$status"
+  fi
+  echo "[$log_prefix] $repo/$artifact_path: S3 artifact verified and published"
+  return 0
+}
+
+prefer_download_s3_artifact() {
+  local artifact_id="$2"
+  local models_dir="${PREFER_MODELS_DIR:-/models}"
+  local lock_dir="$models_dir/.prefer-cache/downloads-v2/locks"
+  local status=0
+
+  if mkdir -p "$lock_dir"; then
+    :
+  else
+    status=$?
+    echo "[artifact-download] could not create lock directory: $lock_dir" >&2
+    return "$status"
+  fi
+  (
+    if exec 9> "$lock_dir/$artifact_id.lock"; then
+      :
+    else
+      status=$?
+      echo "[artifact-download] could not open artifact lock: $artifact_id" >&2
+      return "$status"
+    fi
+    if flock 9; then
+      :
+    else
+      status=$?
+      echo "[artifact-download] could not acquire artifact lock: $artifact_id" >&2
+      return "$status"
+    fi
+    prefer_download_s3_artifact_locked "$@"
+  )
 }
 
 prefer_write_artifact_marker() {

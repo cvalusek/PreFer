@@ -1,0 +1,314 @@
+{
+  "schema_version": 1,
+  "family": "qwen",
+  "model_slug": "qwen3.8-27b",
+  "shared": {
+    "id": "qwen3.8-27b",
+    "family": "qwen3.8",
+    "task": "chat",
+    "mode": "multimodal-reasoning",
+    "description": "Qwen3.8-27B dense hybrid vision-language model in an SGLang-validated NVFP4 W4A4 checkpoint",
+    "license": "Apache-2.0",
+    "lineage": {
+      "repo": "Qwen/Qwen3.8-27B",
+      "revision": "e13a4f0e35203116364e3b3f3f0c82f6ef1afd3c",
+      "derivative_repo": "RadixArk/Qwen3.8-27B-NVFP4",
+      "derivative_revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+      "quantizer_repo": "NVIDIA/Model-Optimizer",
+      "quantizer_revision": "87c9f8cf83021957d1a1a575c90c9a4eaaf7ef0c"
+    },
+    "capabilities": [
+      "chat",
+      "completion",
+      "reasoning",
+      "tools",
+      "structured-output",
+      "streaming",
+      "image",
+      "video"
+    ],
+    "modalities": {
+      "native": ["text", "image", "video"],
+      "configured": ["text", "image", "video"],
+      "input": ["text", "image", "video"],
+      "output": ["text"]
+    },
+    "architecture": {
+      "type": "Qwen3_5ForConditionalGeneration",
+      "layers": 64,
+      "linear_attention_layers": 48,
+      "full_attention_layers": 16,
+      "hidden_size": 5120,
+      "attention_heads": 24,
+      "key_value_heads": 4,
+      "vision_layers": 27,
+      "vision_hidden_size": 1152,
+      "vision_output_size": 5120,
+      "mtp_layers": 1
+    },
+    "native_context_length": 262144,
+    "max_context_length": 1048576,
+    "reasoning_controls": {
+      "enabled_by_default": true,
+      "reasoning_effort": {
+        "supported": ["low", "medium", "xhigh"],
+        "default": "xhigh"
+      },
+      "preserve_thinking": {
+        "supported": [true, false],
+        "default": true
+      },
+      "enable_thinking": {
+        "supported": [true, false],
+        "default": true
+      }
+    },
+    "template": {
+      "source_file": "chat_template.jinja",
+      "supports_images": true,
+      "supports_videos": true,
+      "tool_call_format": "<tool_call><function=...><parameter=...>",
+      "generation_prompt": "<think>",
+      "reasoning_parser": "qwen3",
+      "tool_call_parser": "qwen3_coder"
+    },
+    "speculative": {
+      "supported": true,
+      "source": "in-checkpoint MTP",
+      "algorithm": "NEXTN",
+      "steps": 3,
+      "draft_tokens": 4,
+      "eagle_topk": 1
+    },
+    "kv_cache_scaling": {
+      "quantization": "FP8",
+      "explicit_scale_metadata": false,
+      "parameter_file": null,
+      "sglang_default_scale": 1.0,
+      "fidelity_status": "VERIFY",
+      "verification_note": "The pinned checkpoint declares FP8 KV quantization but does not include a separate scale file; do not treat the runtime default scale of 1.0 as an accuracy validation."
+    },
+    "artifact_variant": {
+      "label": "RadixArk current 21.945 GB NVFP4 snapshot",
+      "total_bytes": 21945295265,
+      "comparability_note": "This is not the earlier approximately 16.5 GB community variant; no throughput result from either variant is interchangeable without a matched smoke."
+    },
+    "server": {
+      "served_model_name": "qwen3.8-27b",
+      "quantization": "modelopt_fp4",
+      "kv_cache_dtype": "fp8_e4m3",
+      "attention_backend": "flashinfer",
+      "context_length": 262144,
+      "tp_size": 1,
+      "chunked_prefill_size": 2048,
+      "mamba_ssm_dtype": "bfloat16",
+      "reasoning_parser": "qwen3",
+      "tool_call_parser": "qwen3_coder",
+      "trust_remote_code": true
+    },
+    "profile": {
+      "summary": "A high-intelligence multimodal Qwen route for modern Blackwell GPUs, with native image/video understanding and optional in-checkpoint MTP acceleration.",
+      "architecture": "64-layer hybrid linear/full-attention vision-language model with 48 GDN layers, 16 full-attention layers, and one embedded MTP layer.",
+      "native_capabilities": ["text", "image", "video", "reasoning", "tool calls"],
+      "configured_capabilities": ["text", "image", "video", "reasoning", "tool calls", "structured output", "streaming"],
+      "context": "Native 262,144 tokens; roomy Blackwell scenarios expose a 524,288-token per-request maximum from a dynamically shared runtime pool, while the 32 GB RTX 5090 and provider-neutral default remain at 262,144.",
+      "reasoning": "Thinking is enabled by default. Requests may select low, medium, or xhigh reasoning_effort and may disable or preserve thinking through the Qwen template controls.",
+      "role_fit": {
+        "preferred": ["multimodal assistant", "long-form analysis", "tool-using orchestrator", "code and structured-output assistant"],
+        "capable": ["image and video interpretation", "general chat", "document analysis"],
+        "avoid": ["older than Blackwell GPUs", "strict low-latency CPU service", "production use before target-card smoke"],
+        "strengths": ["strong reasoning ceiling", "native visual and video inputs", "large native context", "in-checkpoint speculative support"],
+      "limitations": ["requires modern Blackwell NVFP4 support", "FP8 KV has no pinned explicit scale metadata and remains a fidelity gate", "packaged deployment shapes are configuration-only", "the current 21.945 GB RadixArk artifact is not interchangeable with smaller community variants"],
+        "prompting_notes": ["Leave reasoning_effort at xhigh for difficult tasks; use medium or low for latency-sensitive requests.", "Preserve the returned thinking trace only when the client needs it; otherwise retain the template default and let the API control visibility.", "Use the Qwen3 coder tool schema and provide explicit tool descriptions for reliable calls."]
+      },
+      "evidence_confidence": "high for upstream capability and artifact provenance; mixed for this repository's target-card fit and throughput until hardware smoke tests complete"
+    }
+  },
+  "quants": {
+    "nvfp4": {
+      "key": "qwen3.8-27b-nvfp4",
+      "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
+      "primary": true,
+      "request_model_id": "qwen3.8-27b",
+      "artifacts": [
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": ".gitattributes",
+          "size": 1570,
+          "sha256": "34448b82c17d60fec9b65b1f093c115ddbaadc04beb1b0140b6bfed2e012a930",
+          "role": "repository-metadata"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": ".quant_summary.txt",
+          "size": 314291,
+          "sha256": "5920198f1770fc91c0f8032108e6d861ce7e0ef196eca140c9681231d8d99967",
+          "role": "quantization-metadata"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "LICENSE",
+          "size": 11544,
+          "sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a",
+          "role": "license"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "README.md",
+          "size": 4574,
+          "sha256": "3cfd18e07422e6eff20fcdf8dcdb3c864976dcef0e1e0f2c3f8bf788603203c2",
+          "role": "model-card"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "chat_template.jinja",
+          "size": 8952,
+          "sha256": "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041",
+          "role": "chat-template"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "config.json",
+          "size": 73003,
+          "sha256": "7ff41ec6f96ad50efea3c92751cd261b63839d39936eb6e6ffc9066db8672740",
+          "role": "model-config"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "conversion-manifest.json",
+          "size": 23587,
+          "sha256": "c71e938cadabd25b2d6ec6b1bd15afecb618674cd8004cf1ecf04e28badbbf55",
+          "role": "conversion-metadata"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "generation_config.json",
+          "size": 214,
+          "sha256": "a4cef85934ea1fdcb207944dbc6eee70dbbf16806874428556ae33023336c0a4",
+          "role": "generation-config"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "hf_quant_config.json",
+          "size": 53749,
+          "sha256": "0f39e8cd23abdfb79adc89ac1b19acad990aa6ac32973f9ab0a67d1e3449535c",
+          "role": "quantization-config"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "merges.txt",
+          "size": 3353259,
+          "sha256": "a9d356d7bdf1ef4949e3e748e95b8e10ad9d4e2e838eddc38a0a7b6b94d1db8d",
+          "role": "tokenizer-merges"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "model-00001-of-00003.safetensors",
+          "size": 9965652544,
+          "sha256": "fbcdb5ba1cdda462b5f38592d071e772c4d398afea61a0aa9188b32d1a239a79",
+          "role": "target-shard-1"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "model-00002-of-00003.safetensors",
+          "size": 9985757064,
+          "sha256": "db6146a5464fb0a891181b93c81593f0ca65c602eb14120a1c2b1b09bca11f85",
+          "role": "target-shard-2"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "model-00003-of-00003.safetensors",
+          "size": 1970287672,
+          "sha256": "d3cfb92742e30c8b46564665791dbe0a86ed64cfc02b1275081530793c0c9581",
+          "role": "target-shard-3"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "model.safetensors.index.json",
+          "size": 214866,
+          "sha256": "7aa103a2582b7d26631988de33dea19e8a308ee9c239e8e14feb374af30905e2",
+          "role": "target-index"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "preprocessor_config.json",
+          "size": 390,
+          "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+          "role": "image-preprocessor"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "qualification-criteria.json",
+          "size": 1145,
+          "sha256": "8e3b57367245354acb040a133e63df8eb1f4aef787e036156b944dfda217352a",
+          "role": "qualification-metadata"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "qualification.json",
+          "size": 2717,
+          "sha256": "7be9d60606fc9590ca7b5717018e12050deaa6d7d93abb5e8cad0845240983a8",
+          "role": "qualification-metadata"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "tensor-audit.json",
+          "size": 539,
+          "sha256": "8a7801e2b46298432a129689879c9e4f8c69444e0b71b4c971470c2747794679",
+          "role": "tensor-audit"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "tokenizer.json",
+          "size": 12809320,
+          "sha256": "0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3",
+          "role": "tokenizer"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "tokenizer_config.json",
+          "size": 1121,
+          "sha256": "e5d078b00e6c1223b32444db8c1001dc71d86ceef8ee706b5bf084c3a43a1f9c",
+          "role": "tokenizer-config"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "video_preprocessor_config.json",
+          "size": 385,
+          "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13",
+          "role": "video-preprocessor"
+        },
+        {
+          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
+          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
+          "path": "vocab.json",
+          "size": 6722759,
+          "sha256": "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003",
+          "role": "tokenizer-vocabulary"
+        }
+      ],
+      "server": {}
+    }
+  }
+}

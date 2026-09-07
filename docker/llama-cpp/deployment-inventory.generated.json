@@ -1,6 +1,6 @@
 {
   "schema_version": "prefer.deployment-inventory.v1",
-  "catalog_fingerprint": "d9e22364739599188c0cdc11c8aeee0fb6ba05b28c0a06e8d228c4a1cd5a283b",
+  "catalog_fingerprint": "9771dc4e801e505dde8187fb5f66f3d28a647dd4786ebb7cf29a0dcddfd06f73",
   "product": "PreFer",
   "distribution": {
     "embedded_image_path": "/deployment-inventory.json",
@@ -549,7 +549,8 @@
           "video"
         ],
         "configured_input_modalities": [
-          "text"
+          "text",
+          "image"
         ],
         "output_modalities": [
           "text"
@@ -569,11 +570,11 @@
           "bounded-planning",
           "long-context-review",
           "architecture-review",
-          "structured-output"
+          "structured-output",
+          "visual-analysis"
         ],
         "avoid": [
-          "latency-sensitive-fanout",
-          "configured-vision"
+          "latency-sensitive-fanout"
         ]
       },
       "strengths": [
@@ -582,7 +583,7 @@
       ],
       "limitations": [
         "Xhigh reasoning can carry substantial token and latency costs, but difficult planning, proofs, or architecture work may benefit materially.",
-        "The pinned PreFer Q6 route intentionally omits the optional projector and is configured text-only."
+        "Image input depends on the packaged F16 projector and still requires deployment-specific visual validation."
       ],
       "prompting": [
         "Disable thinking for work that should not reason. With thinking enabled, use only low, medium, or xhigh: low asks for brief focused thinking, medium adds no effort instruction, and xhigh is the careful-validation default.",
@@ -1707,6 +1708,7 @@
       "section": "unsloth/Qwen3.8-27B-GGUF:UD-Q6_K_XL",
       "settings": {
         "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+        "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
         "spec-type": "draft-mtp",
         "spec-draft-n-max": 2,
         "top-k": 20,
@@ -1717,7 +1719,8 @@
           "repo": "unsloth/Qwen3.8-27B-GGUF",
           "revision": "4604b899a826000505a834e623272db5b7fd62f6",
           "include": [
-            "Qwen3.8-27B-UD-Q6_K_XL.gguf"
+            "Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj-F16.gguf"
           ]
         }
       ],
@@ -1728,10 +1731,17 @@
           "path": "Qwen3.8-27B-UD-Q6_K_XL.gguf",
           "size": 25924152384,
           "sha256": "739202186fd9389bb58497c58b56c8a0d4253d99d20131e6a0427e363e678fc8"
+        },
+        {
+          "role": "projector",
+          "repo": "unsloth/Qwen3.8-27B-GGUF",
+          "path": "mmproj-F16.gguf",
+          "size": 927607488,
+          "sha256": "cbb841a9ee0636b2ec172f5bb8df2ea8dfeb01e90fe7c6126581d662a0b4e43e"
         }
       ],
-      "download_fingerprint": "da4da442e7e218ac06d0b0d49500246c5971a21f4e201423a437cae67835893e",
-      "artifact_bytes": 25924152384
+      "download_fingerprint": "23728888f0452ae9fd4f0f5c6d519d42fd01fb661bb50b3572adb5e6361a19b8",
+      "artifact_bytes": 26851759872
     },
     "ornith-1.5-9b-q4": {
       "key": "ornith-1.5-9b-q4",
@@ -3868,6 +3878,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -4445,6 +4456,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -4498,6 +4510,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -5482,6 +5495,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -5832,6 +5846,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -5885,6 +5900,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -9378,6 +9394,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -9734,6 +9751,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -9793,6 +9811,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -11107,6 +11126,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -11463,6 +11483,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -11522,6 +11543,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -12836,6 +12858,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -13437,6 +13460,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -13496,6 +13520,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -14446,6 +14471,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -14802,6 +14828,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -14861,6 +14888,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -16175,6 +16203,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -16531,6 +16560,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -16590,6 +16620,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -17904,6 +17935,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -18260,6 +18292,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -18319,6 +18352,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -19633,6 +19667,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -19989,6 +20024,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -20048,6 +20084,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -21362,6 +21399,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -21718,6 +21756,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -21777,6 +21816,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -23091,6 +23131,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -23447,6 +23488,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -23506,6 +23548,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -25757,6 +25800,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -26358,6 +26402,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -26417,6 +26462,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -27367,6 +27413,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -27968,6 +28015,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -28027,6 +28075,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -29914,6 +29963,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -30515,6 +30565,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -30574,6 +30625,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -34335,6 +34387,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -34936,6 +34989,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -34995,6 +35049,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -36882,6 +36937,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -37483,6 +37539,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -37542,6 +37599,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -38492,6 +38550,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -38848,6 +38907,7 @@
             "repeat-penalty": 1.0,
             "presence-penalty": 0,
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,
@@ -38907,6 +38967,7 @@
           "cache_type_v": "f16",
           "settings": {
             "model": "/models/unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf",
+            "mmproj": "/models/unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf",
             "spec-type": "draft-mtp",
             "spec-draft-n-max": 2,
             "top-k": 20,

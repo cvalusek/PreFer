@@ -2,14 +2,20 @@ name: Build PreFer release
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - 'docker/llama-cpp/**'
       - 'docker/audio-cpp/**'
       - 'docker/stable-diffusion-cpp/**'
+      - 'docker/sglang/**'
+      - 'docker/vllm/**'
       - 'release/**'
       - '.github/workflows/build-prefer.yml'
   workflow_dispatch:
+
+concurrency:
+  group: prefer-release-${{ github.ref_name }}
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
@@ -30,9 +36,15 @@ jobs:
 
       - name: Verify all generated runtime configuration and inventories
         run: |
+          if [[ "$GITHUB_REF_NAME" != "main" && "$GITHUB_REF_NAME" != "develop" ]]; then
+            echo "PreFer releases may only be built from main (stable) or develop (preview)." >&2
+            exit 1
+          fi
           python docker/llama-cpp/generate-presets.py --check
           python docker/audio-cpp/generate.py --check
           python docker/stable-diffusion-cpp/generate.py --check
+          python docker/sglang/generate.py --check
+          python docker/vllm/generate.py --check
 
       - name: Test shared artifact staging and grouped release contract
         run: |
@@ -41,6 +53,12 @@ jobs:
 
       - name: Test lazy image router
         run: python -m unittest discover -s docker/stable-diffusion-cpp/tests -v
+
+      - name: Test SGLang catalog and downloader contract
+        run: python -m unittest benchmark.tests.test_sglang benchmark.tests.test_sglang_video -v
+
+      - name: Test vLLM catalog and gateway contract
+        run: python -m unittest benchmark.tests.test_vllm -v
 
   llama:
     needs: verify
@@ -70,9 +88,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest
             type=sha,format=short
-            type=raw,value=llama-cuda
             type=sha,prefix=llama-cuda-sha-,format=short
           labels: |
             io.prefer.runtime=llama.cpp
@@ -123,7 +139,6 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=audio-cuda12
             type=sha,prefix=audio-cuda12-sha-,format=short
           labels: |
             io.prefer.runtime=audio.cpp
@@ -176,7 +191,6 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=audio-cpu
             type=sha,prefix=audio-cpu-sha-,format=short
           labels: |
             io.prefer.runtime=audio.cpp
@@ -226,7 +240,6 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=image-cuda12
             type=sha,prefix=image-cuda12-sha-,format=short
           labels: |
             io.prefer.runtime=stable-diffusion.cpp
@@ -248,20 +261,268 @@ jobs:
           cache-from: type=gha,scope=image-cuda12
           cache-to: type=gha,scope=image-cuda12,mode=max
 
+  sglang_amd64:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free runner disk space
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo rm -rf \
+            /usr/local/lib/android \
+            /usr/share/dotnet \
+            /opt/ghc \
+            /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/powershell \
+            /usr/local/share/chromium
+          sudo docker system prune --all --force --volumes
+          df -h /
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Prepare lowercase image repository
+        id: image
+        shell: bash
+        run: echo "image_repository=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push SGLang amd64
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/sglang
+          file: docker/sglang/Dockerfile
+          platforms: linux/amd64
+          outputs: type=image,name=${{ steps.image.outputs.image_repository }},push-by-digest=true,name-canonical=true,push=true
+          labels: |
+            io.prefer.runtime=sglang
+            io.prefer.sglang.backend=cuda13
+            io.prefer.release.revision=${{ github.sha }}
+            io.prefer.deployment-inventory.path=/deployment-inventory.json
+            io.prefer.deployment-inventory.schema=prefer.sglang-deployment-inventory.v2
+          cache-from: type=gha,scope=sglang-cuda13-amd64
+          cache-to: type=gha,scope=sglang-cuda13-amd64,mode=max
+
+  sglang_arm64:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free runner disk space
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo rm -rf \
+            /usr/local/lib/android \
+            /usr/share/dotnet \
+            /opt/ghc \
+            /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/powershell \
+            /usr/local/share/chromium
+          sudo docker system prune --all --force --volumes
+          df -h /
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Prepare lowercase image repository
+        id: image
+        shell: bash
+        run: echo "image_repository=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push SGLang arm64
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/sglang
+          file: docker/sglang/Dockerfile
+          platforms: linux/arm64
+          outputs: type=image,name=${{ steps.image.outputs.image_repository }},push-by-digest=true,name-canonical=true,push=true
+          labels: |
+            io.prefer.runtime=sglang
+            io.prefer.sglang.backend=cuda13
+            io.prefer.release.revision=${{ github.sha }}
+            io.prefer.deployment-inventory.path=/deployment-inventory.json
+            io.prefer.deployment-inventory.schema=prefer.sglang-deployment-inventory.v2
+          cache-from: type=gha,scope=sglang-cuda13-arm64
+          cache-to: type=gha,scope=sglang-cuda13-arm64,mode=max
+
+  sglang:
+    needs: [sglang_amd64, sglang_arm64]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.merge.outputs.digest }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Prepare lowercase image repository
+        id: image
+        shell: bash
+        run: echo "image_repository=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Merge and verify SGLang platform images
+        id: merge
+        shell: bash
+        env:
+          IMAGE_REPOSITORY: ${{ steps.image.outputs.image_repository }}
+          AMD64_DIGEST: ${{ needs.sglang_amd64.outputs.digest }}
+          ARM64_DIGEST: ${{ needs.sglang_arm64.outputs.digest }}
+        run: |
+          set -euo pipefail
+          for digest in "$AMD64_DIGEST" "$ARM64_DIGEST"; do
+            if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              echo "Invalid platform digest: $digest" >&2
+              exit 1
+            fi
+          done
+
+          image_tag="$IMAGE_REPOSITORY:sglang-cuda13-sha-${GITHUB_SHA::7}"
+          metadata_file="$RUNNER_TEMP/sglang-index-metadata.json"
+          docker buildx imagetools create \
+            --metadata-file "$metadata_file" \
+            --tag "$image_tag" \
+            "$IMAGE_REPOSITORY@$AMD64_DIGEST" \
+            "$IMAGE_REPOSITORY@$ARM64_DIGEST"
+
+          merged_digest="$(jq -er '."containerimage.descriptor".digest' "$metadata_file")"
+          if [[ ! "$merged_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "Could not resolve merged SGLang index digest" >&2
+            exit 1
+          fi
+          inspection="$(docker buildx imagetools inspect "$image_tag")"
+          printf '%s\n' "$inspection"
+          grep -q 'linux/amd64' <<<"$inspection"
+          grep -q 'linux/arm64' <<<"$inspection"
+          tagged_digest="$(awk '$1 == "Digest:" { print $2; exit }' <<<"$inspection")"
+          if [[ "$tagged_digest" != "$merged_digest" ]]; then
+            echo "Merged SGLang tag resolved to $tagged_digest, expected $merged_digest" >&2
+            exit 1
+          fi
+          echo "digest=$merged_digest" >> "$GITHUB_OUTPUT"
+
+  vllm:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=vllm-cuda13-sha-,format=short
+          labels: |
+            io.prefer.runtime=vllm
+            io.prefer.vllm.backend=cuda13
+            io.prefer.release.revision=${{ github.sha }}
+            io.prefer.deployment-inventory.path=/deployment-inventory.json
+            io.prefer.deployment-inventory.schema=prefer.vllm-deployment-inventory.v1
+
+      - name: Build and push vLLM CUDA 13
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/vllm
+          file: docker/vllm/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=vllm-cuda13
+          cache-to: type=gha,scope=vllm-cuda13,mode=max
+
   release:
-    needs: [llama, audio_cuda, audio_cpu, image]
+    needs: [llama, audio_cuda, audio_cpu, image, sglang, vllm]
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      packages: write
     env:
       LLAMA_DIGEST: ${{ needs.llama.outputs.digest }}
       AUDIO_CUDA_DIGEST: ${{ needs.audio_cuda.outputs.digest }}
       AUDIO_CPU_DIGEST: ${{ needs.audio_cpu.outputs.digest }}
       IMAGE_DIGEST: ${{ needs.image.outputs.digest }}
+      SGLANG_DIGEST: ${{ needs.sglang.outputs.digest }}
+      VLLM_DIGEST: ${{ needs.vllm.outputs.digest }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Assemble grouped PreFer release
         shell: bash
@@ -276,9 +537,13 @@ jobs:
             --audio-cuda-digest "$AUDIO_CUDA_DIGEST" \
             --audio-cpu-digest "$AUDIO_CPU_DIGEST" \
             --image-digest "$IMAGE_DIGEST" \
+            --sglang-digest "$SGLANG_DIGEST" \
+            --vllm-digest "$VLLM_DIGEST" \
             --llama-inventory docker/llama-cpp/deployment-inventory.generated.json \
             --audio-inventory docker/audio-cpp/deployment-inventory.generated.json \
             --image-inventory docker/stable-diffusion-cpp/deployment-inventory.generated.json \
+            --sglang-inventory docker/sglang/deployment-inventory.generated.json \
+            --vllm-inventory docker/vllm/deployment-inventory.generated.json \
             --output-dir prefer-release
           cp release/prefer-release.schema.json prefer-release/
           sha256sum prefer-release/*.json > prefer-release/SHA256SUMS
@@ -290,16 +555,82 @@ jobs:
           path: prefer-release/
           if-no-files-found: error
 
+      - name: Publish release-channel image aliases
+        shell: bash
+        run: |
+          set -euo pipefail
+          image_repository="ghcr.io/${GITHUB_REPOSITORY,,}"
+          if [[ "$GITHUB_REF_NAME" == "main" ]]; then
+            docker buildx imagetools create \
+              --tag "$image_repository:latest" \
+              --tag "$image_repository:llama-cuda" \
+              "$image_repository@$LLAMA_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:audio-cuda12" \
+              "$image_repository@$AUDIO_CUDA_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:audio-cpu" \
+              "$image_repository@$AUDIO_CPU_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:image-cuda12" \
+              "$image_repository@$IMAGE_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:sglang-cuda" \
+              "$image_repository@$SGLANG_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:vllm-cuda" \
+              "$image_repository@$VLLM_DIGEST"
+          elif [[ "$GITHUB_REF_NAME" == "develop" ]]; then
+            docker buildx imagetools create \
+              --tag "$image_repository:preview" \
+              --tag "$image_repository:llama-cuda-preview" \
+              "$image_repository@$LLAMA_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:audio-cuda12-preview" \
+              "$image_repository@$AUDIO_CUDA_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:audio-cpu-preview" \
+              "$image_repository@$AUDIO_CPU_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:image-cuda12-preview" \
+              "$image_repository@$IMAGE_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:sglang-cuda-preview" \
+              "$image_repository@$SGLANG_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:vllm-cuda-preview" \
+              "$image_repository@$VLLM_DIGEST"
+          else
+            echo "Unsupported release branch: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+
       - name: Publish immutable GitHub release
         shell: bash
         run: |
           set -euo pipefail
           release_tag="sha-${GITHUB_SHA::7}"
-          release_title="PreFer $release_tag"
-          release_notes="Grouped PreFer runtime release for commit $GITHUB_SHA. Download prefer-release.json to select exact llama.cpp, audio.cpp, and stable-diffusion.cpp images and inventories. Model weights are staged separately at runtime."
-          if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" --title "$release_title" --notes "$release_notes"
+          if [[ "$GITHUB_REF_NAME" == "main" ]]; then
+            release_channel="stable"
+          elif [[ "$GITHUB_REF_NAME" == "develop" ]]; then
+            release_channel="preview"
           else
-            gh release create "$release_tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$release_title" --notes "$release_notes"
+            echo "Unsupported release branch: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          release_title="PreFer $release_tag ($release_channel)"
+          release_notes="Grouped PreFer $release_channel release for commit $GITHUB_SHA. Download prefer-release.json to select exact llama.cpp, audio.cpp, stable-diffusion.cpp, SGLang, and vLLM images and inventories. Model weights are staged separately at runtime."
+          if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            if [[ "$release_channel" == "stable" ]]; then
+              gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" --title "$release_title" --notes "$release_notes" --prerelease=false --latest
+            else
+              gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" --title "$release_title" --notes "$release_notes" --prerelease --latest=false
+            fi
+          else
+            if [[ "$release_channel" == "stable" ]]; then
+              gh release create "$release_tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$release_title" --notes "$release_notes" --latest
+            else
+              gh release create "$release_tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$release_title" --notes "$release_notes" --prerelease --latest=false
+            fi
           fi
           gh release upload "$release_tag" prefer-release/* --repo "$GITHUB_REPOSITORY" --clobber

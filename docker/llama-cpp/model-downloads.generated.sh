@@ -30,7 +30,7 @@ model_key_fingerprint() {
       printf '%s\n' 220a53029da9bdb364aa09b04649484bc13c9e3eb7ed6e0bfc023c527673bd53
       ;;
     qwen-3.8-27b)
-      printf '%s\n' da4da442e7e218ac06d0b0d49500246c5971a21f4e201423a437cae67835893e
+      printf '%s\n' 23728888f0452ae9fd4f0f5c6d519d42fd01fb661bb50b3572adb5e6361a19b8
       ;;
     ornith-1.5-9b-q4)
       printf '%s\n' 1b71f0ed0dd61d649e9877c8e109ec01f6c41ac8067340785e6c7545622c4965
@@ -123,6 +123,7 @@ model_key_artifacts() {
       ;;
     qwen-3.8-27b)
       printf '%s\n' unsloth/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q6_K_XL.gguf
+      printf '%s\n' unsloth/Qwen3.8-27B-GGUF/mmproj-F16.gguf
       ;;
     ornith-1.5-9b-q4)
       printf '%s\n' ornith-ai/Ornith-1.5-9B-GGUF/Ornith-1.5-9B-Q4_K_M.gguf
@@ -236,7 +237,7 @@ download_model_key() {
       download unsloth/Qwen3.6-35B-A3B-MTP-GGUF '' --include '*UD-Q6_K_XL*'
       ;;
     qwen-3.8-27b)
-      download unsloth/Qwen3.8-27B-GGUF 4604b899a826000505a834e623272db5b7fd62f6 --include Qwen3.8-27B-UD-Q6_K_XL.gguf
+      download unsloth/Qwen3.8-27B-GGUF 4604b899a826000505a834e623272db5b7fd62f6 --include Qwen3.8-27B-UD-Q6_K_XL.gguf --include mmproj-F16.gguf
       ;;
     ornith-1.5-9b-q4)
       download ornith-ai/Ornith-1.5-9B-GGUF abdd624b12ebf020b767fff532ff44fe552b28c3 --include Ornith-1.5-9B-Q4_K_M.gguf --include mmproj-Ornith-1.5-9B-BF16.gguf

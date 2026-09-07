@@ -1,0 +1,1590 @@
+{
+  "catalog_fingerprint": "74566ee2b9d882bffc494554cc0ce6ce50e1943dd6ecc3026dae22b8bbeea4ac",
+  "schema_version": "prefer.vllm-deployment-inventory.v1",
+  "runtime": {
+    "name": "vllm",
+    "source_repo": "vllm-project/vllm",
+    "source_revision": "2cf0a6915ce544dc493a0990f2ea38d81601128a",
+    "source_revision_role": "Official vLLM v0.28.0 release with Qwen3.5-family hybrid-model, NVFP4, and native MTP serving support.",
+    "lineage": "official-upstream"
+  },
+  "base_image": {
+    "reference": "vllm/vllm-openai:v0.28.0-ubuntu2404@sha256:f8fe15a8039343336945db10494eaad80ef941fe2b2a5fa6649fa38636051a65",
+    "index_digest": "sha256:f8fe15a8039343336945db10494eaad80ef941fe2b2a5fa6649fa38636051a65",
+    "build_revision": "2cf0a6915ce544dc493a0990f2ea38d81601128a",
+    "build_revision_source": "https://github.com/vllm-project/vllm/releases/tag/v0.28.0",
+    "build_revision_note": "Official CUDA 13.0 Ubuntu 24.04 vLLM image; PreFer adds only staging, inventory, and the warmup-aware gateway.",
+    "platform_manifests": {
+      "linux/amd64": "sha256:ffaf945675c81fa7ed3e6a66c7c2d7189dd012614e2c961fac1c2702a7ba04be",
+      "linux/arm64": "sha256:41b54fb42c66a670a8b27e613ebef05898f24b9ab1bdab28bd00c877bd4935f4"
+    }
+  },
+  "requirements": {
+    "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "cuda_major": 13,
+    "minimum_compute_capability": "sm_100",
+    "supported_compute_capabilities": [
+      "sm_100",
+      "sm_120",
+      "sm_121"
+    ],
+    "gpu_architecture": "NVIDIA Blackwell; NVFP4 activation arithmetic requires SM100 or newer",
+    "minimum_vllm_version": "0.28.0",
+    "nvfp4_backend": "FlashInfer/CUTLASS on Blackwell; older GPUs use a weight-only fallback and are not a supported PreFer lane",
+    "driver_note": "CUDA 13 images require an R580-or-newer host driver in normal mode; use the vLLM CUDA compatibility guidance for older supported drivers"
+  },
+  "staging": {
+    "hf": {
+      "source": "huggingface",
+      "home": "/models",
+      "layout": "/models/<repository>/<path>",
+      "verification": "exact catalog size and SHA-256 before atomic publication"
+    },
+    "aws_s3": {
+      "source": "s3-then-huggingface",
+      "scope": "optional AWS read-through",
+      "bucket_env": "S3_BUCKET_NAME",
+      "bucket_alias_env": "VLLM_S3_BUCKET_NAME",
+      "prefix_env": "S3_MODEL_PREFIX",
+      "prefix_alias_env": "VLLM_S3_MODEL_PREFIX",
+      "object_layout": "s3://<bucket>/<prefix>/<repository>/<path>",
+      "fallback": "huggingface",
+      "s5cmd_version": "2.2.2",
+      "read_policy": [
+        "s3:GetObject",
+        "s3:ListBucket"
+      ],
+      "write_policy": [],
+      "local_layout": "/models/<repository>/<path>",
+      "marker_layout": "/models/.prefer-cache/downloads-v2/verified/<artifact-id>.complete"
+    }
+  },
+  "features": {
+    "api": [
+      "GET /health",
+      "GET /readyz",
+      "GET /v1/models",
+      "POST /v1/chat/completions",
+      "POST /v1/completions"
+    ],
+    "openai_backend": "official vLLM OpenAI-compatible server",
+    "reasoning_parser": "qwen3",
+    "tool_call_parser": "qwen3_coder",
+    "structured_output": "vLLM guided decoding; exact schema smoke required",
+    "streaming": "gateway forwards backend SSE bytes and termination",
+    "kv_cache": "FP8 KV is the performance default; calibration and long-context quality remain smoke gates",
+    "speculative_decoding": "native Qwen3.5-family MTP head through vLLM speculative_config"
+  },
+  "experimental_routes": {
+    "qwen3.8-flash": {
+      "status": "deferred-experimental",
+      "reason": "Official recipe requires the dedicated qwen38-flash-next image and multi-GB300-class deployments; it is not part of this first 27B lane."
+    },
+    "dflash2": {
+      "status": "deferred-unverified",
+      "reason": "vLLM exposes DFlash2 for Qwen3.8 only in newer releases; do not replace the verified native MTP path without a matched artifact and smoke."
+    }
+  },
+  "known_limitations": [
+    "The checked-in deployment scenarios are configuration-only until an exact Blackwell card passes load, API, context, and throughput smoke.",
+    "Native MTP is first enabled at TP1; current qwen3_5_mtp TP>=2 loader issues are intentionally not hidden by a multi-GPU default.",
+    "The vLLM recipe verifies text serving; image and video input remain native capability metadata until the PreFer multimodal smoke passes.",
+    "A 32 GB Blackwell route may require enforce-eager and a smaller context because CUDA graph capture can OOM outside the model memory budget.",
+    "Model weights are runtime artifacts and never belong in this image or grouped release artifact."
+  ],
+  "api": {
+    "health": "GET /health",
+    "ready": "GET /readyz",
+    "models": "GET /v1/models",
+    "chat": "POST /v1/chat/completions",
+    "completion": "POST /v1/completions"
+  },
+  "runtime_modes": [
+    "text"
+  ],
+  "model_profiles": {
+    "qwen3.8-27b": {
+      "summary": "A high-intelligence Qwen route for modern Blackwell GPUs, with native image/video capability metadata and a vLLM-verified NVFP4 text lane.",
+      "architecture": "64-layer hybrid linear/full-attention vision-language model with 48 GDN layers, 16 full-attention layers, and one embedded MTP layer.",
+      "native_capabilities": [
+        "text",
+        "image",
+        "video",
+        "reasoning",
+        "tool calls"
+      ],
+      "configured_capabilities": [
+        "text",
+        "reasoning",
+        "tool calls",
+        "structured output",
+        "streaming"
+      ],
+      "context": "Native 262,144 tokens; the provider-neutral lane starts at native context while larger Blackwell shapes expose separately gated extensions.",
+      "reasoning": "Thinking is enabled by default. Requests may select low, medium, or xhigh reasoning_effort and may disable or preserve thinking through the Qwen template controls.",
+      "role_fit": {
+        "preferred": [
+          "long-form analysis",
+          "tool-using orchestrator",
+          "code and structured-output assistant"
+        ],
+        "capable": [
+          "general chat",
+          "document analysis",
+          "multimodal input after verification"
+        ],
+        "avoid": [
+          "pre-Blackwell GPUs",
+          "production use before target-card smoke"
+        ],
+        "strengths": [
+          "strong reasoning ceiling",
+          "large native context",
+          "native MTP path",
+          "NVFP4 memory efficiency"
+        ],
+        "limitations": [
+          "requires modern Blackwell NVFP4 support",
+          "FP8 KV remains a fidelity gate",
+          "multimodal vLLM path is not yet verified in this runtime"
+        ],
+        "prompting_notes": [
+          "Use xhigh for difficult tasks and low or medium for latency-sensitive work.",
+          "Preserve thinking only when the client needs it.",
+          "Use the Qwen3 coder tool schema for tool calls."
+        ]
+      },
+      "evidence_confidence": "high for upstream capability and artifact provenance; mixed for this repository's target-card fit and throughput until hardware smoke tests complete"
+    }
+  },
+  "models": {
+    "qwen3.8-27b-nvfp4": {
+      "key": "qwen3.8-27b-nvfp4",
+      "request_model_id": "qwen3.8-27b",
+      "aliases": [
+        "qwen3.8-27b",
+        "qwen-3.8-27b"
+      ],
+      "profile_id": "qwen3.8-27b",
+      "family": "qwen3.8",
+      "model_slug": "qwen3.8-27b",
+      "tasks": [
+        "chat",
+        "completion"
+      ],
+      "precision": "NVFP4 W4A4 compressed-tensors with FP8 attention/KV and a pinned MTP companion",
+      "capabilities": [
+        "chat",
+        "completion",
+        "reasoning",
+        "tools",
+        "structured-output",
+        "streaming"
+      ],
+      "modalities": {
+        "native": [
+          "text",
+          "image",
+          "video"
+        ],
+        "configured": [
+          "text"
+        ],
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "native_context_length": 262144,
+      "max_context_length": 1048576,
+      "server": {
+        "served_model_name": "qwen3.8-27b",
+        "kv_cache_dtype": "fp8",
+        "tensor_parallel_size": 1,
+        "max_model_len": 262144,
+        "max_num_seqs": 4,
+        "max_num_batched_tokens": 8192,
+        "gpu_memory_utilization": 0.9,
+        "enable_prefix_caching": true,
+        "enable_auto_tool_choice": true,
+        "reasoning_parser": "qwen3",
+        "tool_call_parser": "qwen3_coder",
+        "speculative": {
+          "enabled": true,
+          "method": "mtp",
+          "num_speculative_tokens": 3
+        }
+      },
+      "server_model_path": "/models/Inferact/Qwen3.8-27B-NVFP4",
+      "artifact_bytes": 26404413873,
+      "artifacts": [
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "LICENSE",
+          "size": 11343,
+          "sha256": "50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32",
+          "id": "0ca4bce17072e379f4d3319bd6606ff68f83cbdec2a53ec8746759c9b5aa82c7",
+          "role": "license"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "chat_template.jinja",
+          "size": 8952,
+          "sha256": "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041",
+          "id": "3cccae3749a3111131d10f35761c8b29b766c84e32a162fa2a11cfb223dda41b",
+          "role": "chat-template"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "config.json",
+          "size": 19252,
+          "sha256": "267be2125ee2ec272555748c87cc636b25a96107946f05491bd6043151c7fe4e",
+          "id": "baedc776433cdcf64d1b88eb1d6179afdc873d1cd5542434dd8347fca7abe500",
+          "role": "model-config"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "generation_config.json",
+          "size": 214,
+          "sha256": "d0dbf670c6a372817b2ff92d5d47e3130d35de9c3a7164ba455fd7a88255b362",
+          "id": "0271fe18c8896629ec57f42d99ef448922317b4aa1f4cbfd3ba373ad70d8ac9a",
+          "role": "generation-config"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "hf_quant_config.json",
+          "size": 15113,
+          "sha256": "0c1004d622f835eef17ba193d8e966ecfd2d5218cbc8d25b7effff8cb4011893",
+          "id": "db29370ee38aa771d69dfe497c6f9aaef8f8e54162e905074ba3a13711d4e818",
+          "role": "quantization-config"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "merges.txt",
+          "size": 3353259,
+          "sha256": "a9d356d7bdf1ef4949e3e748e95b8e10ad9d4e2e838eddc38a0a7b6b94d1db8d",
+          "id": "28091425408b16d627a47d477ecb3711b6fd6b13288515d1e26522e78496a639",
+          "role": "tokenizer"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "model-00001-of-00006.safetensors",
+          "size": 4013662656,
+          "sha256": "4b71c5d9d5027c88d1df9f53b93ad77b8d5e428d5d6f75ae42063704d94930b9",
+          "id": "142422a38913002d8c83b1f69d647f65537d2cd0a145431d58827dafbcfd20cc",
+          "role": "model"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "model-00002-of-00006.safetensors",
+          "size": 4104675536,
+          "sha256": "d0ceb042ef003ec63e00203823eb70d4815c9fc0430ba04a5442b6b8bde19093",
+          "id": "e037f2ba7e064bb94d574f2a4ec38c9353e5dab466ab7bc06410689d70340269",
+          "role": "model"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "model-00003-of-00006.safetensors",
+          "size": 4028901296,
+          "sha256": "b633a26c1d3b97bf061585363b99d4c01650b4e3f6d0cbb18e7c7e03ca2de1e4",
+          "id": "63b8b2ccc62729adf12500bb35b84359ae4acc1a635c2b61161e4783d76753ce",
+          "role": "model"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "model-00004-of-00006.safetensors",
+          "size": 4003421984,
+          "sha256": "485ea312626e2d1f3a820d9f7545809cef1e2e77414e3977a61d32dacd370bd0",
+          "id": "5994602ea711246dc2f6eb935971c72e40b4e3a3595894482c01378a717ff1c8",
+          "role": "model"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "model-00005-of-00006.safetensors",
+          "size": 4000515080,
+          "sha256": "2aa61bab1ed252fe3cdb479286b5b7add7e8ad567501add5f6eeef3987b03d31",
+          "id": "79f2e9cdcbeb01584d508bd39368fc0277c4e831722f384631ee9e1b1016340c",
+          "role": "model"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "model-00006-of-00006.safetensors",
+          "size": 5380672368,
+          "sha256": "8214cd21a46832380c06be552c42d9514c6cc9f27d98e09e2a09e36a8bd6e6ce",
+          "id": "060d1e081c643a843700c8fec5167257a6aa33fa28ebbd71672b0dcda7b19932",
+          "role": "model"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "model.safetensors.index.json",
+          "size": 205647,
+          "sha256": "f9ba0436d933e2362fb1bfa0508931c28b68f1fddbd5b94e6d50712e36a0636c",
+          "id": "d636c697dfe3c43183c1b18933a86bb3a4272f78d71eed5e09156657ddbb52e9",
+          "role": "model-index"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "nvfp4_experts_mtp.safetensors",
+          "size": 849400392,
+          "sha256": "c2b7cb6987e40f13b1ab6e552958afe47a759f86cac0c3c4a1c29f606dc080ef",
+          "id": "33fff47156a41856a2fe6575a3c70300e4829e0cb104edbb06e2276c893e9e4a",
+          "role": "speculative-mtp"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "preprocessor_config.json",
+          "size": 390,
+          "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+          "id": "46e6c5c98fee4733533023108b2cd3306ad3feda506cc0f13daec952ad6e3e16",
+          "role": "image-preprocessor"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "tokenizer.json",
+          "size": 12809320,
+          "sha256": "0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3",
+          "id": "07c0e972890576269c9e7e01cac8db58336f0e7629cb980bdb4501f03631b9c0",
+          "role": "tokenizer"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "tokenizer_config.json",
+          "size": 17927,
+          "sha256": "5a205aa76328f59df93a9091d0496aeda4615c6b0c495cbd37e14c79c0cd0f94",
+          "id": "a44df7f24f30313218250dbfe7a94312e1acdda929de69bceb7175d6e7a1ff81",
+          "role": "tokenizer-config"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "video_preprocessor_config.json",
+          "size": 385,
+          "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13",
+          "id": "ed505c6d048a82afe827a653d16a2fa6058360e5830abd6c9a9c43cc5b946ddc",
+          "role": "video-preprocessor"
+        },
+        {
+          "repo": "Inferact/Qwen3.8-27B-NVFP4",
+          "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462",
+          "path": "vocab.json",
+          "size": 6722759,
+          "sha256": "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003",
+          "id": "d47cd90a8a56595e846019c737366c7737f010a17e1f8dc851c1b235a3505d2a",
+          "role": "tokenizer"
+        }
+      ]
+    }
+  },
+  "deployments": [
+    {
+      "id": "vllm/cuda13",
+      "runtime": "vllm",
+      "kind": "runtime-default",
+      "selection_scope": "runtime-default",
+      "provider": "unspecified",
+      "image": "vllm-cuda13",
+      "server_config": "/app/server.json",
+      "prestage_manifest": "/app/server.prestage",
+      "environment": {
+        "VLLM_SERVER_CONFIG": "/app/server.json",
+        "VLLM_PRESTAGE_MODELS": ""
+      },
+      "models": [
+        {
+          "key": "qwen3.8-27b-nvfp4",
+          "request_model_id": "qwen3.8-27b",
+          "aliases": [
+            "qwen3.8-27b",
+            "qwen-3.8-27b"
+          ],
+          "profile_id": "qwen3.8-27b",
+          "tasks": [
+            "chat",
+            "completion"
+          ],
+          "precision": "NVFP4 W4A4 compressed-tensors with FP8 attention/KV and a pinned MTP companion",
+          "capabilities": [
+            "chat",
+            "completion",
+            "reasoning",
+            "tools",
+            "structured-output",
+            "streaming"
+          ],
+          "modalities": {
+            "native": [
+              "text",
+              "image",
+              "video"
+            ],
+            "configured": [
+              "text"
+            ],
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "native_context_length": 262144,
+          "max_context_length": 1048576
+        }
+      ],
+      "server": {
+        "served_model_name": "qwen3.8-27b",
+        "kv_cache_dtype": "fp8",
+        "tensor_parallel_size": 1,
+        "max_model_len": 262144,
+        "max_num_seqs": 4,
+        "max_num_batched_tokens": 8192,
+        "gpu_memory_utilization": 0.9,
+        "enable_prefix_caching": true,
+        "enable_auto_tool_choice": true,
+        "reasoning_parser": "qwen3",
+        "tool_call_parser": "qwen3_coder",
+        "speculative": {
+          "enabled": true,
+          "method": "mtp",
+          "num_speculative_tokens": 3
+        },
+        "backend_host": "127.0.0.1",
+        "backend_port": 8001,
+        "public_port": 8000
+      },
+      "server_command": [
+        "vllm",
+        "serve",
+        "/models/Inferact/Qwen3.8-27B-NVFP4",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8001",
+        "--served-model-name",
+        "qwen3.8-27b",
+        "--tensor-parallel-size",
+        "1",
+        "--max-model-len",
+        "262144",
+        "--max-num-seqs",
+        "4",
+        "--max-num-batched-tokens",
+        "8192",
+        "--gpu-memory-utilization",
+        "0.9",
+        "--kv-cache-dtype",
+        "fp8",
+        "--reasoning-parser",
+        "qwen3",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-auto-tool-choice",
+        "--enable-prefix-caching",
+        "--speculative-config",
+        "{\"method\":\"mtp\",\"num_speculative_tokens\":3}"
+      ],
+      "residency": {
+        "runtime_mode": "text",
+        "context_length": 262144,
+        "max_num_seqs": 4,
+        "max_num_batched_tokens": 8192,
+        "gpu_memory_utilization": 0.9,
+        "tensor_parallel_size": 1,
+        "pipeline_parallel_size": 1,
+        "kv_cache_dtype": "fp8",
+        "prefix_caching": true,
+        "capacity": {
+          "effective_admitted_concurrency": "unknown-until-smoke",
+          "token_pool": "vLLM scheduler-managed",
+          "request_context_length": 262144
+        },
+        "speculative": {
+          "enabled": true,
+          "method": "mtp",
+          "num_speculative_tokens": 3
+        }
+      },
+      "staging": {
+        "source": "huggingface-only",
+        "manifest_selection": "server sidecar"
+      },
+      "verification_status": "configuration-only",
+      "runtime_modes": [
+        "text"
+      ],
+      "description": "Provider-neutral Blackwell starting lane; use a hardware scenario for tuned context and concurrency."
+    },
+    {
+      "id": "aws/g7e/2xlarge/performance",
+      "runtime": "vllm",
+      "kind": "hardware-scenario",
+      "provider": "aws",
+      "hardware": {
+        "gpu_type_id": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+        "gpu_count": 1,
+        "vram_gb": 96,
+        "compute_capability": "sm_120",
+        "host_shape": "g7e.2xlarge"
+      },
+      "compatibility": {
+        "status": "configuration-only",
+        "minimum_vllm": "0.28.0",
+        "minimum_driver": "R580",
+        "notes": "Blackwell NVFP4 route; verify multimodal inputs and MTP acceptance on the target AMI."
+      },
+      "image": "vllm-cuda13",
+      "server_config": "/server-configs/aws/g7e/2xlarge/performance.json",
+      "prestage_manifest": "/server-configs/aws/g7e/2xlarge/performance.prestage",
+      "environment": {
+        "VLLM_SERVER_CONFIG": "/server-configs/aws/g7e/2xlarge/performance.json",
+        "VLLM_PRESTAGE_MODELS": ""
+      },
+      "models": [
+        {
+          "key": "qwen3.8-27b-nvfp4",
+          "request_model_id": "qwen3.8-27b",
+          "aliases": [
+            "qwen3.8-27b",
+            "qwen-3.8-27b"
+          ],
+          "profile_id": "qwen3.8-27b",
+          "tasks": [
+            "chat",
+            "completion"
+          ],
+          "precision": "NVFP4 W4A4 compressed-tensors with FP8 attention/KV and a pinned MTP companion",
+          "capabilities": [
+            "chat",
+            "completion",
+            "reasoning",
+            "tools",
+            "structured-output",
+            "streaming"
+          ],
+          "modalities": {
+            "native": [
+              "text",
+              "image",
+              "video"
+            ],
+            "configured": [
+              "text"
+            ],
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "native_context_length": 262144,
+          "max_context_length": 1048576
+        }
+      ],
+      "server": {
+        "served_model_name": "qwen3.8-27b",
+        "kv_cache_dtype": "fp8",
+        "tensor_parallel_size": 1,
+        "max_model_len": 524288,
+        "max_num_seqs": 8,
+        "max_num_batched_tokens": 16384,
+        "gpu_memory_utilization": 0.92,
+        "enable_prefix_caching": true,
+        "enable_auto_tool_choice": true,
+        "reasoning_parser": "qwen3",
+        "tool_call_parser": "qwen3_coder",
+        "speculative": {
+          "enabled": true,
+          "method": "mtp",
+          "num_speculative_tokens": 3
+        },
+        "backend_host": "127.0.0.1",
+        "backend_port": 8001,
+        "public_port": 8000
+      },
+      "server_command": [
+        "vllm",
+        "serve",
+        "/models/Inferact/Qwen3.8-27B-NVFP4",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8001",
+        "--served-model-name",
+        "qwen3.8-27b",
+        "--tensor-parallel-size",
+        "1",
+        "--max-model-len",
+        "524288",
+        "--max-num-seqs",
+        "8",
+        "--max-num-batched-tokens",
+        "16384",
+        "--gpu-memory-utilization",
+        "0.92",
+        "--kv-cache-dtype",
+        "fp8",
+        "--reasoning-parser",
+        "qwen3",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-auto-tool-choice",
+        "--enable-prefix-caching",
+        "--speculative-config",
+        "{\"method\":\"mtp\",\"num_speculative_tokens\":3}"
+      ],
+      "residency": {
+        "runtime_mode": "text",
+        "context_length": 524288,
+        "max_num_seqs": 8,
+        "max_num_batched_tokens": 16384,
+        "gpu_memory_utilization": 0.92,
+        "tensor_parallel_size": 1,
+        "pipeline_parallel_size": 1,
+        "kv_cache_dtype": "fp8",
+        "prefix_caching": true,
+        "capacity": {
+          "effective_admitted_concurrency": "unknown-until-smoke",
+          "token_pool": "vLLM scheduler-managed",
+          "request_context_length": 524288
+        },
+        "speculative": {
+          "enabled": true,
+          "method": "mtp",
+          "num_speculative_tokens": 3
+        }
+      },
+      "staging": {
+        "source": "s3-then-huggingface",
+        "s3_bucket_env": "VLLM_S3_BUCKET_NAME",
+        "s3_prefix_env": "VLLM_S3_MODEL_PREFIX"
+      },
+      "verification_status": "configuration-only",
+      "runtime_modes": [
+        "text"
+      ],
+      "description": "High-context single-GPU Blackwell starting point with in-checkpoint MTP.",
+      "source": "deployment-scenarios/aws/g7e/2xlarge.json"
+    },
+    {
+      "id": "aws/g7e/2xlarge/target-only",
+      "runtime": "vllm",
+      "kind": "hardware-scenario",
+      "provider": "aws",
+      "hardware": {
+        "gpu_type_id": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+        "gpu_count": 1,
+        "vram_gb": 96,
+        "compute_capability": "sm_120",
+        "host_shape": "g7e.2xlarge"
+      },
+      "compatibility": {
+        "status": "configuration-only",
+        "minimum_vllm": "0.28.0",
+        "minimum_driver": "R580",
+        "notes": "Blackwell NVFP4 route; verify multimodal inputs and MTP acceptance on the target AMI."
+      },
+      "image": "vllm-cuda13",
+      "server_config": "/server-configs/aws/g7e/2xlarge/target-only.json",
+      "prestage_manifest": "/server-configs/aws/g7e/2xlarge/target-only.prestage",
+      "environment": {
+        "VLLM_SERVER_CONFIG": "/server-configs/aws/g7e/2xlarge/target-only.json",
+        "VLLM_PRESTAGE_MODELS": ""
+      },
+      "models": [
+        {
+          "key": "qwen3.8-27b-nvfp4",
+          "request_model_id": "qwen3.8-27b",
+          "aliases": [
+            "qwen3.8-27b",
+            "qwen-3.8-27b"
+          ],
+          "profile_id": "qwen3.8-27b",
+          "tasks": [
+            "chat",
+            "completion"
+          ],
+          "precision": "NVFP4 W4A4 compressed-tensors with FP8 attention/KV and a pinned MTP companion",
+          "capabilities": [
+            "chat",
+            "completion",
+            "reasoning",
+            "tools",
+            "structured-output",
+            "streaming"
+          ],
+          "modalities": {
+            "native": [
+              "text",
+              "image",
+              "video"
+            ],
+            "configured": [
+              "text"
+            ],
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "native_context_length": 262144,
+          "max_context_length": 1048576
+        }
+      ],
+      "server": {
+        "served_model_name": "qwen3.8-27b",
+        "kv_cache_dtype": "fp8",
+        "tensor_parallel_size": 1,
+        "max_model_len": 262144,
+        "max_num_seqs": 4,
+        "max_num_batched_tokens": 8192,
+        "gpu_memory_utilization": 0.9,
+        "enable_prefix_caching": true,
+        "enable_auto_tool_choice": true,
+        "reasoning_parser": "qwen3",
+        "tool_call_parser": "qwen3_coder",
+        "speculative": {
+          "enabled": false
+        },
+        "backend_host": "127.0.0.1",
+        "backend_port": 8001,
+        "public_port": 8000
+      },
+      "server_command": [
+        "vllm",
+        "serve",
+        "/models/Inferact/Qwen3.8-27B-NVFP4",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8001",
+        "--served-model-name",
+        "qwen3.8-27b",
+        "--tensor-parallel-size",
+        "1",
+        "--max-model-len",
+        "262144",
+        "--max-num-seqs",
+        "4",
+        "--max-num-batched-tokens",
+        "8192",
+        "--gpu-memory-utilization",
+        "0.9",
+        "--kv-cache-dtype",
+        "fp8",
+        "--reasoning-parser",
+        "qwen3",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-auto-tool-choice",
+        "--enable-prefix-caching"
+      ],
+      "residency": {
+        "runtime_mode": "text",
+        "context_length": 262144,
+        "max_num_seqs": 4,
+        "max_num_batched_tokens": 8192,
+        "gpu_memory_utilization": 0.9,
+        "tensor_parallel_size": 1,
+        "pipeline_parallel_size": 1,
+        "kv_cache_dtype": "fp8",
+        "prefix_caching": true,
+        "capacity": {
+          "effective_admitted_concurrency": "unknown-until-smoke",
+          "token_pool": "vLLM scheduler-managed",
+          "request_context_length": 262144
+        },
+        "speculative": {
+          "enabled": false,
+          "method": null,
+          "num_speculative_tokens": null
+        }
+      },
+      "staging": {
+        "source": "s3-then-huggingface",
+        "s3_bucket_env": "VLLM_S3_BUCKET_NAME",
+        "s3_prefix_env": "VLLM_S3_MODEL_PREFIX"
+      },
+      "verification_status": "configuration-only",
+      "runtime_modes": [
+        "text"
+      ],
+      "description": "Target-only comparison lane for MTP acceptance and throughput smoke tests.",
+      "source": "deployment-scenarios/aws/g7e/2xlarge.json"
+    },
+    {
+      "id": "local/gb10/1x/performance",
+      "runtime": "vllm",
+      "kind": "hardware-scenario",
+      "provider": "local",
+      "hardware": {
+        "gpu_type_id": "NVIDIA GB10",
+        "gpu_count": 1,
+        "vram_gb": 128,
+        "compute_capability": "sm_121",
+        "host_shape": "GB10 developer system"
+      },
+      "compatibility": {
+        "status": "configuration-only",
+        "minimum_vllm": "0.28.0",
+        "minimum_driver": "R580",
+        "notes": "Blackwell-class NVFP4 lane; verify the bundled CUDA stack and multimodal inputs on the local system."
+      },
+      "image": "vllm-cuda13",
+      "server_config": "/server-configs/local/gb10/1x/performance.json",
+      "prestage_manifest": "/server-configs/local/gb10/1x/performance.prestage",
+      "environment": {
+        "VLLM_SERVER_CONFIG": "/server-configs/local/gb10/1x/performance.json",
+        "VLLM_PRESTAGE_MODELS": ""
+      },
+      "models": [
+        {
+          "key": "qwen3.8-27b-nvfp4",
+          "request_model_id": "qwen3.8-27b",
+          "aliases": [
+            "qwen3.8-27b",
+            "qwen-3.8-27b"
+          ],
+          "profile_id": "qwen3.8-27b",
+          "tasks": [
+            "chat",
+            "completion"
+          ],
+          "precision": "NVFP4 W4A4 compressed-tensors with FP8 attention/KV and a pinned MTP companion",
+          "capabilities": [
+            "chat",
+            "completion",
+            "reasoning",
+            "tools",
+            "structured-output",
+            "streaming"
+          ],
+          "modalities": {
+            "native": [
+              "text",
+              "image",
+              "video"
+            ],
+            "configured": [
+              "text"
+            ],
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "native_context_length": 262144,
+          "max_context_length": 1048576
+        }
+      ],
+      "server": {
+        "served_model_name": "qwen3.8-27b",
+        "kv_cache_dtype": "fp8",
+        "tensor_parallel_size": 1,
+        "max_model_len": 262144,
+        "max_num_seqs": 8,
+        "max_num_batched_tokens": 16384,
+        "gpu_memory_utilization": 0.9,
+        "enable_prefix_caching": true,
+        "enable_auto_tool_choice": true,
+        "reasoning_parser": "qwen3",
+        "tool_call_parser": "qwen3_coder",
+        "speculative": {
+          "enabled": true,
+          "method": "mtp",
+          "num_speculative_tokens": 3
+        },
+        "backend_host": "127.0.0.1",
+        "backend_port": 8001,
+        "public_port": 8000
+      },
+      "server_command": [
+        "vllm",
+        "serve",
+        "/models/Inferact/Qwen3.8-27B-NVFP4",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8001",
+        "--served-model-name",
+        "qwen3.8-27b",
+        "--tensor-parallel-size",
+        "1",
+        "--max-model-len",
+        "262144",
+        "--max-num-seqs",
+        "8",
+        "--max-num-batched-tokens",
+        "16384",
+        "--gpu-memory-utilization",
+        "0.9",
+        "--kv-cache-dtype",
+        "fp8",
+        "--reasoning-parser",
+        "qwen3",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-auto-tool-choice",
+        "--enable-prefix-caching",
+        "--speculative-config",
+        "{\"method\":\"mtp\",\"num_speculative_tokens\":3}"
+      ],
+      "residency": {
+        "runtime_mode": "text",
+        "context_length": 262144,
+        "max_num_seqs": 8,
+        "max_num_batched_tokens": 16384,
+        "gpu_memory_utilization": 0.9,
+        "tensor_parallel_size": 1,
+        "pipeline_parallel_size": 1,
+        "kv_cache_dtype": "fp8",
+        "prefix_caching": true,
+        "capacity": {
+          "effective_admitted_concurrency": "unknown-until-smoke",
+          "token_pool": "vLLM scheduler-managed",
+          "request_context_length": 262144
+        },
+        "speculative": {
+          "enabled": true,
+          "method": "mtp",
+          "num_speculative_tokens": 3
+        }
+      },
+      "staging": {
+        "source": "huggingface-only"
+      },
+      "verification_status": "configuration-only",
+      "runtime_modes": [
+        "text"
+      ],
+      "description": "GB10 high-context local starting point with in-checkpoint MTP.",
+      "source": "deployment-scenarios/local/gb10/1x.json"
+    },
+    {
+      "id": "runpod/rtx-5090/1x/target-only",
+      "runtime": "vllm",
+      "kind": "hardware-scenario",
+      "provider": "runpod",
+      "hardware": {
+        "gpu_type_id": "NVIDIA GeForce RTX 5090",
+        "gpu_count": 1,
+        "vram_gb": 32,
+        "compute_capability": "sm_120",
+        "host_shape": "1x RTX 5090"
+      },
+      "compatibility": {
+        "status": "configuration-only",
+        "minimum_vllm": "0.28.0",
+        "minimum_driver": "R580",
+        "notes": "The official recipe requires enforce-eager on a single 32 GB RTX 5090; verify context headroom and MTP separately."
+      },
+      "image": "vllm-cuda13",
+      "server_config": "/server-configs/runpod/rtx-5090/1x/target-only.json",
+      "prestage_manifest": "/server-configs/runpod/rtx-5090/1x/target-only.prestage",
+      "environment": {
+        "VLLM_SERVER_CONFIG": "/server-configs/runpod/rtx-5090/1x/target-only.json",
+        "VLLM_PRESTAGE_MODELS": ""
+      },
+      "models": [
+        {
+          "key": "qwen3.8-27b-nvfp4",
+          "request_model_id": "qwen3.8-27b",
+          "aliases": [
+            "qwen3.8-27b",
+            "qwen-3.8-27b"
+          ],
+          "profile_id": "qwen3.8-27b",
+          "tasks": [
+            "chat",
+            "completion"
+          ],
+          "precision": "NVFP4 W4A4 compressed-tensors with FP8 attention/KV and a pinned MTP companion",
+          "capabilities": [
+            "chat",
+            "completion",
+            "reasoning",
+            "tools",
+            "structured-output",
+            "streaming"
+          ],
+          "modalities": {
+            "native": [
+              "text",
+              "image",
+              "video"
+            ],
+            "configured": [
+              "text"
+            ],
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "native_context_length": 262144,
+          "max_context_length": 1048576
+        }
+      ],
+      "server": {
+        "served_model_name": "qwen3.8-27b",
+        "kv_cache_dtype": "fp8",
+        "tensor_parallel_size": 1,
+        "max_model_len": 32768,
+        "max_num_seqs": 4,
+        "max_num_batched_tokens": 4096,
+        "gpu_memory_utilization": 0.9,
+        "enable_prefix_caching": true,
+        "enable_auto_tool_choice": true,
+        "reasoning_parser": "qwen3",
+        "tool_call_parser": "qwen3_coder",
+        "speculative": {
+          "enabled": false
+        },
+        "enforce_eager": true,
+        "backend_host": "127.0.0.1",
+        "backend_port": 8001,
+        "public_port": 8000
+      },
+      "server_command": [
+        "vllm",
+        "serve",
+        "/models/Inferact/Qwen3.8-27B-NVFP4",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8001",
+        "--served-model-name",
+        "qwen3.8-27b",
+        "--tensor-parallel-size",
+        "1",
+        "--max-model-len",
+        "32768",
+        "--max-num-seqs",
+        "4",
+        "--max-num-batched-tokens",
+        "4096",
+        "--gpu-memory-utilization",
+        "0.9",
+        "--kv-cache-dtype",
+        "fp8",
+        "--reasoning-parser",
+        "qwen3",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-auto-tool-choice",
+        "--enable-prefix-caching",
+        "--enforce-eager"
+      ],
+      "residency": {
+        "runtime_mode": "text",
+        "context_length": 32768,
+        "max_num_seqs": 4,
+        "max_num_batched_tokens": 4096,
+        "gpu_memory_utilization": 0.9,
+        "tensor_parallel_size": 1,
+        "pipeline_parallel_size": 1,
+        "kv_cache_dtype": "fp8",
+        "prefix_caching": true,
+        "capacity": {
+          "effective_admitted_concurrency": "unknown-until-smoke",
+          "token_pool": "vLLM scheduler-managed",
+          "request_context_length": 32768
+        },
+        "speculative": {
+          "enabled": false,
+          "method": null,
+          "num_speculative_tokens": null
+        }
+      },
+      "staging": {
+        "source": "huggingface-only"
+      },
+      "verification_status": "configuration-only",
+      "runtime_modes": [
+        "text"
+      ],
+      "description": "Single-RTX-5090 32 GB fit lane using eager execution and a conservative context cap.",
+      "source": "deployment-scenarios/runpod/rtx-5090/1x.json"
+    },
+    {
+      "id": "runpod/rtx-5090/1x/performance",
+      "runtime": "vllm",
+      "kind": "hardware-scenario",
+      "provider": "runpod",
+      "hardware": {
+        "gpu_type_id": "NVIDIA GeForce RTX 5090",
+        "gpu_count": 1,
+        "vram_gb": 32,
+        "compute_capability": "sm_120",
+        "host_shape": "1x RTX 5090"
+      },
+      "compatibility": {
+        "status": "configuration-only",
+        "minimum_vllm": "0.28.0",
+        "minimum_driver": "R580",
+        "notes": "The official recipe requires enforce-eager on a single 32 GB RTX 5090; verify context headroom and MTP separately."
+      },
+      "image": "vllm-cuda13",
+      "server_config": "/server-configs/runpod/rtx-5090/1x/performance.json",
+      "prestage_manifest": "/server-configs/runpod/rtx-5090/1x/performance.prestage",
+      "environment": {
+        "VLLM_SERVER_CONFIG": "/server-configs/runpod/rtx-5090/1x/performance.json",
+        "VLLM_PRESTAGE_MODELS": ""
+      },
+      "models": [
+        {
+          "key": "qwen3.8-27b-nvfp4",
+          "request_model_id": "qwen3.8-27b",
+          "aliases": [
+            "qwen3.8-27b",
+            "qwen-3.8-27b"
+          ],
+          "profile_id": "qwen3.8-27b",
+          "tasks": [
+            "chat",
+            "completion"
+          ],
+          "precision": "NVFP4 W4A4 compressed-tensors with FP8 attention/KV and a pinned MTP companion",
+          "capabilities": [
+            "chat",
+            "completion",
+            "reasoning",
+            "tools",
+            "structured-output",
+            "streaming"
+          ],
+          "modalities": {
+            "native": [
+              "text",
+              "image",
+              "video"
+            ],
+            "configured": [
+              "text"
+            ],
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "native_context_length": 262144,
+          "max_context_length": 1048576
+        }
+      ],
+      "server": {
+        "served_model_name": "qwen3.8-27b",
+        "kv_cache_dtype": "fp8",
+        "tensor_parallel_size": 1,
+        "max_model_len": 131072,
+        "max_num_seqs": 2,
+        "max_num_batched_tokens": 4096,
+        "gpu_memory_utilization": 0.9,
+        "enable_prefix_caching": true,
+        "enable_auto_tool_choice": true,
+        "reasoning_parser": "qwen3",
+        "tool_call_parser": "qwen3_coder",
+        "speculative": {
+          "enabled": true,
+          "method": "mtp",
+          "num_speculative_tokens": 3
+        },
+        "enforce_eager": true,
+        "backend_host": "127.0.0.1",
+        "backend_port": 8001,
+        "public_port": 8000
+      },
+      "server_command": [
+        "vllm",
+        "serve",
+        "/models/Inferact/Qwen3.8-27B-NVFP4",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8001",
+        "--served-model-name",
+        "qwen3.8-27b",
+        "--tensor-parallel-size",
+        "1",
+        "--max-model-len",
+        "131072",
+        "--max-num-seqs",
+        "2",
+        "--max-num-batched-tokens",
+        "4096",
+        "--gpu-memory-utilization",
+        "0.9",
+        "--kv-cache-dtype",
+        "fp8",
+        "--reasoning-parser",
+        "qwen3",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-auto-tool-choice",
+        "--enable-prefix-caching",
+        "--enforce-eager",
+        "--speculative-config",
+        "{\"method\":\"mtp\",\"num_speculative_tokens\":3}"
+      ],
+      "residency": {
+        "runtime_mode": "text",
+        "context_length": 131072,
+        "max_num_seqs": 2,
+        "max_num_batched_tokens": 4096,
+        "gpu_memory_utilization": 0.9,
+        "tensor_parallel_size": 1,
+        "pipeline_parallel_size": 1,
+        "kv_cache_dtype": "fp8",
+        "prefix_caching": true,
+        "capacity": {
+          "effective_admitted_concurrency": "unknown-until-smoke",
+          "token_pool": "vLLM scheduler-managed",
+          "request_context_length": 131072
+        },
+        "speculative": {
+          "enabled": true,
+          "method": "mtp",
+          "num_speculative_tokens": 3
+        }
+      },
+      "staging": {
+        "source": "huggingface-only"
+      },
+      "verification_status": "configuration-only",
+      "runtime_modes": [
+        "text"
+      ],
+      "description": "Experimental longer-context RTX-5090 comparison lane; smoke before use.",
+      "source": "deployment-scenarios/runpod/rtx-5090/1x.json"
+    },
+    {
+      "id": "runpod/rtx-pro-6000/1x/performance",
+      "runtime": "vllm",
+      "kind": "hardware-scenario",
+      "provider": "runpod",
+      "hardware": {
+        "gpu_type_id": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+        "gpu_count": 1,
+        "vram_gb": 96,
+        "compute_capability": "sm_120",
+        "host_shape": "1x RTX PRO 6000"
+      },
+      "compatibility": {
+        "status": "configuration-only",
+        "minimum_vllm": "0.28.0",
+        "minimum_driver": "R580",
+        "notes": "Verify the exact RunPod image, model volume, multimodal inputs, and MTP acceptance before production use."
+      },
+      "image": "vllm-cuda13",
+      "server_config": "/server-configs/runpod/rtx-pro-6000/1x/performance.json",
+      "prestage_manifest": "/server-configs/runpod/rtx-pro-6000/1x/performance.prestage",
+      "environment": {
+        "VLLM_SERVER_CONFIG": "/server-configs/runpod/rtx-pro-6000/1x/performance.json",
+        "VLLM_PRESTAGE_MODELS": ""
+      },
+      "models": [
+        {
+          "key": "qwen3.8-27b-nvfp4",
+          "request_model_id": "qwen3.8-27b",
+          "aliases": [
+            "qwen3.8-27b",
+            "qwen-3.8-27b"
+          ],
+          "profile_id": "qwen3.8-27b",
+          "tasks": [
+            "chat",
+            "completion"
+          ],
+          "precision": "NVFP4 W4A4 compressed-tensors with FP8 attention/KV and a pinned MTP companion",
+          "capabilities": [
+            "chat",
+            "completion",
+            "reasoning",
+            "tools",
+            "structured-output",
+            "streaming"
+          ],
+          "modalities": {
+            "native": [
+              "text",
+              "image",
+              "video"
+            ],
+            "configured": [
+              "text"
+            ],
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "native_context_length": 262144,
+          "max_context_length": 1048576
+        }
+      ],
+      "server": {
+        "served_model_name": "qwen3.8-27b",
+        "kv_cache_dtype": "fp8",
+        "tensor_parallel_size": 1,
+        "max_model_len": 524288,
+        "max_num_seqs": 8,
+        "max_num_batched_tokens": 16384,
+        "gpu_memory_utilization": 0.92,
+        "enable_prefix_caching": true,
+        "enable_auto_tool_choice": true,
+        "reasoning_parser": "qwen3",
+        "tool_call_parser": "qwen3_coder",
+        "speculative": {
+          "enabled": true,
+          "method": "mtp",
+          "num_speculative_tokens": 3
+        },
+        "backend_host": "127.0.0.1",
+        "backend_port": 8001,
+        "public_port": 8000
+      },
+      "server_command": [
+        "vllm",
+        "serve",
+        "/models/Inferact/Qwen3.8-27B-NVFP4",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8001",
+        "--served-model-name",
+        "qwen3.8-27b",
+        "--tensor-parallel-size",
+        "1",
+        "--max-model-len",
+        "524288",
+        "--max-num-seqs",
+        "8",
+        "--max-num-batched-tokens",
+        "16384",
+        "--gpu-memory-utilization",
+        "0.92",
+        "--kv-cache-dtype",
+        "fp8",
+        "--reasoning-parser",
+        "qwen3",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-auto-tool-choice",
+        "--enable-prefix-caching",
+        "--speculative-config",
+        "{\"method\":\"mtp\",\"num_speculative_tokens\":3}"
+      ],
+      "residency": {
+        "runtime_mode": "text",
+        "context_length": 524288,
+        "max_num_seqs": 8,
+        "max_num_batched_tokens": 16384,
+        "gpu_memory_utilization": 0.92,
+        "tensor_parallel_size": 1,
+        "pipeline_parallel_size": 1,
+        "kv_cache_dtype": "fp8",
+        "prefix_caching": true,
+        "capacity": {
+          "effective_admitted_concurrency": "unknown-until-smoke",
+          "token_pool": "vLLM scheduler-managed",
+          "request_context_length": 524288
+        },
+        "speculative": {
+          "enabled": true,
+          "method": "mtp",
+          "num_speculative_tokens": 3
+        }
+      },
+      "staging": {
+        "source": "s3-then-huggingface",
+        "s3_bucket_env": "VLLM_S3_BUCKET_NAME",
+        "s3_prefix_env": "VLLM_S3_MODEL_PREFIX"
+      },
+      "verification_status": "configuration-only",
+      "runtime_modes": [
+        "text"
+      ],
+      "description": "RunPod Blackwell high-context lane with in-checkpoint MTP.",
+      "source": "deployment-scenarios/runpod/rtx-pro-6000/1x.json"
+    },
+    {
+      "id": "runpod/rtx-pro-6000/1x/target-only",
+      "runtime": "vllm",
+      "kind": "hardware-scenario",
+      "provider": "runpod",
+      "hardware": {
+        "gpu_type_id": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+        "gpu_count": 1,
+        "vram_gb": 96,
+        "compute_capability": "sm_120",
+        "host_shape": "1x RTX PRO 6000"
+      },
+      "compatibility": {
+        "status": "configuration-only",
+        "minimum_vllm": "0.28.0",
+        "minimum_driver": "R580",
+        "notes": "Verify the exact RunPod image, model volume, multimodal inputs, and MTP acceptance before production use."
+      },
+      "image": "vllm-cuda13",
+      "server_config": "/server-configs/runpod/rtx-pro-6000/1x/target-only.json",
+      "prestage_manifest": "/server-configs/runpod/rtx-pro-6000/1x/target-only.prestage",
+      "environment": {
+        "VLLM_SERVER_CONFIG": "/server-configs/runpod/rtx-pro-6000/1x/target-only.json",
+        "VLLM_PRESTAGE_MODELS": ""
+      },
+      "models": [
+        {
+          "key": "qwen3.8-27b-nvfp4",
+          "request_model_id": "qwen3.8-27b",
+          "aliases": [
+            "qwen3.8-27b",
+            "qwen-3.8-27b"
+          ],
+          "profile_id": "qwen3.8-27b",
+          "tasks": [
+            "chat",
+            "completion"
+          ],
+          "precision": "NVFP4 W4A4 compressed-tensors with FP8 attention/KV and a pinned MTP companion",
+          "capabilities": [
+            "chat",
+            "completion",
+            "reasoning",
+            "tools",
+            "structured-output",
+            "streaming"
+          ],
+          "modalities": {
+            "native": [
+              "text",
+              "image",
+              "video"
+            ],
+            "configured": [
+              "text"
+            ],
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "native_context_length": 262144,
+          "max_context_length": 1048576
+        }
+      ],
+      "server": {
+        "served_model_name": "qwen3.8-27b",
+        "kv_cache_dtype": "fp8",
+        "tensor_parallel_size": 1,
+        "max_model_len": 262144,
+        "max_num_seqs": 4,
+        "max_num_batched_tokens": 8192,
+        "gpu_memory_utilization": 0.9,
+        "enable_prefix_caching": true,
+        "enable_auto_tool_choice": true,
+        "reasoning_parser": "qwen3",
+        "tool_call_parser": "qwen3_coder",
+        "speculative": {
+          "enabled": false
+        },
+        "backend_host": "127.0.0.1",
+        "backend_port": 8001,
+        "public_port": 8000
+      },
+      "server_command": [
+        "vllm",
+        "serve",
+        "/models/Inferact/Qwen3.8-27B-NVFP4",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8001",
+        "--served-model-name",
+        "qwen3.8-27b",
+        "--tensor-parallel-size",
+        "1",
+        "--max-model-len",
+        "262144",
+        "--max-num-seqs",
+        "4",
+        "--max-num-batched-tokens",
+        "8192",
+        "--gpu-memory-utilization",
+        "0.9",
+        "--kv-cache-dtype",
+        "fp8",
+        "--reasoning-parser",
+        "qwen3",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-auto-tool-choice",
+        "--enable-prefix-caching"
+      ],
+      "residency": {
+        "runtime_mode": "text",
+        "context_length": 262144,
+        "max_num_seqs": 4,
+        "max_num_batched_tokens": 8192,
+        "gpu_memory_utilization": 0.9,
+        "tensor_parallel_size": 1,
+        "pipeline_parallel_size": 1,
+        "kv_cache_dtype": "fp8",
+        "prefix_caching": true,
+        "capacity": {
+          "effective_admitted_concurrency": "unknown-until-smoke",
+          "token_pool": "vLLM scheduler-managed",
+          "request_context_length": 262144
+        },
+        "speculative": {
+          "enabled": false,
+          "method": null,
+          "num_speculative_tokens": null
+        }
+      },
+      "staging": {
+        "source": "s3-then-huggingface",
+        "s3_bucket_env": "VLLM_S3_BUCKET_NAME",
+        "s3_prefix_env": "VLLM_S3_MODEL_PREFIX"
+      },
+      "verification_status": "configuration-only",
+      "runtime_modes": [
+        "text"
+      ],
+      "description": "Target-only comparison lane for MTP acceptance and throughput smoke tests.",
+      "source": "deployment-scenarios/runpod/rtx-pro-6000/1x.json"
+    }
+  ]
+}

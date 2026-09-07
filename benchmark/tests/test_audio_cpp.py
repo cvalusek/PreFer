@@ -290,14 +290,17 @@ class AudioCppTests(unittest.TestCase):
         self.assertIn("AUDIO_PRESTAGE_MODELS=${AUDIO_PRESTAGE_MODELS:-}", compose)
         self.assertIn("AUDIO_DOWNLOAD_JOBS=${AUDIO_DOWNLOAD_JOBS:-4}", compose)
         self.assertIn("HF_XET_HIGH_PERFORMANCE=${HF_XET_HIGH_PERFORMANCE:-1}", compose)
-        self.assertIn("type=raw,value=audio-cuda12", workflow)
         self.assertIn("type=sha,prefix=audio-cuda12-sha-", workflow)
-        self.assertIn("type=raw,value=audio-cpu", workflow)
         self.assertIn("type=sha,prefix=audio-cpu-sha-", workflow)
+        self.assertIn('"$image_repository:audio-cuda12"', workflow)
+        self.assertIn('"$image_repository:audio-cuda12-preview"', workflow)
+        self.assertIn('"$image_repository:audio-cpu"', workflow)
+        self.assertIn('"$image_repository:audio-cpu-preview"', workflow)
         self.assertIn("name: prefer-release-${{ github.sha }}", workflow)
         self.assertIn("benchmark.tests.test_artifact_downloads", workflow)
-        self.assertIn("type=raw,value=latest", workflow)
-        self.assertIn("type=raw,value=llama-cuda", workflow)
+        self.assertIn('"$image_repository:latest"', workflow)
+        self.assertIn('"$image_repository:llama-cuda"', workflow)
+        self.assertIn('"$image_repository:llama-cuda-preview"', workflow)
 
 
 if __name__ == "__main__":

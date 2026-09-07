@@ -19,6 +19,8 @@ class GroupedReleaseTests(unittest.TestCase):
             "audio_cuda": "sha256:" + "2" * 64,
             "audio_cpu": "sha256:" + "3" * 64,
             "image": image_digest or "sha256:" + "4" * 64,
+            "sglang": "sha256:" + "5" * 64,
+            "vllm": "sha256:" + "6" * 64,
         }
         return subprocess.run(
             [
@@ -38,6 +40,10 @@ class GroupedReleaseTests(unittest.TestCase):
                 digests["audio_cpu"],
                 "--image-digest",
                 digests["image"],
+                "--sglang-digest",
+                digests["sglang"],
+                "--vllm-digest",
+                digests["vllm"],
                 "--llama-inventory",
                 str(REPO_ROOT / "docker" / "llama-cpp" / "deployment-inventory.generated.json"),
                 "--audio-inventory",
@@ -47,6 +53,20 @@ class GroupedReleaseTests(unittest.TestCase):
                     REPO_ROOT
                     / "docker"
                     / "stable-diffusion-cpp"
+                    / "deployment-inventory.generated.json"
+                ),
+                "--sglang-inventory",
+                str(
+                    REPO_ROOT
+                    / "docker"
+                    / "sglang"
+                    / "deployment-inventory.generated.json"
+                ),
+                "--vllm-inventory",
+                str(
+                    REPO_ROOT
+                    / "docker"
+                    / "vllm"
                     / "deployment-inventory.generated.json"
                 ),
                 "--output-dir",
@@ -73,7 +93,10 @@ class GroupedReleaseTests(unittest.TestCase):
             )
             self.assertFalse(manifest["distribution"]["model_weights_embedded"])
             self.assertTrue(manifest["distribution"]["models_stage_at_runtime"])
-            self.assertEqual(set(manifest["engines"]), {"llama", "audio", "image"})
+            self.assertEqual(
+                set(manifest["engines"]),
+                {"llama", "audio", "image", "sglang", "vllm"},
+            )
 
             expected_images = {
                 ("llama", "cuda"): (
@@ -92,6 +115,14 @@ class GroupedReleaseTests(unittest.TestCase):
                     "image-cuda12-sha-abcdef0",
                     ["linux/amd64"],
                 ),
+                ("sglang", "cuda13"): (
+                    "sglang-cuda13-sha-abcdef0",
+                    ["linux/amd64", "linux/arm64"],
+                ),
+                ("vllm", "cuda13"): (
+                    "vllm-cuda13-sha-abcdef0",
+                    ["linux/amd64", "linux/arm64"],
+                ),
             }
             for (engine, variant), (tag, platforms) in expected_images.items():
                 image = manifest["engines"][engine]["images"][variant]
@@ -105,6 +136,14 @@ class GroupedReleaseTests(unittest.TestCase):
                 "image": REPO_ROOT
                 / "docker"
                 / "stable-diffusion-cpp"
+                / "deployment-inventory.generated.json",
+                "sglang": REPO_ROOT
+                / "docker"
+                / "sglang"
+                / "deployment-inventory.generated.json",
+                "vllm": REPO_ROOT
+                / "docker"
+                / "vllm"
                 / "deployment-inventory.generated.json",
             }
             for engine, source in sources.items():
@@ -127,6 +166,8 @@ class GroupedReleaseTests(unittest.TestCase):
             "docker/llama-cpp/**",
             "docker/audio-cpp/**",
             "docker/stable-diffusion-cpp/**",
+            "docker/sglang/**",
+            "docker/vllm/**",
             "release/**",
         ):
             self.assertIn(watched_path, workflow)
@@ -135,19 +176,50 @@ class GroupedReleaseTests(unittest.TestCase):
             "audio-cuda12-sha-",
             "audio-cpu-sha-",
             "image-cuda12-sha-",
+            "sglang-cuda13-sha-",
+            "vllm-cuda13-sha-",
         ):
             self.assertIn(immutable_tag, workflow)
-        self.assertIn("needs: [llama, audio_cuda, audio_cpu, image]", workflow)
+        self.assertIn("needs: [llama, audio_cuda, audio_cpu, image, sglang, vllm]", workflow)
         self.assertIn("name: prefer-release-${{ github.sha }}", workflow)
         self.assertIn("gh release create", workflow)
         self.assertIn("prefer-release.json", workflow)
+
+    def test_release_channels_are_branch_scoped(self) -> None:
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("branches: [main, develop]", workflow)
+        self.assertIn("prefer-release-${{ github.ref_name }}", workflow)
+        for preview_tag in (
+            "llama-cuda-preview",
+            "audio-cuda12-preview",
+            "audio-cpu-preview",
+            "image-cuda12-preview",
+            "vllm-cuda-preview",
+        ):
+            self.assertIn(preview_tag, workflow)
+        for stable_tag in (
+            '"$image_repository:latest"',
+            '"$image_repository:llama-cuda"',
+            '"$image_repository:audio-cuda12"',
+            '"$image_repository:audio-cpu"',
+            '"$image_repository:image-cuda12"',
+            '"$image_repository:vllm-cuda"',
+        ):
+            self.assertIn(stable_tag, workflow)
+        self.assertIn('release_channel="stable"', workflow)
+        self.assertIn('release_channel="preview"', workflow)
+        self.assertIn("--prerelease --latest=false", workflow)
+        self.assertIn("--prerelease=false --latest", workflow)
 
     def test_release_schema_is_checked_in_and_parseable(self) -> None:
         schema = json.loads(
             (REPO_ROOT / "release" / "prefer-release.schema.json").read_text(encoding="utf-8")
         )
         self.assertEqual(schema["properties"]["schema_version"]["const"], "prefer.release.v1")
-        self.assertEqual(set(schema["properties"]["engines"]["required"]), {"llama", "audio", "image"})
+        self.assertEqual(
+            set(schema["properties"]["engines"]["required"]),
+            {"llama", "audio", "image", "sglang", "vllm"},
+        )
 
 
 if __name__ == "__main__":

@@ -8,6 +8,12 @@ local, RunPod, and AWS hardware. Its audio.cpp images provide pinned speech,
 music-generation, and speech-to-speech routes behind a separate audio API. Its
 stable-diffusion.cpp image provides curated image generation and editing behind
 OpenAI-style image endpoints without requiring ComfyUI workflows.
+Its opt-in SGLang image serves Qwen3.8-27B NVFP4 on modern NVIDIA Blackwell
+GPUs through a separate OpenAI-compatible text API and MiniMax H3 through a
+local-file-aware video API.
+Its opt-in vLLM image serves the official upstream Qwen3.8-27B Inferact NVFP4
+text lane through a separate OpenAI-compatible gateway, with Blackwell
+hardware scenarios and runtime model staging.
 
 Published runtime, hosted-model, and preset changes are recorded by immutable
 grouped release SHA in the [PreFer changelog](CHANGELOG.md).
@@ -56,6 +62,16 @@ docker/
     runtime.json              pinned upstream CUDA runtime and Linux platform
     models/<family>/<model>/  immutable image pipelines and quant lanes
     deployment-inventory.generated.json  controller-readable image inventory
+    generate.py               deterministic config/downloader/inventory generator
+  sglang/             PreFer's opt-in SGLang CUDA 13 text and video image
+    runtime.json              pinned SGLang image, source, and GPU requirements
+    models/<family>/<model>/  immutable NVFP4 model artifacts and lineage
+    deployment-inventory.generated.json  controller-readable SGLang inventory
+    generate.py               deterministic config/downloader/inventory generator
+  vllm/               PreFer's opt-in official vLLM CUDA 13 text image
+    runtime.json              pinned upstream vLLM image, source, and GPU requirements
+    models/<family>/<model>/  immutable NVFP4 model artifacts and lineage
+    deployment-inventory.generated.json  controller-readable vLLM inventory
     generate.py               deterministic config/downloader/inventory generator
 aws/                  EC2 deployment (AMI + boot scripts + CDK); see aws/DESIGN.md
 release/              grouped-release manifest builder and public JSON schema
@@ -117,6 +133,36 @@ starts the selected worker and the router retains only one model. See
 [the image runtime guide](docker/stable-diffusion-cpp/README.md) for request
 examples and hardware lanes.
 
+The SGLang service is an opt-in alternative text backend for Qwen3.8-27B and a
+MiniMax H3 video backend. It uses a shared-compatible `/models` layout and
+defaults to the same named model volume as llama.cpp, but has its own generated
+server configs and stricter per-file verification. Matching
+repository/path/revision files can be reused by either launcher; model keys and
+server configs remain runtime-specific. AWS can optionally use the same S3
+bucket convention as llama.cpp for exact read-through staging with HF fallback;
+local and RunPod scenarios remain HF-only by default. H3 uses `/inputs` and
+`/outputs` volumes, rejects remote media URLs, and exposes `/v1/videos`
+through a warmup-aware gateway.
+See
+[the SGLang runtime guide](docker/sglang/README.md)
+for Blackwell shapes, model controls, and its deliberately deferred Flash lane.
+
+The vLLM service is an opt-in alternative text backend for the official
+upstream Qwen3.8-27B Inferact NVFP4 lane. It uses a warmup-aware gateway,
+keeps model weights on external storage, and defaults to the same named model
+volume as llama.cpp. Qwen3.8 Flash remains deferred because it requires a
+dedicated image and larger checkpoint. See
+[the vLLM runtime guide](docker/vllm/README.md) for the pinned runtime,
+Blackwell shapes, MTP controls, and verification gates.
+
+To run it instead of the default llama text service:
+
+```bash
+docker compose --profile vllm build vllm
+docker compose --profile vllm up vllm
+curl http://localhost:8084/v1/models
+```
+
 ## Environment
 
 Most local configuration lives in `.env`; see [.env.example](.env.example).
@@ -160,11 +206,41 @@ Useful knobs:
 - `IMAGE_DOWNLOAD_JOBS` bounds independent image artifact transfers from 1 to
   8 (default `4`). Image discovery remains available while those jobs run.
 - `PREFER_IMAGE_MODEL_VOLUME` names the persistent image `/models` volume.
+- `SGLANG_PORT` sets the opt-in SGLang host port (default `8083`).
+- `PREFER_SGLANG_VIDEO_INPUT_VOLUME` and
+  `PREFER_SGLANG_VIDEO_OUTPUT_VOLUME` name the persistent H3 media volumes.
+- `SGLANG_VIDEO_MAX_INPUT_BYTES`, `SGLANG_READY_DELAY_SECONDS`, and
+  `SGLANG_READY_PROBE_SECONDS` bound uploads and warmup polling.
+- `SGLANG_SERVER_CONFIG` selects a generated SGLang deployment config. Blank
+  uses the safe target-only default; the selected config also selects its
+  `.prestage` sidecar when `SGLANG_PRESTAGE_MODELS` is blank.
+- `SGLANG_PRESTAGE_MODELS` selects the pinned SGLang package to stage. Blank
+  follows the selected config; use `none` to skip downloads.
+- `SGLANG_DOWNLOAD_JOBS` bounds independent SGLang artifact transfers from 1
+  through 8 (default `4`). `PREFER_SGLANG_MODEL_VOLUME` defaults to the same
+  named `prefer-model-cache` volume used by llama.cpp, so the two downloaders
+  share the `/models` layout.
+- `SGLANG_S3_BUCKET_NAME` and `SGLANG_S3_MODEL_PREFIX` opt SGLang into AWS
+  read-through staging; the common `S3_BUCKET_NAME` and `S3_MODEL_PREFIX` names
+  are also accepted. Exact S3 objects are verified before publication, and an
+  S3 miss falls back to the pinned Hugging Face revision.
+- `VLLM_PORT` sets the opt-in vLLM host port (default `8084`), and
+  `PREFER_VLLM_MODEL_VOLUME` names its persistent model volume. The default is
+  the shared `prefer-model-cache` volume.
+- `VLLM_SERVER_CONFIG` selects a generated vLLM configuration; blank uses the
+  provider-neutral native-context lane. `VLLM_PRESTAGE_MODELS` selects the
+  pinned model key, with the selected `.prestage` sidecar used when blank.
+- `VLLM_DOWNLOAD_JOBS` bounds vLLM artifact transfers from one through eight.
+  `VLLM_S3_BUCKET_NAME` and `VLLM_S3_MODEL_PREFIX` enable optional S3
+  read-through, with the common `S3_BUCKET_NAME` and `S3_MODEL_PREFIX` names
+  accepted as compatibility aliases.
 
 Audio and image staging use Hugging Face's `hf` CLI and Xet on their separate
 model volumes. Interrupted transfers resume from hidden, stable staging paths;
 size and SHA-256 are verified before atomic publication. A verified completion
-marker avoids rehashing unchanged multi-gigabyte files on every restart.
+marker avoids rehashing unchanged multi-gigabyte files on every restart. SGLang
+uses the same exact artifact layout and writes the llama-compatible local model
+marker after its stricter per-file checks.
 
 ## Contract and benchmark harness
 
@@ -208,32 +284,54 @@ Certificate files under `docker/certs/` are ignored by git.
 
 ## Grouped releases and images
 
-GitHub Actions build all three runtimes as one PreFer release whenever any
-runtime changes. One `sha-<commit>` release therefore identifies the exact
-llama CUDA, Audio CUDA/CPU, and Image CUDA images produced from the same source
-revision. The existing `latest` and `sha-<commit>` tags remain llama.cpp
-compatibility tags; explicit tags are `llama-cuda[-sha-<commit>]`,
-`audio-cuda12[-sha-<commit>]`, `audio-cpu[-sha-<commit>]`, and
-`image-cuda12[-sha-<commit>]`. Image generation remains Linux AMD64 only;
-Audio publishes Linux AMD64 and ARM64 variants.
+GitHub Actions build all six runtime images as one PreFer release whenever any
+runtime changes. The `main` branch is the stable line and `develop` is the
+opt-in preview line. One `sha-<commit>` release therefore identifies the exact
+llama CUDA, Audio CUDA/CPU, Image CUDA, SGLang CUDA, and vLLM CUDA images produced from the
+same source revision. Releases built from `develop` are GitHub prereleases;
+releases built from `main` are stable releases. Existing releases from before
+the channel split remain stable.
+
+Stable moving tags remain `latest`, `llama-cuda`, `audio-cuda12`, `audio-cpu`,
+`image-cuda12`, `sglang-cuda`, and `vllm-cuda`. Preview users opt in through `preview`,
+`llama-cuda-preview`, `audio-cuda12-preview`, `audio-cpu-preview`,
+`image-cuda12-preview`, `sglang-cuda-preview`, or `vllm-cuda-preview`. The generic `latest` and
+`preview` tags are llama.cpp compatibility aliases. Immutable tags remain
+`sha-<commit>`, `llama-cuda[-sha-<commit>]`, `audio-cuda12[-sha-<commit>]`,
+`audio-cpu[-sha-<commit>]`, `image-cuda12[-sha-<commit>]`, and
+`sglang-cuda13[-sha-<commit>]`, and `vllm-cuda13[-sha-<commit>]`. Image generation
+remains Linux AMD64 only; Audio, SGLang, and vLLM publish Linux AMD64 and ARM64
+variants.
 
 The immutable GitHub release and the commit-named
 `prefer-release-<full-commit>` workflow artifact contain one
-`prefer-release.json`, its public schema, all three deployment inventories, and
+`prefer-release.json`, its public schema, all five deployment inventories, and
 checksums. Controllers select the needed engine/backend from that manifest and
 then use the referenced inventory for its model, hardware, and configuration
 choices. The manifest binds exact image digests; it does not contain model
 weights. Models continue to stage at runtime on external persistent storage.
 
+Controllers may expose `stable` and `preview` as a branch selector: resolve
+stable releases from `main` and preview releases from `develop`, then accept
+only a SHA whose grouped `prefer-release.json` was published successfully.
+They should deploy the immutable image references from that manifest rather
+than compose moving engine tags. Promote tested preview work by merging it to
+`main`; the resulting stable branch build publishes the stable grouped release.
+
 Additional llama models and deployment shapes
 belong in `models/` and `preset-scenarios/`; regenerate and commit their
 deterministic outputs. Every image contains its resolved inventory at
 `/deployment-inventory.json` and carries an OCI label naming that path and
-schema. The grouped release publishes all three inventories together. NeurOn
+schema. The grouped release publishes all five inventories together. NeurOn
 can use them to select the exact preset, prestage keys, runtime, provider GPU ID, GPU
 count, context, concurrency, cache types, and API-safe `request_model_id`
 without parsing the documentation. The inventory's `section` field is the INI
 configuration identity and must not be used as the warmup model ID.
+
+The vLLM inventory follows the same controller contract for its Blackwell
+scenarios, immutable NVFP4 artifact bundle, runtime MTP controls, and deferred
+Flash route. It is embedded at `/deployment-inventory.json` and included as
+`prefer-vllm-deployment-inventory.json` in the grouped release.
 
 The audio release follows the same controller contract. Its inventory adds
 AWS, local, and exact RunPod card choices; all-capabilities, related-capability,
@@ -247,6 +345,14 @@ prestaging, one-model residency, AWS/local/RunPod hardware choices, and the
 selected `IMAGE_SERVER_CONFIG`. The grouped release includes it as
 `prefer-image-deployment-inventory.json`.
 
+The SGLang release follows the same inventory contract. Its inventory adds the
+Qwen3.8-27B NVFP4 and MiniMax H3 lineages, exact safetensor and multimodal
+asset hashes, text and diffusion hardware gates, generated
+context/concurrency/cache settings, Qwen reasoning/tool-parser controls,
+video task aliases, local-file input policy, and the separate
+`prefer-sglang` Compose profile. The grouped release includes it as
+`prefer-sglang-deployment-inventory.json`.
+
 RunPod presets are organized as `presets/runpod/<gpu>/1x/`; the initial
 multi-GPU exception is
 `presets/runpod/rtx-pro-6000/2x/deepseek-v4-flash.ini`. Generic household GPU
@@ -257,4 +363,5 @@ See [the llama.cpp runtime guide](docker/llama-cpp/README.md) for LLM model
 details, preset tiers, aliases, and operational notes, and
 [the audio.cpp runtime guide](docker/audio-cpp/README.md) for speech and music
 details, and [the image runtime guide](docker/stable-diffusion-cpp/README.md)
-for image generation and editing.
+for image generation and editing, and [the SGLang runtime guide](docker/sglang/README.md)
+for the Qwen3.8-27B Blackwell and MiniMax H3 video routes.

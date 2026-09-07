@@ -325,7 +325,7 @@ layout means multiple presets/services can safely share one volume.
 | [unsloth/gemma-4-31B-it-qat-GGUF](https://huggingface.co/unsloth/gemma-4-31B-it-qat-GGUF) | `UD-Q4_K_XL` | Revision-pinned QAT target + same-repo Q4_0 MTP + F16 projector; AWS g6e |
 | [unsloth/Qwen3.5-9B-GGUF](https://huggingface.co/unsloth/Qwen3.5-9B-GGUF) | `UD-Q4_K_XL` | Revision-pinned target + F16 projector; no speculative decoding; AWS g6 |
 | [unsloth/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF) | `UD-Q6_K_XL` | MTP draft is built into the main GGUF, no separate `model-draft` |
-| [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF) | `UD-Q6_K_XL` | Revision-pinned target with MTP built into the main GGUF; no separate `model-draft` or projector is configured |
+| [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF) | `UD-Q6_K_XL` | Revision-pinned target with MTP built into the main GGUF plus the pinned F16 projector for image input; no separate `model-draft` |
 | [ornith-ai/Ornith-1.5-9B-GGUF](https://huggingface.co/ornith-ai/Ornith-1.5-9B-GGUF) | `Q4_K_M` / `Q6_K` / `Q8_0` | First-party pinned target + BF16 projector; embedded MTP remains disabled pending a direct smoke |
 | [ornith-ai/Ornith-1.5-35B-A3B-GGUF](https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF) | `Q4_K_M` / `Q8_0` | First-party pinned target + BF16 projector; embedded MTP remains disabled pending a direct smoke |
 | [ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF](https://huggingface.co/ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF) | `Q4_0` / `Q8_0` | Repaired pinned target + matching MTP file; draft maximum 3 |

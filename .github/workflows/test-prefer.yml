@@ -9,6 +9,8 @@ on:
       - 'docker/llama-cpp/**'
       - 'docker/audio-cpp/**'
       - 'docker/stable-diffusion-cpp/**'
+      - 'docker/sglang/**'
+      - 'docker/vllm/**'
       - 'release/**'
       - 'docker-compose.yml'
       - '.env.example'
@@ -23,6 +25,8 @@ on:
       - 'docker/llama-cpp/**'
       - 'docker/audio-cpp/**'
       - 'docker/stable-diffusion-cpp/**'
+      - 'docker/sglang/**'
+      - 'docker/vllm/**'
       - 'release/**'
       - 'docker-compose.yml'
       - '.env.example'
@@ -50,7 +54,11 @@ jobs:
       - name: Validate generated image catalog and lazy router
         run: |
           python docker/stable-diffusion-cpp/generate.py --check
+          python docker/sglang/generate.py --check
+          python docker/vllm/generate.py --check
           python -m unittest discover -s docker/stable-diffusion-cpp/tests -v
+          python -m unittest benchmark.tests.test_sglang benchmark.tests.test_sglang_video -v
+          python -m unittest benchmark.tests.test_vllm -v
 
       - name: Validate versioned schemas, fixtures, corpus, and preset aliases
         run: python -m prefer_bench validate

@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "runtime": "vllm",
+  "host": "0.0.0.0",
+  "port": 8000,
+  "backend_host": "127.0.0.1",
+  "backend_port": 8001,
+  "command": [
+    "vllm",
+    "serve",
+    "/models/Inferact/Qwen3.8-27B-NVFP4",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "8001",
+    "--served-model-name",
+    "qwen3.8-27b",
+    "--tensor-parallel-size",
+    "1",
+    "--max-model-len",
+    "32768",
+    "--max-num-seqs",
+    "4",
+    "--max-num-batched-tokens",
+    "4096",
+    "--gpu-memory-utilization",
+    "0.9",
+    "--kv-cache-dtype",
+    "fp8",
+    "--reasoning-parser",
+    "qwen3",
+    "--tool-call-parser",
+    "qwen3_coder",
+    "--enable-auto-tool-choice",
+    "--enable-prefix-caching",
+    "--enforce-eager"
+  ],
+  "server": {
+    "served_model_name": "qwen3.8-27b",
+    "kv_cache_dtype": "fp8",
+    "tensor_parallel_size": 1,
+    "max_model_len": 32768,
+    "max_num_seqs": 4,
+    "max_num_batched_tokens": 4096,
+    "gpu_memory_utilization": 0.9,
+    "enable_prefix_caching": true,
+    "enable_auto_tool_choice": true,
+    "reasoning_parser": "qwen3",
+    "tool_call_parser": "qwen3_coder",
+    "speculative": {
+      "enabled": false
+    },
+    "enforce_eager": true,
+    "backend_host": "127.0.0.1",
+    "backend_port": 8001,
+    "public_port": 8000
+  },
+  "models": [
+    {
+      "key": "qwen3.8-27b-nvfp4",
+      "request_model_id": "qwen3.8-27b",
+      "aliases": [
+        "qwen3.8-27b",
+        "qwen-3.8-27b"
+      ],
+      "profile_id": "qwen3.8-27b",
+      "tasks": [
+        "chat",
+        "completion"
+      ],
+      "precision": "NVFP4 W4A4 compressed-tensors with FP8 attention/KV and a pinned MTP companion",
+      "capabilities": [
+        "chat",
+        "completion",
+        "reasoning",
+        "tools",
+        "structured-output",
+        "streaming"
+      ],
+      "modalities": {
+        "native": [
+          "text",
+          "image",
+          "video"
+        ],
+        "configured": [
+          "text"
+        ],
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "native_context_length": 262144,
+      "max_context_length": 1048576
+    }
+  ],
+  "served_model_name": "qwen3.8-27b"
+}

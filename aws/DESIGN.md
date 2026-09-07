@@ -77,8 +77,11 @@ docker/llama-cpp/
   generate-presets.py        emits presets, prestage sidecars, downloader cases, inventory
   deployment-inventory.generated.json  controller-readable resolved deployments
   download-models.sh         S3 sync + preset-aware catalog downloads
+docker/sglang/
+  runtime.json               pinned SGLang runtime and Blackwell requirements
+  deployment-scenarios/aws/  generated AWS SGLang deployment configurations
 .github/workflows/
-  build-prefer.yml           grouped llama/audio/image release -> GHCR + GitHub Release
+  build-prefer.yml           grouped llama/audio/image/SGLang release -> GHCR + GitHub Release
   build-aws.yml              ami job (Packer, path-gated) -> cdk job (synth + release) [aws/**]
 ```
 
@@ -182,6 +185,16 @@ exactly as today — HF only.
 - At rest ~$2.30/mo per 100GB (S3 Standard). Replicate cross-region with bucket
   replication if the shareable artifact needs to launch elsewhere.
 
+The opt-in SGLang CUDA sibling can read the same bucket convention on AWS. Set
+`S3_BUCKET_NAME` (or `SGLANG_S3_BUCKET_NAME`) and, when needed,
+`S3_MODEL_PREFIX` (or `SGLANG_S3_MODEL_PREFIX`); with an empty prefix, objects
+map directly to `s3://<bucket>/<repository>/<path>` just like the llama.cpp
+cache. SGLang copies only its exact pinned catalog objects, verifies size and
+SHA-256 before atomic publication, and falls back to Hugging Face on a miss or
+mismatch. It never uploads, so its instance role needs only `s3:GetObject` and
+`s3:ListBucket`; the generated local and RunPod scenarios stay HF-only unless
+an operator explicitly supplies the S3 variables.
+
 ## IaC layer (CDK, distributed as CloudFormation)
 
 Inputs (CFN parameters): instance type, generated model preset path, optional
@@ -254,7 +267,7 @@ independent release boundary.
 
 | Workflow | Triggers on | Produces |
 | -------- | ----------- | -------- |
-| `build-prefer.yml` | any llama/audio/image runtime or release-contract path | all runtime images → GHCR plus one grouped GitHub release and inventory bundle |
+| `build-prefer.yml` | any llama/audio/image/SGLang runtime or release-contract path | all runtime images → GHCR plus one grouped GitHub release and inventory bundle |
 | `build-aws.yml` (new) | `aws/**`, self | public AMI (us-east-1 + us-east-2) and/or `template-latest` release |
 
 The key decoupler: **runtime containers are pulled at boot, not baked**, so the
@@ -270,8 +283,8 @@ cross-run `workflow_run`/artifact-polling — while still skipping the AMI build
 for CDK-only edits.
 
 - Edit any runtime preset / Dockerfile → `build-prefer.yml` → one grouped
-  llama/audio/image release in GHCR and GitHub → selected images are picked up
-  on the next instance **start** (no AMI rebuild).
+  llama/audio/image/SGLang release in GHCR and GitHub → selected images are
+  picked up on the next instance **start** (no AMI rebuild).
 - Edit boot scripts / Packer → `build-aws.yml`: `ami` job builds, then `cdk` job
   re-releases the template with the new AMI ids.
 - Edit IaC → `build-aws.yml`: `ami` job skipped, `cdk` job re-synths and

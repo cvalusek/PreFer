@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "provider": "aws",
+  "output_root": "aws/g6e/xlarge",
+  "hardware": {
+    "provider_sku": "g6e.xlarge",
+    "gpu_slug": "l40s",
+    "gpu_name": "NVIDIA L40S",
+    "gpu_count": 1,
+    "vram_gb_each": 48,
+    "architecture": "Ada Lovelace",
+    "compute_capability": "sm_89",
+    "vcpu": 4,
+    "local_nvme_gb": 250
+  },
+  "compatibility": {
+    "container_runtime": "nvidia",
+    "cuda_major": 13,
+    "minimum_compute_capability": "sm_86",
+    "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5",
+    "comfy_kitchen": "0.2.32"
+  },
+  "staging": {
+    "source": "s3-then-huggingface",
+    "scope": "optional AWS read-through",
+    "bucket_env": "S3_BUCKET_NAME",
+    "prefix_env": "S3_MODEL_PREFIX",
+    "fallback": "huggingface",
+    "iam": ["s3:GetObject", "s3:ListBucket"],
+    "writes": false
+  },
+  "verification": "configuration-only",
+  "configs": [
+    {
+      "name": "h3-fl2va",
+      "description": "AWS g6e MiniMax H3 FL2VA memory route with DIT and text-encoder offload; verify peak VRAM, output audio, and first/last-frame contract before production.",
+      "model_keys": ["minimax-h3-fl2va-int8-convrot"],
+      "server": {
+        "num_gpus": 1,
+        "tp_size": 1,
+        "ulysses_degree": 1,
+        "encoder_parallel": "auto",
+        "performance_mode": "memory",
+        "layerwise_offload_components": "dit,text_encoder",
+        "dit_offload_prefetch_size": 1,
+        "dit_layerwise_resident_layers": 0,
+        "enable_torch_compile": false,
+        "max_running_requests": 1
+      }
+    }
+  ]
+}

@@ -170,7 +170,7 @@ class ImageCppTests(unittest.TestCase):
         workflow = (REPO_ROOT / ".github" / "workflows" / "build-prefer.yml").read_text(
             encoding="utf-8"
         )
-        image_job = workflow.split("\n  image:\n", 1)[1].split("\n  release:\n", 1)[0]
+        image_job = workflow.split("\n  image:\n", 1)[1].split("\n  sglang_amd64:\n", 1)[0]
 
         self.assertIn(runtime["base_image"]["reference"], dockerfile)
         self.assertIn('"huggingface_hub[cli]"', dockerfile)
@@ -180,8 +180,9 @@ class ImageCppTests(unittest.TestCase):
         self.assertIn("IMAGE_SERVER_CONFIG=${IMAGE_SERVER_CONFIG:-}", compose)
         self.assertIn("IMAGE_PRESTAGE_MODELS=${IMAGE_PRESTAGE_MODELS:-}", compose)
         self.assertIn("IMAGE_DOWNLOAD_JOBS=${IMAGE_DOWNLOAD_JOBS:-4}", compose)
-        self.assertIn("type=raw,value=image-cuda12", image_job)
         self.assertIn("type=sha,prefix=image-cuda12-sha-", image_job)
+        self.assertIn('"$image_repository:image-cuda12"', workflow)
+        self.assertIn('"$image_repository:image-cuda12-preview"', workflow)
         self.assertIn("platforms: linux/amd64", image_job)
         self.assertNotIn("linux/arm64", image_job)
         self.assertIn("name: prefer-release-${{ github.sha }}", workflow)

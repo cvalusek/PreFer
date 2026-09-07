@@ -12,6 +12,7 @@ from prefer_bench.paths import REPO_ROOT
 
 AUDIO_ROOT = REPO_ROOT / "docker" / "audio-cpp"
 IMAGE_ROOT = REPO_ROOT / "docker" / "stable-diffusion-cpp"
+SGLANG_ROOT = REPO_ROOT / "docker" / "sglang"
 REVISION = "1" * 40
 
 
@@ -104,6 +105,27 @@ printf '%s\n' "$local_dir/$artifact"
             newline="\n",
         )
         self.fake_hf.chmod(0o755)
+        self.fake_s5cmd = self.bin_dir / "s5cmd"
+        self.fake_s5cmd.write_text(
+            r"""#!/usr/bin/env bash
+set -euo pipefail
+[ "$1" = "cp" ]
+uri="$2"
+destination="$3"
+printf '%s\n' "$uri" >> "$FAKE_S5CMD_LOG"
+if [ "${FAKE_S5CMD_MUST_NOT_RUN:-0}" = "1" ]; then
+  exit 99
+fi
+if [ "${FAKE_S5CMD_FAIL:-0}" = "1" ]; then
+  exit 44
+fi
+mkdir -p "$(dirname "$destination")"
+cp "$FAKE_S3_SOURCE" "$destination"
+""",
+            encoding="utf-8",
+            newline="\n",
+        )
+        self.fake_s5cmd.chmod(0o755)
         if os.name == "nt":
             fake_flock = self.bin_dir / "flock"
             fake_flock.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8", newline="\n")
@@ -189,15 +211,19 @@ prefer_download_hf_artifact \
     def test_helpers_remain_identical_and_generated_maps_use_them(self) -> None:
         audio_helper = (AUDIO_ROOT / "download-artifacts.sh").read_bytes()
         image_helper = (IMAGE_ROOT / "download-artifacts.sh").read_bytes()
+        sglang_helper = (SGLANG_ROOT / "download-artifacts.sh").read_bytes()
         self.assertEqual(audio_helper, image_helper)
+        self.assertEqual(audio_helper, sglang_helper)
         self.assertIn(b"hf download", audio_helper)
+        self.assertIn(b"prefer_download_s3_artifact", audio_helper)
         self.assertIn(b"downloads-v2/staging", audio_helper)
         self.assertIn(b"prefer_download_model_keys", audio_helper)
-        for root in (AUDIO_ROOT, IMAGE_ROOT):
+        for root in (AUDIO_ROOT, IMAGE_ROOT, SGLANG_ROOT):
             generated = (root / "model-downloads.generated.sh").read_text(encoding="utf-8")
             self.assertIn("prefer_download_hf_artifact", generated)
             self.assertNotIn("curl ", generated)
             self.assertNotIn("partial.$$", generated)
+        self.assertIn("sglang_download_model_keys_s3", (SGLANG_ROOT / "model-downloads.generated.sh").read_text(encoding="utf-8"))
 
     def test_interrupted_transfer_resumes_and_marker_skips_restart_hash(self) -> None:
         content = b"pinned-artifact-content\n" * 64
@@ -234,6 +260,119 @@ prefer_download_hf_artifact \
         self.assertEqual(third.returncode, 0, third.stdout + third.stderr)
         self.assertIn("verified marker hit", third.stdout)
         self.assertEqual(self.log.read_text(encoding="utf-8").splitlines(), log_lines)
+
+    def test_s3_artifact_read_through_verifies_and_falls_back_to_huggingface(self) -> None:
+        content = b"s3-pinned-artifact-content\n" * 64
+        helper = SGLANG_ROOT / "download-artifacts.sh"
+        artifact_id = "a" * 64
+        expected_sha = hashlib.sha256(content).hexdigest()
+        self.source.write_bytes(content)
+        script = """
+set -uo pipefail
+set +e
+export PATH="$FAKE_BIN:$PATH"
+source "$1"
+prefer_download_s3_artifact sglang-s3 "$2" owner/repo nested/model.bin "$3" "$4" "$5" "$6"
+"""
+        env = os.environ.copy()
+        env.update(
+            {
+                "FAKE_BIN": repo_relative(self.bin_dir),
+                "PREFER_MODELS_DIR": repo_relative(self.models),
+                "FAKE_S3_SOURCE": repo_relative(self.source),
+                "FAKE_S5CMD_LOG": repo_relative(self.root / "s5cmd.log"),
+                "FAKE_HF_SOURCE": repo_relative(self.source),
+                "FAKE_HF_STATE": repo_relative(self.root / "fallback-hf.state"),
+                "FAKE_HF_LOG": repo_relative(self.log),
+            }
+        )
+        completed = subprocess.run(
+            [
+                self.bash,
+                "-c",
+                script,
+                "_",
+                repo_relative(helper),
+                artifact_id,
+                str(len(content)),
+                expected_sha,
+                "prefer-bucket",
+                "model-prefix",
+            ],
+            cwd=REPO_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        destination = self.models / "owner" / "repo" / "nested" / "model.bin"
+        self.assertEqual(destination.read_bytes(), content)
+        marker = self.models / ".prefer-cache" / "downloads-v2" / "verified" / f"{artifact_id}.complete"
+        self.assertTrue(marker.is_file())
+        self.assertEqual(
+            (self.root / "s5cmd.log").read_text(encoding="utf-8").strip(),
+            "s3://prefer-bucket/model-prefix/owner/repo/nested/model.bin",
+        )
+
+        marker_hit = subprocess.run(
+            [
+                self.bash,
+                "-c",
+                script,
+                "_",
+                repo_relative(helper),
+                artifact_id,
+                str(len(content)),
+                expected_sha,
+                "prefer-bucket",
+                "model-prefix",
+            ],
+            cwd=REPO_ROOT,
+            env={**env, "FAKE_S5CMD_MUST_NOT_RUN": "1"},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(marker_hit.returncode, 0, marker_hit.stdout + marker_hit.stderr)
+        self.assertIn("verified marker hit", marker_hit.stdout)
+
+        fallback_id = "b" * 64
+        fallback_script = """
+set -uo pipefail
+set +e
+export PATH="$FAKE_BIN:$PATH"
+source "$1"
+if prefer_download_s3_artifact sglang-s3 "$2" owner/repo fallback.bin "$3" "$4" "$5" "$6"; then
+  exit 12
+fi
+prefer_download_hf_artifact sglang-hf "$2" owner/repo "$7" fallback.bin "$3" "$4"
+"""
+        fallback = subprocess.run(
+            [
+                self.bash,
+                "-c",
+                fallback_script,
+                "_",
+                repo_relative(helper),
+                fallback_id,
+                str(len(content)),
+                expected_sha,
+                "prefer-bucket",
+                "model-prefix",
+                REVISION,
+                "fallback.bin",
+            ],
+            cwd=REPO_ROOT,
+            env={**env, "FAKE_S5CMD_FAIL": "1"},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(fallback.returncode, 0, fallback.stdout + fallback.stderr)
+        self.assertEqual((self.models / "owner" / "repo" / "fallback.bin").read_bytes(), content)
+        self.assertIn("S3 object unavailable", fallback.stderr)
+        self.assertTrue(self.log.is_file())
 
     def test_changed_file_is_reverified_and_bad_replacement_is_not_published(self) -> None:
         correct = b"correct-pinned-bytes" * 32
