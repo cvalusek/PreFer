@@ -25,10 +25,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--audio-cpu-digest", required=True)
     parser.add_argument("--image-digest", required=True)
     parser.add_argument("--sglang-digest", required=True)
+    parser.add_argument("--vllm-digest", required=True)
     parser.add_argument("--llama-inventory", type=Path, required=True)
     parser.add_argument("--audio-inventory", type=Path, required=True)
     parser.add_argument("--image-inventory", type=Path, required=True)
     parser.add_argument("--sglang-inventory", type=Path, required=True)
+    parser.add_argument("--vllm-inventory", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     return parser.parse_args()
 
@@ -114,6 +116,12 @@ def build_manifest(args: argparse.Namespace) -> dict[str, object]:
         "prefer-sglang-deployment-inventory.json",
         "prefer.sglang-deployment-inventory.v2",
     )
+    vllm_inventory = inventory_asset(
+        args.vllm_inventory,
+        args.output_dir,
+        "prefer-vllm-deployment-inventory.json",
+        "prefer.vllm-deployment-inventory.v1",
+    )
 
     return {
         "schema_version": "prefer.release.v1",
@@ -181,6 +189,18 @@ def build_manifest(args: argparse.Namespace) -> dict[str, object]:
                         image_repository,
                         f"sglang-cuda13-{release_id}",
                         args.sglang_digest,
+                        ["linux/amd64", "linux/arm64"],
+                    )
+                },
+            },
+            "vllm": {
+                "runtime": "vllm",
+                "inventory": vllm_inventory,
+                "images": {
+                    "cuda13": image_entry(
+                        image_repository,
+                        f"vllm-cuda13-{release_id}",
+                        args.vllm_digest,
                         ["linux/amd64", "linux/arm64"],
                     )
                 },

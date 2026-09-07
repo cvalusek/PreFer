@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "provider": "runpod",
+  "output_root": "runpod/rtx-pro-6000/1x",
+  "hardware": {
+    "gpu_type_id": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+    "gpu_count": 1,
+    "vram_gb": 96,
+    "compute_capability": "sm_120",
+    "host_shape": "1x RTX PRO 6000"
+  },
+  "compatibility": {
+    "status": "configuration-only",
+    "minimum_vllm": "0.28.0",
+    "minimum_driver": "R580",
+    "notes": "Verify the exact RunPod image, model volume, multimodal inputs, and MTP acceptance before production use."
+  },
+  "staging": {
+    "source": "s3-then-huggingface",
+    "s3_bucket_env": "VLLM_S3_BUCKET_NAME",
+    "s3_prefix_env": "VLLM_S3_MODEL_PREFIX"
+  },
+  "verification": "configuration-only",
+  "configs": [
+    {
+      "name": "performance",
+      "model_keys": ["qwen3.8-27b-nvfp4"],
+      "description": "RunPod Blackwell high-context lane with in-checkpoint MTP.",
+      "server": {
+        "max_model_len": 524288,
+        "max_num_seqs": 8,
+        "max_num_batched_tokens": 16384,
+        "gpu_memory_utilization": 0.92,
+        "speculative": {
+          "enabled": true,
+          "method": "mtp",
+          "num_speculative_tokens": 3
+        }
+      }
+    },
+    {
+      "name": "target-only",
+      "model_keys": ["qwen3.8-27b-nvfp4"],
+      "description": "Target-only comparison lane for MTP acceptance and throughput smoke tests.",
+      "server": {
+        "max_model_len": 262144,
+        "max_num_seqs": 4,
+        "max_num_batched_tokens": 8192,
+        "speculative": {
+          "enabled": false
+        }
+      }
+    }
+  ]
+}

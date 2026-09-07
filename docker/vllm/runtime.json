@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "runtime": {
+    "name": "vllm",
+    "source_repo": "vllm-project/vllm",
+    "source_revision": "2cf0a6915ce544dc493a0990f2ea38d81601128a",
+    "source_revision_role": "Official vLLM v0.28.0 release with Qwen3.5-family hybrid-model, NVFP4, and native MTP serving support.",
+    "lineage": "official-upstream"
+  },
+  "base_image": {
+    "reference": "vllm/vllm-openai:v0.28.0-ubuntu2404@sha256:f8fe15a8039343336945db10494eaad80ef941fe2b2a5fa6649fa38636051a65",
+    "index_digest": "sha256:f8fe15a8039343336945db10494eaad80ef941fe2b2a5fa6649fa38636051a65",
+    "build_revision": "2cf0a6915ce544dc493a0990f2ea38d81601128a",
+    "build_revision_source": "https://github.com/vllm-project/vllm/releases/tag/v0.28.0",
+    "build_revision_note": "Official CUDA 13.0 Ubuntu 24.04 vLLM image; PreFer adds only staging, inventory, and the warmup-aware gateway.",
+    "platform_manifests": {
+      "linux/amd64": "sha256:ffaf945675c81fa7ed3e6a66c7c2d7189dd012614e2c961fac1c2702a7ba04be",
+      "linux/arm64": "sha256:41b54fb42c66a670a8b27e613ebef05898f24b9ab1bdab28bd00c877bd4935f4"
+    }
+  },
+  "requirements": {
+    "platforms": ["linux/amd64", "linux/arm64"],
+    "cuda_major": 13,
+    "minimum_compute_capability": "sm_100",
+    "supported_compute_capabilities": ["sm_100", "sm_120", "sm_121"],
+    "gpu_architecture": "NVIDIA Blackwell; NVFP4 activation arithmetic requires SM100 or newer",
+    "minimum_vllm_version": "0.28.0",
+    "nvfp4_backend": "FlashInfer/CUTLASS on Blackwell; older GPUs use a weight-only fallback and are not a supported PreFer lane",
+    "driver_note": "CUDA 13 images require an R580-or-newer host driver in normal mode; use the vLLM CUDA compatibility guidance for older supported drivers"
+  },
+  "staging": {
+    "hf": {
+      "source": "huggingface",
+      "home": "/models",
+      "layout": "/models/<repository>/<path>",
+      "verification": "exact catalog size and SHA-256 before atomic publication"
+    },
+    "aws_s3": {
+      "source": "s3-then-huggingface",
+      "scope": "optional AWS read-through",
+      "bucket_env": "S3_BUCKET_NAME",
+      "bucket_alias_env": "VLLM_S3_BUCKET_NAME",
+      "prefix_env": "S3_MODEL_PREFIX",
+      "prefix_alias_env": "VLLM_S3_MODEL_PREFIX",
+      "object_layout": "s3://<bucket>/<prefix>/<repository>/<path>",
+      "fallback": "huggingface",
+      "s5cmd_version": "2.2.2",
+      "read_policy": ["s3:GetObject", "s3:ListBucket"],
+      "write_policy": [],
+      "local_layout": "/models/<repository>/<path>",
+      "marker_layout": "/models/.prefer-cache/downloads-v2/verified/<artifact-id>.complete"
+    }
+  },
+  "features": {
+    "api": ["GET /health", "GET /readyz", "GET /v1/models", "POST /v1/chat/completions", "POST /v1/completions"],
+    "openai_backend": "official vLLM OpenAI-compatible server",
+    "reasoning_parser": "qwen3",
+    "tool_call_parser": "qwen3_coder",
+    "structured_output": "vLLM guided decoding; exact schema smoke required",
+    "streaming": "gateway forwards backend SSE bytes and termination",
+    "kv_cache": "FP8 KV is the performance default; calibration and long-context quality remain smoke gates",
+    "speculative_decoding": "native Qwen3.5-family MTP head through vLLM speculative_config"
+  },
+  "experimental_routes": {
+    "qwen3.8-flash": {
+      "status": "deferred-experimental",
+      "reason": "Official recipe requires the dedicated qwen38-flash-next image and multi-GB300-class deployments; it is not part of this first 27B lane."
+    },
+    "dflash2": {
+      "status": "deferred-unverified",
+      "reason": "vLLM exposes DFlash2 for Qwen3.8 only in newer releases; do not replace the verified native MTP path without a matched artifact and smoke."
+    }
+  },
+  "known_limitations": [
+    "The checked-in deployment scenarios are configuration-only until an exact Blackwell card passes load, API, context, and throughput smoke.",
+    "Native MTP is first enabled at TP1; current qwen3_5_mtp TP>=2 loader issues are intentionally not hidden by a multi-GPU default.",
+    "The vLLM recipe verifies text serving; image and video input remain native capability metadata until the PreFer multimodal smoke passes.",
+    "A 32 GB Blackwell route may require enforce-eager and a smaller context because CUDA graph capture can OOM outside the model memory budget.",
+    "Model weights are runtime artifacts and never belong in this image or grouped release artifact."
+  ]
+}

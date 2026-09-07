@@ -6,7 +6,7 @@ read this before changing presets, the Dockerfile, or the detection scripts.
 
 ## Project overview
 
-PreFer: sibling llama.cpp, audio.cpp, stable-diffusion.cpp, and SGLang
+PreFer: sibling llama.cpp, audio.cpp, stable-diffusion.cpp, SGLang, and vLLM
 containers for self-hosted inference.
 `docker/llama-cpp/` serves LLMs on local, RunPod, and AWS hardware and hosts
 Gemma 4, Qwen3.5/Qwen3.6/Qwen3.8,
@@ -15,17 +15,19 @@ Ornith 1.5, Nemotron 3.5 Lightning, Muse Glimmer, GLM, and DeepSeek V4 routes vi
 downloaded from Hugging Face on first start. `docker/audio-cpp/` is a separate
 speech/music runtime with its own API, inventory, model volume, and image
 variants. `docker/stable-diffusion-cpp/` provides image generation/editing with
-a separate API, inventory, and model volume. All four engines publish as one
+a separate API, inventory, and model volume. All five engines publish as one
 grouped PreFer release. `docker/sglang/` is the opt-in CUDA 13 sibling for
 Qwen3.8-27B NVFP4 on modern NVIDIA Blackwell hardware; it has its own API,
 inventory, model catalog, and generated deployment configs while using the same
-`/models` artifact layout as llama.cpp.
+`/models` artifact layout as llama.cpp. `docker/vllm/` is the opt-in official
+vLLM CUDA 13 sibling for the Inferact Qwen3.8-27B NVFP4 text lane on the same
+Blackwell generation, with its own gateway, inventory, and catalog.
 
 ## Grouped release contract
 
 `build-prefer.yml` is the only runtime-image workflow. A change under any of
-the four runtime folders rebuilds and publishes llama CUDA, Audio CUDA/CPU,
-Image CUDA, and SGLang CUDA together under the same seven-character source SHA. Do not add
+the five runtime folders rebuilds and publishes llama CUDA, Audio CUDA/CPU,
+Image CUDA, SGLang CUDA, and vLLM CUDA together under the same seven-character source SHA. Do not add
 engine-specific image workflows or path-gate individual engine jobs: the
 atomic release is deliberate so downstream controllers never have to compose
 different PreFer versions.
@@ -38,12 +40,12 @@ work by merging it to `main`, and merge any exceptional stable hotfix back into
 `develop` immediately so the lines do not drift. Do not publish a runtime
 commit directly to `main` merely to bypass preview validation.
 
-After all five immutable image indexes publish, the workflow creates the
+After all six immutable image indexes publish, the workflow creates the
 GitHub release `sha-<short-commit>` and the matching
 `prefer-release-<full-commit>` Actions artifact. Both contain
-`prefer-release.json`, its schema, the exact four deployment inventories, and
+`prefer-release.json`, its schema, the exact five deployment inventories, and
 checksums. `release/build-release.py` owns that manifest. It must reference the
-resolved OCI index digests returned by the five build jobs, never moving tags.
+resolved OCI index digests returned by the six build jobs, never moving tags.
 Each runtime image still embeds its own `/deployment-inventory.json`.
 
 The grouped release contains metadata only. Model weights must never be copied
@@ -62,8 +64,8 @@ building; never leave an empty `Current` section in the file.
 
 After CI publishes the grouped immutable release, make a root-only follow-up commit that
 changes the `Current` heading to the resulting `sha-<short-commit>` tag and
-adds all five exact image identities from that release: llama CUDA, Audio CUDA,
-Audio CPU, Image CUDA, and SGLang CUDA. Do not rewrite the approved change bullets during
+adds all six exact image identities from that release: llama CUDA, Audio CUDA,
+Audio CPU, Image CUDA, SGLang CUDA, and vLLM CUDA. Do not rewrite the approved change bullets during
 finalization. Suffix a preview heading with `(preview)` and a stable heading
 with `(stable)`; pre-channel headings without a suffix are stable. The grouped
 workflow watches runtime and release implementation paths, so this root
@@ -827,9 +829,9 @@ or tune DRY further before doing so.
   explicit no-E4B-draft compatibility preset is the b9843/Pascal fallback.
   Scrubbed evidence is under `benchmark/baselines/`.
 
-## Audio, image, and SGLang artifact downloads
+## Audio, image, SGLang, and vLLM artifact downloads
 
-Audio, image, and SGLang deliberately share transfer behavior without sharing a
+Audio, image, SGLang, and vLLM deliberately share transfer behavior without sharing a
 Docker build context. Their `download-artifacts.sh` files are checked-in,
 byte-for-byte copies; the downloader integration test enforces that parity.
 Keep all copies in the same change. Moving the helper to a root-level common
@@ -838,14 +840,14 @@ filters, otherwise a helper-only change could publish neither runtime. The
 generated `model-downloads.generated.sh` files remain runtime-owned maps from
 model keys to immutable artifact IDs and exact transfer metadata.
 
-All three sibling images install the same `hf` CLI used by llama.cpp, keep
+All four sibling images install the same `hf` CLI used by llama.cpp, keep
 `HF_HOME` on `/models`, and enable Xet high-performance mode by default. Audio
-and image remain HF-only; SGLang additionally supports an optional AWS-only,
+and image remain HF-only; SGLang and vLLM additionally support optional AWS-only,
 read-through S3 cache using the same `S3_BUCKET_NAME` convention as llama.cpp
 plus an optional `S3_MODEL_PREFIX` namespace. Compose passes
 `HF_TOKEN`, `HF_HUB_DISABLE_XET`, and the existing `HF_XET_*` tuning variables
 to each service. `AUDIO_DOWNLOAD_JOBS`, `IMAGE_DOWNLOAD_JOBS`, and
-`SGLANG_DOWNLOAD_JOBS` default to four and accept only 1 through 8. Generators reject two immutable
+`SGLANG_DOWNLOAD_JOBS`, and `VLLM_DOWNLOAD_JOBS` default to four and accept only 1 through 8. Generators reject two immutable
 identities that target the same final repository/path; selected model keys are
 resolved and deduplicated to artifact IDs before batches launch. Batches join
 in catalog order, report the first failure in that stable order, and do not
@@ -854,7 +856,7 @@ launch a later batch after a failed one.
 All sibling runtime entrypoints stage artifacts as root. External RunPod and other
 mounted model volumes replace image-layer ownership, so build-time `chown`
 cannot make a pre-existing root-owned `/models` tree writable to a later
-non-root `USER`. Keep Audio and SGLang's final Docker user root like llama.cpp and Image;
+non-root `USER`. Keep Audio, SGLang, and vLLM's final Docker user root like llama.cpp and Image;
 changing only the lock path is insufficient because Hugging Face resume state,
 staging files, final artifact directories, and verification markers all belong
 on the persistent volume. Never add a recursive startup `chown` over a populated
@@ -922,7 +924,7 @@ systemd boot unit (stage instance-store NVMe at `/opt/dlami/nvme`, `docker run`
 with `/models` on NVMe) + a CDK stack distributed as synthesized CloudFormation.
 The container is pulled at boot (not baked), and CI is path-filtered so AWS
 changes never rebuild the grouped runtime release (`build-prefer.yml` watches
-all four runtime folders; `build-aws.yml` covers `aws/`). `build-aws.yml` is one workflow with
+all five runtime folders; `build-aws.yml` covers `aws/`). `build-aws.yml` is one workflow with
 ordered jobs — a paths-filtered `ami` job (Packer; public AMI built into
 us-east-1 + us-east-2) hands its `ami-map` artifact to a `cdk` job that bakes it
 into the template's RegionMap and publishes the `template-latest` release. A
@@ -1187,3 +1189,46 @@ host-RAM and cgroup headroom remain configuration-only gates.
 Turbo LoRA recipes are recorded as optional FL2VA metadata; they are not
 staged or enabled by default until their exact immutable weight revisions and
 hashes are cataloged.
+
+## vLLM sibling runtime
+
+`docker/vllm/` is the opt-in official-upstream vLLM CUDA 13 sibling for the
+Qwen3.8-27B Inferact NVFP4 text lane. It is preview/develop-only until the
+route has passed target-card load, API, multimodal, MTP, context, and
+concurrency smokes. The pinned image is
+`vllm/vllm-openai:v0.28.0-ubuntu2404` at OCI index
+`sha256:f8fe15a8039343336945db10494eaad80ef941fe2b2a5fa6649fa38636051a65`,
+with source revision `2cf0a6915ce544dc493a0990f2ea38d81601128a`. Do not
+silently substitute a custom vLLM fork, SGLang, a Flash-Next checkpoint, or a
+moving image tag.
+
+The catalog pins `Inferact/Qwen3.8-27B-NVFP4` at revision
+`6128240ebaf4eaa7bad2b3d1c72c37d677c5f462`, including the exact tokenizer,
+configuration, six safetensors shards, and `nvfp4_experts_mtp.safetensors`
+companion. The selected bundle is 26,404,413,873 bytes. Model weights remain
+on external `/models` storage and must never enter the Docker context, image,
+AMI, grouped release, or workflow artifact.
+
+The canonical command follows the official Qwen3.8 vLLM recipe: TP1, native
+262K context, FP8 KV, Qwen reasoning/tool parsers, auto tool choice, and
+in-checkpoint MTP with three speculative tokens. The generated gateway keeps
+`/v1/models` available during background staging, waits for staging before
+starting the private vLLM backend, exposes `/readyz`, and normalizes aliases
+to the catalog `request_model_id`. The 32 GB RTX 5090 shape uses
+`--enforce-eager` and a conservative target-only starting config; do not copy
+its settings into larger hosted scenarios.
+
+Qwen3.8 Flash is tracked only as a deferred experimental route because the
+official recipe requires the dedicated `vllm/vllm-openai:qwen38-flash-next`
+image and a substantially larger FP8 checkpoint. DFlash2 is not enabled in
+the first lane. Keep these routes separate from the canonical artifact,
+inventory, and image until their exact runtime/checkpoint contract is pinned
+and target hardware is smoked.
+
+The vLLM generator owns the catalog, scenario configs, staging sidecars,
+downloader map, and deployment inventory. Use `python docker/vllm/generate.py`
+after source changes and `--check` in CI. The vLLM image copies the shared
+`docker/audio-cpp/download-artifacts.sh` helper byte-for-byte and uses
+`downloads-v2` verified markers, exact size/SHA-256 checks, and same-volume
+atomic publication. Its image and inventory are part of the single grouped
+release workflow; do not add an engine-specific release workflow.

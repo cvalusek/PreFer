@@ -295,7 +295,7 @@ class SGLangTests(unittest.TestCase):
         self.assertIn("$image_repository:sglang-cuda-preview", workflow)
         self.assertIn("--sglang-digest", workflow)
         self.assertIn("--sglang-inventory", workflow)
-        self.assertIn("needs: [llama, audio_cuda, audio_cpu, image, sglang]", workflow)
+        self.assertIn("needs: [llama, audio_cuda, audio_cpu, image, sglang, vllm]", workflow)
 
 
 if __name__ == "__main__":

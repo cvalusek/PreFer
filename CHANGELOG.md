@@ -1,5 +1,15 @@
 # PreFer changelog
 
+## Current
+
+- vLLM
+  - Added an opt-in official vLLM CUDA 13 runtime for the Inferact Qwen3.8-27B NVFP4 text lane on Blackwell GPUs.
+  - AWS G7e 2xlarge / RunPod RTX PRO 6000: `qwen3.8-27b` at 524K context and 8 request slots with native MTP; target-only control remains at 262K and 4 slots.
+  - RunPod RTX 5090: `qwen3.8-27b` target-only at 32K context and 4 slots; separate 128K and 2-slot MTP experiment is configuration-only.
+  - Local GB10: `qwen3.8-27b` at 262K context and 8 request slots with native MTP; all shapes retain warmup-aware readiness and external exact-artifact staging.
+- Runtime contract
+  - Added the vLLM deployment inventory and immutable vLLM image to the grouped preview release while keeping Qwen3.8 Flash deferred and model weights outside images and release artifacts.
+
 ## sha-dc20179 (preview)
 
 - Images
@@ -8,7 +18,6 @@
   - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-dc20179@sha256:47349a0ea94e99c09dc8d4ca2ed2e57591f8fd7cd9381aa2688d6c1a6d7f9a7a`.
   - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-dc20179@sha256:74530e6a9b2e4dbd7309db33b58870f22d2709164bd45839035cc33b00a5fd04`.
   - SGLang CUDA 13: `ghcr.io/cvalusek/prefer:sglang-cuda13-sha-dc20179@sha256:dbfad8fb2870e16e62b0734a907c9c2559cfe0b1f1b05cc689d03669f3edb3da`.
-
 - Llama
   - `qwen-3.8-27b`
     - Added image input through the pinned F16 multimodal projector.

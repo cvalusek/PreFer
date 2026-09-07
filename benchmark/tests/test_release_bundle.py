@@ -20,6 +20,7 @@ class GroupedReleaseTests(unittest.TestCase):
             "audio_cpu": "sha256:" + "3" * 64,
             "image": image_digest or "sha256:" + "4" * 64,
             "sglang": "sha256:" + "5" * 64,
+            "vllm": "sha256:" + "6" * 64,
         }
         return subprocess.run(
             [
@@ -41,6 +42,8 @@ class GroupedReleaseTests(unittest.TestCase):
                 digests["image"],
                 "--sglang-digest",
                 digests["sglang"],
+                "--vllm-digest",
+                digests["vllm"],
                 "--llama-inventory",
                 str(REPO_ROOT / "docker" / "llama-cpp" / "deployment-inventory.generated.json"),
                 "--audio-inventory",
@@ -57,6 +60,13 @@ class GroupedReleaseTests(unittest.TestCase):
                     REPO_ROOT
                     / "docker"
                     / "sglang"
+                    / "deployment-inventory.generated.json"
+                ),
+                "--vllm-inventory",
+                str(
+                    REPO_ROOT
+                    / "docker"
+                    / "vllm"
                     / "deployment-inventory.generated.json"
                 ),
                 "--output-dir",
@@ -83,7 +93,10 @@ class GroupedReleaseTests(unittest.TestCase):
             )
             self.assertFalse(manifest["distribution"]["model_weights_embedded"])
             self.assertTrue(manifest["distribution"]["models_stage_at_runtime"])
-            self.assertEqual(set(manifest["engines"]), {"llama", "audio", "image", "sglang"})
+            self.assertEqual(
+                set(manifest["engines"]),
+                {"llama", "audio", "image", "sglang", "vllm"},
+            )
 
             expected_images = {
                 ("llama", "cuda"): (
@@ -106,6 +119,10 @@ class GroupedReleaseTests(unittest.TestCase):
                     "sglang-cuda13-sha-abcdef0",
                     ["linux/amd64", "linux/arm64"],
                 ),
+                ("vllm", "cuda13"): (
+                    "vllm-cuda13-sha-abcdef0",
+                    ["linux/amd64", "linux/arm64"],
+                ),
             }
             for (engine, variant), (tag, platforms) in expected_images.items():
                 image = manifest["engines"][engine]["images"][variant]
@@ -123,6 +140,10 @@ class GroupedReleaseTests(unittest.TestCase):
                 "sglang": REPO_ROOT
                 / "docker"
                 / "sglang"
+                / "deployment-inventory.generated.json",
+                "vllm": REPO_ROOT
+                / "docker"
+                / "vllm"
                 / "deployment-inventory.generated.json",
             }
             for engine, source in sources.items():
@@ -146,6 +167,7 @@ class GroupedReleaseTests(unittest.TestCase):
             "docker/audio-cpp/**",
             "docker/stable-diffusion-cpp/**",
             "docker/sglang/**",
+            "docker/vllm/**",
             "release/**",
         ):
             self.assertIn(watched_path, workflow)
@@ -155,9 +177,10 @@ class GroupedReleaseTests(unittest.TestCase):
             "audio-cpu-sha-",
             "image-cuda12-sha-",
             "sglang-cuda13-sha-",
+            "vllm-cuda13-sha-",
         ):
             self.assertIn(immutable_tag, workflow)
-        self.assertIn("needs: [llama, audio_cuda, audio_cpu, image, sglang]", workflow)
+        self.assertIn("needs: [llama, audio_cuda, audio_cpu, image, sglang, vllm]", workflow)
         self.assertIn("name: prefer-release-${{ github.sha }}", workflow)
         self.assertIn("gh release create", workflow)
         self.assertIn("prefer-release.json", workflow)
@@ -171,6 +194,7 @@ class GroupedReleaseTests(unittest.TestCase):
             "audio-cuda12-preview",
             "audio-cpu-preview",
             "image-cuda12-preview",
+            "vllm-cuda-preview",
         ):
             self.assertIn(preview_tag, workflow)
         for stable_tag in (
@@ -179,6 +203,7 @@ class GroupedReleaseTests(unittest.TestCase):
             '"$image_repository:audio-cuda12"',
             '"$image_repository:audio-cpu"',
             '"$image_repository:image-cuda12"',
+            '"$image_repository:vllm-cuda"',
         ):
             self.assertIn(stable_tag, workflow)
         self.assertIn('release_channel="stable"', workflow)
@@ -193,7 +218,7 @@ class GroupedReleaseTests(unittest.TestCase):
         self.assertEqual(schema["properties"]["schema_version"]["const"], "prefer.release.v1")
         self.assertEqual(
             set(schema["properties"]["engines"]["required"]),
-            {"llama", "audio", "image", "sglang"},
+            {"llama", "audio", "image", "sglang", "vllm"},
         )
 
 

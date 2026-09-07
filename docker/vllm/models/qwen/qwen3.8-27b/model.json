@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "family": "qwen",
+  "model_slug": "qwen3.8-27b",
+  "shared": {
+    "id": "qwen3.8-27b",
+    "family": "qwen3.8",
+    "task": "chat",
+    "tasks": ["chat", "completion"],
+    "mode": "multimodal-reasoning",
+    "description": "Qwen3.8-27B dense hybrid vision-language model in the official vLLM-oriented Inferact NVFP4 checkpoint",
+    "license": "Apache-2.0",
+    "lineage": {
+      "repo": "Qwen/Qwen3.8-27B",
+      "revision": "e13a4f0e35203116364e3b3f3f0c82f6ef1afd3c",
+      "derivative_repo": "Inferact/Qwen3.8-27B-NVFP4",
+      "derivative_revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462"
+    },
+    "capabilities": ["chat", "completion", "reasoning", "tools", "structured-output", "streaming"],
+    "modalities": {
+      "native": ["text", "image", "video"],
+      "configured": ["text"],
+      "input": ["text"],
+      "output": ["text"]
+    },
+    "architecture": {
+      "type": "Qwen3_5ForConditionalGeneration",
+      "layers": 64,
+      "linear_attention_layers": 48,
+      "full_attention_layers": 16,
+      "hidden_size": 5120,
+      "attention_heads": 24,
+      "key_value_heads": 4,
+      "vision_layers": 27,
+      "vision_hidden_size": 1152,
+      "vision_output_size": 5120,
+      "mtp_layers": 1
+    },
+    "native_context_length": 262144,
+    "max_context_length": 1048576,
+    "reasoning_controls": {
+      "enabled_by_default": true,
+      "reasoning_effort": {"supported": ["low", "medium", "xhigh"], "default": "xhigh"},
+      "preserve_thinking": {"supported": [true, false], "default": true},
+      "enable_thinking": {"supported": [true, false], "default": true}
+    },
+    "template": {
+      "source_file": "chat_template.jinja",
+      "supports_images": true,
+      "supports_videos": true,
+      "tool_call_format": "<tool_call><function=...><parameter=...>",
+      "generation_prompt": "<think>",
+      "reasoning_parser": "qwen3",
+      "tool_call_parser": "qwen3_coder"
+    },
+    "speculative": {
+      "supported": true,
+      "source": "in-checkpoint MTP",
+      "algorithm": "mtp",
+      "num_speculative_tokens": 3,
+      "tp_policy": "TP1 until the qwen3_5_mtp tensor-parallel loader issue is resolved and smoke-tested"
+    },
+    "kv_cache_scaling": {
+      "quantization": "FP8",
+      "explicit_scale_metadata": "checkpoint-dependent; verify in vLLM logs",
+      "fidelity_status": "VERIFY",
+      "verification_note": "FP8 KV is selected for performance; compare against BF16 KV on the target card before claiming fidelity."
+    },
+    "artifact_variant": {
+      "label": "Inferact Qwen3.8-27B NVFP4 revision 6128240",
+      "total_bytes": 26404413873,
+      "comparability_note": "The official vLLM recipe also lists Unsloth and other NVFP4 variants; their memory and MTP behavior are not interchangeable."
+    },
+    "server": {
+      "served_model_name": "qwen3.8-27b",
+      "kv_cache_dtype": "fp8",
+      "tensor_parallel_size": 1,
+      "max_model_len": 262144,
+      "max_num_seqs": 4,
+      "max_num_batched_tokens": 8192,
+      "gpu_memory_utilization": 0.90,
+      "enable_prefix_caching": true,
+      "enable_auto_tool_choice": true,
+      "reasoning_parser": "qwen3",
+      "tool_call_parser": "qwen3_coder",
+      "speculative": {
+        "enabled": true,
+        "method": "mtp",
+        "num_speculative_tokens": 3
+      }
+    },
+    "profile": {
+      "summary": "A high-intelligence Qwen route for modern Blackwell GPUs, with native image/video capability metadata and a vLLM-verified NVFP4 text lane.",
+      "architecture": "64-layer hybrid linear/full-attention vision-language model with 48 GDN layers, 16 full-attention layers, and one embedded MTP layer.",
+      "native_capabilities": ["text", "image", "video", "reasoning", "tool calls"],
+      "configured_capabilities": ["text", "reasoning", "tool calls", "structured output", "streaming"],
+      "context": "Native 262,144 tokens; the provider-neutral lane starts at native context while larger Blackwell shapes expose separately gated extensions.",
+      "reasoning": "Thinking is enabled by default. Requests may select low, medium, or xhigh reasoning_effort and may disable or preserve thinking through the Qwen template controls.",
+      "role_fit": {
+        "preferred": ["long-form analysis", "tool-using orchestrator", "code and structured-output assistant"],
+        "capable": ["general chat", "document analysis", "multimodal input after verification"],
+        "avoid": ["pre-Blackwell GPUs", "production use before target-card smoke"],
+        "strengths": ["strong reasoning ceiling", "large native context", "native MTP path", "NVFP4 memory efficiency"],
+        "limitations": ["requires modern Blackwell NVFP4 support", "FP8 KV remains a fidelity gate", "multimodal vLLM path is not yet verified in this runtime"],
+        "prompting_notes": ["Use xhigh for difficult tasks and low or medium for latency-sensitive work.", "Preserve thinking only when the client needs it.", "Use the Qwen3 coder tool schema for tool calls."]
+      },
+      "evidence_confidence": "high for upstream capability and artifact provenance; mixed for this repository's target-card fit and throughput until hardware smoke tests complete"
+    }
+  },
+  "quants": {
+    "nvfp4": {
+      "key": "qwen3.8-27b-nvfp4",
+      "precision": "NVFP4 W4A4 compressed-tensors with FP8 attention/KV and a pinned MTP companion",
+      "primary": true,
+      "request_model_id": "qwen3.8-27b",
+      "aliases": ["qwen3.8-27b", "qwen-3.8-27b"],
+      "artifacts": [
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "LICENSE", "size": 11343, "sha256": "50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32", "role": "license"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "chat_template.jinja", "size": 8952, "sha256": "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041", "role": "chat-template"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "config.json", "size": 19252, "sha256": "267be2125ee2ec272555748c87cc636b25a96107946f05491bd6043151c7fe4e", "role": "model-config"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "generation_config.json", "size": 214, "sha256": "d0dbf670c6a372817b2ff92d5d47e3130d35de9c3a7164ba455fd7a88255b362", "role": "generation-config"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "hf_quant_config.json", "size": 15113, "sha256": "0c1004d622f835eef17ba193d8e966ecfd2d5218cbc8d25b7effff8cb4011893", "role": "quantization-config"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "merges.txt", "size": 3353259, "sha256": "a9d356d7bdf1ef4949e3e748e95b8e10ad9d4e2e838eddc38a0a7b6b94d1db8d", "role": "tokenizer"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "model-00001-of-00006.safetensors", "size": 4013662656, "sha256": "4b71c5d9d5027c88d1df9f53b93ad77b8d5e428d5d6f75ae42063704d94930b9", "role": "model"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "model-00002-of-00006.safetensors", "size": 4104675536, "sha256": "d0ceb042ef003ec63e00203823eb70d4815c9fc0430ba04a5442b6b8bde19093", "role": "model"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "model-00003-of-00006.safetensors", "size": 4028901296, "sha256": "b633a26c1d3b97bf061585363b99d4c01650b4e3f6d0cbb18e7c7e03ca2de1e4", "role": "model"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "model-00004-of-00006.safetensors", "size": 4003421984, "sha256": "485ea312626e2d1f3a820d9f7545809cef1e2e77414e3977a61d32dacd370bd0", "role": "model"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "model-00005-of-00006.safetensors", "size": 4000515080, "sha256": "2aa61bab1ed252fe3cdb479286b5b7add7e8ad567501add5f6eeef3987b03d31", "role": "model"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "model-00006-of-00006.safetensors", "size": 5380672368, "sha256": "8214cd21a46832380c06be552c42d9514c6cc9f27d98e09e2a09e36a8bd6e6ce", "role": "model"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "model.safetensors.index.json", "size": 205647, "sha256": "f9ba0436d933e2362fb1bfa0508931c28b68f1fddbd5b94e6d50712e36a0636c", "role": "model-index"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "nvfp4_experts_mtp.safetensors", "size": 849400392, "sha256": "c2b7cb6987e40f13b1ab6e552958afe47a759f86cac0c3c4a1c29f606dc080ef", "role": "speculative-mtp"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "preprocessor_config.json", "size": 390, "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516", "role": "image-preprocessor"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "tokenizer.json", "size": 12809320, "sha256": "0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3", "role": "tokenizer"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "tokenizer_config.json", "size": 17927, "sha256": "5a205aa76328f59df93a9091d0496aeda4615c6b0c495cbd37e14c79c0cd0f94", "role": "tokenizer-config"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "video_preprocessor_config.json", "size": 385, "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13", "role": "video-preprocessor"},
+        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "vocab.json", "size": 6722759, "sha256": "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003", "role": "tokenizer"}
+      ]
+    }
+  }
+}

@@ -75,6 +75,43 @@ services:
               count: all
               capabilities: [gpu]
 
+  vllm:
+    profiles: [vllm]
+    container_name: prefer-vllm
+    build:
+      context: ./docker/vllm
+      dockerfile: Dockerfile
+    image: prefer:vllm-cuda13-local
+    ports:
+      - "${VLLM_PORT:-8084}:8000"
+    volumes:
+      - prefer-vllm-model-cache:/models
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - HF_HUB_DISABLE_XET=${HF_HUB_DISABLE_XET:-}
+      - HF_XET_HIGH_PERFORMANCE=${HF_XET_HIGH_PERFORMANCE:-1}
+      - HF_XET_FIXED_DOWNLOAD_CONCURRENCY=${HF_XET_FIXED_DOWNLOAD_CONCURRENCY:-}
+      - HF_XET_DATA_MAX_CONCURRENT_FILE_DOWNLOADS=${HF_XET_DATA_MAX_CONCURRENT_FILE_DOWNLOADS:-}
+      - HF_XET_RECONSTRUCTION_DOWNLOAD_BUFFER_SIZE=${HF_XET_RECONSTRUCTION_DOWNLOAD_BUFFER_SIZE:-}
+      - HF_XET_RECONSTRUCTION_DOWNLOAD_BUFFER_PERFILE_SIZE=${HF_XET_RECONSTRUCTION_DOWNLOAD_BUFFER_PERFILE_SIZE:-}
+      - HF_XET_RECONSTRUCTION_DOWNLOAD_BUFFER_LIMIT=${HF_XET_RECONSTRUCTION_DOWNLOAD_BUFFER_LIMIT:-}
+      - VLLM_SERVER_CONFIG=${VLLM_SERVER_CONFIG:-}
+      - VLLM_PRESTAGE_MODELS=${VLLM_PRESTAGE_MODELS:-}
+      - VLLM_DOWNLOAD_JOBS=${VLLM_DOWNLOAD_JOBS:-4}
+      - VLLM_S3_BUCKET_NAME=${VLLM_S3_BUCKET_NAME:-}
+      - VLLM_S3_MODEL_PREFIX=${VLLM_S3_MODEL_PREFIX:-}
+      - PRESTAGE_MODELS=${PRESTAGE_MODELS:-}
+      - MODEL_DOWNLOAD_JOBS=${MODEL_DOWNLOAD_JOBS:-}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-}
+      - S3_MODEL_PREFIX=${S3_MODEL_PREFIX:-}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
   audio:
     container_name: prefer-audio
     build:
@@ -147,6 +184,8 @@ volumes:
     name: ${PREFER_IMAGE_MODEL_VOLUME:-prefer-image-model-cache}
   prefer-sglang-model-cache:
     name: ${PREFER_SGLANG_MODEL_VOLUME:-prefer-model-cache}
+  prefer-vllm-model-cache:
+    name: ${PREFER_VLLM_MODEL_VOLUME:-prefer-model-cache}
   prefer-sglang-video-inputs:
     name: ${PREFER_SGLANG_VIDEO_INPUT_VOLUME:-prefer-sglang-video-inputs}
   prefer-sglang-video-output:
