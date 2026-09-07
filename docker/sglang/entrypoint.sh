@@ -4,6 +4,12 @@ set -euo pipefail
 source /prefer-download-artifacts.sh
 source /model-downloads.generated.sh
 
+PREFER_DEPLOYMENT="${PREFER_DEPLOYMENT:-${SGLANG_DEPLOYMENT:-}}"
+PREFER_BUNDLE="${PREFER_BUNDLE:-${SGLANG_BUNDLE:-}}"
+PREFER_MODELS="${PREFER_MODELS:-${SGLANG_MODELS:-}}"
+PREFER_SERVER_OVERRIDES="${PREFER_SERVER_OVERRIDES:-${SGLANG_SERVER_OVERRIDES:-}}"
+PREFER_MODEL_OVERRIDES="${PREFER_MODEL_OVERRIDES:-${SGLANG_MODEL_OVERRIDES:-}}"
+
 resolve_s3_settings() {
   local bucket="${SGLANG_S3_BUCKET_NAME:-${S3_BUCKET_NAME:-}}"
   local prefix="${SGLANG_S3_MODEL_PREFIX:-${S3_MODEL_PREFIX:-}}"
@@ -40,6 +46,24 @@ resolve_s3_settings() {
 resolve_s3_settings
 
 server_config="${SGLANG_SERVER_CONFIG:-/app/server.json}"
+if [ -n "${PREFER_DEPLOYMENT:-}${PREFER_BUNDLE:-}${PREFER_MODELS:-}${PREFER_SERVER_OVERRIDES:-}${PREFER_MODEL_OVERRIDES:-}" ]; then
+  mkdir -p /run/prefer
+  runtime_config=/run/prefer/sglang.json
+  runtime_prestage=/run/prefer/sglang.prestage
+  runtime_plan=/run/prefer/plan.json
+  python3 /prefer-catalog/generate.py \
+    --compose \
+    --base "${PREFER_DEPLOYMENT:-$server_config}" \
+    --bundles "${PREFER_BUNDLE:-}" \
+    --models "${PREFER_MODELS:-}" \
+    --server-overrides "${PREFER_SERVER_OVERRIDES:-}" \
+    --model-overrides "${PREFER_MODEL_OVERRIDES:-}" \
+    --output "$runtime_config" \
+    --prestage-output "$runtime_prestage" \
+    --plan-output "$runtime_plan"
+  server_config="$runtime_config"
+  export PREFER_EFFECTIVE_PLAN="$runtime_plan"
+fi
 if [ ! -f "$server_config" ]; then
   echo "[sglang-entrypoint] server config not found: $server_config" >&2
   exit 2

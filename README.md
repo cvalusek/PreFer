@@ -163,6 +163,45 @@ docker compose --profile vllm up vllm
 curl http://localhost:8084/v1/models
 ```
 
+## Runtime composition (preview)
+
+Every engine now publishes the same opt-in composition contract in its
+deployment inventory. A controller can select a known hardware deployment,
+add a bundle and/or individual catalog models, and then apply engine-native
+overrides without maintaining a separate checked-in preset for every
+combination. The container resolves that request at startup into an ephemeral
+effective config, matching prestage manifest, and `/run/prefer/plan.json`.
+
+The precedence is catalog model/quant defaults, selected hardware deployment
+defaults, server JSON overrides, per-model JSON overrides, then explicit raw
+engine arguments. Bundle and model selections are additive; selecting an exact
+quant key replaces the bundle's lane for that logical model. SGLang and vLLM
+remain one-model-per-process, while llama.cpp, audio.cpp, and the image router
+can compose multiple models. Nested JSON objects merge recursively so changing
+one speculative or session option does not erase its sibling defaults; scalar
+and array values replace the earlier value.
+
+Direct container launchers may use the generic `PREFER_DEPLOYMENT`,
+`PREFER_BUNDLE`, `PREFER_MODELS`, `PREFER_SERVER_OVERRIDES`, and
+`PREFER_MODEL_OVERRIDES` variables. Compose uses the corresponding
+`LLAMA_*`, `AUDIO_*`, `IMAGE_*`, `SGLANG_*`, or `VLLM_*` names so one service's
+selection is not accidentally applied to every engine. For example:
+
+```dotenv
+LLAMA_DEPLOYMENT=aws/g7e/2xlarge/general
+LLAMA_BUNDLE=gemma
+LLAMA_MODELS=qwen-3.8-27b
+LLAMA_SERVER_OVERRIDES={"threads":6}
+LLAMA_MODEL_OVERRIDES={"qwen-3.8-27b":{"parallel":2}}
+```
+
+All existing preset/config variables remain compatibility shortcuts when the
+new composition variables are blank. Release inventories are the controller
+contract for valid deployment IDs, bundle names, model/quant keys, effective
+settings, artifact sizes, and staging requirements. Images contain the catalog
+and generator only; model weights still stage onto external model storage at
+runtime.
+
 ## Environment
 
 Most local configuration lives in `.env`; see [.env.example](.env.example).

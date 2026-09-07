@@ -1,5 +1,5 @@
 {
-  "catalog_fingerprint": "74566ee2b9d882bffc494554cc0ce6ce50e1943dd6ecc3026dae22b8bbeea4ac",
+  "catalog_fingerprint": "76cf69dcb66b21b51d88077603e5cb1d19acf8cb9d359df1b8ec236556fcf366",
   "schema_version": "prefer.vllm-deployment-inventory.v1",
   "runtime": {
     "name": "vllm",
@@ -7,6 +7,52 @@
     "source_revision": "2cf0a6915ce544dc493a0990f2ea38d81601128a",
     "source_revision_role": "Official vLLM v0.28.0 release with Qwen3.5-family hybrid-model, NVFP4, and native MTP serving support.",
     "lineage": "official-upstream"
+  },
+  "composition": {
+    "schema_version": "prefer.runtime-composition.v1",
+    "activation": "opt-in; existing VLLM_SERVER_CONFIG remains compatible when no composition variable is set",
+    "multi_model": false,
+    "effective_config_path": "/run/prefer/vllm.json",
+    "effective_plan_path": "/run/prefer/plan.json",
+    "compose_environment_prefix": "VLLM",
+    "override_merge": "objects merge recursively; scalar and array values replace",
+    "environment": {
+      "PREFER_DEPLOYMENT": {
+        "type": "string",
+        "source": "deployments[].id"
+      },
+      "PREFER_BUNDLE": {
+        "type": "unsupported"
+      },
+      "PREFER_MODELS": {
+        "type": "single-string",
+        "source": "models key, model_slug, request_model_id, or alias"
+      },
+      "PREFER_SERVER_OVERRIDES": {
+        "type": "json-object",
+        "applies_to": "vLLM server settings"
+      },
+      "PREFER_MODEL_OVERRIDES": {
+        "type": "json-object-map",
+        "applies_to": "the selected model's server settings"
+      }
+    },
+    "selection_rules": [
+      "one model is allowed per vLLM process",
+      "a friendly model selection uses its primary catalog lane",
+      "switching models inherits a matching config from the selected hardware deployment when available"
+    ],
+    "precedence": [
+      "catalog model and lane defaults",
+      "hardware deployment defaults",
+      "PREFER_SERVER_OVERRIDES",
+      "PREFER_MODEL_OVERRIDES",
+      "raw engine arguments"
+    ],
+    "setting_sources": {
+      "server": "deployments[].server",
+      "model": "models[].server"
+    }
   },
   "base_image": {
     "reference": "vllm/vllm-openai:v0.28.0-ubuntu2404@sha256:f8fe15a8039343336945db10494eaad80ef941fe2b2a5fa6649fa38636051a65",

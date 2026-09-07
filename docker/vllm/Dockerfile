@@ -28,9 +28,13 @@ COPY server-configs /server-configs
 COPY deployment-inventory.generated.json /deployment-inventory.json
 COPY download-artifacts.sh /prefer-download-artifacts.sh
 COPY model-downloads.generated.sh /model-downloads.generated.sh
+COPY generate.py /prefer-catalog/generate.py
+COPY runtime.json /prefer-catalog/runtime.json
+COPY models /prefer-catalog/models
+COPY deployment-scenarios /prefer-catalog/deployment-scenarios
 COPY entrypoint.sh /prefer-vllm-entrypoint.sh
 COPY router.py /prefer-vllm-router.py
-RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-vllm-entrypoint.sh /prefer-vllm-router.py \
+RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-vllm-entrypoint.sh /prefer-vllm-router.py /prefer-catalog/generate.py \
     && chmod +x /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-vllm-entrypoint.sh /prefer-vllm-router.py
 
 LABEL io.prefer.runtime="vllm" \

@@ -230,6 +230,19 @@ their sidecars stage every best-quant route supported on that tier and lower
 tiers. Select a family or single-model preset when the complete cumulative
 transfer is not intended.
 
+Preview releases also accept the shared runtime-composition inputs through
+this deployment file. The launcher forwards both the generic `PREFER_*` names
+and the llama-scoped `LLAMA_*` names. For example,
+`LLAMA_DEPLOYMENT=aws/g7e/2xlarge/general`, `LLAMA_BUNDLE=gemma`, and
+`LLAMA_MODELS=qwen-3.8-27b` dynamically produce the effective preset and its
+matching prestage manifest at container start. Existing
+`LLAMA_ARG_MODELS_PRESET` deployments remain unchanged when those inputs are
+blank. JSON override values should be written as compact single-line values in
+the systemd environment file.
+Because the boot launcher is baked into the AMI, this passthrough becomes
+available on AMIs built from this source; pulling a newer runtime image does
+not rewrite an older AMI's launcher.
+
 For a direct EC2 launch outside CDK, ordinary shell user-data is sufficient on
 an AMI containing this boot contract:
 

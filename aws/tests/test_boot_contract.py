@@ -44,14 +44,28 @@ class AwsBootContractTest(unittest.TestCase):
         self.assertNotIn(">> /opt/prefer/prefer-boot.env", stack)
         self.assertNotIn("systemctl restart prefer-boot.service", stack)
 
-    def test_container_runner_passes_the_router_limit(self) -> None:
+    def test_container_runner_passes_router_and_composition_inputs(self) -> None:
         runner = self.read("aws/boot/20-run-container.sh")
-        passthrough = re.search(r"for v in (?P<variables>[^;]+); do", runner)
+        passthrough = re.search(r"for v in (?P<variables>.*?)\s+do", runner, re.DOTALL)
         self.assertIsNotNone(passthrough)
-        self.assertIn("LLAMA_ARG_MODELS_MAX", passthrough.group("variables"))
-        self.assertIn("S3_MODEL_PREFIX", passthrough.group("variables"))
-        self.assertIn("MODEL_CACHE_RECHECK_DAYS", passthrough.group("variables"))
-        self.assertIn("MODEL_DOWNLOAD_JOBS", passthrough.group("variables"))
+        variables = passthrough.group("variables").split()
+        for variable in (
+            "LLAMA_ARG_MODELS_MAX",
+            "S3_MODEL_PREFIX",
+            "MODEL_CACHE_RECHECK_DAYS",
+            "MODEL_DOWNLOAD_JOBS",
+            "PREFER_DEPLOYMENT",
+            "PREFER_BUNDLE",
+            "PREFER_MODELS",
+            "PREFER_SERVER_OVERRIDES",
+            "PREFER_MODEL_OVERRIDES",
+            "LLAMA_DEPLOYMENT",
+            "LLAMA_BUNDLE",
+            "LLAMA_MODELS",
+            "LLAMA_SERVER_OVERRIDES",
+            "LLAMA_MODEL_OVERRIDES",
+        ):
+            self.assertIn(variable, variables)
 
 
 if __name__ == "__main__":

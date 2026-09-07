@@ -17,8 +17,12 @@ COPY server-configs /server-configs
 COPY deployment-inventory.generated.json /deployment-inventory.json
 COPY download-artifacts.sh /prefer-download-artifacts.sh
 COPY model-downloads.generated.sh /model-downloads.generated.sh
+COPY generate.py /prefer-catalog/generate.py
+COPY runtime.json deployment-bundles.json /prefer-catalog/
+COPY models /prefer-catalog/models
+COPY deployment-scenarios /prefer-catalog/deployment-scenarios
 COPY entrypoint.sh /prefer-audio-entrypoint.sh
-RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-audio-entrypoint.sh \
+RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-audio-entrypoint.sh /prefer-catalog/generate.py \
     && chmod +x /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-audio-entrypoint.sh
 
 LABEL io.prefer.runtime="audio.cpp" \

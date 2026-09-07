@@ -140,6 +140,20 @@ Environment variables:
 - `HF_TOKEN`, `HF_HUB_DISABLE_XET`, and the `HF_XET_*` controls are passed to
   Hugging Face staging. Xet high-performance mode is enabled by default.
 
+### Runtime composition (preview)
+
+`IMAGE_DEPLOYMENT` selects a released hardware shape. `IMAGE_BUNDLE` and
+`IMAGE_MODELS` then compose capability bundles and individual model/quant
+lanes; an exact quant key replaces the hardware shape's normal lane for that
+model while retaining compatible hardware arguments. `IMAGE_MODEL_OVERRIDES`
+supports `args`, `args_append`, and `args_remove`, and
+`IMAGE_SERVER_OVERRIDES` changes router settings.
+
+The effective config, prestage manifest, and audit plan are written beneath
+`/run/prefer`. Leaving composition blank preserves `IMAGE_SERVER_CONFIG`.
+Only catalog metadata and the generator are embedded in the image; weights
+remain on the external image-model volume.
+
 The local Compose path is Hugging Face-only and does not configure S3. Image
 discovery still starts immediately and does not wait for background staging.
 Requests wait only for their selected files and verification markers. An

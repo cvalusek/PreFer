@@ -19,6 +19,52 @@
     "source_revision_role": "Pinned official SGLang nightly containing the CUDA 13 multimodal-generation server, dynamic component-weight override CLI, and the regular text server.",
     "lineage": "official-upstream"
   },
+  "composition": {
+    "schema_version": "prefer.runtime-composition.v1",
+    "activation": "opt-in; existing SGLANG_SERVER_CONFIG remains compatible when no composition variable is set",
+    "multi_model": false,
+    "effective_config_path": "/run/prefer/sglang.json",
+    "effective_plan_path": "/run/prefer/plan.json",
+    "compose_environment_prefix": "SGLANG",
+    "override_merge": "objects merge recursively; scalar and array values replace",
+    "environment": {
+      "PREFER_DEPLOYMENT": {
+        "type": "string",
+        "source": "deployments[].id"
+      },
+      "PREFER_BUNDLE": {
+        "type": "unsupported"
+      },
+      "PREFER_MODELS": {
+        "type": "single-string",
+        "source": "models key, model_slug, request_model_id, or alias"
+      },
+      "PREFER_SERVER_OVERRIDES": {
+        "type": "json-object",
+        "applies_to": "SGLang server settings"
+      },
+      "PREFER_MODEL_OVERRIDES": {
+        "type": "json-object-map",
+        "applies_to": "the selected model's server settings"
+      }
+    },
+    "selection_rules": [
+      "one model is allowed per SGLang process",
+      "a friendly model selection uses its primary catalog lane",
+      "switching models inherits a matching config from the selected hardware deployment when available"
+    ],
+    "precedence": [
+      "catalog model and lane defaults",
+      "hardware deployment defaults",
+      "PREFER_SERVER_OVERRIDES",
+      "PREFER_MODEL_OVERRIDES",
+      "raw engine arguments"
+    ],
+    "setting_sources": {
+      "server": "deployments[].server",
+      "model": "models[].server"
+    }
+  },
   "base_image": {
     "reference": "lmsysorg/sglang:nightly-dev-cu13-20260907-30705c00@sha256:19b8fa1223cc339c1eae7a5b703f1a8c2543b5b119155bf3d7efaef18f77f007",
     "index_digest": "sha256:19b8fa1223cc339c1eae7a5b703f1a8c2543b5b119155bf3d7efaef18f77f007",

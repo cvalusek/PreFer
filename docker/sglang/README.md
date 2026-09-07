@@ -159,6 +159,18 @@ The SGLang-specific variables take precedence when set:
 - `PRESTAGE_MODELS` and `MODEL_DOWNLOAD_JOBS` remain accepted for operators
   reusing the llama.cpp staging environment.
 
+### Runtime composition (preview)
+
+`SGLANG_DEPLOYMENT` selects a released hardware configuration and
+`SGLANG_MODELS` may replace its model with one exact catalog lane or friendly
+model identity. The replacement inherits a same-hardware scenario when one is
+available. `SGLANG_SERVER_OVERRIDES` and `SGLANG_MODEL_OVERRIDES` are JSON
+objects applied in that order, with explicit command arguments last.
+
+SGLang remains one-model-per-process and does not accept bundles. The resolved
+config, prestage manifest, and plan are written beneath `/run/prefer`; leaving
+composition blank preserves `SGLANG_SERVER_CONFIG`. Weights remain external.
+
 ## Compose
 
 The service listens on container port `30000` and host port `8083` by default.

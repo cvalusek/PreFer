@@ -32,6 +32,17 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def deep_merge(*sources: dict) -> dict:
+    result: dict = {}
+    for source in sources:
+        for key, value in source.items():
+            if isinstance(result.get(key), dict) and isinstance(value, dict):
+                result[key] = deep_merge(result[key], value)
+            else:
+                result[key] = copy.deepcopy(value)
+    return result
+
+
 def artifact_identity(artifact: dict) -> dict:
     return {
         "repo": artifact["repo"],
@@ -492,6 +503,35 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
     payload = {
         "schema_version": "prefer.vllm-deployment-inventory.v1",
         "runtime": runtime["runtime"],
+        "composition": {
+            "schema_version": "prefer.runtime-composition.v1",
+            "activation": "opt-in; existing VLLM_SERVER_CONFIG remains compatible when no composition variable is set",
+            "multi_model": False,
+            "effective_config_path": "/run/prefer/vllm.json",
+            "effective_plan_path": "/run/prefer/plan.json",
+            "compose_environment_prefix": "VLLM",
+            "override_merge": "objects merge recursively; scalar and array values replace",
+            "environment": {
+                "PREFER_DEPLOYMENT": {"type": "string", "source": "deployments[].id"},
+                "PREFER_BUNDLE": {"type": "unsupported"},
+                "PREFER_MODELS": {"type": "single-string", "source": "models key, model_slug, request_model_id, or alias"},
+                "PREFER_SERVER_OVERRIDES": {"type": "json-object", "applies_to": "vLLM server settings"},
+                "PREFER_MODEL_OVERRIDES": {"type": "json-object-map", "applies_to": "the selected model's server settings"},
+            },
+            "selection_rules": [
+                "one model is allowed per vLLM process",
+                "a friendly model selection uses its primary catalog lane",
+                "switching models inherits a matching config from the selected hardware deployment when available",
+            ],
+            "precedence": [
+                "catalog model and lane defaults",
+                "hardware deployment defaults",
+                "PREFER_SERVER_OVERRIDES",
+                "PREFER_MODEL_OVERRIDES",
+                "raw engine arguments",
+            ],
+            "setting_sources": {"server": "deployments[].server", "model": "models[].server"},
+        },
         "base_image": runtime["base_image"],
         "requirements": runtime["requirements"],
         "staging": runtime["staging"],
@@ -520,7 +560,7 @@ def download_script(lanes: list[dict]) -> str:
     primary = [lane for lane in lanes if lane["primary"]]
     artifacts: dict[str, dict] = {}
     model_artifact_ids: dict[str, list[str]] = {}
-    for lane in primary:
+    for lane in lanes:
         ids = []
         for artifact in lane["artifacts"]:
             artifact_id = artifact_download_id(artifact)
@@ -633,10 +673,198 @@ def rendered_outputs() -> dict[Path, str]:
     return outputs
 
 
+def parse_composition_list(value: str) -> list[str]:
+    result: list[str] = []
+    for item in re.split(r"[,\r\n]+", value or ""):
+        item = item.strip()
+        if item and item not in result:
+            result.append(item)
+    return result
+
+
+def parse_composition_object(value: str, label: str) -> dict:
+    if not value:
+        return {}
+    parsed = json.loads(value)
+    if not isinstance(parsed, dict):
+        raise ValueError(f"{label} must be a JSON object")
+    return parsed
+
+
+def normalize_runtime_config(value: str) -> str:
+    normalized = value.strip().replace("\\", "/")
+    for prefix in ("/server-configs/", "server-configs/"):
+        if normalized.startswith(prefix):
+            normalized = normalized[len(prefix) :]
+            break
+    if normalized in {"/app/server.json", "server.json", "default", "vllm/cuda13"}:
+        return "default"
+    if not normalized.endswith(".json"):
+        normalized += ".json"
+    path = PurePosixPath(normalized)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError(f"unsafe vLLM deployment: {value!r}")
+    return path.as_posix()
+
+
+def vllm_selection_names(lane: dict) -> set[str]:
+    return {
+        lane["key"],
+        lane["id"],
+        lane["request_model_id"],
+        lane["model_slug"],
+        *lane.get("aliases", []),
+    }
+
+
+def compose_runtime_config(
+    *,
+    base: str,
+    bundle_value: str,
+    model_value: str,
+    server_overrides_value: str,
+    model_overrides_value: str,
+) -> tuple[dict, list[str], dict]:
+    requested_bundles = parse_composition_list(bundle_value)
+    if requested_bundles:
+        raise ValueError("vLLM does not define multi-model bundles; select one PREFER_MODELS entry")
+    requested_models = parse_composition_list(model_value)
+    if len(requested_models) > 1:
+        raise ValueError("vLLM runtime composition accepts exactly one model")
+    server_overrides = parse_composition_object(server_overrides_value, "PREFER_SERVER_OVERRIDES")
+    model_overrides = parse_composition_object(model_overrides_value, "PREFER_MODEL_OVERRIDES")
+    if any(not isinstance(value, dict) for value in model_overrides.values()):
+        raise ValueError("PREFER_MODEL_OVERRIDES values must be JSON objects")
+
+    lanes = model_lanes()
+    primary = [lane for lane in lanes if lane["primary"]]
+    lanes_by_key = {lane["key"]: lane for lane in lanes}
+    primary_by_key = {lane["key"]: lane for lane in primary}
+    scenarios = load_scenarios(primary_by_key)
+    scenario_by_path = {scenario["path"]: scenario for scenario in scenarios}
+    normalized = normalize_runtime_config(base)
+    explicit_base_path = Path(base)
+
+    if normalized == "default" or explicit_base_path.is_file():
+        base_path = explicit_base_path
+        if not base_path.is_file():
+            installed_default = Path("/app/server.json")
+            base_path = installed_default if installed_default.is_file() else ROOT / "server.generated.json"
+        base_config = load_json(base_path)
+        model_records = base_config.get("models", [])
+        if len(model_records) != 1 or model_records[0].get("key") not in primary_by_key:
+            raise ValueError("cannot map the vLLM base config to one primary catalog model")
+        base_lane = primary_by_key[model_records[0]["key"]]
+        base_server = copy.deepcopy(base_config.get("server", {}))
+        base_deployment = (
+            PurePosixPath(normalized).with_suffix("").as_posix()
+            if normalized != "default"
+            else "vllm/cuda13"
+        )
+        cohort: list[dict] = []
+    else:
+        scenario = scenario_by_path.get(normalized)
+        if scenario is None:
+            raise ValueError(f"unknown vLLM deployment: {base!r}")
+        if len(scenario["model_keys"]) != 1:
+            raise ValueError(f"{normalized}: vLLM deployment must contain one model")
+        base_lane = primary_by_key[scenario["model_keys"][0]]
+        base_server = copy.deepcopy(scenario["server"])
+        base_deployment = PurePosixPath(normalized).with_suffix("").as_posix()
+        parent = PurePosixPath(normalized).parent
+        cohort = [record for record in scenarios if PurePosixPath(record["path"]).parent == parent]
+
+    selected = base_lane
+    selected_server = base_server
+    if requested_models:
+        selection = requested_models[0]
+        matches = [lane for lane in lanes if selection in vllm_selection_names(lane)]
+        if not matches:
+            raise ValueError(f"unknown vLLM model selection: {selection!r}")
+        if selection in lanes_by_key:
+            selected = lanes_by_key[selection]
+        else:
+            primary_matches = [lane for lane in matches if lane["primary"]]
+            if len(primary_matches) != 1:
+                raise ValueError(
+                    f"ambiguous vLLM model {selection!r}; choose an exact lane: "
+                    + ", ".join(lane["key"] for lane in matches)
+                )
+            selected = primary_matches[0]
+        if selected["key"] != base_lane["key"]:
+            matching_scenarios = [
+                record
+                for record in cohort
+                if any(primary_by_key[key]["model_slug"] == selected["model_slug"] for key in record["model_keys"])
+            ]
+            selected_server = copy.deepcopy(
+                matching_scenarios[0]["server"]
+                if matching_scenarios
+                else base_server if selected["model_slug"] == base_lane["model_slug"] else {}
+            )
+
+    matching_overrides = [
+        value for name, value in model_overrides.items() if name in vllm_selection_names(selected)
+    ]
+    if len(matching_overrides) > 1:
+        raise ValueError(f"multiple PREFER_MODEL_OVERRIDES entries target {selected['key']}")
+    unknown_targets = [name for name in model_overrides if name not in vllm_selection_names(selected)]
+    if unknown_targets:
+        raise ValueError("PREFER_MODEL_OVERRIDES targets are not selected: " + ", ".join(unknown_targets))
+    model_override = matching_overrides[0] if matching_overrides else {}
+    effective_overrides = deep_merge(selected_server, server_overrides, model_override)
+    config = server_config(selected, effective_overrides)
+    prestage = [selected["key"]]
+    plan = {
+        "schema_version": "prefer.runtime-plan.v1",
+        "runtime": "vllm",
+        "base_deployment": base_deployment,
+        "bundles": [],
+        "requested_models": requested_models,
+        "resolved_model_keys": prestage,
+        "server_overrides": server_overrides,
+        "model_overrides": {selected["key"]: model_override} if model_override else {},
+        "precedence": [
+            "catalog model and lane defaults",
+            "hardware deployment defaults",
+            "PREFER_SERVER_OVERRIDES",
+            "PREFER_MODEL_OVERRIDES",
+            "vLLM command arguments",
+        ],
+    }
+    return config, prestage, plan
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--compose", action="store_true")
+    parser.add_argument("--base", default="")
+    parser.add_argument("--bundles", default="")
+    parser.add_argument("--models", default="")
+    parser.add_argument("--server-overrides", default="")
+    parser.add_argument("--model-overrides", default="")
+    parser.add_argument("--output")
+    parser.add_argument("--prestage-output")
+    parser.add_argument("--plan-output")
     args = parser.parse_args()
+    if args.compose:
+        if args.check or not args.base or not args.output or not args.prestage_output or not args.plan_output:
+            parser.error("--compose requires --base, --output, --prestage-output, and --plan-output")
+        config, prestage, plan = compose_runtime_config(
+            base=args.base,
+            bundle_value=args.bundles,
+            model_value=args.models,
+            server_overrides_value=args.server_overrides,
+            model_overrides_value=args.model_overrides,
+        )
+        for value in (args.output, args.prestage_output, args.plan_output):
+            Path(value).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.output).write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8", newline="\n")
+        Path(args.prestage_output).write_text(",".join(prestage) + "\n", encoding="utf-8", newline="\n")
+        Path(args.plan_output).write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8", newline="\n")
+        print(f"composed vLLM runtime config from {plan['base_deployment']}: {', '.join(prestage)}")
+        return
     try:
         outputs = rendered_outputs()
         failures: list[str] = []

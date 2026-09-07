@@ -22,6 +22,17 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def deep_merge(*sources: dict) -> dict:
+    result: dict = {}
+    for source in sources:
+        for key, value in source.items():
+            if isinstance(result.get(key), dict) and isinstance(value, dict):
+                result[key] = deep_merge(result[key], value)
+            else:
+                result[key] = copy.deepcopy(value)
+    return result
+
+
 def artifact_download_identity(artifact: dict) -> dict:
     return {
         "repo": artifact["repo"],
@@ -191,7 +202,7 @@ def server_config(lanes: list[dict], overrides: dict | None = None) -> dict:
     forbidden = {"models", "max_loaded_models", "lazy_load"} & overrides.keys()
     if forbidden:
         raise ValueError(f"server overrides cannot replace: {', '.join(sorted(forbidden))}")
-    config.update(overrides)
+    config = deep_merge(config, overrides)
     append_args = config.pop("model_args_append", [])
     if not isinstance(append_args, list) or not all(isinstance(value, str) for value in append_args):
         raise ValueError("model_args_append must contain strings")
@@ -425,6 +436,43 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
             "oci_labels": {"path": "io.prefer.deployment-inventory.path", "schema": "io.prefer.deployment-inventory.schema"},
         },
         "runtime": runtime["runtime"],
+        "composition": {
+            "schema_version": "prefer.runtime-composition.v1",
+            "activation": "opt-in; existing IMAGE_SERVER_CONFIG remains compatible when no composition variable is set",
+            "multi_model": True,
+            "effective_config_path": "/run/prefer/image.json",
+            "effective_plan_path": "/run/prefer/plan.json",
+            "compose_environment_prefix": "IMAGE",
+            "override_merge": "objects merge recursively; scalar and array values replace",
+            "environment": {
+                "PREFER_DEPLOYMENT": {"type": "string", "source": "deployments[].id"},
+                "PREFER_BUNDLE": {"type": "string-list", "source": "bundles keys"},
+                "PREFER_MODELS": {"type": "string-list", "source": "models key, model_slug, or request_model_id"},
+                "PREFER_SERVER_OVERRIDES": {"type": "json-object", "applies_to": "image router settings"},
+                "PREFER_MODEL_OVERRIDES": {
+                    "type": "json-object-map",
+                    "applies_to": "selected model args",
+                    "keys": ["args", "args_append", "args_remove"],
+                },
+            },
+            "selection_rules": [
+                "bundle and model selections are additive",
+                "an exact quant key replaces another lane for the same logical model",
+                "a friendly model selection inherits the selected hardware deployment's lane",
+            ],
+            "precedence": [
+                "catalog model and lane defaults",
+                "hardware deployment defaults",
+                "PREFER_SERVER_OVERRIDES",
+                "PREFER_MODEL_OVERRIDES",
+                "raw engine arguments",
+            ],
+            "setting_sources": {
+                "server": "composition.server_defaults plus deployment config",
+                "model": "models[].server_args",
+            },
+            "server_defaults": default_server(),
+        },
         "base_image": runtime["base_image"],
         "platforms": ["linux/amd64"],
         "api": {
@@ -521,10 +569,255 @@ def expected_outputs() -> dict[Path, str]:
     return outputs
 
 
+def parse_composition_list(value: str) -> list[str]:
+    result: list[str] = []
+    for item in re.split(r"[,\r\n]+", value or ""):
+        item = item.strip()
+        if item and item not in result:
+            result.append(item)
+    return result
+
+
+def parse_composition_object(value: str, label: str) -> dict:
+    if not value:
+        return {}
+    parsed = json.loads(value)
+    if not isinstance(parsed, dict):
+        raise ValueError(f"{label} must be a JSON object")
+    return parsed
+
+
+def normalize_runtime_config(value: str) -> str:
+    normalized = value.strip().replace("\\", "/")
+    for prefix in ("/server-configs/", "server-configs/"):
+        if normalized.startswith(prefix):
+            normalized = normalized[len(prefix) :]
+            break
+    if normalized in {"/app/server.json", "server.json", "default", "image/cuda12"}:
+        return "default"
+    if not normalized.endswith(".json"):
+        normalized += ".json"
+    path = PurePosixPath(normalized)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError(f"unsafe image deployment: {value!r}")
+    return path.as_posix()
+
+
+def image_selection_names(lane: dict) -> set[str]:
+    return {lane["key"], lane["id"], lane["model_slug"]}
+
+
+def remove_image_args(args: list[str], flags: list[str]) -> list[str]:
+    remove = set(flags)
+    result: list[str] = []
+    index = 0
+    while index < len(args):
+        value = args[index]
+        if value in remove:
+            index += 1
+            if index < len(args) and not args[index].startswith("--"):
+                index += 1
+            continue
+        result.append(value)
+        index += 1
+    return result
+
+
+def compose_runtime_config(
+    *,
+    base: str,
+    bundle_value: str,
+    model_value: str,
+    server_overrides_value: str,
+    model_overrides_value: str,
+) -> tuple[dict, list[str], dict]:
+    lanes, by_key, primary_by_id = load_lanes()
+    bundles = load_bundles(set(primary_by_id))
+    scenarios = load_scenarios(by_key, bundles)
+    scenario_by_path = {scenario["path"]: scenario for scenario in scenarios}
+    normalized = normalize_runtime_config(base)
+    explicit_base_path = Path(base)
+
+    if normalized == "default" or explicit_base_path.is_file():
+        base_path = explicit_base_path
+        if not base_path.is_file():
+            installed_default = Path("/app/server.json")
+            base_path = installed_default if installed_default.is_file() else ROOT / "server.generated.json"
+        base_config = load_json(base_path)
+        base_lanes = []
+        for model in base_config.get("models", []):
+            lane = by_key.get(model.get("catalog_key"))
+            if lane is None:
+                raise ValueError(f"cannot map image base model {model.get('id')!r} to the catalog")
+            lane = copy.deepcopy(lane)
+            lane["args"] = copy.deepcopy(model.get("args", lane["args"]))
+            base_lanes.append(lane)
+        base_server = {
+            key: value
+            for key, value in base_config.items()
+            if key not in {"models", "lazy_load", "max_loaded_models"}
+        }
+        base_deployment = (
+            PurePosixPath(normalized).with_suffix("").as_posix()
+            if normalized != "default"
+            else "image/cuda12"
+        )
+        cohort = []
+    else:
+        scenario = scenario_by_path.get(normalized)
+        if scenario is None:
+            raise ValueError(f"unknown image deployment: {base!r}")
+        base_lanes = [copy.deepcopy(lane) for lane in scenario["lanes"]]
+        base_server = copy.deepcopy(scenario["server"])
+        base_deployment = PurePosixPath(normalized).with_suffix("").as_posix()
+        base_parent = PurePosixPath(normalized).parent
+        cohort = [
+            record
+            for record in scenarios
+            if PurePosixPath(record["path"]).parent == base_parent
+        ]
+
+    hardware_lanes = {lane["id"]: lane for record in cohort for lane in record["lanes"]}
+    hardware_lanes.update({lane["id"]: lane for lane in base_lanes})
+    requested_bundles = parse_composition_list(bundle_value)
+    requested_models = parse_composition_list(model_value)
+    server_overrides = parse_composition_object(server_overrides_value, "PREFER_SERVER_OVERRIDES")
+    model_overrides = parse_composition_object(model_overrides_value, "PREFER_MODEL_OVERRIDES")
+    if any(not isinstance(value, dict) for value in model_overrides.values()):
+        raise ValueError("PREFER_MODEL_OVERRIDES values must be JSON objects")
+
+    selected: list[dict] = []
+
+    def add_lane(lane: dict) -> None:
+        selected[:] = [existing for existing in selected if existing["id"] != lane["id"]]
+        selected.append(copy.deepcopy(lane))
+
+    for name in requested_bundles:
+        bundle = bundles.get(name)
+        if bundle is None:
+            raise ValueError(f"unknown image bundle: {name!r}")
+        for model_id in bundle["models"]:
+            add_lane(hardware_lanes.get(model_id, primary_by_id[model_id]))
+
+    for selection in requested_models:
+        matches = [lane for lane in lanes if selection in image_selection_names(lane)]
+        if not matches:
+            raise ValueError(f"unknown image model selection: {selection!r}")
+        if selection in by_key:
+            lane = copy.deepcopy(by_key[selection])
+            template = hardware_lanes.get(lane["id"])
+            primary_lane = primary_by_id[lane["id"]]
+            if template and template["args"][: len(primary_lane["args"])] == primary_lane["args"]:
+                lane["args"].extend(template["args"][len(primary_lane["args"]) :])
+        else:
+            model_id = matches[0]["id"]
+            lane = hardware_lanes.get(model_id)
+            if lane is None:
+                if len(matches) != 1:
+                    raise ValueError(
+                        f"ambiguous image model {selection!r}; choose an exact lane: "
+                        + ", ".join(match["key"] for match in matches)
+                    )
+                lane = matches[0]
+        add_lane(lane)
+
+    if not requested_bundles and not requested_models:
+        selected = [copy.deepcopy(lane) for lane in base_lanes]
+    if not selected:
+        raise ValueError("runtime composition selected no image models")
+
+    applied_model_overrides: dict[str, dict] = {}
+    for lane in selected:
+        matching = [value for name, value in model_overrides.items() if name in image_selection_names(lane)]
+        if len(matching) > 1:
+            raise ValueError(f"multiple PREFER_MODEL_OVERRIDES entries target {lane['key']}")
+        if not matching:
+            continue
+        override = matching[0]
+        unknown = set(override) - {"args", "args_append", "args_remove"}
+        if unknown:
+            raise ValueError(f"unsupported image model override for {lane['key']}: {sorted(unknown)[0]}")
+        if "args" in override:
+            if not isinstance(override["args"], list) or not all(isinstance(value, str) for value in override["args"]):
+                raise ValueError(f"{lane['key']}: args must be a list of strings")
+            lane["args"] = copy.deepcopy(override["args"])
+        if "args_remove" in override:
+            if not isinstance(override["args_remove"], list) or not all(
+                isinstance(value, str) and value.startswith("--") for value in override["args_remove"]
+            ):
+                raise ValueError(f"{lane['key']}: args_remove must contain long-option names")
+            lane["args"] = remove_image_args(lane["args"], override["args_remove"])
+        if "args_append" in override:
+            if not isinstance(override["args_append"], list) or not all(
+                isinstance(value, str) for value in override["args_append"]
+            ):
+                raise ValueError(f"{lane['key']}: args_append must be a list of strings")
+            lane["args"].extend(override["args_append"])
+        applied_model_overrides[lane["key"]] = override
+    unknown_targets = [
+        name
+        for name in model_overrides
+        if not any(name in image_selection_names(lane) for lane in selected)
+    ]
+    if unknown_targets:
+        raise ValueError("PREFER_MODEL_OVERRIDES targets are not selected: " + ", ".join(unknown_targets))
+
+    config = server_config(selected, deep_merge(base_server, server_overrides))
+    prestage = [lane["key"] for lane in selected]
+    plan = {
+        "schema_version": "prefer.runtime-plan.v1",
+        "runtime": "stable-diffusion.cpp",
+        "base_deployment": base_deployment,
+        "bundles": requested_bundles,
+        "requested_models": requested_models,
+        "resolved_model_keys": prestage,
+        "server_overrides": server_overrides,
+        "model_overrides": applied_model_overrides,
+        "precedence": [
+            "catalog model and lane defaults",
+            "hardware deployment defaults",
+            "PREFER_SERVER_OVERRIDES",
+            "PREFER_MODEL_OVERRIDES",
+            "router command arguments",
+        ],
+    }
+    return config, prestage, plan
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate PreFer stable-diffusion.cpp configs and inventory")
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--compose", action="store_true")
+    parser.add_argument("--base", default="")
+    parser.add_argument("--bundles", default="")
+    parser.add_argument("--models", default="")
+    parser.add_argument("--server-overrides", default="")
+    parser.add_argument("--model-overrides", default="")
+    parser.add_argument("--output")
+    parser.add_argument("--prestage-output")
+    parser.add_argument("--plan-output")
     args = parser.parse_args()
+    if args.compose:
+        if args.check or not args.base or not args.output or not args.prestage_output or not args.plan_output:
+            parser.error("--compose requires --base, --output, --prestage-output, and --plan-output")
+        try:
+            config, prestage, plan = compose_runtime_config(
+                base=args.base,
+                bundle_value=args.bundles,
+                model_value=args.models,
+                server_overrides_value=args.server_overrides,
+                model_overrides_value=args.model_overrides,
+            )
+            for value in (args.output, args.prestage_output, args.plan_output):
+                Path(value).parent.mkdir(parents=True, exist_ok=True)
+            Path(args.output).write_text(render_json(config), encoding="utf-8", newline="\n")
+            Path(args.prestage_output).write_text(",".join(prestage) + "\n", encoding="utf-8", newline="\n")
+            Path(args.plan_output).write_text(render_json(plan), encoding="utf-8", newline="\n")
+            print(f"composed image runtime config from {plan['base_deployment']}: {', '.join(prestage)}")
+            return 0
+        except (KeyError, TypeError, ValueError, OSError, json.JSONDecodeError) as exc:
+            print(f"image composition failed: {exc}", file=sys.stderr)
+            return 1
     try:
         outputs = expected_outputs()
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:

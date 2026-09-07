@@ -78,6 +78,19 @@ The vLLM-specific variables take precedence when set:
 - `PRESTAGE_MODELS` and `MODEL_DOWNLOAD_JOBS` remain accepted as compatibility
   aliases.
 
+### Runtime composition (preview)
+
+`VLLM_DEPLOYMENT` selects a released hardware configuration and `VLLM_MODELS`
+selects one exact lane or friendly model identity. A replacement inherits the
+matching same-hardware scenario when available. JSON
+`VLLM_SERVER_OVERRIDES` are applied before `VLLM_MODEL_OVERRIDES`, and raw
+vLLM command arguments remain the final override.
+
+vLLM remains one-model-per-process and does not accept bundles. The container
+writes the resolved config, prestage sidecar, and `/run/prefer/plan.json`
+beneath `/run/prefer`; blank composition variables preserve
+`VLLM_SERVER_CONFIG`. Only catalog metadata ships in the image.
+
 ## Compose
 
 The service listens on container port `8000` and host port `8084` by default.

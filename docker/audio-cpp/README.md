@@ -138,6 +138,19 @@ subset of the prestage keys in the table above. The full default set is about
 34.5 GB. Both audio variants' health checks allow four hours for this one-time staging; the
 service becomes healthy immediately once the server is ready.
 
+### Runtime composition (preview)
+
+`AUDIO_DEPLOYMENT` selects a released deployment, while `AUDIO_BUNDLE` and
+`AUDIO_MODELS` compose related capabilities and individual catalog models.
+They are additive, and an exact lane key replaces another lane for the same
+logical model. `AUDIO_MODEL_OVERRIDES` applies per-model session settings and
+`AUDIO_SERVER_OVERRIDES` applies server settings as JSON objects.
+
+The container writes `/run/prefer/audio.json`, its prestage sidecar, and
+`/run/prefer/plan.json` before staging. Blank composition variables retain the
+existing `AUDIO_SERVER_CONFIG` behavior. Catalog metadata is embedded in the
+image; audio weights remain external runtime downloads.
+
 Compose passes `HF_TOKEN` plus the same `HF_HUB_DISABLE_XET` and `HF_XET_*`
 controls as the llama service. Xet high-performance mode is enabled by default
 for audio staging and can be overridden for a constrained host.

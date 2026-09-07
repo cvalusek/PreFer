@@ -43,10 +43,14 @@ COPY presets/ /presets/
 COPY preset-catalog.json /preset-catalog.json
 COPY deployment-inventory.generated.json /deployment-inventory.json
 COPY model-downloads.generated.sh /model-downloads.generated.sh
+COPY generate-presets.py /prefer-catalog/generate-presets.py
+COPY preset-catalog.json /prefer-catalog/preset-catalog.json
+COPY models/ /prefer-catalog/models/
+COPY preset-scenarios/ /prefer-catalog/preset-scenarios/
 COPY detect-preset.sh /detect-preset.sh
 COPY download-models.sh /download-models.sh
 COPY entrypoint.sh /entrypoint.sh
-RUN sed -i 's/\r$//' /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh \
+RUN sed -i 's/\r$//' /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh /prefer-catalog/generate-presets.py \
     && chmod +x /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh
 
 EXPOSE 8080

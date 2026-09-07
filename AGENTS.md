@@ -234,6 +234,36 @@ AWS, RunPod, and generic local hardware presets are generated, not hand-edited:
   catalog keys referenced by the sidecar. A nonblank environment value still
   wins; use `none` for an intentional no-download run.
 
+### Runtime composition
+
+Preview images expose one shared, opt-in runtime-composition contract across
+llama.cpp, audio.cpp, stable-diffusion.cpp, SGLang, and vLLM. Each generator
+accepts `--compose` with a base deployment/config, bundle and model selectors,
+JSON server/model overrides, and output paths. Entrypoints invoke it only when
+one of the new selectors or overrides is nonblank, then write an ephemeral
+engine config, matching `.prestage` manifest, and
+`/run/prefer/plan.json`. Existing preset/config variables remain the legacy
+shortcut and must behave exactly as before when composition is unused.
+
+The precedence contract is model/quant catalog defaults, selected hardware
+deployment defaults, server overrides, model overrides, then raw engine
+arguments. Bundle and direct-model selections are additive. An exact catalog
+key replaces the existing lane for the same logical model; a friendly model
+identity keeps the selected hardware's lane when available. SGLang and vLLM
+remain single-model processes and reject bundles or multiple models. Override
+objects merge recursively; scalar and array values replace the earlier value.
+This lets a controller change one nested speculative/session setting without
+silently deleting the other catalog or hardware defaults.
+
+Direct launchers may pass the generic `PREFER_DEPLOYMENT`, `PREFER_BUNDLE`,
+`PREFER_MODELS`, `PREFER_SERVER_OVERRIDES`, and `PREFER_MODEL_OVERRIDES`
+contract. Compose exposes engine-scoped aliases so simultaneous services do
+not consume the same selection accidentally. Every deployment inventory must
+advertise the contract, inputs, setting sources, and effective plan/config
+paths. Runtime images copy the generator plus JSON catalog/scenario metadata
+to `/prefer-catalog`; never copy model weights into that directory or any
+other image/release layer.
+
 AWS authored scenarios are split by instance shape under
 `preset-scenarios/aws/`. RunPod paths are
 `presets/runpod/<gpu-slug>/<count>x/`; all initial card shapes use one GPU

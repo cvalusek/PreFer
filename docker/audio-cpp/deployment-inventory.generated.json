@@ -17,6 +17,67 @@
     "source_repo": "0xShug0/audio.cpp",
     "source_revision": "6d530f4052ca93b5cd84ef6124406dcf85542a6f"
   },
+  "composition": {
+    "schema_version": "prefer.runtime-composition.v1",
+    "activation": "opt-in; existing AUDIO_SERVER_CONFIG remains compatible when no composition variable is set",
+    "multi_model": true,
+    "effective_config_path": "/run/prefer/audio.json",
+    "effective_plan_path": "/run/prefer/plan.json",
+    "compose_environment_prefix": "AUDIO",
+    "override_merge": "objects merge recursively; scalar and array values replace",
+    "environment": {
+      "PREFER_DEPLOYMENT": {
+        "type": "string",
+        "source": "deployments[].id"
+      },
+      "PREFER_BUNDLE": {
+        "type": "string-list",
+        "source": "bundles keys"
+      },
+      "PREFER_MODELS": {
+        "type": "string-list",
+        "source": "models key or request_model_id"
+      },
+      "PREFER_SERVER_OVERRIDES": {
+        "type": "json-object",
+        "applies_to": "audio.cpp server settings"
+      },
+      "PREFER_MODEL_OVERRIDES": {
+        "type": "json-object-map",
+        "applies_to": "selected model session settings"
+      }
+    },
+    "selection_rules": [
+      "bundle and model selections are additive",
+      "an exact quant key replaces another lane for the same logical model",
+      "a friendly model selection uses its primary catalog lane"
+    ],
+    "precedence": [
+      "catalog model and lane defaults",
+      "hardware deployment defaults",
+      "bundle defaults",
+      "PREFER_SERVER_OVERRIDES",
+      "PREFER_MODEL_OVERRIDES",
+      "raw engine arguments"
+    ],
+    "setting_sources": {
+      "server": "composition.server_defaults plus bundles[].server and deployment config",
+      "model": "models[].server"
+    },
+    "server_defaults": {
+      "host": "0.0.0.0",
+      "port": 8080,
+      "device": 0,
+      "threads": 4,
+      "lazy_load": true,
+      "max_loaded_models": 1,
+      "idle_unload_ms": 1800000,
+      "min_free_memory_mb": 0,
+      "busy_timeout_ms": 300000,
+      "max_request_body_bytes": 536870912,
+      "log_request_body": false
+    }
+  },
   "base_images": {
     "cuda12": {
       "reference": "ghcr.io/0xshug0/audio.cpp:full-cuda12-20260828-6d530f4@sha256:88ec7504877ae0ff427dd15089693b260c1228cc511b22cd4a79b44f0b1ee268",

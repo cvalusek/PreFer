@@ -4,7 +4,31 @@ set -euo pipefail
 source /prefer-download-artifacts.sh
 source /model-downloads.generated.sh
 
+PREFER_DEPLOYMENT="${PREFER_DEPLOYMENT:-${IMAGE_DEPLOYMENT:-}}"
+PREFER_BUNDLE="${PREFER_BUNDLE:-${IMAGE_BUNDLE:-}}"
+PREFER_MODELS="${PREFER_MODELS:-${IMAGE_MODELS:-}}"
+PREFER_SERVER_OVERRIDES="${PREFER_SERVER_OVERRIDES:-${IMAGE_SERVER_OVERRIDES:-}}"
+PREFER_MODEL_OVERRIDES="${PREFER_MODEL_OVERRIDES:-${IMAGE_MODEL_OVERRIDES:-}}"
+
 server_config="${IMAGE_SERVER_CONFIG:-/app/server.json}"
+if [ -n "${PREFER_DEPLOYMENT:-}${PREFER_BUNDLE:-}${PREFER_MODELS:-}${PREFER_SERVER_OVERRIDES:-}${PREFER_MODEL_OVERRIDES:-}" ]; then
+  mkdir -p /run/prefer
+  runtime_config=/run/prefer/image.json
+  runtime_prestage=/run/prefer/image.prestage
+  runtime_plan=/run/prefer/plan.json
+  python3 /prefer-catalog/generate.py \
+    --compose \
+    --base "${PREFER_DEPLOYMENT:-$server_config}" \
+    --bundles "${PREFER_BUNDLE:-}" \
+    --models "${PREFER_MODELS:-}" \
+    --server-overrides "${PREFER_SERVER_OVERRIDES:-}" \
+    --model-overrides "${PREFER_MODEL_OVERRIDES:-}" \
+    --output "$runtime_config" \
+    --prestage-output "$runtime_prestage" \
+    --plan-output "$runtime_plan"
+  server_config="$runtime_config"
+  export PREFER_EFFECTIVE_PLAN="$runtime_plan"
+fi
 if [ ! -f "$server_config" ]; then
   echo "[image-entrypoint] server config not found: $server_config" >&2
   exit 2

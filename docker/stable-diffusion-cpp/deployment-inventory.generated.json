@@ -17,6 +17,73 @@
     "source_repo": "leejet/stable-diffusion.cpp",
     "source_revision": "be0e34480dada95f8ce9a021bbb95c5de85d67c7"
   },
+  "composition": {
+    "schema_version": "prefer.runtime-composition.v1",
+    "activation": "opt-in; existing IMAGE_SERVER_CONFIG remains compatible when no composition variable is set",
+    "multi_model": true,
+    "effective_config_path": "/run/prefer/image.json",
+    "effective_plan_path": "/run/prefer/plan.json",
+    "compose_environment_prefix": "IMAGE",
+    "override_merge": "objects merge recursively; scalar and array values replace",
+    "environment": {
+      "PREFER_DEPLOYMENT": {
+        "type": "string",
+        "source": "deployments[].id"
+      },
+      "PREFER_BUNDLE": {
+        "type": "string-list",
+        "source": "bundles keys"
+      },
+      "PREFER_MODELS": {
+        "type": "string-list",
+        "source": "models key, model_slug, or request_model_id"
+      },
+      "PREFER_SERVER_OVERRIDES": {
+        "type": "json-object",
+        "applies_to": "image router settings"
+      },
+      "PREFER_MODEL_OVERRIDES": {
+        "type": "json-object-map",
+        "applies_to": "selected model args",
+        "keys": [
+          "args",
+          "args_append",
+          "args_remove"
+        ]
+      }
+    },
+    "selection_rules": [
+      "bundle and model selections are additive",
+      "an exact quant key replaces another lane for the same logical model",
+      "a friendly model selection inherits the selected hardware deployment's lane"
+    ],
+    "precedence": [
+      "catalog model and lane defaults",
+      "hardware deployment defaults",
+      "PREFER_SERVER_OVERRIDES",
+      "PREFER_MODEL_OVERRIDES",
+      "raw engine arguments"
+    ],
+    "setting_sources": {
+      "server": "composition.server_defaults plus deployment config",
+      "model": "models[].server_args"
+    },
+    "server_defaults": {
+      "host": "0.0.0.0",
+      "port": 8080,
+      "backend_host": "127.0.0.1",
+      "backend_port": 8083,
+      "backend_binary": "/sd-server",
+      "lazy_load": true,
+      "max_loaded_models": 1,
+      "idle_unload_ms": 1800000,
+      "startup_timeout_ms": 1800000,
+      "busy_timeout_ms": 3600000,
+      "backend_request_timeout_ms": 3600000,
+      "max_request_body_bytes": 268435456,
+      "model_args_append": []
+    }
+  },
   "base_image": {
     "reference": "ghcr.io/leejet/stable-diffusion.cpp:master-cuda@sha256:dcd82f38252a32822dcd0c80672d5948df8e63bb4a3064988e0f7c2bec10c100",
     "index_digest": "sha256:dcd82f38252a32822dcd0c80672d5948df8e63bb4a3064988e0f7c2bec10c100",

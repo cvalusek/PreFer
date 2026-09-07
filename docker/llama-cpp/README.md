@@ -61,6 +61,21 @@ model's `request_model_id` for warmup and API requests. `section` is the INI
 configuration identity and may differ from the model ID that llama.cpp
 advertises and accepts after quant-name normalization.
 
+### Runtime composition (preview)
+
+`LLAMA_DEPLOYMENT` selects any `deployments[].id` from the released inventory.
+`LLAMA_BUNDLE` selects one or more sibling preset names on that hardware, and
+`LLAMA_MODELS` adds model slugs, request IDs, aliases, or exact quant keys.
+Exact quant keys replace the selected lane for the same logical model. JSON
+objects in `LLAMA_MODEL_OVERRIDES` and `LLAMA_SERVER_OVERRIDES` are applied
+after the catalog and hardware defaults; command arguments remain last.
+
+Composition writes `/run/prefer/llama.ini`, its `.prestage` sidecar, and the
+resolved `/run/prefer/plan.json`. Leaving these variables blank preserves
+VRAM auto-detection and `LLAMA_ARG_MODELS_PRESET`. The generator and catalog
+are shipped in the image, but the selected weights are still downloaded to
+the external `/models` volume.
+
 ### Model selection profiles
 
 Every logical model has one human-curated profile rather than one description

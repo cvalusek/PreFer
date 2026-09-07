@@ -689,6 +689,39 @@ def render_inventory(
             ),
         ),
         runtime=catalog["runtime"],
+        composition=OrderedDict(
+            schema_version="prefer.runtime-composition.v1",
+            activation="opt-in; existing preset variables remain compatible when no composition variable is set",
+            multi_model=True,
+            effective_config_path="/run/prefer/llama.ini",
+            effective_plan_path="/run/prefer/plan.json",
+            compose_environment_prefix="LLAMA",
+            override_merge="objects merge recursively; scalar and array values replace",
+            environment=OrderedDict(
+                PREFER_DEPLOYMENT=OrderedDict(type="string", source="deployments[].id"),
+                PREFER_BUNDLE=OrderedDict(type="string-list", source="same-hardware preset name"),
+                PREFER_MODELS=OrderedDict(type="string-list", source="models key, model_slug, request_model_id, or alias"),
+                PREFER_SERVER_OVERRIDES=OrderedDict(type="json-object", applies_to="shared INI settings"),
+                PREFER_MODEL_OVERRIDES=OrderedDict(type="json-object-map", applies_to="selected model INI settings"),
+            ),
+            selection_rules=[
+                "bundle and model selections are additive",
+                "an exact quant key replaces another lane for the same logical model",
+                "a friendly model selection inherits the selected hardware deployment's lane",
+                "ambiguous friendly selections require an exact quant key",
+            ],
+            precedence=[
+                "catalog model and lane defaults",
+                "hardware deployment defaults",
+                "PREFER_SERVER_OVERRIDES",
+                "PREFER_MODEL_OVERRIDES",
+                "raw engine arguments",
+            ],
+            setting_sources=OrderedDict(
+                server="deployments[].models[].settings plus deployment-shared preset defaults",
+                model="models[].settings and deployments[].models[].settings",
+            ),
+        ),
         model_profiles=model_profiles,
         models=inventory_models,
         deployments=deployments,
@@ -718,10 +751,314 @@ def expected_outputs() -> dict[Path, str]:
     return outputs
 
 
+def parse_composition_list(value: str) -> list[str]:
+    """Parse the shared comma/newline selection syntax without losing order."""
+    result: list[str] = []
+    for item in re.split(r"[,\r\n]+", value or ""):
+        item = item.strip()
+        if item and item not in result:
+            result.append(item)
+    return result
+
+
+def parse_composition_object(value: str, label: str) -> OrderedDict[str, Any]:
+    if not value:
+        return OrderedDict()
+    parsed = json.loads(value, object_pairs_hook=OrderedDict)
+    if not isinstance(parsed, dict):
+        raise CatalogError(f"{label} must be a JSON object")
+    return parsed
+
+
+def normalize_runtime_preset(value: str) -> str:
+    normalized = value.strip().replace("\\", "/")
+    if normalized.startswith("/presets/"):
+        normalized = normalized[len("/presets/") :]
+    elif normalized.startswith("presets/"):
+        normalized = normalized[len("presets/") :]
+    if not normalized.endswith(".ini"):
+        normalized += ".ini"
+    path = PurePosixPath(normalized)
+    if path.is_absolute() or ".." in path.parts:
+        raise CatalogError(f"unsafe runtime deployment: {value!r}")
+    return path.as_posix()
+
+
+def parse_runtime_ini(path: Path, catalog: dict[str, Any], normalized_path: str) -> dict[str, Any]:
+    """Turn a legacy checked-in INI into a scenario-shaped composition base."""
+    if not path.is_file():
+        raise CatalogError(f"runtime base preset not found: {path}")
+    sections: OrderedDict[str, OrderedDict[str, Any]] = OrderedDict()
+    current: str | None = None
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith(("#", ";")) or line == "version = 1":
+            continue
+        if line.startswith("[") and line.endswith("]"):
+            current = line[1:-1]
+            sections[current] = OrderedDict()
+            continue
+        if current is None or "=" not in line:
+            raise CatalogError(f"cannot compose malformed preset line in {path}: {raw_line!r}")
+        name, value = line.split("=", 1)
+        sections[current][name.strip()] = value.strip()
+
+    by_section = {model["section"]: key for key, model in catalog["models"].items()}
+    entries: list[dict[str, Any]] = []
+    for section, settings in sections.items():
+        if section == "*":
+            continue
+        key = by_section.get(section)
+        if key is None:
+            raise CatalogError(
+                f"runtime composition cannot map section {section!r} in {path} to a catalog model"
+            )
+        entries.append(OrderedDict(key=key, section=section, overrides=settings))
+    if not entries:
+        raise CatalogError(f"runtime base preset contains no catalog models: {path}")
+    return OrderedDict(
+        path=normalized_path,
+        defaults=sections.get("*", OrderedDict()),
+        models=entries,
+    )
+
+
+def resolve_runtime_scenario(
+    reference: str,
+    catalog: dict[str, Any],
+    scenario_records: list[tuple[dict[str, Any], dict[str, Any], Path]],
+) -> tuple[dict[str, Any], str]:
+    normalized = normalize_runtime_preset(reference)
+    for scenario, _, _ in scenario_records:
+        if scenario["path"] == normalized:
+            return copy.deepcopy(scenario), normalized
+
+    candidates = [
+        Path(reference),
+        ROOT / "presets" / Path(*PurePosixPath(normalized).parts),
+        Path("/presets") / Path(*PurePosixPath(normalized).parts),
+    ]
+    for candidate in candidates:
+        if candidate.is_file():
+            return parse_runtime_ini(candidate, catalog, normalized), normalized
+    raise CatalogError(f"unknown runtime deployment or preset: {reference!r}")
+
+
+def llama_selection_names(key: str, model: dict[str, Any]) -> set[str]:
+    identity = model["_catalog"]
+    return {
+        key,
+        identity["model_slug"],
+        model["request_model_id"],
+        *model.get("aliases", []),
+    }
+
+
+def compose_runtime_preset(
+    *,
+    base: str,
+    bundle_value: str,
+    model_value: str,
+    server_overrides_value: str,
+    model_overrides_value: str,
+) -> tuple[str, list[str], dict[str, Any]]:
+    catalog = load_catalog()
+    validate_catalog(catalog)
+    scenario_records = load_scenarios()
+    base_scenario, base_path = resolve_runtime_scenario(base, catalog, scenario_records)
+    base_parent = PurePosixPath(base_path).parent
+    scenarios = {scenario["path"]: scenario for scenario, _, _ in scenario_records}
+
+    bundles = parse_composition_list(bundle_value)
+    requested_models = parse_composition_list(model_value)
+    server_overrides = parse_composition_object(server_overrides_value, "PREFER_SERVER_OVERRIDES")
+    model_overrides = parse_composition_object(model_overrides_value, "PREFER_MODEL_OVERRIDES")
+    if any(not isinstance(value, dict) for value in model_overrides.values()):
+        raise CatalogError("PREFER_MODEL_OVERRIDES values must be JSON objects")
+
+    cohort = [
+        scenario
+        for scenario, _, _ in scenario_records
+        if PurePosixPath(scenario["path"]).parent == base_parent
+    ]
+    if base_scenario not in cohort:
+        cohort.insert(0, base_scenario)
+
+    selected: list[dict[str, Any]] = []
+
+    def model_slug_for_entry(entry: dict[str, Any]) -> str:
+        return catalog["models"][entry["key"]]["_catalog"]["model_slug"]
+
+    def add_entry(entry: dict[str, Any]) -> None:
+        slug = model_slug_for_entry(entry)
+        selected[:] = [existing for existing in selected if model_slug_for_entry(existing) != slug]
+        selected.append(copy.deepcopy(entry))
+
+    for bundle in bundles:
+        if bundle in {"base", "current"}:
+            bundle_scenario = base_scenario
+        else:
+            bundle_path = (base_parent / f"{bundle}.ini").as_posix()
+            bundle_scenario = scenarios.get(bundle_path)
+            if bundle_scenario is None:
+                raise CatalogError(
+                    f"unknown llama.cpp bundle {bundle!r} for {base_parent.as_posix() or 'root'}"
+                )
+        for entry in bundle_scenario.get("models", []):
+            add_entry(entry)
+
+    def matching_keys(selection: str) -> list[str]:
+        return [
+            key
+            for key, model in catalog["models"].items()
+            if selection in llama_selection_names(key, model)
+        ]
+
+    def template_entry(key: str) -> dict[str, Any]:
+        model = catalog["models"][key]
+        slug = model["_catalog"]["model_slug"]
+        exact: list[dict[str, Any]] = []
+        same_model: list[dict[str, Any]] = []
+        for scenario in cohort:
+            for entry in scenario.get("models", []):
+                entry_model = catalog["models"][entry["key"]]
+                if entry["key"] == key:
+                    exact.append(entry)
+                elif entry_model["_catalog"]["model_slug"] == slug:
+                    same_model.append(entry)
+        source = exact[0] if exact else (same_model[0] if same_model else OrderedDict())
+        result = copy.deepcopy(source)
+        result["key"] = key
+        result.pop("section", None)
+        result.pop("aliases", None)
+        result.pop("request_model_id", None)
+        return result
+
+    for selection in requested_models:
+        matches = matching_keys(selection)
+        if not matches:
+            raise CatalogError(f"unknown llama.cpp model selection: {selection!r}")
+        if selection in catalog["models"]:
+            key = selection
+        else:
+            cohort_keys = {
+                entry["key"]
+                for scenario in cohort
+                for entry in scenario.get("models", [])
+                if entry.get("key") in matches
+            }
+            if len(cohort_keys) == 1:
+                key = next(iter(cohort_keys))
+            elif len(matches) == 1:
+                key = matches[0]
+            else:
+                raise CatalogError(
+                    f"ambiguous llama.cpp model {selection!r}; choose an exact lane: {', '.join(matches)}"
+                )
+        add_entry(template_entry(key))
+
+    if not bundles and not requested_models:
+        selected = copy.deepcopy(base_scenario.get("models", []))
+    if not selected:
+        raise CatalogError("runtime composition selected no llama.cpp models")
+
+    composed = OrderedDict(
+        path="runtime/effective.ini",
+        defaults=OrderedDict(base_scenario.get("defaults", {})),
+        models=selected,
+    )
+    for name, value in server_overrides.items():
+        if value is None:
+            composed["defaults"].pop(name, None)
+        else:
+            composed["defaults"][name] = value
+
+    applied_model_overrides: OrderedDict[str, Any] = OrderedDict()
+    for entry in composed["models"]:
+        key = entry["key"]
+        model = catalog["models"][key]
+        names = llama_selection_names(key, model)
+        matching = [value for name, value in model_overrides.items() if name in names]
+        if len(matching) > 1:
+            raise CatalogError(f"multiple PREFER_MODEL_OVERRIDES entries target {key}")
+        if matching:
+            entry.setdefault("overrides", OrderedDict())
+            for name, value in matching[0].items():
+                entry["overrides"][name] = value
+            applied_model_overrides[key] = matching[0]
+
+    unknown_override_targets = [
+        name
+        for name in model_overrides
+        if not any(name in llama_selection_names(entry["key"], catalog["models"][entry["key"]]) for entry in composed["models"])
+    ]
+    if unknown_override_targets:
+        raise CatalogError(
+            "PREFER_MODEL_OVERRIDES targets are not selected: " + ", ".join(unknown_override_targets)
+        )
+
+    ini, prestage = render_ini(catalog, composed)
+    plan = OrderedDict(
+        schema_version="prefer.runtime-plan.v1",
+        runtime="llama.cpp",
+        base_deployment=PurePosixPath(base_path).with_suffix("").as_posix(),
+        bundles=bundles,
+        requested_models=requested_models,
+        resolved_model_keys=prestage,
+        server_overrides=server_overrides,
+        model_overrides=applied_model_overrides,
+        precedence=[
+            "catalog model and lane defaults",
+            "hardware deployment defaults",
+            "PREFER_SERVER_OVERRIDES",
+            "PREFER_MODEL_OVERRIDES",
+            "llama-server command arguments",
+        ],
+    )
+    return ini, prestage, plan
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="fail if generated files are stale")
+    parser.add_argument("--compose", action="store_true", help="write an ephemeral runtime-composed preset")
+    parser.add_argument("--base", default="")
+    parser.add_argument("--bundles", default="")
+    parser.add_argument("--models", default="")
+    parser.add_argument("--server-overrides", default="")
+    parser.add_argument("--model-overrides", default="")
+    parser.add_argument("--output")
+    parser.add_argument("--prestage-output")
+    parser.add_argument("--plan-output")
     args = parser.parse_args()
+
+    if args.compose:
+        if args.check or not args.base or not args.output or not args.prestage_output or not args.plan_output:
+            parser.error("--compose requires --base, --output, --prestage-output, and --plan-output")
+        try:
+            ini, prestage, plan = compose_runtime_preset(
+                base=args.base,
+                bundle_value=args.bundles,
+                model_value=args.models,
+                server_overrides_value=args.server_overrides,
+                model_overrides_value=args.model_overrides,
+            )
+            output = Path(args.output)
+            prestage_output = Path(args.prestage_output)
+            plan_output = Path(args.plan_output)
+            for path in (output, prestage_output, plan_output):
+                path.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(ini, encoding="utf-8", newline="\n")
+            prestage_output.write_text(",".join(prestage) + "\n", encoding="utf-8", newline="\n")
+            plan_output.write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8", newline="\n")
+            print(
+                f"composed llama.cpp runtime preset from {plan['base_deployment']}: "
+                + ", ".join(prestage)
+            )
+            return 0
+        except (CatalogError, KeyError, TypeError, OSError, json.JSONDecodeError) as exc:
+            print(f"generate-presets: {exc}", file=sys.stderr)
+            return 2
 
     try:
         outputs = expected_outputs()

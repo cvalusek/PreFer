@@ -1,5 +1,18 @@
 # PreFer changelog
 
+## Current
+
+- Runtime composition
+  - Added one opt-in deployment, bundle, model, and override contract across llama.cpp, audio.cpp, stable-diffusion.cpp, SGLang, and vLLM.
+  - Bundle and model selections are additive; selecting an exact quant replaces the bundle's lane for that model.
+  - Added JSON server/model overrides, generated prestage manifests, and an effective runtime plan for controller-driven deployments.
+  - AWS llama hosts forward the shared composition inputs from their deployment environment.
+- Release inventory
+  - Published composition inputs, precedence, effective config paths, model/quant choices, artifact sizes, and deployment defaults for NeurOn and other controllers.
+- Compatibility
+  - Existing preset and config variables remain unchanged when runtime composition is not selected.
+  - No model, quant, context, concurrency, cache, route, or API default changed; model weights remain external runtime downloads.
+
 ## sha-3de6861 (preview)
 
 - Images

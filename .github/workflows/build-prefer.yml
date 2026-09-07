@@ -50,6 +50,7 @@ jobs:
         run: |
           python -m unittest benchmark.tests.test_artifact_downloads -v
           python -m unittest benchmark.tests.test_release_bundle -v
+          python -m unittest benchmark.tests.test_runtime_composition -v
 
       - name: Test lazy image router
         run: python -m unittest discover -s docker/stable-diffusion-cpp/tests -v

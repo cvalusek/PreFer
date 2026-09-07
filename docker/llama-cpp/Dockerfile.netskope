@@ -30,10 +30,14 @@ COPY docker/llama-cpp/presets/ /presets/
 COPY docker/llama-cpp/preset-catalog.json /preset-catalog.json
 COPY docker/llama-cpp/deployment-inventory.generated.json /deployment-inventory.json
 COPY docker/llama-cpp/model-downloads.generated.sh /model-downloads.generated.sh
+COPY docker/llama-cpp/generate-presets.py /prefer-catalog/generate-presets.py
+COPY docker/llama-cpp/preset-catalog.json /prefer-catalog/preset-catalog.json
+COPY docker/llama-cpp/models/ /prefer-catalog/models/
+COPY docker/llama-cpp/preset-scenarios/ /prefer-catalog/preset-scenarios/
 COPY docker/llama-cpp/detect-preset.sh /detect-preset.sh
 COPY docker/llama-cpp/download-models.sh /download-models.sh
 COPY docker/llama-cpp/entrypoint.sh /entrypoint.sh
-RUN sed -i 's/\r$//' /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh \
+RUN sed -i 's/\r$//' /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh /prefer-catalog/generate-presets.py \
     && chmod +x /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh
 
 EXPOSE 8080

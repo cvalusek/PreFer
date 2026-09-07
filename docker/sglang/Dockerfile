@@ -28,9 +28,13 @@ COPY server-configs /server-configs
 COPY deployment-inventory.generated.json /deployment-inventory.json
 COPY download-artifacts.sh /prefer-download-artifacts.sh
 COPY model-downloads.generated.sh /model-downloads.generated.sh
+COPY generate.py /prefer-catalog/generate.py
+COPY runtime.json /prefer-catalog/runtime.json
+COPY models /prefer-catalog/models
+COPY deployment-scenarios /prefer-catalog/deployment-scenarios
 COPY entrypoint.sh /prefer-sglang-entrypoint.sh
 COPY video_gateway.py /prefer-sglang-video-gateway.py
-RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-sglang-entrypoint.sh /prefer-sglang-video-gateway.py \
+RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-sglang-entrypoint.sh /prefer-sglang-video-gateway.py /prefer-catalog/generate.py \
     && chmod +x /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-sglang-entrypoint.sh /prefer-sglang-video-gateway.py
 
 LABEL io.prefer.runtime="sglang" \

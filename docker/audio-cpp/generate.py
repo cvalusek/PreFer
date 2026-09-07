@@ -23,6 +23,17 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def deep_merge(*sources: dict) -> dict:
+    result: dict = {}
+    for source in sources:
+        for key, value in source.items():
+            if isinstance(result.get(key), dict) and isinstance(value, dict):
+                result[key] = deep_merge(result[key], value)
+            else:
+                result[key] = copy.deepcopy(value)
+    return result
+
+
 def artifact_download_identity(artifact: dict) -> dict:
     return {
         "repo": artifact["repo"],
@@ -177,7 +188,7 @@ def server_config(
     forbidden = {"backend", "models"} & overrides.keys()
     if forbidden:
         raise ValueError(f"server overrides cannot replace: {', '.join(sorted(forbidden))}")
-    config.update(overrides)
+    config = deep_merge(config, overrides)
     lazy = bool(config["lazy_load"])
     config["models"] = [
         {
@@ -481,6 +492,44 @@ def deployment_inventory(
             },
         },
         "runtime": runtime["runtime"],
+        "composition": {
+            "schema_version": "prefer.runtime-composition.v1",
+            "activation": "opt-in; existing AUDIO_SERVER_CONFIG remains compatible when no composition variable is set",
+            "multi_model": True,
+            "effective_config_path": "/run/prefer/audio.json",
+            "effective_plan_path": "/run/prefer/plan.json",
+            "compose_environment_prefix": "AUDIO",
+            "override_merge": "objects merge recursively; scalar and array values replace",
+            "environment": {
+                "PREFER_DEPLOYMENT": {"type": "string", "source": "deployments[].id"},
+                "PREFER_BUNDLE": {"type": "string-list", "source": "bundles keys"},
+                "PREFER_MODELS": {"type": "string-list", "source": "models key or request_model_id"},
+                "PREFER_SERVER_OVERRIDES": {"type": "json-object", "applies_to": "audio.cpp server settings"},
+                "PREFER_MODEL_OVERRIDES": {"type": "json-object-map", "applies_to": "selected model session settings"},
+            },
+            "selection_rules": [
+                "bundle and model selections are additive",
+                "an exact quant key replaces another lane for the same logical model",
+                "a friendly model selection uses its primary catalog lane",
+            ],
+            "precedence": [
+                "catalog model and lane defaults",
+                "hardware deployment defaults",
+                "bundle defaults",
+                "PREFER_SERVER_OVERRIDES",
+                "PREFER_MODEL_OVERRIDES",
+                "raw engine arguments",
+            ],
+            "setting_sources": {
+                "server": "composition.server_defaults plus bundles[].server and deployment config",
+                "model": "models[].server",
+            },
+            "server_defaults": {
+                key: value
+                for key, value in server_config("cuda", []).items()
+                if key not in {"backend", "models"}
+            },
+        },
         "base_images": runtime["base_images"],
         "api": {
             "health": "GET /health",
@@ -580,10 +629,215 @@ def rendered_outputs() -> dict[Path, str]:
     return outputs
 
 
+def parse_composition_list(value: str) -> list[str]:
+    result: list[str] = []
+    for item in re.split(r"[,\r\n]+", value or ""):
+        item = item.strip()
+        if item and item not in result:
+            result.append(item)
+    return result
+
+
+def parse_composition_object(value: str, label: str) -> dict:
+    if not value:
+        return {}
+    parsed = json.loads(value)
+    if not isinstance(parsed, dict):
+        raise ValueError(f"{label} must be a JSON object")
+    return parsed
+
+
+def normalize_runtime_config(value: str) -> str:
+    normalized = value.strip().replace("\\", "/")
+    for prefix in ("/server-configs/", "server-configs/"):
+        if normalized.startswith(prefix):
+            normalized = normalized[len(prefix) :]
+            break
+    if normalized in {"/app/server.json", "server.json", "default", "audio/cuda12", "audio/cpu"}:
+        return "default"
+    if not normalized.endswith(".json"):
+        normalized += ".json"
+    path = PurePosixPath(normalized)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError(f"unsafe audio deployment: {value!r}")
+    return path.as_posix()
+
+
+def audio_selection_names(lane: dict) -> set[str]:
+    return {lane["key"], lane["id"]}
+
+
+def compose_runtime_config(
+    *,
+    base: str,
+    bundle_value: str,
+    model_value: str,
+    server_overrides_value: str,
+    model_overrides_value: str,
+) -> tuple[dict, list[str], dict]:
+    lanes = model_lanes()
+    primary = [lane for lane in lanes if lane["primary"]]
+    primary_by_key = {lane["key"]: lane for lane in primary}
+    bundles = load_bundles(primary_by_key)
+    scenarios = load_scenarios(primary_by_key, bundles)
+    scenario_by_path = {scenario["path"]: scenario for scenario in scenarios}
+    normalized = normalize_runtime_config(base)
+    explicit_base_path = Path(base)
+
+    if normalized == "default" or explicit_base_path.is_file():
+        base_path = explicit_base_path
+        if not base_path.is_file():
+            installed_default = Path("/app/server.json")
+            if installed_default.is_file():
+                base_path = installed_default
+            else:
+                generated_name = "server.cpu.generated.json" if base.strip() == "audio/cpu" else "server.cuda.generated.json"
+                base_path = ROOT / generated_name
+        base_config = load_json(base_path)
+        by_id = {lane["id"]: lane for lane in primary}
+        base_lanes = []
+        for model in base_config.get("models", []):
+            lane = by_id.get(model.get("id"))
+            if lane is None:
+                raise ValueError(f"cannot map audio base model {model.get('id')!r} to the catalog")
+            base_lanes.append(lane)
+        backend = base_config.get("backend", "cuda")
+        base_server = {key: value for key, value in base_config.items() if key not in {"backend", "models"}}
+        base_deployment = (
+            PurePosixPath(normalized).with_suffix("").as_posix()
+            if normalized != "default"
+            else ("audio/cuda12" if backend == "cuda" else "audio/cpu")
+        )
+    else:
+        scenario = scenario_by_path.get(normalized)
+        if scenario is None:
+            raise ValueError(f"unknown audio deployment: {base!r}")
+        base_lanes = [primary_by_key[key] for key in scenario["model_keys"]]
+        backend = "cuda"
+        base_server = scenario["server"]
+        base_deployment = PurePosixPath(normalized).with_suffix("").as_posix()
+
+    requested_bundles = parse_composition_list(bundle_value)
+    requested_models = parse_composition_list(model_value)
+    server_overrides = parse_composition_object(server_overrides_value, "PREFER_SERVER_OVERRIDES")
+    model_overrides = parse_composition_object(model_overrides_value, "PREFER_MODEL_OVERRIDES")
+    if any(not isinstance(value, dict) for value in model_overrides.values()):
+        raise ValueError("PREFER_MODEL_OVERRIDES values must be JSON objects")
+
+    selected: list[dict] = []
+
+    def add_lane(lane: dict) -> None:
+        selected[:] = [existing for existing in selected if existing["id"] != lane["id"]]
+        selected.append(copy.deepcopy(lane))
+
+    bundle_server: dict = {}
+    for name in requested_bundles:
+        bundle = bundles.get(name)
+        if bundle is None:
+            raise ValueError(f"unknown audio bundle: {name!r}")
+        bundle_server = deep_merge(bundle_server, bundle.get("server", {}))
+        for key in bundle["models"]:
+            add_lane(primary_by_key[key])
+
+    for selection in requested_models:
+        matches = [lane for lane in lanes if selection in audio_selection_names(lane)]
+        if not matches:
+            raise ValueError(f"unknown audio model selection: {selection!r}")
+        if selection in {lane["key"] for lane in matches}:
+            lane = next(lane for lane in matches if lane["key"] == selection)
+        elif len(matches) == 1:
+            lane = matches[0]
+        else:
+            raise ValueError(
+                f"ambiguous audio model {selection!r}; choose an exact lane: "
+                + ", ".join(lane["key"] for lane in matches)
+            )
+        add_lane(lane)
+
+    if not requested_bundles and not requested_models:
+        selected = [copy.deepcopy(lane) for lane in base_lanes]
+    if not selected:
+        raise ValueError("runtime composition selected no audio models")
+
+    applied_model_overrides: dict[str, dict] = {}
+    for lane in selected:
+        matching = [value for name, value in model_overrides.items() if name in audio_selection_names(lane)]
+        if len(matching) > 1:
+            raise ValueError(f"multiple PREFER_MODEL_OVERRIDES entries target {lane['key']}")
+        if matching:
+            protected = {"id", "family", "path", "task", "mode", "lazy"} & matching[0].keys()
+            if protected:
+                raise ValueError(
+                    f"audio model overrides cannot replace identity fields: {', '.join(sorted(protected))}"
+                )
+            lane["server"] = deep_merge(lane.get("server", {}), matching[0])
+            applied_model_overrides[lane["key"]] = matching[0]
+    unknown_targets = [
+        name
+        for name in model_overrides
+        if not any(name in audio_selection_names(lane) for lane in selected)
+    ]
+    if unknown_targets:
+        raise ValueError("PREFER_MODEL_OVERRIDES targets are not selected: " + ", ".join(unknown_targets))
+
+    effective_server = deep_merge(base_server, bundle_server, server_overrides)
+    config = server_config(backend, selected, effective_server)
+    prestage = [lane["key"] for lane in selected]
+    plan = {
+        "schema_version": "prefer.runtime-plan.v1",
+        "runtime": "audio.cpp",
+        "base_deployment": base_deployment,
+        "bundles": requested_bundles,
+        "requested_models": requested_models,
+        "resolved_model_keys": prestage,
+        "server_overrides": server_overrides,
+        "model_overrides": applied_model_overrides,
+        "precedence": [
+            "catalog model and lane defaults",
+            "hardware deployment defaults",
+            "bundle defaults",
+            "PREFER_SERVER_OVERRIDES",
+            "PREFER_MODEL_OVERRIDES",
+            "audio.cpp command arguments",
+        ],
+    }
+    return config, prestage, plan
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate PreFer audio.cpp runtime artifacts")
     parser.add_argument("--check", action="store_true", help="fail if generated files are stale")
+    parser.add_argument("--compose", action="store_true", help="write an ephemeral runtime-composed config")
+    parser.add_argument("--base", default="")
+    parser.add_argument("--bundles", default="")
+    parser.add_argument("--models", default="")
+    parser.add_argument("--server-overrides", default="")
+    parser.add_argument("--model-overrides", default="")
+    parser.add_argument("--output")
+    parser.add_argument("--prestage-output")
+    parser.add_argument("--plan-output")
     args = parser.parse_args()
+    if args.compose:
+        if args.check or not args.base or not args.output or not args.prestage_output or not args.plan_output:
+            parser.error("--compose requires --base, --output, --prestage-output, and --plan-output")
+        try:
+            config, prestage, plan = compose_runtime_config(
+                base=args.base,
+                bundle_value=args.bundles,
+                model_value=args.models,
+                server_overrides_value=args.server_overrides,
+                model_overrides_value=args.model_overrides,
+            )
+            for value in (args.output, args.prestage_output, args.plan_output):
+                Path(value).parent.mkdir(parents=True, exist_ok=True)
+            Path(args.output).write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8", newline="\n")
+            Path(args.prestage_output).write_text(",".join(prestage) + "\n", encoding="utf-8", newline="\n")
+            Path(args.plan_output).write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8", newline="\n")
+            print(f"composed audio.cpp runtime config from {plan['base_deployment']}: {', '.join(prestage)}")
+            return 0
+        except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+            print(f"generate.py: {error}", file=sys.stderr)
+            return 1
     stale = []
     outputs = rendered_outputs()
     expected_scenario_files = {path for path in outputs if CONFIGS_ROOT in path.parents}
