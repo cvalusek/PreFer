@@ -1,5 +1,11 @@
 # PreFer changelog
 
+## Current
+
+- SGLang video
+  - Bumped the official CUDA 13 runtime to `30705c004ca4bbfc92216dfaf845da14d84c4c4d`, which accepts the exact MiniMax H3 component-weight overrides used by FL2VA and Ref2VA.
+  - Kept canonical H3 routes in eager mode, including the 96 GB full-GPU shapes, and now report a terminated diffusion worker as `upstream_failed` instead of indefinite warmup.
+
 ## sha-202b9ec (preview)
 
 - Images

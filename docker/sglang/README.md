@@ -7,9 +7,9 @@ does not reserve a second text- or video-serving GPU.
 
 ## Pinned runtime and model
 
-- SGLang source and image build revision: `c4271c3fe1262fc2adbd162c33b25de5255251c5`.
-- Base image: `lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f` at OCI index
-  `sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc`.
+- SGLang source and image build revision: `30705c004ca4bbfc92216dfaf845da14d84c4c4d`.
+- Base image: `lmsysorg/sglang:nightly-dev-cu13-20260907-30705c00` at OCI index
+  `sha256:19b8fa1223cc339c1eae7a5b703f1a8c2543b5b119155bf3d7efaef18f77f007`.
   The image is official upstream and is not built from the
   `jpezzulli/sglang-rtxpro6000` fork.
 - Model: `RadixArk/Qwen3.8-27B-NVFP4` at revision
@@ -36,6 +36,11 @@ the image and recorded in the generated inventory. The H3 Community License
 applies. The generated H3 commands disable pinned CPU memory because the
 diffusion loader can stage substantial DiT state through host memory; exact
 host-RAM headroom remains a configuration-only gate.
+This runtime parses the dynamic `--component-weights-paths.<component>` options
+used for all four exact component files. The former `c4271c3f` image did not and
+exited before model loading. Canonical configs also disable `torch.compile`,
+including on the 96 GB full-GPU shapes, because upstream keeps H3 speed mode
+eager and documents compile-on as numerically different experimental behavior.
 
 The checkpoint accepts text, image, and video inputs, has a native 262,144-token
 context, and carries one trained MTP layer. The packaged profiles use FP8 E4M3
@@ -99,11 +104,13 @@ uses a separate Flash-Next NVFP4 checkpoint and native NEXTN; and the earlier
 `~146 tok/s` C1 NVFP4/native-MTP result is a separate runtime/state. None is a
 stock-image result for the current 21.945 GB snapshot.
 
-The official image build also predates later upstream changes used by the fork,
-including [#36806](https://github.com/sgl-project/sglang/pull/36806) for exact
-SM120 QSA routing and [#35821](https://github.com/sgl-project/sglang/pull/35821)
-for Mamba radix-cache/speculative tracking; [#35744](https://github.com/sgl-project/sglang/pull/35744)
-is still outside the pinned image. The current recommendation is an immutable
+The official mainline image does not include
+[#36806](https://github.com/sgl-project/sglang/pull/36806) for exact SM120 QSA
+routing or [#35821](https://github.com/sgl-project/sglang/pull/35821) for Mamba
+radix-cache/speculative tracking; those changes were merged only to SGLang's
+`qwen4-main-squashed` and `qwen_optimize` branches.
+[#35744](https://github.com/sgl-project/sglang/pull/35744) is also outside the
+pinned image. The current recommendation is an immutable
 custom-fork image alongside this upstream portable lane if high-performance
 parity is required. Choosing that lineage is an owner decision; this image does
 not silently switch to it.
@@ -172,6 +179,9 @@ PreFer port while the diffusion server runs internally on port `30001`. Use
 discovery, `POST /v1/videos` to submit a job, and the returned video ID for
 `GET /v1/videos/{id}` and `GET /v1/videos/{id}/content`. Inputs must be local
 `file://` paths under `/inputs` or multipart uploads; remote URLs are rejected.
+While a live worker is loading, discovery returns `upstream_not_ready`; if the
+worker exits, discovery and generation return `upstream_failed` with its exit
+status instead of continuing to report warmup.
 Generated output is written under `/outputs` and the Compose profile provides
 separate persistent input/output volumes. The gateway normalizes `t2v`, `i2v`,
 and `v2v` aliases to SGLang's `t2va`, `fl2va`, and `ref2va` tasks.

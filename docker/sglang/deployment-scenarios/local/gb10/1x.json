@@ -14,7 +14,7 @@
     "container_runtime": "nvidia",
     "cuda_major": 13,
     "minimum_compute_capability": "sm_100",
-    "sglang_source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5"
+    "sglang_source_revision": "30705c004ca4bbfc92216dfaf845da14d84c4c4d"
   },
   "staging": {
     "source": "huggingface-only",

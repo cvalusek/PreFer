@@ -1,4 +1,4 @@
-ARG SGLANG_BASE_IMAGE=lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc
+ARG SGLANG_BASE_IMAGE=lmsysorg/sglang:nightly-dev-cu13-20260907-30705c00@sha256:19b8fa1223cc339c1eae7a5b703f1a8c2543b5b119155bf3d7efaef18f77f007
 FROM ${SGLANG_BASE_IMAGE}
 
 ARG TARGETARCH
@@ -35,8 +35,8 @@ RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /model-downloads.generated.sh
 
 LABEL io.prefer.runtime="sglang" \
       io.prefer.sglang.backend="cuda13" \
-      io.prefer.sglang.source-revision="c4271c3fe1262fc2adbd162c33b25de5255251c5" \
-      io.prefer.sglang.image-build-revision="c4271c3fe1262fc2adbd162c33b25de5255251c5" \
+      io.prefer.sglang.source-revision="30705c004ca4bbfc92216dfaf845da14d84c4c4d" \
+      io.prefer.sglang.image-build-revision="30705c004ca4bbfc92216dfaf845da14d84c4c4d" \
       io.prefer.sglang.lineage="official-upstream" \
       io.prefer.deployment-inventory.path="/deployment-inventory.json" \
       io.prefer.deployment-inventory.schema="prefer.sglang-deployment-inventory.v2"

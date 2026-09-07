@@ -3,19 +3,19 @@
   "runtime": {
     "name": "sglang",
     "source_repo": "sgl-project/sglang",
-    "source_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5",
-    "source_revision_role": "Pinned official SGLang nightly containing the CUDA 13 multimodal-generation server and the regular text server.",
+    "source_revision": "30705c004ca4bbfc92216dfaf845da14d84c4c4d",
+    "source_revision_role": "Pinned official SGLang nightly containing the CUDA 13 multimodal-generation server, dynamic component-weight override CLI, and the regular text server.",
     "lineage": "official-upstream"
   },
   "base_image": {
-    "reference": "lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f@sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
-    "index_digest": "sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc",
-    "build_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5",
-    "build_revision_source": "https://hub.docker.com/layers/lmsysorg/sglang/nightly-dev-20260814-c4271c3f/images/sha256-751156aa9d4d9955776dafc45d76eca8051c6e03bca76642886d3c8c7c815de6?tab=layers",
-    "build_revision_note": "The official OCI image contains both SGLang's regular text server and its multimodal-generation server; this is not the jpezzulli/sglang-rtxpro6000 custom fork.",
+    "reference": "lmsysorg/sglang:nightly-dev-cu13-20260907-30705c00@sha256:19b8fa1223cc339c1eae7a5b703f1a8c2543b5b119155bf3d7efaef18f77f007",
+    "index_digest": "sha256:19b8fa1223cc339c1eae7a5b703f1a8c2543b5b119155bf3d7efaef18f77f007",
+    "build_revision": "30705c004ca4bbfc92216dfaf845da14d84c4c4d",
+    "build_revision_source": "https://hub.docker.com/layers/lmsysorg/sglang/nightly-dev-cu13-20260907-30705c00/images/sha256-c7b3fcf8e99dd8c983f0c7c89ac6e85a63c8cbee4211a2c6ad8daf2ca0d018dc?tab=layers",
+    "build_revision_note": "The official OCI image contains both SGLang's regular text server and its multimodal-generation server, including the dynamic --component-weights-paths.<component> parser required by the MiniMax H3 routes; this is not the jpezzulli/sglang-rtxpro6000 custom fork.",
     "platform_manifests": {
-      "linux/amd64": "sha256:751156aa9d4d9955776dafc45d76eca8051c6e03bca76642886d3c8c7c815de6",
-      "linux/arm64": "sha256:3c0abdf41ef22de9d7a859dc16ed71eae69452e36c91f071a25e60c85a6d1fc6"
+      "linux/amd64": "sha256:c7b3fcf8e99dd8c983f0c7c89ac6e85a63c8cbee4211a2c6ad8daf2ca0d018dc",
+      "linux/arm64": "sha256:c28dc8335134ad8142052f7463acdbe6a60ffe80cddc57fd5288787b88f4c6c2"
     }
   },
   "requirements": {
@@ -69,6 +69,8 @@
       "api": "/v1/videos",
       "model_variants": ["fl2va", "ref2va"],
       "component_weight_overrides": true,
+      "component_weight_override_cli": "--component-weights-paths.<component>",
+      "component_weight_override_source": "https://github.com/sgl-project/sglang/blob/30705c004ca4bbfc92216dfaf845da14d84c4c4d/python/sglang/multimodal_gen/runtime/server_args/server_args.py",
       "local_file_inputs_only": true,
       "output_container": "mp4",
       "pin_cpu_memory_default": false,
@@ -97,8 +99,8 @@
     "pinned_image_lineage": {
       "kind": "official-upstream",
       "source_repo": "sgl-project/sglang",
-      "source_contract_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5",
-      "image_build_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5",
+      "source_contract_revision": "30705c004ca4bbfc92216dfaf845da14d84c4c4d",
+      "image_build_revision": "30705c004ca4bbfc92216dfaf845da14d84c4c4d",
       "custom_fork_code_included": false
     },
     "feature_matrix": [
@@ -268,8 +270,8 @@
         "id": "sglang/#36806",
         "feature": "Exact SM120 QSA sparse-decode routing",
         "merge_target": "qwen4-main-squashed",
-        "status": "merged-upstream-after-image-build",
-        "image_status": "absent from official build c4271c3fe1262fc2adbd162c33b25de5255251c5",
+        "status": "merged-to-non-main-branch-not-in-image",
+        "image_status": "absent from official mainline build 30705c004ca4bbfc92216dfaf845da14d84c4c4d",
         "source_ref": "https://github.com/sgl-project/sglang/pull/36806",
         "decision": "The current stock catalog does not claim the custom fork's SM120 QSA/XQA resolution."
       },
@@ -277,8 +279,8 @@
         "id": "sglang/#35821",
         "feature": "Mamba radix-cache ghost-node and speculative tracking fix",
         "merge_target": "qwen_optimize",
-        "status": "merged-upstream-after-image-build",
-        "image_status": "absent from official build c4271c3fe1262fc2adbd162c33b25de5255251c5",
+        "status": "merged-to-non-main-branch-not-in-image",
+        "image_status": "absent from official mainline build 30705c004ca4bbfc92216dfaf845da14d84c4c4d",
         "source_ref": "https://github.com/sgl-project/sglang/pull/35821",
         "decision": "The stock image's Mamba settings remain configuration-only; do not infer long-run speculative stability from the later fork sync."
       },
@@ -287,7 +289,7 @@
         "feature": "Three-axis Qwen mRoPE fused-kernel fix",
         "merge_target": "main",
         "status": "open-not-in-image",
-        "image_status": "absent from official build c4271c3fe1262fc2adbd162c33b25de5255251c5",
+        "image_status": "absent from official mainline build 30705c004ca4bbfc92216dfaf845da14d84c4c4d",
         "source_ref": "https://github.com/sgl-project/sglang/pull/35744",
         "decision": "The custom fork's mRoPE patch remains custom-only for this release."
       }
@@ -307,7 +309,7 @@
       "target_revision": "319f741cce68d7914884900c138a1fbb70a42f30",
       "draft_repo": "incoai/Qwen3.8-27B-DFlash2",
       "draft_revision": null,
-      "upstream_source_contract_revision": "c4271c3fe1262fc2adbd162c33b25de5255251c5",
+      "upstream_source_contract_revision": "30705c004ca4bbfc92216dfaf845da14d84c4c4d",
       "known_issue": "https://github.com/sgl-project/sglang/issues/35437",
       "custom_campaign": {
         "status": "custom-fork-only",
@@ -339,7 +341,7 @@
     "The pinned checkpoint declares FP8 KV quantization but provides no explicit KV scaling parameter file; SGLang therefore uses its documented default scale of 1.0 until a calibrated parameter file is supplied and verified.",
     "NVFP4 is the pinned GB10 target format, but no speed advantage over an FP8 target should be assumed without a matched target-only comparison on that device.",
     "Native NEXTN is the canonical stock speculative path. The official RadixArk-plus-incoai DFlash2 route remains blocked on prefill-graph verification; the custom FP8 DFlash2 campaign is a separate lineage and must not be borrowed.",
-    "The official image predates later upstream QSA/Mamba fixes used by the custom fork; their presence in the fork does not make them available in this image.",
+    "The official mainline image does not include the QSA and Mamba fixes merged only to SGLang's qwen4-main-squashed and qwen_optimize branches; their presence in those branches or the custom fork does not make them available in this image.",
     "Qwen3.8-Flash-Next is intentionally retained as a deferred experimental route until its custom source, separate artifact pair, parser, and graph behavior settle into a separately pinned release path.",
     "MiniMax H3 diffusion loading can stage large DiT state through host memory; the canonical configs disable pinned CPU memory, but exact host-RAM and cgroup headroom still require target-card smoke.",
     "MiniMax H3 Turbo-LoRA and quality-high serving remain explicit experimental metadata; do not claim adapter or quality-tier support until the matching upstream audit path is verified."

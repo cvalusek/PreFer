@@ -45,7 +45,7 @@
     "--component-weights-paths.video_vae",
     "/models/Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors",
     "--enable-torch-compile",
-    "true"
+    "false"
   ],
   "server": {
     "runtime_mode": "diffusion",
@@ -62,7 +62,7 @@
     "dit_offload_prefetch_size": null,
     "dit_layerwise_resident_layers": null,
     "pin_cpu_memory": false,
-    "enable_torch_compile": true,
+    "enable_torch_compile": false,
     "output_path": "/outputs",
     "max_running_requests": 1,
     "component_weights_paths": {

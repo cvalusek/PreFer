@@ -199,6 +199,22 @@ class VideoGateway:
             "detail": self.last_probe_error or "ready",
         }
 
+    def require_ready(self) -> None:
+        if self.process is not None:
+            returncode = self.process.poll()
+            if returncode is not None:
+                raise GatewayError(
+                    f"diffusion server exited with status {returncode}",
+                    status=503,
+                    code="upstream_failed",
+                )
+        if not self.ready.is_set():
+            raise GatewayError(
+                "diffusion server is still warming up",
+                status=503,
+                code="upstream_not_ready",
+            )
+
     def resolve_task(self, value: object) -> str:
         aliases = {str(key): str(value) for key, value in self.model.get("capability_aliases", {}).items()}
         aliases.update({"t2v": "t2va", "i2v": "fl2va", "v2v": "ref2va"})
@@ -335,8 +351,7 @@ class VideoGateway:
         return {"object": "list", "data": [record]}
 
     def handle_video(self, handler: BaseHTTPRequestHandler) -> tuple[int, str, bytes]:
-        if not self.ready.is_set():
-            raise GatewayError("diffusion server is still warming up", status=503, code="upstream_not_ready")
+        self.require_ready()
         payload = self.normalize_request(self.parse_video_body(handler))
         return self.proxy("POST", "/v1/videos", json_bytes(payload), "application/json")
 
@@ -368,8 +383,10 @@ class GatewayHandler(BaseHTTPRequestHandler):
             self.send_json(200 if status["ready"] else 503, status)
             return
         if parsed.path == "/v1/models":
-            if not self.gateway.ready.is_set():
-                self.send_json(503, error_payload(GatewayError("diffusion server is still warming up", 503, "upstream_not_ready")))
+            try:
+                self.gateway.require_ready()
+            except GatewayError as error:
+                self.send_json(error.status, error_payload(error))
                 return
             code, content_type, body = self.gateway.proxy("GET", self.path, None, None)
             if code >= 400:

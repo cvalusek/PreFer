@@ -76,7 +76,7 @@ class SGLangTests(unittest.TestCase):
         self.assertTrue(inventory["base_image"]["platform_manifests"]["linux/arm64"])
         self.assertEqual(
             inventory["base_image"]["build_revision"],
-            "c4271c3fe1262fc2adbd162c33b25de5255251c5",
+            "30705c004ca4bbfc92216dfaf845da14d84c4c4d",
         )
         self.assertEqual(inventory["requirements"]["minimum_compute_capability"], "sm_100")
         self.assertEqual(inventory["requirements"]["cuda_major"], 13)
@@ -115,8 +115,14 @@ class SGLangTests(unittest.TestCase):
         upstream_changes = {
             change["id"]: change for change in audit["upstream_changes_outside_pinned_image"]
         }
-        self.assertEqual(upstream_changes["sglang/#36806"]["status"], "merged-upstream-after-image-build")
-        self.assertEqual(upstream_changes["sglang/#35821"]["status"], "merged-upstream-after-image-build")
+        self.assertEqual(
+            upstream_changes["sglang/#36806"]["status"],
+            "merged-to-non-main-branch-not-in-image",
+        )
+        self.assertEqual(
+            upstream_changes["sglang/#35821"]["status"],
+            "merged-to-non-main-branch-not-in-image",
+        )
         self.assertTrue(audit["lineage_recommendation"]["owner_decision_required"])
         self.assertEqual(inventory["api"]["health"], "GET /health")
         self.assertEqual(inventory["api"]["ready"], "GET /readyz")
@@ -245,7 +251,7 @@ class SGLangTests(unittest.TestCase):
         self.assertIn("HF_HOME=/models", dockerfile)
         self.assertIn("S5CMD_VERSION=2.2.2", dockerfile)
         self.assertIn("TARGETARCH", dockerfile)
-        self.assertIn('io.prefer.sglang.image-build-revision="c4271c3fe1262fc2adbd162c33b25de5255251c5"', dockerfile)
+        self.assertIn('io.prefer.sglang.image-build-revision="30705c004ca4bbfc92216dfaf845da14d84c4c4d"', dockerfile)
         self.assertIn('io.prefer.sglang.lineage="official-upstream"', dockerfile)
         self.assertIn("COPY download-artifacts.sh /prefer-download-artifacts.sh", dockerfile)
 

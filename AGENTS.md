@@ -1107,11 +1107,17 @@ paths distinct from the llama service so both can coexist when the operator
 intentionally has enough GPU capacity.
 
 The runtime source and image-build revision is
-`c4271c3fe1262fc2adbd162c33b25de5255251c5`; the official base image is
-`lmsysorg/sglang:nightly-dev-cu13-20260814-c4271c3f` pinned to OCI index
-`sha256:3a28a37ce6dba5471494781617451eed355308cb7d90347f022df37f5fb212dc`.
+`30705c004ca4bbfc92216dfaf845da14d84c4c4d`; the official base image is
+`lmsysorg/sglang:nightly-dev-cu13-20260907-30705c00` pinned to OCI index
+`sha256:19b8fa1223cc339c1eae7a5b703f1a8c2543b5b119155bf3d7efaef18f77f007`.
 The image is official upstream and does not contain the
 `jpezzulli/sglang-rtxpro6000` custom fork.
+This is the minimum pinned runtime for the generated MiniMax H3 commands: it
+parses the dynamic `--component-weights-paths.<component>` overrides used for
+the exact transformer, text encoder, video VAE, and audio VAE files. The former
+`c4271c3f` image rejected those arguments before model loading. Do not regress
+the image below `30705c00` without changing the generated command contract and
+passing an exact-artifact FL2VA and Ref2VA startup smoke.
 The primary model is `RadixArk/Qwen3.8-27B-NVFP4` at immutable revision
 `319f741cce68d7914884900c138a1fbb70a42f30`, with Apache-2.0 Qwen lineage,
 native text/image/video input, 262,144 native context, request-selectable
@@ -1150,11 +1156,12 @@ and the earlier ~146 tok/s C1 result is a separate runtime/state. Do not borrow
 any of those numbers. The RTX PRO 6000 Flash-Next route is retained as a next
 experimental lane, and HiCache/NIXL is optional but not enabled by default.
 
-The official image predates later upstream changes used by the custom fork,
-including the exact-SM120 QSA routing change (#36806) and Mamba radix-cache/
-speculative tracking fix (#35821); the three-axis Qwen mRoPE fix (#35744) is
-also outside the pinned image. Keep the full upstream-versus-custom feature
-matrix and lineage recommendation in `docker/sglang/runtime.json` and
+The official mainline image does not include the exact-SM120 QSA routing change
+(#36806) or Mamba radix-cache/speculative tracking fix (#35821), which were
+merged only to SGLang's `qwen4-main-squashed` and `qwen_optimize` branches; the
+three-axis Qwen mRoPE fix (#35744) is also outside the pinned image. Keep the
+full upstream-versus-custom feature matrix and lineage recommendation in
+`docker/sglang/runtime.json` and
 `docker/sglang/README.md`. If custom-fork parity is required, publish a separate
 immutable custom image alongside the upstream portable lane; changing image
 lineage requires owner review.
@@ -1186,6 +1193,13 @@ community-license and 24 fps H.264/AAC output contract visible in the catalog.
 The generated H3 commands set `--pin-cpu-memory false` because upstream
 diffusion loading can stage substantial DiT state through host memory; exact
 host-RAM and cgroup headroom remain configuration-only gates.
+Canonical H3 configs also set `--enable-torch-compile false`, including the
+full-GPU 96 GB shapes. Upstream documents that H3 speed mode deliberately keeps
+the DiT eager and that explicitly enabling `torch.compile` changes numerical
+output; treat compile-on as a separate controlled experiment, not the first
+startup or consistency path. If the upstream worker exits, the gateway must
+report `upstream_failed` on `/v1/models` and `/v1/videos`, rather than continue
+to describe a terminal failure as warmup.
 Turbo LoRA recipes are recorded as optional FL2VA metadata; they are not
 staged or enabled by default until their exact immutable weight revisions and
 hashes are cataloged.

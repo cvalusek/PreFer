@@ -56,6 +56,9 @@ class SGLangVideoTests(unittest.TestCase):
         )
 
     def test_diffusion_command_uses_sglang_serve_without_text_model_flag(self) -> None:
+        inventory = json.loads(
+            (SGLANG_ROOT / "deployment-inventory.generated.json").read_text(encoding="utf-8")
+        )
         config = json.loads(
             (
                 SGLANG_ROOT
@@ -73,8 +76,48 @@ class SGLangVideoTests(unittest.TestCase):
         self.assertIn("--revision", config["command"])
         self.assertIn("--pin-cpu-memory", config["command"])
         self.assertIn("false", config["command"])
+        self.assertEqual(
+            inventory["features"]["diffusion_server"]["component_weight_override_cli"],
+            "--component-weights-paths.<component>",
+        )
+        self.assertIn(
+            inventory["runtime"]["source_revision"],
+            inventory["features"]["diffusion_server"]["component_weight_override_source"],
+        )
+        for component in ("audio_vae", "text_encoder", "transformer", "video_vae"):
+            self.assertIn(f"--component-weights-paths.{component}", config["command"])
+        compile_index = config["command"].index("--enable-torch-compile")
+        self.assertEqual(config["command"][compile_index + 1], "false")
         self.assertNotIn("--served-model-name", config["command"])
         self.assertEqual(config["gateway"]["upstream_port"], 30001)
+
+    def test_gateway_distinguishes_worker_failure_from_warmup(self) -> None:
+        gateway_module = self.gateway_module
+        source_config = json.loads(
+            (
+                SGLANG_ROOT
+                / "server-configs"
+                / "local"
+                / "rtx-4090"
+                / "1x"
+                / "h3-fl2va.json"
+            ).read_text(encoding="utf-8")
+        )
+        gateway = gateway_module.VideoGateway(source_config, [])
+
+        with self.assertRaises(gateway_module.GatewayError) as warming:
+            gateway.require_ready()
+        self.assertEqual(warming.exception.code, "upstream_not_ready")
+
+        class ExitedProcess:
+            def poll(self) -> int:
+                return 2
+
+        gateway.process = ExitedProcess()
+        with self.assertRaises(gateway_module.GatewayError) as failed:
+            gateway.require_ready()
+        self.assertEqual(failed.exception.code, "upstream_failed")
+        self.assertEqual(failed.exception.message, "diffusion server exited with status 2")
 
     def test_gateway_normalizes_aliases_and_rejects_remote_inputs(self) -> None:
         gateway_module = self.gateway_module
