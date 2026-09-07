@@ -1,6 +1,13 @@
 # PreFer changelog
 
-## Current
+## sha-dc20179 (preview)
+
+- Images
+  - Llama CUDA: `ghcr.io/cvalusek/prefer:llama-cuda-sha-dc20179@sha256:f934ea7b4704232e31dc1532f811cad32b723c99d857fb3c05b36d3fb53d3e9b`.
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-dc20179@sha256:10454467b3421ab55d88f36d741f7f0abac815017638ce918867086f84a1fe27`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-dc20179@sha256:47349a0ea94e99c09dc8d4ca2ed2e57591f8fd7cd9381aa2688d6c1a6d7f9a7a`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-dc20179@sha256:74530e6a9b2e4dbd7309db33b58870f22d2709164bd45839035cc33b00a5fd04`.
+  - SGLang CUDA 13: `ghcr.io/cvalusek/prefer:sglang-cuda13-sha-dc20179@sha256:dbfad8fb2870e16e62b0734a907c9c2559cfe0b1f1b05cc689d03669f3edb3da`.
 
 - Llama
   - `qwen-3.8-27b`
