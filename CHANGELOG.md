@@ -1,6 +1,14 @@
 # PreFer changelog
 
-## Current
+## sha-202b9ec (preview)
+
+- Images
+  - Llama CUDA: `ghcr.io/cvalusek/prefer:llama-cuda-sha-202b9ec@sha256:22702a12d2ab34a7ed936a58546123872a0268555201a14e22c87ecee82f724e`.
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-202b9ec@sha256:4c3c8191d2a46d720bf3df28d3bc2bd480efa6f9fc318411b8ab18f94f677f19`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-202b9ec@sha256:ff8bb36f8f460fe26fb59cb43155f7e22ef5b20cdfb52520593f561911f5b1b6`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-202b9ec@sha256:e26bfe05c7993912043844aa0496e1f0d6cb0ed32169756469912d73aa10caf4`.
+  - SGLang CUDA 13: `ghcr.io/cvalusek/prefer:sglang-cuda13-sha-202b9ec@sha256:02c592dc3fd093a1c169c9baa0fca6c2a33796d5d9f5c3d94cb3d58de39049d1`.
+  - vLLM CUDA 13: `ghcr.io/cvalusek/prefer:vllm-cuda13-sha-202b9ec@sha256:e8ceec34098fa6ca8bcf6233cfa2147d975561fa728ddbaddfba5cd417085478`.
 
 - vLLM
   - Added an opt-in official vLLM CUDA 13 runtime for the Inferact Qwen3.8-27B NVFP4 text lane on Blackwell GPUs.
