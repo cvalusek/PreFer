@@ -77,7 +77,7 @@ class RuntimeCompositionTests(unittest.TestCase):
     def test_audio_composes_bundle_plus_model(self):
         config_text, prestage, _ = self.compose(
             "audio-cpp",
-            base=str(ROOT / "docker" / "audio-cpp" / "server.cuda.generated.json"),
+            base="audio/cuda12",
             bundles="speech",
             models="personaplex-7b",
             server={"max_loaded_models": 2},
@@ -92,7 +92,7 @@ class RuntimeCompositionTests(unittest.TestCase):
     def test_audio_nested_model_override_preserves_session_defaults(self):
         config_text, _, _ = self.compose(
             "audio-cpp",
-            base=str(ROOT / "docker" / "audio-cpp" / "server.cuda.generated.json"),
+            base="audio/cuda12",
             models="minimax-music-3",
             model={"minimax-music-3": {"session_options": {"mem_saver": False}}},
         )
@@ -104,7 +104,7 @@ class RuntimeCompositionTests(unittest.TestCase):
     def test_image_uses_exact_quant_and_preserves_hardware_args(self):
         config_text, prestage, _ = self.compose(
             "stable-diffusion-cpp",
-            base=str(ROOT / "docker" / "stable-diffusion-cpp" / "server.generated.json"),
+            base="image/cuda12",
             bundles="fast",
             models="qwen-image-q6",
             server={"busy_timeout_ms": 7_200_000},
@@ -164,7 +164,7 @@ class RuntimeCompositionTests(unittest.TestCase):
     def test_llama_legacy_detected_preset_remains_composable(self):
         config, prestage, plan = self.compose(
             "llama-cpp",
-            base=str(ROOT / "docker" / "llama-cpp" / "presets" / "12gb.ini"),
+            base="/presets/12gb.ini",
             server={"threads": 6},
         )
         self.assertEqual(
@@ -179,18 +179,13 @@ class RuntimeCompositionTests(unittest.TestCase):
             ],
         )
         self.assertIn("threads = 6", config)
-        self.assertEqual(
-            plan["base_deployment"],
-            (ROOT / "docker" / "llama-cpp" / "presets" / "12gb").as_posix(),
-        )
+        self.assertEqual(plan["base_deployment"], "12gb")
 
     def test_every_published_model_lane_can_be_composed_exactly(self):
         default_bases = {
             "llama-cpp": "aws/g7e/2xlarge/general",
-            "audio-cpp": str(ROOT / "docker" / "audio-cpp" / "server.cuda.generated.json"),
-            "stable-diffusion-cpp": str(
-                ROOT / "docker" / "stable-diffusion-cpp" / "server.generated.json"
-            ),
+            "audio-cpp": "audio/cuda12",
+            "stable-diffusion-cpp": "image/cuda12",
             "sglang": "sglang/cuda13",
             "vllm": "vllm/cuda13",
         }
