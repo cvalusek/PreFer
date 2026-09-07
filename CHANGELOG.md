@@ -1,6 +1,14 @@
 # PreFer changelog
 
-## Current
+## sha-23a3546 (preview)
+
+- Images
+  - Llama CUDA: `ghcr.io/cvalusek/prefer:llama-cuda-sha-23a3546@sha256:b3251bdcc208100b64b105a4744bfd83e67449a9e18b8b2ce9f07e2a209b8a12`.
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-23a3546@sha256:613006ab36fa8878f2c0257f08bb659dc9fb124361df2942c52493425ea4b997`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-23a3546@sha256:13e4b9fd973d9cb45c68b4614c15a90e0d91815856af4eefa49eacefdd85377b`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-23a3546@sha256:244ae5ccf7175298ab862ea9e79507937ebe0d6a993bdfc37f3e8076cec018b3`.
+  - SGLang CUDA 13: `ghcr.io/cvalusek/prefer:sglang-cuda13-sha-23a3546@sha256:e1e1fcfd3eadb618f866dea4dfb95691eea76b8b33a908d872a4ca2cb047ae1a`.
+  - vLLM CUDA 13: `ghcr.io/cvalusek/prefer:vllm-cuda13-sha-23a3546@sha256:43497eed5b84377d8063a43dca601f5836e078f0a7c3ab23244984674a3693f0`.
 
 - SGLang video
   - Bumped the official CUDA 13 runtime to `30705c004ca4bbfc92216dfaf845da14d84c4c4d`, which accepts the exact MiniMax H3 component-weight overrides used by FL2VA and Ref2VA.
