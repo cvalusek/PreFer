@@ -1,6 +1,14 @@
 # PreFer changelog
 
-## Current
+## sha-055b23e (preview)
+
+- Images
+  - Llama CUDA: `ghcr.io/cvalusek/prefer:llama-cuda-sha-055b23e@sha256:c1cd3f1eda9dfa04a7ec35662eed083dd2bf5b8633f7f730d839116198b15195`.
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-055b23e@sha256:29b91f4b853cfddd9a310fca9839cd112b6be0cbb72098840efed896762fdfa6`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-055b23e@sha256:c609ef45d702940eee76a19dcc41ec6c3f57e8cded112f2c8efb3257124d22fd`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-055b23e@sha256:156798c72932c7eaf10a7fbe88377d10bca68c6c87d136d9e031c265a10b57c7`.
+  - SGLang CUDA 13: `ghcr.io/cvalusek/prefer:sglang-cuda13-sha-055b23e@sha256:7aa25c1bca68beb0f631fddabf8e79ff27f6c52eaf4b869e00bd7e031b843b49`.
+  - vLLM CUDA 13: `ghcr.io/cvalusek/prefer:vllm-cuda13-sha-055b23e@sha256:b07e99855e25085c777c886b0d3ed96a3b27741c4b8de0d855b25dddc432aec0`.
 
 - Runtime composition
   - Added one opt-in deployment, bundle, model, and override contract across llama.cpp, audio.cpp, stable-diffusion.cpp, SGLang, and vLLM.
