@@ -41,7 +41,8 @@ const schemaAssets = [
   ["catalog/model-catalog.schema.json", "prefer-model-catalog.schema.json"],
   ["catalog/model-catalog-extension.schema.json", "prefer-model-catalog-extension.schema.json"],
   ["catalog/resource-profile.schema.json", "prefer-resource-profile.schema.json"],
-  ["catalog/model-plan.schema.json", "prefer-model-plan.schema.json"]
+  ["catalog/model-plan.schema.json", "prefer-model-plan.schema.json"],
+  ["catalog/runtime-handoff.schema.json", "prefer-runtime-handoff.schema.json"]
 ];
 for (const [source, name] of schemaAssets) await copySchemaAsset(source, resolve(outputDir, name));
 
@@ -49,6 +50,10 @@ const cliPath = resolve(outputDir, "prefer.mjs");
 await cp(resolve("packages/prefer/dist/prefer.mjs"), cliPath);
 const installerPath = resolve(outputDir, "install-prefer-node.sh");
 await cp(resolve("scripts/install-prefer-node.sh"), installerPath);
+const artifactHelperPath = resolve(outputDir, "prefer-download-artifacts.sh");
+await cp(resolve("docker/audio-cpp/download-artifacts.sh"), artifactHelperPath);
+const runtimeHandoffDownloadPath = resolve(outputDir, "prefer-runtime-handoff-download.sh");
+await cp(resolve("scripts/runtime-handoff-download.sh"), runtimeHandoffDownloadPath);
 
 const packageStage = resolve(outputDir, ".package-stage");
 await mkdir(resolve(packageStage, "dist"), { recursive: true });
@@ -73,7 +78,8 @@ const assets = Object.fromEntries(await Promise.all([
   ["model_catalog_schema", resolve(outputDir, "prefer-model-catalog.schema.json")],
   ["model_catalog_extension_schema", resolve(outputDir, "prefer-model-catalog-extension.schema.json")],
   ["resource_profile_schema", resolve(outputDir, "prefer-resource-profile.schema.json")],
-  ["model_plan_schema", resolve(outputDir, "prefer-model-plan.schema.json")]
+  ["model_plan_schema", resolve(outputDir, "prefer-model-plan.schema.json")],
+  ["runtime_handoff_schema", resolve(outputDir, "prefer-runtime-handoff.schema.json")]
 ].map(async ([key, path]) => {
   const bytes = await readFile(path);
   return [key, { asset: basename(path), bytes: bytes.byteLength, sha256: sha256(bytes) }];
@@ -111,7 +117,10 @@ for (const context of [
     "prefer-model-catalog.schema.json",
     "prefer-model-catalog-extension.schema.json",
     "prefer-resource-profile.schema.json",
-    "prefer-model-plan.schema.json"
+    "prefer-model-plan.schema.json",
+    "prefer-runtime-handoff.schema.json",
+    "prefer-download-artifacts.sh",
+    "prefer-runtime-handoff-download.sh"
   ]) await cp(resolve(outputDir, name), resolve(destination, name));
 }
 process.stdout.write(`${JSON.stringify(manifest)}\n`);

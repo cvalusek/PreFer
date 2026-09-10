@@ -28,6 +28,7 @@ Each immutable GitHub release and matching Actions artifact contains:
 - `prefer-model-catalog-extension.schema.json`
 - `prefer-resource-profile.schema.json`
 - `prefer-model-plan.schema.json`
+- `prefer-runtime-handoff.schema.json`
 - `SHA256SUMS`
 
 A controller starts with `prefer-release.json`, selects the required
@@ -39,6 +40,11 @@ source, but must ignore a branch head until its complete grouped release exists.
 The bundle contains metadata only. Model weights are neither copied into the
 release nor embedded in its container images; each runtime stages them onto its
 external `/models` storage after deployment.
+
+The runtime-handoff schema is release-matched. A controller can bind supported
+or controller-extension artifacts to that release's catalog fingerprint and
+pass the resulting JSON to any engine image from the same grouped release.
+See [the runtime handoff contract](../docs/runtime-handoff.md).
 
 The model catalog is refreshed from Hugging Face before the six images build.
 If that refresh is unavailable, the build can reuse repository metadata from

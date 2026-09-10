@@ -115,7 +115,8 @@
         "model_catalog_schema",
         "model_catalog_extension_schema",
         "resource_profile_schema",
-        "model_plan_schema"
+        "model_plan_schema",
+        "runtime_handoff_schema"
       ],
       "properties": {
         "schema_version": {"const": "prefer.release-tooling.v1"},
@@ -129,7 +130,8 @@
         "model_catalog_schema": {"$ref": "#/$defs/tooling_asset"},
         "model_catalog_extension_schema": {"$ref": "#/$defs/tooling_asset"},
         "resource_profile_schema": {"$ref": "#/$defs/tooling_asset"},
-        "model_plan_schema": {"$ref": "#/$defs/tooling_asset"}
+        "model_plan_schema": {"$ref": "#/$defs/tooling_asset"},
+        "runtime_handoff_schema": {"$ref": "#/$defs/tooling_asset"}
       }
     }
   },

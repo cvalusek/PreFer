@@ -157,6 +157,24 @@ prefer catalog extend \
   --output neuron-extension.json
 ```
 
+## Immutable runtime handoff
+
+`resolveExtensionModelVariant` turns a controller-owned extension into an
+engine-ready exact-file selection. `createRuntimeHandoff` then binds supported
+or extension variants, companions, and LoRAs to the selected engine and the
+release catalog fingerprint. `validateRuntimeHandoff` and
+`materializeRuntimeHandoff` enforce that binding and derive paths beneath the
+receiving runtime's model root.
+
+LFS artifacts use their content SHA-256. Ordinary Hugging Face files use their
+immutable Git blob SHA-1 unless the controller supplies a content SHA-256.
+Every handoff artifact has exactly one digest, an immutable repository
+revision, an exact path, and an exact byte size.
+
+The standalone CLI exposes `model resolve-extension`, `runtime create`,
+`runtime validate`, and `runtime materialize`. See
+[the full controller and container flow](../../docs/runtime-handoff.md).
+
 ## Immutable PreFer releases
 
 `listPreferReleases`, `resolvePreferRelease`, and `downloadPreferTooling` cover

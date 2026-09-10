@@ -10,6 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import subprocess
 import threading
@@ -93,12 +94,20 @@ def prestage_state() -> dict:
 
 
 def artifact_download_id(artifact: dict) -> str:
+    explicit_id = artifact.get("download_id")
+    if isinstance(explicit_id, str) and re.fullmatch(r"[0-9a-f]{64}", explicit_id):
+        return explicit_id
+    verification = (
+        {"sha256": artifact["sha256"]}
+        if isinstance(artifact.get("sha256"), str)
+        else {"git_blob_sha1": artifact["git_blob_sha1"]}
+    )
     identity = {
         "repo": artifact["repo"],
         "revision": artifact["revision"],
         "path": artifact["path"],
         "size": artifact["size"],
-        "sha256": artifact["sha256"],
+        **verification,
     }
     return hashlib.sha256(
         json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()

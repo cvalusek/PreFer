@@ -117,6 +117,37 @@ class RouterTests(unittest.TestCase):
             ):
                 self.assertTrue(router.model_files_present({"required_files": [artifact]}))
 
+    def test_runtime_handoff_marker_uses_its_release_bound_download_id(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            artifact_path = root / "owner" / "repo" / "config.json"
+            artifact_path.parent.mkdir(parents=True)
+            artifact_path.write_bytes(b"{}")
+            artifact = {
+                "download_id": "3" * 64,
+                "repo": "owner/repo",
+                "revision": "1" * 40,
+                "path": "config.json",
+                "size": artifact_path.stat().st_size,
+                "git_blob_sha1": "2" * 40,
+                "container_path": str(artifact_path),
+            }
+            marker = (
+                root
+                / ".prefer-cache"
+                / "downloads-v2"
+                / "verified"
+                / f"{'3' * 64}.complete"
+            )
+            marker.parent.mkdir(parents=True)
+            marker.write_text(
+                f"v1\t{'3' * 64}\t{router.artifact_stat_signature(artifact_path.stat())}\n",
+                encoding="utf-8",
+            )
+            with mock.patch.object(router, "MODELS_ROOT", root):
+                self.assertEqual(router.artifact_download_id(artifact), "3" * 64)
+                self.assertTrue(router.model_files_present({"required_files": [artifact]}))
+
     def test_config_rejects_multiple_resident_models(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "server.json"

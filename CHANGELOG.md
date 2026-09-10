@@ -1,5 +1,16 @@
 # PreFer changelog
 
+## Current
+
+- Runtime handoff
+  - Added release-bound supported and controller-extension model launch across llama.cpp, audio.cpp, stable-diffusion.cpp, SGLang, and vLLM.
+  - Added exact repository revisions, file sizes and digests, companion roles, LoRAs, request IDs, and engine/model settings to the handoff.
+  - Added validated Hugging Face/S3 staging and ephemeral engine configs; catalog, engine, path, artifact, and fingerprint mismatches fail before launch.
+  - Added repository and GGUF handoff lanes plus named text LoRA directories for SGLang and vLLM.
+- Compatibility
+  - Existing presets, configs, bundle/model composition, and runtime model downloads remain unchanged when no handoff is selected.
+  - Model weights remain external runtime artifacts and are not embedded in images, releases, or the npm package.
+
 ## sha-0be6ef9 (preview)
 
 - Images

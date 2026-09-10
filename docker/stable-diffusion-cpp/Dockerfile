@@ -31,10 +31,12 @@ COPY .prefer-tooling/prefer-model-catalog.schema.json /prefer-catalog/schemas/pr
 COPY .prefer-tooling/prefer-model-catalog-extension.schema.json /prefer-catalog/schemas/prefer-model-catalog-extension.schema.json
 COPY .prefer-tooling/prefer-resource-profile.schema.json /prefer-catalog/schemas/prefer-resource-profile.schema.json
 COPY .prefer-tooling/prefer-model-plan.schema.json /prefer-catalog/schemas/prefer-model-plan.schema.json
+COPY .prefer-tooling/prefer-runtime-handoff.schema.json /prefer-catalog/schemas/prefer-runtime-handoff.schema.json
+COPY .prefer-tooling/prefer-runtime-handoff-download.sh /prefer-runtime-handoff-download.sh
 COPY router.py /app/router.py
 COPY entrypoint.sh /prefer-image-entrypoint.sh
-RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-image-entrypoint.sh /prefer-catalog/generate.py \
-    && chmod +x /usr/local/bin/prefer /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-image-entrypoint.sh /app/router.py
+RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /model-downloads.generated.sh /prefer-image-entrypoint.sh /prefer-catalog/generate.py \
+    && chmod +x /usr/local/bin/prefer /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /model-downloads.generated.sh /prefer-image-entrypoint.sh /app/router.py
 
 ENV PREFER_ENGINE=stable-diffusion.cpp \
     PREFER_MODEL_CATALOG=/prefer-model-catalog.json

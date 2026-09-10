@@ -61,11 +61,14 @@ COPY .prefer-tooling/prefer-model-catalog.schema.json /prefer-catalog/schemas/pr
 COPY .prefer-tooling/prefer-model-catalog-extension.schema.json /prefer-catalog/schemas/prefer-model-catalog-extension.schema.json
 COPY .prefer-tooling/prefer-resource-profile.schema.json /prefer-catalog/schemas/prefer-resource-profile.schema.json
 COPY .prefer-tooling/prefer-model-plan.schema.json /prefer-catalog/schemas/prefer-model-plan.schema.json
+COPY .prefer-tooling/prefer-runtime-handoff.schema.json /prefer-catalog/schemas/prefer-runtime-handoff.schema.json
+COPY .prefer-tooling/prefer-download-artifacts.sh /prefer-download-artifacts.sh
+COPY .prefer-tooling/prefer-runtime-handoff-download.sh /prefer-runtime-handoff-download.sh
 COPY detect-preset.sh /detect-preset.sh
 COPY download-models.sh /download-models.sh
 COPY entrypoint.sh /entrypoint.sh
-RUN sed -i 's/\r$//' /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh /prefer-catalog/generate-presets.py \
-    && chmod +x /usr/local/bin/prefer /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh
+RUN sed -i 's/\r$//' /model-downloads.generated.sh /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /detect-preset.sh /download-models.sh /entrypoint.sh /prefer-catalog/generate-presets.py \
+    && chmod +x /usr/local/bin/prefer /model-downloads.generated.sh /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /detect-preset.sh /download-models.sh /entrypoint.sh
 
 ENV PREFER_ENGINE=llama.cpp \
     PREFER_MODEL_CATALOG=/prefer-model-catalog.json

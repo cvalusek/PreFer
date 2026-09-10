@@ -151,6 +151,11 @@ The container writes `/run/prefer/audio.json`, its prestage sidecar, and
 existing `AUDIO_SERVER_CONFIG` behavior. Catalog metadata is embedded in the
 image; audio weights remain external runtime downloads.
 
+`AUDIO_RUNTIME_HANDOFF` selects a mounted, release-bound supported or
+controller-extension model manifest. The image validates and stages its exact
+files before generating the audio config. See
+[the shared handoff contract](../../docs/runtime-handoff.md).
+
 Compose passes `HF_TOKEN` plus the same `HF_HUB_DISABLE_XET` and `HF_XET_*`
 controls as the llama service. Xet high-performance mode is enabled by default
 for audio staging and can be overridden for a constrained host.

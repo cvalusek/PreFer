@@ -389,6 +389,18 @@ paths. Runtime images copy the generator plus JSON catalog/scenario metadata
 to `/prefer-catalog`; never copy model weights into that directory or any
 other image/release layer.
 
+Controllers may instead supply a release-bound `PREFER_RUNTIME_HANDOFF` (or
+engine-scoped alias). A handoff is mutually exclusive with bundle/model
+selectors. It must bind the image engine and embedded catalog fingerprint,
+immutable repository revisions, exact artifact paths/sizes, and exactly one
+integrity identity per artifact: SHA-256 for LFS/caller-hashed files or Git
+blob SHA-1 for ordinary repository files. The image derives local paths beneath
+its model root, validates the full manifest before transfer, and generates its
+ephemeral config and plan. Do not weaken that binding to make arbitrary models
+easier to launch. Supported and controller-extension choices may be unverified,
+but unsafe paths, digest ambiguity, release mismatch, and engine mismatch must
+fail closed. LoRA and companion artifacts remain explicit handoff records.
+
 AWS authored scenarios are split by instance shape under
 `preset-scenarios/aws/`. RunPod paths are
 `presets/runpod/<gpu-slug>/<count>x/`; all initial card shapes use one GPU

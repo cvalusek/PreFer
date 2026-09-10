@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/cvalusek/PreFer/blob/develop/catalog/runtime-handoff.schema.json",
+  "title": "PreFer immutable runtime handoff",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "catalog_fingerprint", "handoff_fingerprint", "engine", "server_settings", "models", "artifacts"],
+  "properties": {
+    "schema_version": {"const": "prefer.runtime-handoff.v1"},
+    "catalog_fingerprint": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "handoff_fingerprint": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "engine": {"type": "string", "minLength": 1},
+    "base_deployment": {"type": "string", "minLength": 1},
+    "server_settings": {"type": "object"},
+    "models": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["model_id", "request_model_id", "source", "family", "display_name", "repository", "revision", "quant", "artifact_ids", "capabilities", "settings"],
+        "properties": {
+          "model_id": {"type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"},
+          "request_model_id": {"type": "string", "minLength": 1},
+          "source": {"enum": ["prefer", "extension"]},
+          "family": {"type": "string", "minLength": 1},
+          "display_name": {"type": "string", "minLength": 1},
+          "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+          "revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "quant": {"type": "string", "minLength": 1},
+          "artifact_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
+          "capabilities": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "settings": {"type": "object"}
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "repository", "revision", "path", "size"],
+        "oneOf": [
+          {"required": ["sha256"], "not": {"required": ["git_blob_sha1"]}},
+          {"required": ["git_blob_sha1"], "not": {"required": ["sha256"]}}
+        ],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+          "revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "path": {"type": "string", "minLength": 1},
+          "size": {"type": "integer", "minimum": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "git_blob_sha1": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "model_id": {"type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"},
+          "role": {"type": "string", "minLength": 1},
+          "settings": {"type": "object"}
+        }
+      }
+    }
+  }
+}

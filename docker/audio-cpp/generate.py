@@ -505,6 +505,8 @@ def deployment_inventory(
             "multi_model": True,
             "effective_config_path": "/run/prefer/audio.json",
             "effective_plan_path": "/run/prefer/plan.json",
+            "effective_handoff_path": "/run/prefer/handoff.json",
+            "runtime_handoff_schema": "prefer.runtime-handoff.v1",
             "compose_environment_prefix": "AUDIO",
             "override_merge": "objects merge recursively; scalar and array values replace",
             "environment": {
@@ -513,11 +515,13 @@ def deployment_inventory(
                 "PREFER_MODELS": {"type": "string-list", "source": "models key or request_model_id"},
                 "PREFER_SERVER_OVERRIDES": {"type": "json-object", "applies_to": "audio.cpp server settings"},
                 "PREFER_MODEL_OVERRIDES": {"type": "json-object-map", "applies_to": "selected model session settings"},
+                "PREFER_RUNTIME_HANDOFF": {"type": "path", "source": "immutable release-matched runtime handoff"},
             },
             "selection_rules": [
                 "bundle and model selections are additive",
                 "an exact quant key replaces another lane for the same logical model",
                 "a friendly model selection uses its primary catalog lane",
+                "a runtime handoff replaces bundle/model selection and may include controller-extension artifacts",
             ],
             "precedence": [
                 "catalog model and lane defaults",
@@ -811,10 +815,162 @@ def compose_runtime_config(
     return config, prestage, plan
 
 
+def resolve_handoff_base(base: str, default_base: str, handoff: dict) -> tuple[str, dict, str]:
+    reference = base or str(handoff.get("base_deployment") or default_base)
+    normalized = normalize_runtime_config(reference or "default")
+    explicit = Path(reference) if reference else Path()
+    if normalized == "default" or explicit.is_file():
+        config_path = explicit if explicit.is_file() else Path(default_base)
+        if not config_path.is_file():
+            config_path = Path("/app/server.json") if Path("/app/server.json").is_file() else ROOT / "server.cuda.generated.json"
+        config = load_json(config_path)
+        backend = str(config.get("backend", "cuda"))
+        server = {key: copy.deepcopy(value) for key, value in config.items() if key not in {"backend", "models"}}
+        deployment = "audio/cpu" if backend == "cpu" else "audio/cuda12"
+        return backend, server, deployment
+    lanes = model_lanes()
+    primary = [lane for lane in lanes if lane["primary"]]
+    primary_by_key = {lane["key"]: lane for lane in primary}
+    bundles = load_bundles(primary_by_key)
+    scenarios = load_scenarios(primary_by_key, bundles)
+    scenario = next((record for record in scenarios if record["path"] == normalized), None)
+    if scenario is None:
+        raise ValueError(f"unknown audio runtime handoff deployment: {reference!r}")
+    return "cuda", copy.deepcopy(scenario["server"]), PurePosixPath(normalized).with_suffix("").as_posix()
+
+
+def handoff_audio_lane(model: dict, artifacts: dict[str, dict]) -> dict:
+    model_id = model.get("model_id")
+    request_model_id = model.get("request_model_id")
+    if not isinstance(model_id, str) or not model_id or not isinstance(request_model_id, str) or not request_model_id:
+        raise ValueError("runtime handoff model identity is invalid")
+    raw_settings = model.get("settings", {})
+    if not isinstance(raw_settings, dict):
+        raise ValueError(f"runtime handoff model {model_id} settings must be an object")
+    model_settings = copy.deepcopy(raw_settings.get("model", {}))
+    launcher = copy.deepcopy(raw_settings.get("launcher", {}))
+    if not isinstance(model_settings, dict) or not isinstance(launcher, dict):
+        raise ValueError(f"runtime handoff model {model_id} model and launcher settings must be objects")
+    session_options = launcher.pop("session_options", {})
+    if not isinstance(session_options, dict):
+        raise ValueError(f"runtime handoff model {model_id} session_options must be an object")
+    if launcher:
+        raise ValueError(f"runtime handoff model {model_id} has unsupported audio launcher setting {next(iter(launcher))!r}")
+    selected_artifacts = []
+    for artifact_id in model.get("artifact_ids", []):
+        artifact = artifacts.get(artifact_id)
+        if artifact is None:
+            raise ValueError(f"runtime handoff model {model_id} references unknown artifact {artifact_id}")
+        selected_artifacts.append(artifact)
+    if not selected_artifacts:
+        raise ValueError(f"runtime handoff model {model_id} has no artifacts")
+    repositories = {artifact.get("repository") for artifact in selected_artifacts}
+    primary = [artifact for artifact in selected_artifacts if str(artifact.get("role", "")).lower() == "model"]
+    if len(selected_artifacts) == 1 or primary:
+        path = (primary or selected_artifacts)[0].get("local_path")
+    elif len(repositories) == 1:
+        path = model.get("repository_path")
+    else:
+        raise ValueError(f"runtime handoff model {model_id} needs an explicit primary audio artifact")
+    if not isinstance(path, str) or not path.startswith("/"):
+        raise ValueError(f"runtime handoff model {model_id} has no materialized server path")
+    return {
+        "key": model_id,
+        "id": request_model_id,
+        "family": model.get("family", "extension"),
+        "model_slug": model_id,
+        "quant_slug": model.get("quant", "unknown"),
+        "precision": model.get("quant", "unknown"),
+        "primary": True,
+        "task": model_settings.get("task", "tts"),
+        "mode": model_settings.get("mode", "offline"),
+        "container_path": path,
+        "server": session_options,
+    }
+
+
+def compose_runtime_handoff_config(
+    *,
+    handoff_path: str,
+    base: str,
+    default_base: str,
+    server_overrides_value: str,
+    model_overrides_value: str,
+) -> tuple[dict, list[str], dict]:
+    handoff = load_json(Path(handoff_path))
+    if handoff.get("schema_version") != "prefer.runtime-handoff.v1" or handoff.get("engine") != "audio.cpp":
+        raise ValueError("materialized runtime handoff is not for audio.cpp")
+    models = handoff.get("models")
+    raw_artifacts = handoff.get("artifacts")
+    if not isinstance(models, list) or not models or not isinstance(raw_artifacts, list) or not raw_artifacts:
+        raise ValueError("audio runtime handoff requires models and artifacts")
+    artifacts = {artifact.get("id"): artifact for artifact in raw_artifacts if isinstance(artifact, dict)}
+    if len(artifacts) != len(raw_artifacts):
+        raise ValueError("materialized runtime handoff has duplicate or invalid artifacts")
+    backend, base_server, base_deployment = resolve_handoff_base(base, default_base, handoff)
+    selected = [handoff_audio_lane(model, artifacts) for model in models]
+    ids = [lane["id"] for lane in selected]
+    if len(ids) != len(set(ids)):
+        raise ValueError("audio runtime handoff request model ids must be unique")
+    handoff_server = handoff.get("server_settings", {})
+    server_overrides = parse_composition_object(server_overrides_value, "PREFER_SERVER_OVERRIDES")
+    model_overrides = parse_composition_object(model_overrides_value, "PREFER_MODEL_OVERRIDES")
+    if not isinstance(handoff_server, dict) or any(not isinstance(value, dict) for value in model_overrides.values()):
+        raise ValueError("runtime handoff server and model overrides must be objects")
+    protected_server = {"backend", "models"}
+    for source in (handoff_server, server_overrides):
+        conflict = protected_server & source.keys()
+        if conflict:
+            raise ValueError(f"audio runtime server settings cannot replace {sorted(conflict)[0]}")
+    applied: dict[str, dict] = {}
+    known_names: set[str] = set()
+    for lane in selected:
+        names = {lane["key"], lane["id"]}
+        known_names.update(names)
+        matching = [value for name, value in model_overrides.items() if name in names]
+        if len(matching) > 1:
+            raise ValueError(f"multiple PREFER_MODEL_OVERRIDES entries target {lane['key']}")
+        if matching:
+            protected = {"id", "family", "path", "task", "mode", "lazy"} & matching[0].keys()
+            if protected:
+                raise ValueError(f"audio model overrides cannot replace {sorted(protected)[0]}")
+            lane["server"] = deep_merge(lane["server"], matching[0])
+            applied[lane["key"]] = matching[0]
+    unknown = [name for name in model_overrides if name not in known_names]
+    if unknown:
+        raise ValueError("PREFER_MODEL_OVERRIDES targets are not selected: " + ", ".join(unknown))
+    config = server_config(backend, selected, deep_merge(base_server, handoff_server, server_overrides))
+    artifact_ids = [artifact["id"] for artifact in raw_artifacts]
+    plan = {
+        "schema_version": "prefer.runtime-plan.v1",
+        "runtime": "audio.cpp",
+        "base_deployment": base_deployment,
+        "handoff_fingerprint": handoff.get("handoff_fingerprint"),
+        "bundles": [],
+        "requested_models": [lane["key"] for lane in selected],
+        "resolved_model_keys": [],
+        "resolved_artifact_ids": artifact_ids,
+        "server_overrides": server_overrides,
+        "model_overrides": applied,
+        "precedence": [
+            "runtime handoff model and artifact settings",
+            "hardware deployment defaults",
+            "runtime handoff server settings",
+            "PREFER_SERVER_OVERRIDES",
+            "PREFER_MODEL_OVERRIDES",
+            "audio.cpp command arguments",
+        ],
+    }
+    return config, artifact_ids, plan
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate PreFer audio.cpp runtime artifacts")
     parser.add_argument("--check", action="store_true", help="fail if generated files are stale")
     parser.add_argument("--compose", action="store_true", help="write an ephemeral runtime-composed config")
+    parser.add_argument("--compose-handoff", action="store_true", help="write a config from a materialized runtime handoff")
+    parser.add_argument("--handoff-input", default="")
+    parser.add_argument("--default-base", default="")
     parser.add_argument("--base", default="")
     parser.add_argument("--bundles", default="")
     parser.add_argument("--models", default="")
@@ -824,6 +980,27 @@ def main() -> int:
     parser.add_argument("--prestage-output")
     parser.add_argument("--plan-output")
     args = parser.parse_args()
+    if args.compose_handoff:
+        if args.check or args.compose or not args.handoff_input or not args.output or not args.prestage_output or not args.plan_output:
+            parser.error("--compose-handoff requires --handoff-input, --output, --prestage-output, and --plan-output")
+        try:
+            config, artifact_ids, plan = compose_runtime_handoff_config(
+                handoff_path=args.handoff_input,
+                base=args.base,
+                default_base=args.default_base,
+                server_overrides_value=args.server_overrides,
+                model_overrides_value=args.model_overrides,
+            )
+            for value in (args.output, args.prestage_output, args.plan_output):
+                Path(value).parent.mkdir(parents=True, exist_ok=True)
+            Path(args.output).write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8", newline="\n")
+            Path(args.prestage_output).write_text(",".join(artifact_ids) + "\n", encoding="utf-8", newline="\n")
+            Path(args.plan_output).write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8", newline="\n")
+            print(f"composed audio.cpp runtime config from immutable handoff {plan['handoff_fingerprint']}")
+            return 0
+        except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+            print(f"generate.py: {error}", file=sys.stderr)
+            return 1
     if args.compose:
         if args.check or not args.base or not args.output or not args.prestage_output or not args.plan_output:
             parser.error("--compose requires --base, --output, --prestage-output, and --plan-output")

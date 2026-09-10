@@ -171,6 +171,12 @@ SGLang remains one-model-per-process and does not accept bundles. The resolved
 config, prestage manifest, and plan are written beneath `/run/prefer`; leaving
 composition blank preserves `SGLANG_SERVER_CONFIG`. Weights remain external.
 
+`SGLANG_RUNTIME_HANDOFF` selects a mounted, release-bound supported or
+controller-extension manifest. It can launch an exact repository or GGUF lane
+and maps named text LoRA artifact directories to SGLang's native
+`--lora-paths` interface. See
+[the shared handoff contract](../../docs/runtime-handoff.md).
+
 ## Compose
 
 The service listens on container port `30000` and host port `8083` by default.

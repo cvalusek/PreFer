@@ -49,12 +49,13 @@ prefer_artifact_marker_matches() {
   return 0
 }
 
-prefer_artifact_sha_matches() {
+prefer_artifact_digest_matches() {
   local path="$1"
   local expected_size="$2"
-  local expected_sha256="$3"
+  local algorithm="$3"
+  local expected_digest="$4"
   local actual_size=""
-  local actual_sha256=""
+  local actual_digest=""
 
   [ -f "$path" ] || return 1
   if actual_size="$(stat -c '%s' "$path")"; then
@@ -63,14 +64,22 @@ prefer_artifact_sha_matches() {
     return 1
   fi
   [ "$actual_size" = "$expected_size" ] || return 1
-  if actual_sha256="$(sha256sum "$path")"; then
-    :
-  else
-    return 1
-  fi
-  actual_sha256="${actual_sha256%% *}"
-  [ "$actual_sha256" = "$expected_sha256" ] || return 1
+  case "$algorithm" in
+    sha256)
+      if actual_digest="$(sha256sum "$path")"; then :; else return 1; fi
+      ;;
+    git-blob-sha1)
+      if actual_digest="$({ printf 'blob %s\0' "$actual_size"; cat "$path"; } | sha1sum)"; then :; else return 1; fi
+      ;;
+    *) return 1 ;;
+  esac
+  actual_digest="${actual_digest%% *}"
+  [ "$actual_digest" = "$expected_digest" ] || return 1
   return 0
+}
+
+prefer_artifact_sha_matches() {
+  prefer_artifact_digest_matches "$1" "$2" sha256 "$3"
 }
 
 prefer_s3_object_uri() {
@@ -92,9 +101,10 @@ prefer_download_s3_artifact_locked() {
   local repo="$3"
   local artifact_path="$4"
   local expected_size="$5"
-  local expected_sha256="$6"
+  local expected_digest="$6"
   local bucket="$7"
   local prefix="$8"
+  local expected_algorithm="${9:-sha256}"
   local models_dir="${PREFER_MODELS_DIR:-/models}"
   local destination="$models_dir/$repo/$artifact_path"
   local staging_dir="$models_dir/.prefer-cache/downloads-v2/s3-staging/$artifact_id"
@@ -115,7 +125,7 @@ prefer_download_s3_artifact_locked() {
     echo "[$log_prefix] $repo/$artifact_path: verified marker hit"
     return 0
   fi
-  if [ -f "$destination" ] && prefer_artifact_sha_matches "$destination" "$expected_size" "$expected_sha256"; then
+  if [ -f "$destination" ] && prefer_artifact_digest_matches "$destination" "$expected_size" "$expected_algorithm" "$expected_digest"; then
     if prefer_write_artifact_marker "$destination" "$artifact_id"; then
       :
     else
@@ -137,8 +147,8 @@ prefer_download_s3_artifact_locked() {
     echo "[$log_prefix] $repo/$artifact_path: S3 object unavailable; falling back to Hugging Face" >&2
     return "$status"
   fi
-  if ! prefer_artifact_sha_matches "$staged_artifact" "$expected_size" "$expected_sha256"; then
-    echo "[$log_prefix] $repo/$artifact_path: S3 size or SHA-256 validation failed" >&2
+  if ! prefer_artifact_digest_matches "$staged_artifact" "$expected_size" "$expected_algorithm" "$expected_digest"; then
+    echo "[$log_prefix] $repo/$artifact_path: S3 size or digest validation failed" >&2
     rm -f "$staged_artifact" || true
     return 1
   fi
@@ -250,7 +260,8 @@ prefer_download_hf_artifact_locked() {
   local revision="$4"
   local artifact_path="$5"
   local expected_size="$6"
-  local expected_sha256="$7"
+  local expected_digest="$7"
+  local expected_algorithm="${8:-sha256}"
   local models_dir="${PREFER_MODELS_DIR:-/models}"
   local destination="$models_dir/$repo/$artifact_path"
   local staging_dir="$models_dir/.prefer-cache/downloads-v2/staging/$artifact_id"
@@ -281,7 +292,7 @@ prefer_download_hf_artifact_locked() {
     fi
     if [ -f "$destination" ] && [ "$destination_size" = "$expected_size" ]; then
       echo "[$log_prefix] $repo/$artifact_path: verifying existing artifact"
-      if prefer_artifact_sha_matches "$destination" "$expected_size" "$expected_sha256"; then
+      if prefer_artifact_digest_matches "$destination" "$expected_size" "$expected_algorithm" "$expected_digest"; then
         if prefer_write_artifact_marker "$destination" "$artifact_id"; then
           :
         else
@@ -292,7 +303,7 @@ prefer_download_hf_artifact_locked() {
         echo "[$log_prefix] $repo/$artifact_path: existing artifact verified"
         return 0
       fi
-      echo "[$log_prefix] $repo/$artifact_path: existing artifact failed SHA-256; downloading replacement" >&2
+      echo "[$log_prefix] $repo/$artifact_path: existing artifact failed digest verification; downloading replacement" >&2
     else
       echo "[$log_prefix] $repo/$artifact_path: existing artifact has the wrong size or type; downloading replacement" >&2
     fi
@@ -307,8 +318,8 @@ prefer_download_hf_artifact_locked() {
     return "$status"
   fi
 
-  if ! prefer_artifact_sha_matches "$staged_artifact" "$expected_size" "$expected_sha256"; then
-    echo "[$log_prefix] $repo/$artifact_path: size or SHA-256 validation failed" >&2
+  if ! prefer_artifact_digest_matches "$staged_artifact" "$expected_size" "$expected_algorithm" "$expected_digest"; then
+    echo "[$log_prefix] $repo/$artifact_path: size or digest validation failed" >&2
     # hf completed this file, so it is not an interrupted transfer worth
     # retaining. Leave any separate *.incomplete state untouched.
     if rm -f "$staged_artifact"; then

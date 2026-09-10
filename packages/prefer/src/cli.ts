@@ -1,6 +1,9 @@
 #!/usr/bin/env node
+import { mkdir, rename, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import { resolve } from "node:path";
 import {
+  createRuntimeHandoff,
   createCatalogExtension,
   detectRuntimeResources,
   downloadPreferTooling,
@@ -13,18 +16,25 @@ import {
   planModelSet,
   readJson,
   readModelCatalog,
+  readRuntimeHandoff,
   refreshModelCatalog,
+  resolveExtensionModelVariant,
   resolveModelVariant,
+  runtimeHandoffArtifactManifest,
+  materializeRuntimeHandoff,
   validateModelCatalog,
   writeJsonAtomic
 } from "./index.js";
 import type {
+  CatalogExtension,
   HuggingFaceSelection,
   JsonObject,
   ModelCatalogSnapshot,
   ModelPlanRequest,
   QuantQualityTier,
   QuantSelectionBias,
+  ResolvedModelVariant,
+  RuntimeHandoffArtifactInput,
   ResourceProfile
 } from "./types.js";
 
@@ -44,10 +54,14 @@ async function main(args: string[]): Promise<void> {
   if (area === "catalog" && command === "validate") return validate(rest);
   if (area === "catalog" && command === "extend") return extend(rest);
   if (area === "model" && command === "resolve") return resolveModel(rest);
+  if (area === "model" && command === "resolve-extension") return resolveExtensionModel(rest);
   if (area === "model" && command === "list") return listModels(rest);
   if (area === "model" && command === "plan") return planModels(rest);
   if (area === "hardware" && command === "normalize") return normalizeHardware(rest);
   if (area === "hardware" && command === "detect") return detectHardware(rest);
+  if (area === "runtime" && command === "create") return createHandoff(rest);
+  if (area === "runtime" && command === "validate") return validateHandoff(rest);
+  if (area === "runtime" && command === "materialize") return materializeHandoff(rest);
   if (area === "release" && command === "list") return listReleases(rest);
   if (area === "release" && command === "fetch-tooling") return fetchTooling(rest);
   throw new Error(`unknown command ${[area, command].filter(Boolean).join(" ")}`);
@@ -122,6 +136,29 @@ async function resolveModel(args: string[]): Promise<void> {
   await outputJson(flags, result);
 }
 
+async function resolveExtensionModel(args: string[]): Promise<void> {
+  const [modelId, ...tail] = args;
+  if (!modelId || modelId.startsWith("--")) throw new Error("model resolve-extension requires a controller model id");
+  const flags = parseFlags(tail);
+  const engine = one(flags, "engine") ?? process.env.PREFER_ENGINE;
+  if (!engine) throw new Error("model resolve-extension requires --engine outside a PreFer engine image");
+  const files = [...many(flags, "file"), ...many(flags, "files").flatMap(commaList)];
+  if (!files.length) throw new Error("model resolve-extension requires at least one --file");
+  const extension = await readJson(one(flags, "extension", true)!) as CatalogExtension;
+  const result = resolveExtensionModelVariant(extension, modelId, {
+    engine,
+    files,
+    quant: one(flags, "quant", true)!,
+    ...(one(flags, "display-name") ? { displayName: one(flags, "display-name")! } : {}),
+    ...(one(flags, "family") ? { family: one(flags, "family")! } : {}),
+    capabilities: many(flags, "capability").flatMap(commaList),
+    settings: jsonObject(one(flags, "settings") ?? "{}", "--settings"),
+    modelRoot: one(flags, "model-root") ?? process.env.PREFER_MODELS_DIR ?? "/models",
+    sha256: Object.fromEntries(namedStrings(flags, "sha256"))
+  });
+  await outputJson(flags, result);
+}
+
 async function listModels(args: string[]): Promise<void> {
   const flags = parseFlags(args);
   const catalog = await readModelCatalog(one(flags, "catalog") ?? process.env.PREFER_MODEL_CATALOG ?? "/prefer-model-catalog.json");
@@ -146,6 +183,73 @@ async function detectHardware(args: string[]): Promise<void> {
     ? normalizeDeploymentResources(await deploymentInput(basePath, one(flags, "deployment")))
     : undefined;
   await outputJson(flags, await detectRuntimeResources({ ...(base ? { base } : {}) }));
+}
+
+async function createHandoff(args: string[]): Promise<void> {
+  const flags = parseFlags(args);
+  const catalog = await readModelCatalog(one(flags, "catalog") ?? process.env.PREFER_MODEL_CATALOG ?? "/prefer-model-catalog.json");
+  const engine = one(flags, "engine") ?? process.env.PREFER_ENGINE;
+  if (!engine) throw new Error("runtime create requires --engine outside a PreFer engine image");
+  const variantPaths = many(flags, "variant");
+  if (!variantPaths.length) throw new Error("runtime create requires at least one --variant");
+  const requestIds = namedStrings(flags, "request-model-id");
+  const models = await Promise.all(variantPaths.map(async (path) => {
+    const variant = await readJson(path) as ResolvedModelVariant;
+    const requestModelId = requestIds.get(variant.model_id);
+    return {
+      variant,
+      ...(requestModelId ? { request_model_id: requestModelId } : {}),
+      ...(bool(flags, "extension") ? { source: "extension" as const } : {})
+    };
+  }));
+  for (const modelId of requestIds.keys()) {
+    if (!models.some(({ variant }) => variant.model_id === modelId)) throw new Error(`request model id supplied for unselected model ${modelId}`);
+  }
+  const additionalArtifacts: RuntimeHandoffArtifactInput[] = [];
+  for (const path of many(flags, "additional-artifacts")) {
+    const value = await readJson(path);
+    const entries = Array.isArray(value) ? value : [value];
+    additionalArtifacts.push(...entries as RuntimeHandoffArtifactInput[]);
+  }
+  const handoff = createRuntimeHandoff(catalog, {
+    engine,
+    models,
+    ...(one(flags, "base-deployment") ? { baseDeployment: one(flags, "base-deployment")! } : {}),
+    serverSettings: jsonObject(one(flags, "server-settings") ?? "{}", "--server-settings"),
+    ...(additionalArtifacts.length ? { additionalArtifacts } : {})
+  });
+  const output = one(flags, "output", true)!;
+  await writeJsonAtomic(output, handoff);
+  process.stdout.write(`${JSON.stringify({ output: resolve(output), handoff_fingerprint: handoff.handoff_fingerprint, artifacts: handoff.artifacts.length })}\n`);
+}
+
+async function validateHandoff(args: string[]): Promise<void> {
+  const flags = parseFlags(args);
+  const { handoff } = await resolvedHandoff(flags);
+  process.stdout.write(`${JSON.stringify({ valid: true, handoff_fingerprint: handoff.handoff_fingerprint, engine: handoff.engine, artifacts: handoff.artifacts.length })}\n`);
+}
+
+async function materializeHandoff(args: string[]): Promise<void> {
+  const flags = parseFlags(args);
+  const { handoff } = await resolvedHandoff(flags);
+  const output = one(flags, "output", true)!;
+  const artifactsOutput = one(flags, "artifacts-output", true)!;
+  await writeJsonAtomic(output, handoff);
+  await writeTextAtomic(artifactsOutput, runtimeHandoffArtifactManifest(handoff));
+  process.stdout.write(`${JSON.stringify({ output: resolve(output), artifacts_output: resolve(artifactsOutput), handoff_fingerprint: handoff.handoff_fingerprint })}\n`);
+}
+
+async function resolvedHandoff(flags: Map<string, string[]>): Promise<{ handoff: ReturnType<typeof materializeRuntimeHandoff> }> {
+  const catalog = await readModelCatalog(one(flags, "catalog") ?? process.env.PREFER_MODEL_CATALOG ?? "/prefer-model-catalog.json");
+  const engine = one(flags, "engine") ?? process.env.PREFER_ENGINE;
+  if (!engine) throw new Error("runtime handoff requires --engine outside a PreFer engine image");
+  const source = await readRuntimeHandoff(one(flags, "handoff", true)!);
+  return {
+    handoff: materializeRuntimeHandoff(source, catalog, {
+      engine,
+      modelRoot: one(flags, "model-root") ?? process.env.PREFER_MODELS_DIR ?? "/models"
+    })
+  };
 }
 
 async function planModels(args: string[]): Promise<void> {
@@ -317,6 +421,18 @@ function namedScores(flags: Map<string, string[]>, key: string): Map<string, num
   return result;
 }
 
+function namedStrings(flags: Map<string, string[]>, key: string): Map<string, string> {
+  const result = new Map<string, string>();
+  for (const value of many(flags, key)) {
+    const separator = value.indexOf("=");
+    if (separator < 1 || separator === value.length - 1) throw new Error(`--${key} must use model-id=value`);
+    const modelId = value.slice(0, separator);
+    if (result.has(modelId)) throw new Error(`--${key} may only target ${modelId} once`);
+    result.set(modelId, value.slice(separator + 1));
+  }
+  return result;
+}
+
 function choice<const T extends readonly string[]>(flags: Map<string, string[]>, key: string, allowed: T): T[number] | undefined {
   const value = one(flags, key);
   if (value === undefined) return undefined;
@@ -383,6 +499,13 @@ async function outputJson(flags: Map<string, string[]>, value: unknown): Promise
   else process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
+async function writeTextAtomic(path: string, value: string): Promise<void> {
+  await mkdir(dirname(path), { recursive: true });
+  const temporary = `${path}.tmp-${process.pid}-${Date.now()}`;
+  await writeFile(temporary, value, "utf8");
+  await rename(temporary, path);
+}
+
 async function deploymentInput(path: string, deploymentId: string | undefined): Promise<unknown> {
   const value = await readJson(path);
   if (!deploymentId) return value;
@@ -403,12 +526,17 @@ function help(): void {
     `  prefer catalog extend --repo owner/model[@revision] --output extension.json\n` +
     `  prefer model list [--catalog catalog.json] [--engine sglang] [--model qwen-3.8-27b]\n` +
     `  prefer model resolve qwen-3.8-27b [--engine llama.cpp] [--quant ud-q6-k-xl] [--use-nvfp4] [--model-root /models]\n` +
+    `  prefer model resolve-extension neuron-model --extension extension.json --engine vllm --quant bf16 --file config.json --file model.safetensors\n` +
     `  prefer model plan --resources inventory.json --deployment aws/g6/xlarge/general [--preferred-role coding] [--speed-importance 0.8] [--quant-bias balanced]\n` +
     `    [--speed-score qwen-3.8-27b=85 --quality-score qwen-3.8-27b=92 --quality-importance 1]\n` +
     `    [--context-tokens 131072 --concurrency 4 --bytes-per-token 65536 --minimum-concurrency 1]\n` +
     `    [--headroom-gib 2 | --headroom-percent 5] [--allow-host-offload] [--accept-tight]\n` +
     `  prefer hardware normalize --input inventory.json [--deployment aws/g6/xlarge/general]\n` +
     `  prefer hardware detect [--base inventory.json --deployment local/gb10/1x/balanced]\n` +
+    `  prefer runtime create --variant resolved-model.json --output handoff.json [--base-deployment deployment] [--server-settings JSON]\n` +
+    `    [--request-model-id model-id=request-id] [--additional-artifacts artifacts.json] [--extension]\n` +
+    `  prefer runtime validate --handoff handoff.json [--engine sglang] [--model-root /models]\n` +
+    `  prefer runtime materialize --handoff handoff.json --output /run/prefer/handoff.json --artifacts-output /run/prefer/artifacts.tsv\n` +
     `  prefer release list [--channel stable|preview]\n` +
     `  prefer release fetch-tooling --output-dir path [--channel stable|preview] [--revision SHA]\n`);
 }

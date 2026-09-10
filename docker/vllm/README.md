@@ -91,6 +91,12 @@ writes the resolved config, prestage sidecar, and `/run/prefer/plan.json`
 beneath `/run/prefer`; blank composition variables preserve
 `VLLM_SERVER_CONFIG`. Only catalog metadata ships in the image.
 
+`VLLM_RUNTIME_HANDOFF` selects a mounted, release-bound supported or
+controller-extension manifest. It can launch an exact repository or GGUF lane
+and maps named text LoRA artifact directories to vLLM's native
+`--enable-lora --lora-modules` interface. See
+[the shared handoff contract](../../docs/runtime-handoff.md).
+
 ## Compose
 
 The service listens on container port `8000` and host port `8084` by default.

@@ -248,6 +248,21 @@ settings, artifact sizes, and staging requirements. Images contain the catalog
 and generator only; model weights still stage onto external model storage at
 runtime.
 
+### Runtime model handoff
+
+Controllers can also pass a release-bound runtime handoff for a supported
+catalog choice or a controller-owned Hugging Face model. The handoff binds the
+receiving engine, release catalog fingerprint, immutable repository revisions,
+exact files and hashes, model settings, companions, and optional LoRAs. Each
+container validates and stages that manifest before generating its ephemeral
+engine config; a mismatched release, engine, path, or artifact fails closed.
+
+Use `PREFER_RUNTIME_HANDOFF` for a direct launcher or the engine-scoped
+`LLAMA_RUNTIME_HANDOFF`, `AUDIO_RUNTIME_HANDOFF`, `IMAGE_RUNTIME_HANDOFF`,
+`SGLANG_RUNTIME_HANDOFF`, or `VLLM_RUNTIME_HANDOFF` variable under Compose.
+The JSON file must be mounted into the container. See the complete
+[runtime handoff contract](docs/runtime-handoff.md).
+
 ## Environment
 
 Most local configuration lives in `.env`; see [.env.example](.env.example).

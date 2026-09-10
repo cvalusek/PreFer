@@ -154,6 +154,11 @@ The effective config, prestage manifest, and audit plan are written beneath
 Only catalog metadata and the generator are embedded in the image; weights
 remain on the external image-model volume.
 
+`IMAGE_RUNTIME_HANDOFF` selects a mounted, release-bound supported or
+controller-extension manifest. Exact targets, VAEs, text encoders, and LoRAs
+are staged in the background under the existing discovery/readiness behavior.
+See [the shared handoff contract](../../docs/runtime-handoff.md).
+
 The local Compose path is Hugging Face-only and does not configure S3. Image
 discovery still starts immediately and does not wait for background staging.
 Requests wait only for their selected files and verification markers. An

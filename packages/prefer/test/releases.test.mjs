@@ -19,7 +19,8 @@ test("release tooling resolves by channel and verifies every downloaded asset", 
       "prefer-model-catalog.schema.json": Buffer.from("schema"),
       "prefer-model-catalog-extension.schema.json": Buffer.from("extension-schema"),
       "prefer-resource-profile.schema.json": Buffer.from("resource-schema"),
-      "prefer-model-plan.schema.json": Buffer.from("plan-schema")
+      "prefer-model-plan.schema.json": Buffer.from("plan-schema"),
+      "prefer-runtime-handoff.schema.json": Buffer.from("handoff-schema")
     };
     const manifest = {
       schema_version: "prefer.release.v1",
@@ -48,7 +49,8 @@ test("release tooling resolves by channel and verifies every downloaded asset", 
         model_catalog_schema: binding("prefer-model-catalog.schema.json", assets),
         model_catalog_extension_schema: binding("prefer-model-catalog-extension.schema.json", assets),
         resource_profile_schema: binding("prefer-resource-profile.schema.json", assets),
-        model_plan_schema: binding("prefer-model-plan.schema.json", assets)
+        model_plan_schema: binding("prefer-model-plan.schema.json", assets),
+        runtime_handoff_schema: binding("prefer-runtime-handoff.schema.json", assets)
       }
     };
     const manifestBytes = Buffer.from(JSON.stringify(manifest));

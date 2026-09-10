@@ -167,6 +167,28 @@ class GeneratedPresetTests(unittest.TestCase):
         self.assertIn(
             "COPY docker/llama-cpp/deployment-inventory.generated.json /deployment-inventory.json", netskope
         )
+        for normal, corporate in (
+            (
+                "COPY .prefer-tooling/prefer.mjs /usr/local/bin/prefer",
+                "COPY docker/llama-cpp/.prefer-tooling/prefer.mjs /usr/local/bin/prefer",
+            ),
+            (
+                "COPY .prefer-tooling/prefer-runtime-handoff.schema.json /prefer-catalog/schemas/prefer-runtime-handoff.schema.json",
+                "COPY docker/llama-cpp/.prefer-tooling/prefer-runtime-handoff.schema.json /prefer-catalog/schemas/prefer-runtime-handoff.schema.json",
+            ),
+            (
+                "COPY .prefer-tooling/prefer-download-artifacts.sh /prefer-download-artifacts.sh",
+                "COPY docker/llama-cpp/.prefer-tooling/prefer-download-artifacts.sh /prefer-download-artifacts.sh",
+            ),
+            (
+                "COPY .prefer-tooling/prefer-runtime-handoff-download.sh /prefer-runtime-handoff-download.sh",
+                "COPY docker/llama-cpp/.prefer-tooling/prefer-runtime-handoff-download.sh /prefer-runtime-handoff-download.sh",
+            ),
+        ):
+            self.assertIn(normal, dockerfile)
+            self.assertIn(corporate, netskope)
+        self.assertIn("PREFER_ENGINE=llama.cpp", dockerfile)
+        self.assertIn("PREFER_ENGINE=llama.cpp", netskope)
         self.assertIn("name: prefer-release-${{ github.sha }}", workflow)
         self.assertIn("--llama-inventory", workflow)
         self.assertIn("io.prefer.deployment-inventory.path=/deployment-inventory.json", workflow)

@@ -3,12 +3,20 @@
 ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b10362@sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c
 FROM ${LLAMA_CPP_BASE_IMAGE}
 
+ARG TARGETARCH
+
 COPY docker/certs/*.crt /usr/local/share/ca-certificates/
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates python3-pip \
+    && apt-get install -y --no-install-recommends ca-certificates python3-pip curl xz-utils \
     && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+COPY docker/llama-cpp/.prefer-tooling/install-prefer-node.sh /tmp/install-prefer-node.sh
+RUN sed -i 's/\r$//' /tmp/install-prefer-node.sh \
+    && chmod +x /tmp/install-prefer-node.sh \
+    && /tmp/install-prefer-node.sh "$TARGETARCH" \
+    && rm -f /tmp/install-prefer-node.sh
 
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
@@ -34,11 +42,23 @@ COPY docker/llama-cpp/generate-presets.py /prefer-catalog/generate-presets.py
 COPY docker/llama-cpp/preset-catalog.json /prefer-catalog/preset-catalog.json
 COPY docker/llama-cpp/models/ /prefer-catalog/models/
 COPY docker/llama-cpp/preset-scenarios/ /prefer-catalog/preset-scenarios/
+COPY docker/llama-cpp/.prefer-tooling/prefer.mjs /usr/local/bin/prefer
+COPY docker/llama-cpp/.prefer-tooling/prefer-model-catalog.json /prefer-model-catalog.json
+COPY docker/llama-cpp/.prefer-tooling/prefer-model-catalog.schema.json /prefer-catalog/schemas/prefer-model-catalog.schema.json
+COPY docker/llama-cpp/.prefer-tooling/prefer-model-catalog-extension.schema.json /prefer-catalog/schemas/prefer-model-catalog-extension.schema.json
+COPY docker/llama-cpp/.prefer-tooling/prefer-resource-profile.schema.json /prefer-catalog/schemas/prefer-resource-profile.schema.json
+COPY docker/llama-cpp/.prefer-tooling/prefer-model-plan.schema.json /prefer-catalog/schemas/prefer-model-plan.schema.json
+COPY docker/llama-cpp/.prefer-tooling/prefer-runtime-handoff.schema.json /prefer-catalog/schemas/prefer-runtime-handoff.schema.json
+COPY docker/llama-cpp/.prefer-tooling/prefer-download-artifacts.sh /prefer-download-artifacts.sh
+COPY docker/llama-cpp/.prefer-tooling/prefer-runtime-handoff-download.sh /prefer-runtime-handoff-download.sh
 COPY docker/llama-cpp/detect-preset.sh /detect-preset.sh
 COPY docker/llama-cpp/download-models.sh /download-models.sh
 COPY docker/llama-cpp/entrypoint.sh /entrypoint.sh
-RUN sed -i 's/\r$//' /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh /prefer-catalog/generate-presets.py \
-    && chmod +x /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh
+RUN sed -i 's/\r$//' /model-downloads.generated.sh /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /detect-preset.sh /download-models.sh /entrypoint.sh /prefer-catalog/generate-presets.py \
+    && chmod +x /usr/local/bin/prefer /model-downloads.generated.sh /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /detect-preset.sh /download-models.sh /entrypoint.sh
+
+ENV PREFER_ENGINE=llama.cpp \
+    PREFER_MODEL_CATALOG=/prefer-model-catalog.json
 
 EXPOSE 8080
 

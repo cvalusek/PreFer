@@ -695,6 +695,8 @@ def render_inventory(
             multi_model=True,
             effective_config_path="/run/prefer/llama.ini",
             effective_plan_path="/run/prefer/plan.json",
+            effective_handoff_path="/run/prefer/handoff.json",
+            runtime_handoff_schema="prefer.runtime-handoff.v1",
             compose_environment_prefix="LLAMA",
             override_merge="objects merge recursively; scalar and array values replace",
             environment=OrderedDict(
@@ -703,12 +705,14 @@ def render_inventory(
                 PREFER_MODELS=OrderedDict(type="string-list", source="models key, model_slug, request_model_id, or alias"),
                 PREFER_SERVER_OVERRIDES=OrderedDict(type="json-object", applies_to="shared INI settings"),
                 PREFER_MODEL_OVERRIDES=OrderedDict(type="json-object-map", applies_to="selected model INI settings"),
+                PREFER_RUNTIME_HANDOFF=OrderedDict(type="path", source="immutable release-matched runtime handoff"),
             ),
             selection_rules=[
                 "bundle and model selections are additive",
                 "an exact quant key replaces another lane for the same logical model",
                 "a friendly model selection inherits the selected hardware deployment's lane",
                 "ambiguous friendly selections require an exact quant key",
+                "a runtime handoff replaces bundle/model selection and may include controller-extension artifacts",
             ],
             precedence=[
                 "catalog model and lane defaults",
@@ -1018,10 +1022,228 @@ def compose_runtime_preset(
     return ini, prestage, plan
 
 
+def runtime_handoff_model_settings(
+    handoff: dict[str, Any],
+    model: dict[str, Any],
+    artifacts: dict[str, dict[str, Any]],
+    template: OrderedDict[str, Any],
+) -> OrderedDict[str, Any]:
+    settings: OrderedDict[str, Any] = OrderedDict()
+    raw_settings = model.get("settings", {})
+    if not isinstance(raw_settings, dict):
+        raise CatalogError(f"runtime handoff model {model.get('model_id')!r} settings must be an object")
+    launcher = raw_settings.get("launcher", {})
+    if not isinstance(launcher, dict):
+        raise CatalogError(f"runtime handoff model {model.get('model_id')!r} launcher settings must be an object")
+    protected = {"model", "model-draft", "mmproj", "alias"} & launcher.keys()
+    if protected:
+        raise CatalogError(
+            f"runtime handoff launcher cannot replace artifact identity setting {sorted(protected)[0]!r}"
+        )
+    for name, value in launcher.items():
+        if isinstance(value, (dict, list)):
+            raise CatalogError(f"llama.cpp launcher setting {name!r} must be a scalar")
+        if value is None:
+            settings.pop(name, None)
+        else:
+            settings[name] = value
+    for name, value in template.items():
+        if name in {"model", "model-draft", "mmproj", "alias", "load-on-startup"}:
+            continue
+        if value is None:
+            settings.pop(name, None)
+        else:
+            settings[name] = value
+
+    primary: list[str] = []
+    projectors: list[str] = []
+    drafts: list[str] = []
+    loras: list[str] = []
+    for artifact_id in model.get("artifact_ids", []):
+        artifact = artifacts.get(artifact_id)
+        if artifact is None:
+            raise CatalogError(f"runtime handoff model references unknown artifact {artifact_id!r}")
+        role = str(artifact.get("role", "")).lower()
+        path = artifact.get("local_path")
+        if not isinstance(path, str) or not path.startswith("/"):
+            raise CatalogError(f"runtime handoff artifact {artifact_id!r} has no materialized path")
+        argument = artifact.get("settings", {}).get("argument") if isinstance(artifact.get("settings"), dict) else None
+        if argument is not None:
+            if not isinstance(argument, str) or not re.fullmatch(r"--?[a-z0-9][a-z0-9-]*", argument):
+                raise CatalogError(f"runtime handoff artifact {artifact_id!r} has an unsafe launcher argument")
+            name = argument.lstrip("-")
+            if name in {"model", "model-draft", "mmproj", "lora"}:
+                {"model": primary, "model-draft": drafts, "mmproj": projectors, "lora": loras}[name].append(path)
+                continue
+        if role in {"model", "model-shard", "target", "checkpoint"} or (not role and path.lower().endswith(".gguf")):
+            primary.append(path)
+        elif role in {"projector", "mmproj"}:
+            projectors.append(path)
+        elif role in {"draft", "drafter", "mtp", "dspark", "dflash"}:
+            drafts.append(path)
+        elif role in {"lora", "adapter"}:
+            loras.append(path)
+
+    if not primary:
+        raise CatalogError(f"runtime handoff model {model.get('model_id')!r} has no llama.cpp model GGUF")
+    settings["model"] = primary[0]
+    if projectors:
+        settings["mmproj"] = projectors[0]
+    if drafts:
+        settings["model-draft"] = drafts[0]
+    if loras:
+        settings["lora"] = loras[0]
+    settings["alias"] = model["request_model_id"]
+    return settings
+
+
+def compose_runtime_handoff_preset(
+    *,
+    handoff_path: str,
+    base: str,
+    default_base: str,
+    server_overrides_value: str,
+    model_overrides_value: str,
+) -> tuple[str, list[str], dict[str, Any]]:
+    handoff = load_json(Path(handoff_path))
+    if handoff.get("schema_version") != "prefer.runtime-handoff.v1" or handoff.get("engine") != "llama.cpp":
+        raise CatalogError("materialized runtime handoff is not for llama.cpp")
+    models = handoff.get("models")
+    raw_artifacts = handoff.get("artifacts")
+    if not isinstance(models, list) or not models or not isinstance(raw_artifacts, list) or not raw_artifacts:
+        raise CatalogError("materialized runtime handoff requires models and artifacts")
+    artifacts = {artifact.get("id"): artifact for artifact in raw_artifacts if isinstance(artifact, dict)}
+    if len(artifacts) != len(raw_artifacts):
+        raise CatalogError("materialized runtime handoff has duplicate or invalid artifacts")
+
+    catalog = load_catalog()
+    validate_catalog(catalog)
+    scenario_records = load_scenarios()
+    base_reference = base or str(handoff.get("base_deployment") or default_base)
+    if not base_reference:
+        raise CatalogError("runtime handoff needs a base deployment")
+    base_scenario, base_path = resolve_runtime_scenario(base_reference, catalog, scenario_records)
+    defaults = OrderedDict(base_scenario.get("defaults", {}))
+    server_overrides = parse_composition_object(server_overrides_value, "PREFER_SERVER_OVERRIDES")
+    handoff_server = handoff.get("server_settings", {})
+    if not isinstance(handoff_server, dict):
+        raise CatalogError("runtime handoff server_settings must be an object")
+    protected_defaults = {"model", "model-draft", "mmproj", "alias", "lora"}
+    if protected_defaults & (handoff_server.keys() | server_overrides.keys()):
+        raise CatalogError("runtime server settings cannot replace model artifact identity")
+    for source in (handoff_server, server_overrides):
+        for name, value in source.items():
+            if isinstance(value, (dict, list)):
+                raise CatalogError(f"llama.cpp server setting {name!r} must be a scalar")
+            if value is None:
+                defaults.pop(name, None)
+            else:
+                defaults[name] = value
+
+    model_overrides = parse_composition_object(model_overrides_value, "PREFER_MODEL_OVERRIDES")
+    if any(not isinstance(value, dict) for value in model_overrides.values()):
+        raise CatalogError("PREFER_MODEL_OVERRIDES values must be JSON objects")
+    sections: list[tuple[str, OrderedDict[str, Any]]] = []
+    applied_model_overrides: OrderedDict[str, Any] = OrderedDict()
+    used_sections: set[str] = set()
+    selected_names: set[str] = set()
+
+    for model in models:
+        if not isinstance(model, dict):
+            raise CatalogError("runtime handoff model must be an object")
+        model_id = model.get("model_id")
+        request_model_id = model.get("request_model_id")
+        if not isinstance(model_id, str) or not re.fullmatch(r"[a-z0-9]+(?:[.-][a-z0-9]+)*", model_id):
+            raise CatalogError("runtime handoff model id is unsafe")
+        if not isinstance(request_model_id, str) or not request_model_id or re.search(r"[\[\]=,\r\n]", request_model_id):
+            raise CatalogError(f"runtime handoff request model id for {model_id} is unsafe for llama.cpp")
+        if model_id in used_sections:
+            raise CatalogError(f"duplicate runtime handoff model {model_id}")
+        used_sections.add(model_id)
+        names = {model_id, request_model_id}
+        selected_names.update(names)
+
+        candidates = [
+            entry for entry in base_scenario.get("models", [])
+            if catalog["models"][entry["key"]]["_catalog"]["model_slug"] == model_id
+        ]
+        template_entry = candidates[0] if candidates else next(iter(base_scenario.get("models", [])), None)
+        template = OrderedDict()
+        if template_entry is not None:
+            template = OrderedDict(template_entry.get("overrides", {}))
+            if not candidates:
+                for name in [name for name in template if name.startswith("spec-")]:
+                    template.pop(name, None)
+        settings = runtime_handoff_model_settings(handoff, model, artifacts, template)
+        for source in (handoff_server, server_overrides):
+            for name, value in source.items():
+                if value is None:
+                    settings.pop(name, None)
+                else:
+                    settings[name] = value
+
+        matching = [value for name, value in model_overrides.items() if name in names]
+        if len(matching) > 1:
+            raise CatalogError(f"multiple PREFER_MODEL_OVERRIDES entries target {model_id}")
+        if matching:
+            protected = protected_defaults & matching[0].keys()
+            if protected:
+                raise CatalogError(f"runtime model overrides cannot replace {sorted(protected)[0]!r}")
+            for name, value in matching[0].items():
+                if isinstance(value, (dict, list)):
+                    raise CatalogError(f"llama.cpp model setting {name!r} must be a scalar")
+                if value is None:
+                    settings.pop(name, None)
+                else:
+                    settings[name] = value
+            applied_model_overrides[model_id] = matching[0]
+        sections.append((model_id, settings))
+
+    unknown_targets = [name for name in model_overrides if name not in selected_names]
+    if unknown_targets:
+        raise CatalogError("PREFER_MODEL_OVERRIDES targets are not selected: " + ", ".join(unknown_targets))
+
+    lines = ["version = 1", ""]
+    if defaults:
+        lines.append("[*]")
+        lines.extend(f"{name} = {ini_value(value, name)}" for name, value in defaults.items())
+        lines.append("")
+    for section, settings in sections:
+        lines.append(f"[{section}]")
+        lines.extend(f"{name} = {ini_value(value, name)}" for name, value in settings.items())
+        lines.append("")
+
+    artifact_ids = [artifact["id"] for artifact in raw_artifacts]
+    plan = OrderedDict(
+        schema_version="prefer.runtime-plan.v1",
+        runtime="llama.cpp",
+        base_deployment=PurePosixPath(base_path).with_suffix("").as_posix(),
+        handoff_fingerprint=handoff.get("handoff_fingerprint"),
+        bundles=[],
+        requested_models=[model["model_id"] for model in models],
+        resolved_model_keys=[],
+        resolved_artifact_ids=artifact_ids,
+        server_overrides=server_overrides,
+        model_overrides=applied_model_overrides,
+        precedence=[
+            "runtime handoff model and artifact settings",
+            "hardware deployment defaults",
+            "runtime handoff server settings",
+            "PREFER_SERVER_OVERRIDES",
+            "PREFER_MODEL_OVERRIDES",
+            "llama-server command arguments",
+        ],
+    )
+    return "\n".join(lines), artifact_ids, plan
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="fail if generated files are stale")
     parser.add_argument("--compose", action="store_true", help="write an ephemeral runtime-composed preset")
+    parser.add_argument("--compose-handoff", action="store_true", help="write a preset from a materialized runtime handoff")
+    parser.add_argument("--handoff-input", default="")
+    parser.add_argument("--default-base", default="")
     parser.add_argument("--base", default="")
     parser.add_argument("--bundles", default="")
     parser.add_argument("--models", default="")
@@ -1031,6 +1253,31 @@ def main() -> int:
     parser.add_argument("--prestage-output")
     parser.add_argument("--plan-output")
     args = parser.parse_args()
+
+    if args.compose_handoff:
+        if args.check or args.compose or not args.handoff_input or not args.output or not args.prestage_output or not args.plan_output:
+            parser.error("--compose-handoff requires --handoff-input, --output, --prestage-output, and --plan-output")
+        try:
+            ini, artifact_ids, plan = compose_runtime_handoff_preset(
+                handoff_path=args.handoff_input,
+                base=args.base,
+                default_base=args.default_base,
+                server_overrides_value=args.server_overrides,
+                model_overrides_value=args.model_overrides,
+            )
+            output = Path(args.output)
+            prestage_output = Path(args.prestage_output)
+            plan_output = Path(args.plan_output)
+            for path in (output, prestage_output, plan_output):
+                path.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(ini, encoding="utf-8", newline="\n")
+            prestage_output.write_text(",".join(artifact_ids) + "\n", encoding="utf-8", newline="\n")
+            plan_output.write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8", newline="\n")
+            print(f"composed llama.cpp runtime preset from immutable handoff {plan['handoff_fingerprint']}")
+            return 0
+        except (CatalogError, KeyError, TypeError, OSError, json.JSONDecodeError) as exc:
+            print(f"generate-presets: {exc}", file=sys.stderr)
+            return 2
 
     if args.compose:
         if args.check or not args.base or not args.output or not args.prestage_output or not args.plan_output:

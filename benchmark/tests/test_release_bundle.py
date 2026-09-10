@@ -38,6 +38,10 @@ class GroupedReleaseTests(unittest.TestCase):
                 "prefer-model-plan.schema.json",
                 b"plan-schema",
             ),
+            "runtime_handoff_schema": (
+                "prefer-runtime-handoff.schema.json",
+                b"handoff-schema",
+            ),
         }
         manifest_assets: dict[str, dict[str, object]] = {}
         for key, (name, payload) in tooling_assets.items():
@@ -156,6 +160,7 @@ class GroupedReleaseTests(unittest.TestCase):
                 "model_catalog_extension_schema",
                 "resource_profile_schema",
                 "model_plan_schema",
+                "runtime_handoff_schema",
             ):
                 binding = manifest["tooling"][key]
                 copied = output_dir / binding["asset"]

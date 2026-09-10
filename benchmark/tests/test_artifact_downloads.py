@@ -225,6 +225,126 @@ prefer_download_hf_artifact \
             self.assertNotIn("partial.$$", generated)
         self.assertIn("sglang_download_model_keys_s3", (SGLANG_ROOT / "model-downloads.generated.sh").read_text(encoding="utf-8"))
 
+    def test_runtime_handoff_manifest_is_validated_before_any_transfer(self) -> None:
+        content = b"runtime-handoff-artifact\n" * 32
+        expected_sha = hashlib.sha256(content).hexdigest()
+        self.source.write_bytes(content)
+        manifest = self.root / "handoff-artifacts.tsv"
+        manifest.write_text(
+            "\t".join(
+                [
+                    "a" * 64,
+                    "owner/repo",
+                    REVISION,
+                    "valid/model.bin",
+                    str(len(content)),
+                    "sha256",
+                    expected_sha,
+                ]
+            )
+            + "\n"
+            + "invalid-record\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        script = """
+set -uo pipefail
+set +e
+export PATH="$FAKE_BIN:$PATH"
+source "$1"
+source "$2"
+prefer_download_runtime_manifest runtime-handoff 2 8 "$3"
+"""
+        env = os.environ.copy()
+        env.update(
+            {
+                "FAKE_BIN": repo_relative(self.bin_dir),
+                "PREFER_MODELS_DIR": repo_relative(self.models),
+                "FAKE_HF_SOURCE": repo_relative(self.source),
+                "FAKE_HF_STATE": repo_relative(self.state),
+                "FAKE_HF_LOG": repo_relative(self.log),
+                "FAKE_HF_MUST_NOT_RUN": "1",
+            }
+        )
+        completed = subprocess.run(
+            [
+                self.bash,
+                "-c",
+                script,
+                "_",
+                repo_relative(AUDIO_ROOT / "download-artifacts.sh"),
+                "scripts/runtime-handoff-download.sh",
+                repo_relative(manifest),
+            ],
+            cwd=REPO_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 2, completed.stdout + completed.stderr)
+        self.assertIn("invalid runtime artifact manifest record", completed.stderr)
+        self.assertFalse(self.log.exists())
+        self.assertFalse((self.models / "owner" / "repo" / "valid" / "model.bin").exists())
+
+    def test_runtime_handoff_manifest_stages_exact_artifacts(self) -> None:
+        content = b"runtime-handoff-artifact\n" * 32
+        expected_sha = hashlib.sha256(content).hexdigest()
+        git_blob_sha = hashlib.sha1(
+            f"blob {len(content)}\0".encode("ascii") + content
+        ).hexdigest()
+        self.source.write_bytes(content)
+        manifest = self.root / "handoff-artifacts.tsv"
+        manifest.write_text(
+            "\n".join(
+                "\t".join([artifact_id, "owner/repo", REVISION, path, str(len(content)), algorithm, digest])
+                for artifact_id, path, algorithm, digest in (
+                    ("a" * 64, "first/model.bin", "sha256", expected_sha),
+                    ("b" * 64, "second/adapter.bin", "git-blob-sha1", git_blob_sha),
+                )
+            )
+            + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        script = """
+set -euo pipefail
+export PATH="$FAKE_BIN:$PATH"
+source "$1"
+source "$2"
+prefer_download_runtime_manifest runtime-handoff 2 8 "$3"
+"""
+        env = os.environ.copy()
+        env.update(
+            {
+                "FAKE_BIN": repo_relative(self.bin_dir),
+                "PREFER_MODELS_DIR": repo_relative(self.models),
+                "FAKE_HF_SOURCE": repo_relative(self.source),
+                "FAKE_HF_STATE": repo_relative(self.state),
+                "FAKE_HF_LOG": repo_relative(self.log),
+            }
+        )
+        completed = subprocess.run(
+            [
+                self.bash,
+                "-c",
+                script,
+                "_",
+                repo_relative(AUDIO_ROOT / "download-artifacts.sh"),
+                "scripts/runtime-handoff-download.sh",
+                repo_relative(manifest),
+            ],
+            cwd=REPO_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertEqual((self.models / "owner" / "repo" / "first" / "model.bin").read_bytes(), content)
+        self.assertEqual((self.models / "owner" / "repo" / "second" / "adapter.bin").read_bytes(), content)
+        self.assertEqual(len(self.log.read_text(encoding="utf-8").splitlines()), 2)
+
     def test_interrupted_transfer_resumes_and_marker_skips_restart_hash(self) -> None:
         content = b"pinned-artifact-content\n" * 64
         helper = IMAGE_ROOT / "download-artifacts.sh"

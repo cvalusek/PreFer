@@ -76,6 +76,12 @@ VRAM auto-detection and `LLAMA_ARG_MODELS_PRESET`. The generator and catalog
 are shipped in the image, but the selected weights are still downloaded to
 the external `/models` volume.
 
+`LLAMA_RUNTIME_HANDOFF` selects a mounted, release-bound handoff instead of
+catalog bundle/model selectors. It can supply exact model, projector,
+draft/MTP, and LoRA artifacts; the image validates and stages them before
+writing the same ephemeral preset and plan. See
+[the shared handoff contract](../../docs/runtime-handoff.md).
+
 ### Model selection profiles
 
 Every logical model has one human-curated profile rather than one description

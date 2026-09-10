@@ -117,6 +117,7 @@ def tooling_assets(args: argparse.Namespace, commit: str) -> dict[str, object]:
         "model_catalog_extension_schema": "prefer-model-catalog-extension.schema.json",
         "resource_profile_schema": "prefer-resource-profile.schema.json",
         "model_plan_schema": "prefer-model-plan.schema.json",
+        "runtime_handoff_schema": "prefer-runtime-handoff.schema.json",
     }
     copied: dict[str, object] = {
         "schema_version": "prefer.release-tooling.v1",

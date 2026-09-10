@@ -5,6 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import {
   createCatalogExtension,
+  createRuntimeHandoff,
   createRuntimeModelCatalog,
   loadCatalogSources,
   mergeCatalogExtensions,
@@ -15,7 +16,9 @@ import {
   quantQuality,
   refreshModelCatalog,
   listModelVariants,
+  materializeRuntimeHandoff,
   resolveHuggingFaceSelections,
+  resolveExtensionModelVariant,
   resolveModelVariant,
   estimateVariantFit,
   tuneWorkloadToFit
@@ -116,6 +119,95 @@ test("NeurOn can fetch selected repositories and merge named or metadata-only ru
     assert.ok(merged.models["neuron-extra"]);
     assert.throws(() => createRuntimeModelCatalog(catalog, [{ ...extension, models: { "sample-7b": extension.models["neuron-extra"] } }]), /model id conflict/u);
   });
+});
+
+test("immutable runtime handoffs bind exact artifacts to one release catalog and engine", async () => {
+  await withFixture(async (root) => {
+    const { catalog } = await refreshModelCatalog(root, { fetch: fakeHuggingFaceFetch(), now: fixedNow });
+    const variant = resolveModelVariant(catalog, "sample-7b", { engine: "llama.cpp" });
+    const handoff = createRuntimeHandoff(catalog, {
+      engine: "llama.cpp",
+      baseDeployment: "local/example/1x/general",
+      serverSettings: { parallel: 2 },
+      models: [{ variant, request_model_id: "sample" }],
+      additionalArtifacts: [{
+        repository: "owner/sample-companion",
+        revision: EXTRA_REVISION,
+        path: "adapter.safetensors",
+        size: 10,
+        sha256: "f".repeat(64),
+        model_id: "sample-7b",
+        role: "lora",
+        settings: { argument: "--lora" }
+      }]
+    });
+    assert.equal(handoff.catalog_fingerprint, catalog.catalog_fingerprint);
+    assert.equal(handoff.models[0].request_model_id, "sample");
+    assert.equal(handoff.artifacts.length, 2);
+    assert.equal(handoff.models[0].artifact_ids.length, 2);
+    assert.equal(handoff.artifacts[0].sha256, "c".repeat(64));
+
+    const materialized = materializeRuntimeHandoff(handoff, catalog, {
+      engine: "llama.cpp",
+      modelRoot: "/persistent/models"
+    });
+    assert.equal(materialized.models[0].repository_path, "/persistent/models/owner/sample-gguf");
+    assert.equal(materialized.artifacts[1].local_path, "/persistent/models/owner/sample-companion/adapter.safetensors");
+
+    const changed = {
+      schema_version: "prefer.runtime-model-catalog.v1",
+      base_catalog_fingerprint: "9".repeat(64),
+      models: {},
+      repositories: {}
+    };
+    assert.throws(
+      () => materializeRuntimeHandoff(handoff, changed, { engine: "llama.cpp" }),
+      /does not match image catalog/u
+    );
+    assert.throws(
+      () => materializeRuntimeHandoff(handoff, catalog, { engine: "vllm" }),
+      /does not match image engine/u
+    );
+    const tampered = structuredClone(handoff);
+    tampered.artifacts[0].size += 1;
+    assert.throws(
+      () => materializeRuntimeHandoff(tampered, catalog, { engine: "llama.cpp" }),
+      /artifact id does not match|fingerprint does not match/u
+    );
+  });
+});
+
+test("controller extensions become launchable only after exact file and hash selection", async () => {
+  const extension = await createCatalogExtension(
+    [{ repository: "extra/model", revision: "main", model_id: "neuron-extra" }],
+    { fetch: fakeHuggingFaceFetch(EXTRA_REVISION), now: fixedNow }
+  );
+  assert.throws(
+    () => resolveExtensionModelVariant(extension, "neuron-extra", {
+      engine: "vllm",
+      files: ["missing.safetensors"],
+      quant: "bf16"
+    }),
+    /does not contain/u
+  );
+  const resolved = resolveExtensionModelVariant(extension, "neuron-extra", {
+    engine: "vllm",
+    files: ["config.json"],
+    quant: "bf16",
+    capabilities: ["text-generation"]
+  });
+  assert.equal(resolved.artifacts[0].blob_oid, "f".repeat(40));
+  assert.equal(resolved.repository_path, "/models/extra/model");
+  const handoff = createRuntimeHandoff({
+    schema_version: "prefer.runtime-model-catalog.v1",
+    base_catalog_fingerprint: "9".repeat(64),
+    models: {},
+    repositories: {}
+  }, {
+    engine: "vllm",
+    models: [{ variant: resolved, source: "extension" }]
+  });
+  assert.equal(handoff.artifacts[0].git_blob_sha1, "f".repeat(40));
 });
 
 test("NeurOn repository selections retain whether the returned file tree is complete or filtered", async () => {
@@ -644,7 +736,7 @@ function fakeHuggingFaceFetch(revision = REVISION) {
         { type: "file", path: "sample-q6.gguf", size: 123, oid: "blob", lfs: { oid: "c".repeat(64) } },
         { type: "file", path: "sample-Q4_K_M.gguf", size: 100, oid: "q4-blob", lfs: { oid: "d".repeat(64) } },
         { type: "file", path: "mmproj-F16.gguf", size: 20, oid: "projector-blob", lfs: { oid: "e".repeat(64) } },
-        { type: "file", path: "config.json", size: 45, oid: "config-blob" }
+        { type: "file", path: "config.json", size: 45, oid: "f".repeat(40) }
       ]);
     }
     return new Response("not found", { status: 404 });

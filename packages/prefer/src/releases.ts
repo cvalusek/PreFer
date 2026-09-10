@@ -142,7 +142,8 @@ export async function downloadPreferTooling(
     "model_catalog_schema",
     "model_catalog_extension_schema",
     "resource_profile_schema",
-    "model_plan_schema"
+    "model_plan_schema",
+    "runtime_handoff_schema"
   ]) {
     const binding = objectValue(tooling[key], `PreFer release tooling ${key}`);
     const asset = requireAssetName(requireString(binding.asset, `PreFer release tooling ${key} asset`));

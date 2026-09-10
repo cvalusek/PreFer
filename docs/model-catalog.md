@@ -219,3 +219,11 @@ cache directory, timeout, include patterns, and bounded concurrency. Filtered
 repository results are explicitly marked as incomplete and retain their include
 patterns. HTTP rate-limit errors retain
 retry/reset guidance rather than being converted into an empty catalog.
+
+## Launching a resolved extension
+
+Catalog extensions are metadata until a controller selects exact files and
+builds a release-bound runtime handoff. That handoff is the bridge into the
+five engine entrypoints; it carries immutable revisions, exact file integrity,
+roles, settings, and optional LoRAs without creating a checked-in model entry.
+See [Runtime model handoff](runtime-handoff.md).

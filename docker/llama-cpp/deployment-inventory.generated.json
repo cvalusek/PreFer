@@ -28,6 +28,8 @@
     "multi_model": true,
     "effective_config_path": "/run/prefer/llama.ini",
     "effective_plan_path": "/run/prefer/plan.json",
+    "effective_handoff_path": "/run/prefer/handoff.json",
+    "runtime_handoff_schema": "prefer.runtime-handoff.v1",
     "compose_environment_prefix": "LLAMA",
     "override_merge": "objects merge recursively; scalar and array values replace",
     "environment": {
@@ -50,13 +52,18 @@
       "PREFER_MODEL_OVERRIDES": {
         "type": "json-object-map",
         "applies_to": "selected model INI settings"
+      },
+      "PREFER_RUNTIME_HANDOFF": {
+        "type": "path",
+        "source": "immutable release-matched runtime handoff"
       }
     },
     "selection_rules": [
       "bundle and model selections are additive",
       "an exact quant key replaces another lane for the same logical model",
       "a friendly model selection inherits the selected hardware deployment's lane",
-      "ambiguous friendly selections require an exact quant key"
+      "ambiguous friendly selections require an exact quant key",
+      "a runtime handoff replaces bundle/model selection and may include controller-extension artifacts"
     ],
     "precedence": [
       "catalog model and lane defaults",

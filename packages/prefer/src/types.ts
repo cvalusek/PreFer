@@ -187,8 +187,78 @@ export interface ResolvedModelArtifact extends HuggingFaceFile {
   repository: string;
   revision: string;
   local_path: string;
+  /** Exact file SHA-256 supplied by a controller when Hugging Face metadata does not expose an LFS OID. */
+  sha256?: string;
   role?: string;
   settings?: JsonObject;
+}
+
+export interface RuntimeHandoffArtifactInput {
+  repository: string;
+  revision: string;
+  path: string;
+  size: number;
+  sha256?: string;
+  git_blob_sha1?: string;
+  model_id?: string;
+  role?: string;
+  settings?: JsonObject;
+}
+
+export interface RuntimeHandoffArtifact {
+  id: string;
+  repository: string;
+  revision: string;
+  path: string;
+  size: number;
+  sha256?: string;
+  git_blob_sha1?: string;
+  model_id?: string;
+  role?: string;
+  settings?: JsonObject;
+}
+
+export interface RuntimeHandoffModel {
+  model_id: string;
+  request_model_id: string;
+  source: "prefer" | "extension";
+  family: string;
+  display_name: string;
+  repository: string;
+  revision: string;
+  quant: string;
+  artifact_ids: string[];
+  capabilities: string[];
+  settings: JsonObject;
+}
+
+/**
+ * Immutable controller-to-container launch handoff. Paths are intentionally
+ * absent: the receiving image derives them below its selected model root.
+ */
+export interface RuntimeHandoff {
+  schema_version: "prefer.runtime-handoff.v1";
+  catalog_fingerprint: string;
+  handoff_fingerprint: string;
+  engine: EngineId;
+  base_deployment?: string;
+  server_settings: JsonObject;
+  models: RuntimeHandoffModel[];
+  artifacts: RuntimeHandoffArtifact[];
+}
+
+export interface MaterializedRuntimeHandoffArtifact extends RuntimeHandoffArtifact {
+  local_path: string;
+}
+
+export interface MaterializedRuntimeHandoffModel extends RuntimeHandoffModel {
+  repository_path: string;
+}
+
+export interface MaterializedRuntimeHandoff extends Omit<RuntimeHandoff, "models" | "artifacts"> {
+  model_root: string;
+  models: MaterializedRuntimeHandoffModel[];
+  artifacts: MaterializedRuntimeHandoffArtifact[];
 }
 
 export type MemoryTopology = "discrete" | "unified" | "host" | "unknown";
