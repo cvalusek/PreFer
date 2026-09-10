@@ -5,6 +5,7 @@
 - Release tooling
   - Added one release-matched model catalog, standalone `prefer` CLI, and `prefer-inference-core` npm package to the grouped stable/preview release.
   - Added exact hashes for the package, CLI, catalog, and catalog schemas to `prefer-release.json`.
+  - Fixed npm publication to install the release-local package tarball and use a warning-free temporary registry credential file.
 - Models
   - Added shared catalog coverage for all 32 configured models: 18 text, seven audio, five image, and two synchronized audio-video routes.
   - Added prompt-ready role, strength, limitation, modality, context, reasoning, prompting, and evidence guidance for every model.

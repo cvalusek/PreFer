@@ -783,14 +783,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24.19.0'
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Publish the release-matched npm package
         shell: bash
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/prefer-npmrc
         run: |
           set -euo pipefail
+          umask 077
+          printf '%s\n' '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}' > "$NPM_CONFIG_USERCONFIG"
           package_version="$(jq -er '.tooling.package_version' prefer-release/prefer-release.json)"
           if [[ "$GITHUB_REF_NAME" == "main" ]]; then
             package_dist_tag="latest"
@@ -805,7 +807,7 @@ jobs:
             npm dist-tag add "prefer-inference-core@$package_version" "$package_dist_tag" \
               --registry https://registry.npmjs.org
           else
-            npm publish prefer-release/prefer-inference-core.tgz \
+            npm publish ./prefer-release/prefer-inference-core.tgz \
               --registry https://registry.npmjs.org \
               --access public \
               --tag "$package_dist_tag"
