@@ -1,6 +1,17 @@
 # PreFer changelog
 
-## Current
+## sha-45df4df (preview)
+
+- Images
+  - Llama CUDA: `ghcr.io/cvalusek/prefer:llama-cuda-sha-45df4df@sha256:db54aa9b1c4d82b84741f04f45281dd060b962f53d691bea8408197019896913`.
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-45df4df@sha256:aee8f52a83c3c89b5b3bef38f6c556545c3887c9a1839adcf42912b3e5f252c9`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-45df4df@sha256:10df4012469915f0848987c3c6b42acea4e50b05f9350b7474bc33e6281f3ee7`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-45df4df@sha256:d37eacc2a41d2950ef08da5f2de3441b16ce9c2c77ceb562ecdbf270d2c5165a`.
+  - SGLang CUDA 13: `ghcr.io/cvalusek/prefer:sglang-cuda13-sha-45df4df@sha256:3ea93d7864700f2645b4450d73f71d86edd04081f8bdb303ff70d2cda343919b`.
+  - vLLM CUDA 13: `ghcr.io/cvalusek/prefer:vllm-cuda13-sha-45df4df@sha256:33f032e387fdcf75a13ff909490ca4372082d386a612747000fea1b6b4eb95c4`.
+
+- Package
+  - npm: `prefer-inference-core@0.0.0-g45df4df`.
 
 - Runtime handoff
   - Added release-bound supported and controller-extension model launch across llama.cpp, audio.cpp, stable-diffusion.cpp, SGLang, and vLLM.
