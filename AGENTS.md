@@ -389,6 +389,13 @@ paths. Runtime images copy the generator plus JSON catalog/scenario metadata
 to `/prefer-catalog`; never copy model weights into that directory or any
 other image/release layer.
 
+Runtime handoffs accept either a mounted JSON path through
+`PREFER_RUNTIME_HANDOFF` or strict base64 JSON through
+`PREFER_RUNTIME_HANDOFF_BASE64`. The latter is the environment-only RunPod
+transport and is capped at 96 KiB. The inputs are mutually exclusive and both
+must pass the same schema, fingerprint, release, engine, path, and artifact
+validation before staging. Compose uses matching engine-scoped aliases.
+
 Controllers may instead supply a release-bound `PREFER_RUNTIME_HANDOFF` (or
 engine-scoped alias). A handoff is mutually exclusive with bundle/model
 selectors. It must bind the image engine and embedded catalog fingerprint,

@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import {
   createRuntimeHandoff,
   createCatalogExtension,
+  decodeRuntimeHandoffBase64,
   detectRuntimeResources,
   downloadPreferTooling,
   listModelVariants,
@@ -243,7 +244,26 @@ async function resolvedHandoff(flags: Map<string, string[]>): Promise<{ handoff:
   const catalog = await readModelCatalog(one(flags, "catalog") ?? process.env.PREFER_MODEL_CATALOG ?? "/prefer-model-catalog.json");
   const engine = one(flags, "engine") ?? process.env.PREFER_ENGINE;
   if (!engine) throw new Error("runtime handoff requires --engine outside a PreFer engine image");
-  const source = await readRuntimeHandoff(one(flags, "handoff", true)!);
+  const handoffPath = one(flags, "handoff");
+  const handoffBase64 = one(flags, "handoff-base64");
+  const handoffBase64Environment = one(flags, "handoff-base64-env");
+  const inputs = [handoffPath, handoffBase64, handoffBase64Environment].filter((value) => value !== undefined);
+  if (inputs.length !== 1) {
+    throw new Error("runtime handoff requires exactly one of --handoff, --handoff-base64, or --handoff-base64-env");
+  }
+  let source;
+  if (handoffPath !== undefined) {
+    source = await readRuntimeHandoff(handoffPath);
+  } else if (handoffBase64 !== undefined) {
+    source = decodeRuntimeHandoffBase64(handoffBase64);
+  } else {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/u.test(handoffBase64Environment!)) {
+      throw new Error("--handoff-base64-env must name a valid environment variable");
+    }
+    const encoded = process.env[handoffBase64Environment!];
+    if (!encoded) throw new Error(`runtime handoff environment variable ${handoffBase64Environment} is empty`);
+    source = decodeRuntimeHandoffBase64(encoded);
+  }
   return {
     handoff: materializeRuntimeHandoff(source, catalog, {
       engine,
@@ -535,8 +555,9 @@ function help(): void {
     `  prefer hardware detect [--base inventory.json --deployment local/gb10/1x/balanced]\n` +
     `  prefer runtime create --variant resolved-model.json --output handoff.json [--base-deployment deployment] [--server-settings JSON]\n` +
     `    [--request-model-id model-id=request-id] [--additional-artifacts artifacts.json] [--extension]\n` +
-    `  prefer runtime validate --handoff handoff.json [--engine sglang] [--model-root /models]\n` +
-    `  prefer runtime materialize --handoff handoff.json --output /run/prefer/handoff.json --artifacts-output /run/prefer/artifacts.tsv\n` +
+    `  prefer runtime validate (--handoff handoff.json | --handoff-base64 VALUE | --handoff-base64-env NAME) [--engine sglang]\n` +
+    `  prefer runtime materialize (--handoff handoff.json | --handoff-base64 VALUE | --handoff-base64-env NAME)\n` +
+    `    --output /run/prefer/handoff.json --artifacts-output /run/prefer/artifacts.tsv\n` +
     `  prefer release list [--channel stable|preview]\n` +
     `  prefer release fetch-tooling --output-dir path [--channel stable|preview] [--revision SHA]\n`);
 }

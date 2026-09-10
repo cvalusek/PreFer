@@ -11,6 +11,7 @@ PREFER_MODELS="${PREFER_MODELS:-${SGLANG_MODELS:-}}"
 PREFER_SERVER_OVERRIDES="${PREFER_SERVER_OVERRIDES:-${SGLANG_SERVER_OVERRIDES:-}}"
 PREFER_MODEL_OVERRIDES="${PREFER_MODEL_OVERRIDES:-${SGLANG_MODEL_OVERRIDES:-}}"
 PREFER_RUNTIME_HANDOFF="${PREFER_RUNTIME_HANDOFF:-${SGLANG_RUNTIME_HANDOFF:-}}"
+PREFER_RUNTIME_HANDOFF_BASE64="${PREFER_RUNTIME_HANDOFF_BASE64:-${SGLANG_RUNTIME_HANDOFF_BASE64:-}}"
 
 resolve_s3_settings() {
   local bucket="${SGLANG_S3_BUCKET_NAME:-${S3_BUCKET_NAME:-}}"
@@ -49,9 +50,13 @@ resolve_s3_settings
 
 server_config="${SGLANG_SERVER_CONFIG:-/app/server.json}"
 runtime_artifacts=""
-if [ -n "$PREFER_RUNTIME_HANDOFF" ]; then
+if [ -n "$PREFER_RUNTIME_HANDOFF" ] && [ -n "$PREFER_RUNTIME_HANDOFF_BASE64" ]; then
+  echo "[sglang-entrypoint] path and base64 runtime handoff inputs are mutually exclusive" >&2
+  exit 2
+fi
+if [ -n "${PREFER_RUNTIME_HANDOFF}${PREFER_RUNTIME_HANDOFF_BASE64}" ]; then
   if [ -n "${PREFER_BUNDLE:-}${PREFER_MODELS:-}" ]; then
-    echo "[sglang-entrypoint] PREFER_RUNTIME_HANDOFF cannot be combined with bundle or model selectors" >&2
+    echo "[sglang-entrypoint] a runtime handoff cannot be combined with bundle or model selectors" >&2
     exit 2
   fi
   mkdir -p /run/prefer
@@ -60,7 +65,13 @@ if [ -n "$PREFER_RUNTIME_HANDOFF" ]; then
   runtime_config=/run/prefer/sglang.json
   runtime_prestage=/run/prefer/sglang.prestage
   runtime_plan=/run/prefer/plan.json
-  prefer runtime materialize --handoff "$PREFER_RUNTIME_HANDOFF" --output "$runtime_handoff" --artifacts-output "$runtime_artifacts"
+  if [ -n "$PREFER_RUNTIME_HANDOFF" ]; then
+    runtime_handoff_input=(--handoff "$PREFER_RUNTIME_HANDOFF")
+  else
+    runtime_handoff_input=(--handoff-base64-env PREFER_RUNTIME_HANDOFF_BASE64)
+  fi
+  prefer runtime materialize "${runtime_handoff_input[@]}" --output "$runtime_handoff" --artifacts-output "$runtime_artifacts"
+  unset PREFER_RUNTIME_HANDOFF_BASE64 SGLANG_RUNTIME_HANDOFF_BASE64
   python3 /prefer-catalog/generate.py \
     --compose-handoff \
     --handoff-input "$runtime_handoff" \

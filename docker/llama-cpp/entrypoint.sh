@@ -11,10 +11,16 @@ PREFER_MODELS="${PREFER_MODELS:-${LLAMA_MODELS:-}}"
 PREFER_SERVER_OVERRIDES="${PREFER_SERVER_OVERRIDES:-${LLAMA_SERVER_OVERRIDES:-}}"
 PREFER_MODEL_OVERRIDES="${PREFER_MODEL_OVERRIDES:-${LLAMA_MODEL_OVERRIDES:-}}"
 PREFER_RUNTIME_HANDOFF="${PREFER_RUNTIME_HANDOFF:-${LLAMA_RUNTIME_HANDOFF:-}}"
+PREFER_RUNTIME_HANDOFF_BASE64="${PREFER_RUNTIME_HANDOFF_BASE64:-${LLAMA_RUNTIME_HANDOFF_BASE64:-}}"
 
-if [ -n "$PREFER_RUNTIME_HANDOFF" ]; then
+if [ -n "$PREFER_RUNTIME_HANDOFF" ] && [ -n "$PREFER_RUNTIME_HANDOFF_BASE64" ]; then
+  echo "[entrypoint] path and base64 runtime handoff inputs are mutually exclusive" >&2
+  exit 2
+fi
+
+if [ -n "${PREFER_RUNTIME_HANDOFF}${PREFER_RUNTIME_HANDOFF_BASE64}" ]; then
   if [ -n "${PREFER_BUNDLE:-}${PREFER_MODELS:-}" ]; then
-    echo "[entrypoint] PREFER_RUNTIME_HANDOFF cannot be combined with bundle or model selectors" >&2
+    echo "[entrypoint] a runtime handoff cannot be combined with bundle or model selectors" >&2
     exit 2
   fi
   mkdir -p /run/prefer
@@ -23,10 +29,16 @@ if [ -n "$PREFER_RUNTIME_HANDOFF" ]; then
   runtime_preset=/run/prefer/llama.ini
   runtime_prestage=/run/prefer/llama.prestage
   runtime_plan=/run/prefer/plan.json
+  if [ -n "$PREFER_RUNTIME_HANDOFF" ]; then
+    runtime_handoff_input=(--handoff "$PREFER_RUNTIME_HANDOFF")
+  else
+    runtime_handoff_input=(--handoff-base64-env PREFER_RUNTIME_HANDOFF_BASE64)
+  fi
   prefer runtime materialize \
-    --handoff "$PREFER_RUNTIME_HANDOFF" \
+    "${runtime_handoff_input[@]}" \
     --output "$runtime_handoff" \
     --artifacts-output "$runtime_artifacts"
+  unset PREFER_RUNTIME_HANDOFF_BASE64 LLAMA_RUNTIME_HANDOFF_BASE64
   python3 /prefer-catalog/generate-presets.py \
     --compose-handoff \
     --handoff-input "$runtime_handoff" \
@@ -61,7 +73,7 @@ elif [ -n "${PREFER_DEPLOYMENT:-}${PREFER_BUNDLE:-}${PREFER_MODELS:-}${PREFER_SE
   export PREFER_EFFECTIVE_PLAN="$runtime_plan"
 fi
 
-if [ -z "$PREFER_RUNTIME_HANDOFF" ]; then
+if [ -z "$runtime_artifacts" ]; then
   /download-models.sh
 fi
 

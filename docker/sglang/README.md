@@ -172,8 +172,9 @@ config, prestage manifest, and plan are written beneath `/run/prefer`; leaving
 composition blank preserves `SGLANG_SERVER_CONFIG`. Weights remain external.
 
 `SGLANG_RUNTIME_HANDOFF` selects a mounted, release-bound supported or
-controller-extension manifest. It can launch an exact repository or GGUF lane
-and maps named text LoRA artifact directories to SGLang's native
+controller-extension manifest. `SGLANG_RUNTIME_HANDOFF_BASE64` carries the
+same object for environment-only provisioning. It can launch an exact
+repository or GGUF lane and maps named text LoRA artifact directories to SGLang's native
 `--lora-paths` interface. See
 [the shared handoff contract](../../docs/runtime-handoff.md).
 

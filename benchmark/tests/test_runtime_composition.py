@@ -456,11 +456,33 @@ class RuntimeCompositionTests(unittest.TestCase):
                 self.assertEqual(composition["effective_plan_path"], "/run/prefer/plan.json")
                 self.assertIn("PREFER_DEPLOYMENT", composition["environment"])
                 self.assertIn("PREFER_MODELS", composition["environment"])
+                self.assertEqual(composition["runtime_handoff_transports"], ["path", "base64"])
+                self.assertEqual(composition["environment"]["PREFER_RUNTIME_HANDOFF"]["type"], "path")
+                self.assertEqual(
+                    composition["environment"]["PREFER_RUNTIME_HANDOFF_BASE64"]["type"],
+                    "base64-json",
+                )
+                self.assertEqual(
+                    composition["environment"]["PREFER_RUNTIME_HANDOFF_BASE64"]["max_characters"],
+                    98304,
+                )
                 self.assertEqual(
                     composition["override_merge"],
                     "objects merge recursively; scalar and array values replace",
                 )
                 self.assertEqual(composition["precedence"][-1], "raw engine arguments")
+
+    def test_every_entrypoint_accepts_environment_safe_runtime_handoffs(self):
+        for engine in ("llama-cpp", "audio-cpp", "stable-diffusion-cpp", "sglang", "vllm"):
+            with self.subTest(engine=engine):
+                entrypoint = (ROOT / "docker" / engine / "entrypoint.sh").read_text(encoding="utf-8")
+                self.assertIn("PREFER_RUNTIME_HANDOFF_BASE64", entrypoint)
+                self.assertIn("--handoff-base64-env PREFER_RUNTIME_HANDOFF_BASE64", entrypoint)
+                self.assertIn("path and base64 runtime handoff inputs are mutually exclusive", entrypoint)
+
+        compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+        for prefix in ("LLAMA", "AUDIO", "IMAGE", "SGLANG", "VLLM"):
+            self.assertIn(f"{prefix}_RUNTIME_HANDOFF_BASE64=${{{prefix}_RUNTIME_HANDOFF_BASE64:-}}", compose)
 
     def test_every_deployment_model_preserves_exact_model_and_quant_identity(self):
         for engine in ("llama-cpp", "audio-cpp", "stable-diffusion-cpp", "sglang", "vllm"):

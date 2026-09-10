@@ -77,9 +77,10 @@ are shipped in the image, but the selected weights are still downloaded to
 the external `/models` volume.
 
 `LLAMA_RUNTIME_HANDOFF` selects a mounted, release-bound handoff instead of
-catalog bundle/model selectors. It can supply exact model, projector,
-draft/MTP, and LoRA artifacts; the image validates and stages them before
-writing the same ephemeral preset and plan. See
+catalog bundle/model selectors. `LLAMA_RUNTIME_HANDOFF_BASE64` carries the
+same object for environment-only provisioning. It can supply exact model,
+projector, draft/MTP, and LoRA artifacts; the image validates and stages them
+before writing the same ephemeral preset and plan. See
 [the shared handoff contract](../../docs/runtime-handoff.md).
 
 ### Model selection profiles

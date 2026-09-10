@@ -27,6 +27,10 @@
     "effective_plan_path": "/run/prefer/plan.json",
     "effective_handoff_path": "/run/prefer/handoff.json",
     "runtime_handoff_schema": "prefer.runtime-handoff.v1",
+    "runtime_handoff_transports": [
+      "path",
+      "base64"
+    ],
     "compose_environment_prefix": "SGLANG",
     "override_merge": "objects merge recursively; scalar and array values replace",
     "environment": {
@@ -52,13 +56,20 @@
       "PREFER_RUNTIME_HANDOFF": {
         "type": "path",
         "source": "immutable release-matched runtime handoff"
+      },
+      "PREFER_RUNTIME_HANDOFF_BASE64": {
+        "type": "base64-json",
+        "source": "immutable release-matched runtime handoff",
+        "encoding": "RFC 4648 base64 of compact UTF-8 JSON",
+        "max_characters": 98304
       }
     },
     "selection_rules": [
       "one model is allowed per SGLang process",
       "a friendly model selection uses its primary catalog lane",
       "switching models inherits a matching config from the selected hardware deployment when available",
-      "a runtime handoff replaces model selection and may include controller-extension artifacts"
+      "a runtime handoff replaces model selection and may include controller-extension artifacts",
+      "path and base64 runtime handoff inputs are mutually exclusive"
     ],
     "precedence": [
       "catalog model and lane defaults",

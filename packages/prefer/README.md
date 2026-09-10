@@ -166,6 +166,11 @@ release catalog fingerprint. `validateRuntimeHandoff` and
 `materializeRuntimeHandoff` enforce that binding and derive paths beneath the
 receiving runtime's model root.
 
+`encodeRuntimeHandoffBase64` and `decodeRuntimeHandoffBase64` provide the
+strict, validated environment transport used by RunPod-style provisioning.
+The encoded value is capped at 96 KiB; larger handoffs use the JSON-file path
+transport.
+
 LFS artifacts use their content SHA-256. Ordinary Hugging Face files use their
 immutable Git blob SHA-1 unless the controller supplies a content SHA-256.
 Every handoff artifact has exactly one digest, an immutable repository

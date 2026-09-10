@@ -257,10 +257,11 @@ exact files and hashes, model settings, companions, and optional LoRAs. Each
 container validates and stages that manifest before generating its ephemeral
 engine config; a mismatched release, engine, path, or artifact fails closed.
 
-Use `PREFER_RUNTIME_HANDOFF` for a direct launcher or the engine-scoped
-`LLAMA_RUNTIME_HANDOFF`, `AUDIO_RUNTIME_HANDOFF`, `IMAGE_RUNTIME_HANDOFF`,
-`SGLANG_RUNTIME_HANDOFF`, or `VLLM_RUNTIME_HANDOFF` variable under Compose.
-The JSON file must be mounted into the container. See the complete
+Use `PREFER_RUNTIME_HANDOFF` for a mounted JSON file. Environment-only
+provisioners such as RunPod can pass the same validated object as strict
+base64 in `PREFER_RUNTIME_HANDOFF_BASE64`; Compose exposes matching
+engine-scoped `*_RUNTIME_HANDOFF` and `*_RUNTIME_HANDOFF_BASE64` aliases.
+The two transports are mutually exclusive. See the complete
 [runtime handoff contract](docs/runtime-handoff.md).
 
 ## Environment

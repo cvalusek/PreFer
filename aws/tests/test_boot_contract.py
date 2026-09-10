@@ -59,11 +59,15 @@ class AwsBootContractTest(unittest.TestCase):
             "PREFER_MODELS",
             "PREFER_SERVER_OVERRIDES",
             "PREFER_MODEL_OVERRIDES",
+            "PREFER_RUNTIME_HANDOFF",
+            "PREFER_RUNTIME_HANDOFF_BASE64",
             "LLAMA_DEPLOYMENT",
             "LLAMA_BUNDLE",
             "LLAMA_MODELS",
             "LLAMA_SERVER_OVERRIDES",
             "LLAMA_MODEL_OVERRIDES",
+            "LLAMA_RUNTIME_HANDOFF",
+            "LLAMA_RUNTIME_HANDOFF_BASE64",
         ):
             self.assertIn(variable, variables)
 

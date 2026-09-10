@@ -92,8 +92,9 @@ beneath `/run/prefer`; blank composition variables preserve
 `VLLM_SERVER_CONFIG`. Only catalog metadata ships in the image.
 
 `VLLM_RUNTIME_HANDOFF` selects a mounted, release-bound supported or
-controller-extension manifest. It can launch an exact repository or GGUF lane
-and maps named text LoRA artifact directories to vLLM's native
+controller-extension manifest. `VLLM_RUNTIME_HANDOFF_BASE64` carries the same
+object for environment-only provisioning. It can launch an exact repository
+or GGUF lane and maps named text LoRA artifact directories to vLLM's native
 `--enable-lora --lora-modules` interface. See
 [the shared handoff contract](../../docs/runtime-handoff.md).
 

@@ -152,8 +152,9 @@ existing `AUDIO_SERVER_CONFIG` behavior. Catalog metadata is embedded in the
 image; audio weights remain external runtime downloads.
 
 `AUDIO_RUNTIME_HANDOFF` selects a mounted, release-bound supported or
-controller-extension model manifest. The image validates and stages its exact
-files before generating the audio config. See
+controller-extension model manifest. `AUDIO_RUNTIME_HANDOFF_BASE64` carries
+the same object for environment-only provisioning. The image validates and
+stages its exact files before generating the audio config. See
 [the shared handoff contract](../../docs/runtime-handoff.md).
 
 Compose passes `HF_TOKEN` plus the same `HF_HUB_DISABLE_XET` and `HF_XET_*`

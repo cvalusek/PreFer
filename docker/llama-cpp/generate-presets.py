@@ -697,6 +697,7 @@ def render_inventory(
             effective_plan_path="/run/prefer/plan.json",
             effective_handoff_path="/run/prefer/handoff.json",
             runtime_handoff_schema="prefer.runtime-handoff.v1",
+            runtime_handoff_transports=["path", "base64"],
             compose_environment_prefix="LLAMA",
             override_merge="objects merge recursively; scalar and array values replace",
             environment=OrderedDict(
@@ -706,6 +707,12 @@ def render_inventory(
                 PREFER_SERVER_OVERRIDES=OrderedDict(type="json-object", applies_to="shared INI settings"),
                 PREFER_MODEL_OVERRIDES=OrderedDict(type="json-object-map", applies_to="selected model INI settings"),
                 PREFER_RUNTIME_HANDOFF=OrderedDict(type="path", source="immutable release-matched runtime handoff"),
+                PREFER_RUNTIME_HANDOFF_BASE64=OrderedDict(
+                    type="base64-json",
+                    source="immutable release-matched runtime handoff",
+                    encoding="RFC 4648 base64 of compact UTF-8 JSON",
+                    max_characters=98304,
+                ),
             ),
             selection_rules=[
                 "bundle and model selections are additive",
@@ -713,6 +720,7 @@ def render_inventory(
                 "a friendly model selection inherits the selected hardware deployment's lane",
                 "ambiguous friendly selections require an exact quant key",
                 "a runtime handoff replaces bundle/model selection and may include controller-extension artifacts",
+                "path and base64 runtime handoff inputs are mutually exclusive",
             ],
             precedence=[
                 "catalog model and lane defaults",

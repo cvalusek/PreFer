@@ -28,6 +28,7 @@ release-matched catalog and create the handoff:
 ```ts
 import {
   createRuntimeHandoff,
+  encodeRuntimeHandoffBase64,
   readModelCatalog,
   resolveModelVariant
 } from "prefer-inference-core";
@@ -42,6 +43,9 @@ const handoff = createRuntimeHandoff(catalog, {
   baseDeployment: "aws/g7e/2xlarge/performance",
   models: [{ variant, request_model_id: "qwen-3.8-27b" }]
 });
+const runPodEnvironment = {
+  PREFER_RUNTIME_HANDOFF_BASE64: encodeRuntimeHandoffBase64(handoff)
+};
 ```
 
 For a controller extension, first resolve repository metadata, then select the
@@ -110,16 +114,26 @@ the same repository/path layout as existing model staging.
 
 ## Container selection
 
-Mount the JSON handoff into the container and set either the generic
-`PREFER_RUNTIME_HANDOFF` variable or the engine-scoped variable:
+For platforms with file mounts, mount the JSON handoff into the container and
+set `PREFER_RUNTIME_HANDOFF` or its engine-scoped alias. For environment-only
+provisioning such as a RunPod Pod create request, encode the same validated
+object with `encodeRuntimeHandoffBase64` and set
+`PREFER_RUNTIME_HANDOFF_BASE64` or its engine-scoped alias.
 
-| Engine | Engine-scoped variable |
-| --- | --- |
-| llama.cpp | `LLAMA_RUNTIME_HANDOFF` |
-| audio.cpp | `AUDIO_RUNTIME_HANDOFF` |
-| stable-diffusion.cpp | `IMAGE_RUNTIME_HANDOFF` |
-| SGLang | `SGLANG_RUNTIME_HANDOFF` |
-| vLLM | `VLLM_RUNTIME_HANDOFF` |
+| Engine | Path variable | Base64 variable |
+| --- | --- | --- |
+| llama.cpp | `LLAMA_RUNTIME_HANDOFF` | `LLAMA_RUNTIME_HANDOFF_BASE64` |
+| audio.cpp | `AUDIO_RUNTIME_HANDOFF` | `AUDIO_RUNTIME_HANDOFF_BASE64` |
+| stable-diffusion.cpp | `IMAGE_RUNTIME_HANDOFF` | `IMAGE_RUNTIME_HANDOFF_BASE64` |
+| SGLang | `SGLANG_RUNTIME_HANDOFF` | `SGLANG_RUNTIME_HANDOFF_BASE64` |
+| vLLM | `VLLM_RUNTIME_HANDOFF` | `VLLM_RUNTIME_HANDOFF_BASE64` |
+
+The base64 transport is strict, single-line RFC 4648 base64 and is limited to
+96 KiB so it stays below common process-environment limits. Use the mounted
+path transport for a larger handoff. Path and base64 inputs are mutually
+exclusive, and both are mutually exclusive with bundle/model selectors. The
+decoded object passes the identical schema, fingerprint, release, engine, and
+artifact validation before any transfer or server launch.
 
 A handoff replaces bundle/model selection. Hardware deployment defaults and
 explicit server/model overrides still apply in the documented composition

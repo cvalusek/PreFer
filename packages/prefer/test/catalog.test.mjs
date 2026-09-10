@@ -7,6 +7,8 @@ import {
   createCatalogExtension,
   createRuntimeHandoff,
   createRuntimeModelCatalog,
+  decodeRuntimeHandoffBase64,
+  encodeRuntimeHandoffBase64,
   loadCatalogSources,
   mergeCatalogExtensions,
   modelRequestsFromDeployment,
@@ -146,6 +148,17 @@ test("immutable runtime handoffs bind exact artifacts to one release catalog and
     assert.equal(handoff.artifacts.length, 2);
     assert.equal(handoff.models[0].artifact_ids.length, 2);
     assert.equal(handoff.artifacts[0].sha256, "c".repeat(64));
+
+    const encoded = encodeRuntimeHandoffBase64(handoff);
+    assert.deepEqual(decodeRuntimeHandoffBase64(encoded), handoff);
+    assert.throws(() => decodeRuntimeHandoffBase64(` ${encoded}`), /base64 is invalid/u);
+    assert.throws(() => decodeRuntimeHandoffBase64("bm90LWpzb24="), /does not contain valid UTF-8 JSON/u);
+    const oversized = createRuntimeHandoff(catalog, {
+      engine: "llama.cpp",
+      serverSettings: { padding: "x".repeat(80 * 1024) },
+      models: [{ variant }]
+    });
+    assert.throws(() => encodeRuntimeHandoffBase64(oversized), /exceeds 98304 characters/u);
 
     const materialized = materializeRuntimeHandoff(handoff, catalog, {
       engine: "llama.cpp",

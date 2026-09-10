@@ -1,5 +1,14 @@
 # PreFer changelog
 
+## Current
+
+- Runtime handoff
+  - Added `PREFER_RUNTIME_HANDOFF_BASE64` for environment-only provisioning such as RunPod Pod creation.
+  - Added matching engine-scoped Compose variables and AWS llama pass-through.
+  - Limited encoded handoffs to 96 KiB; conflicting path, base64, or model-selection inputs now fail before staging.
+- Compatibility
+  - Mounted-file handoffs and existing preset, config, bundle, and model launch paths remain unchanged.
+
 ## sha-45df4df (preview)
 
 - Images

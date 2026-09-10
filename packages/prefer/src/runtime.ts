@@ -1,4 +1,5 @@
 import { posix } from "node:path";
+import { Buffer } from "node:buffer";
 import type {
   CatalogExtension,
   EngineId,
@@ -31,7 +32,9 @@ import { validateCatalogExtension } from "./huggingface.js";
 const MODEL_ID_PATTERN = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/u;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
 const SHA1_PATTERN = /^[0-9a-f]{40}$/u;
+const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u;
 const CONTROL_PATTERN = /[\u0000-\u001f\u007f]/u;
+export const RUNTIME_HANDOFF_BASE64_MAX_CHARS = 96 * 1024;
 
 export interface ResolveExtensionVariantOptions {
   engine: EngineId;
@@ -263,6 +266,34 @@ export function materializeRuntimeHandoff(
 
 export async function readRuntimeHandoff(path: string): Promise<RuntimeHandoff> {
   const value = await readJson(path);
+  validateRuntimeHandoff(value);
+  return value;
+}
+
+/** Encode a validated handoff for environment-variable transport. */
+export function encodeRuntimeHandoffBase64(handoff: RuntimeHandoff): string {
+  validateRuntimeHandoff(handoff);
+  const encoded = Buffer.from(stableStringify(handoff), "utf8").toString("base64");
+  if (encoded.length > RUNTIME_HANDOFF_BASE64_MAX_CHARS) {
+    throw new Error(`runtime handoff base64 exceeds ${RUNTIME_HANDOFF_BASE64_MAX_CHARS} characters; use the path transport`);
+  }
+  return encoded;
+}
+
+/** Decode and validate the strict, single-line base64 handoff transport. */
+export function decodeRuntimeHandoffBase64(encoded: string): RuntimeHandoff {
+  if (!encoded || encoded.length > RUNTIME_HANDOFF_BASE64_MAX_CHARS || encoded !== encoded.trim()
+    || encoded.length % 4 !== 0 || !BASE64_PATTERN.test(encoded)) {
+    throw new Error("runtime handoff base64 is invalid");
+  }
+  const bytes = Buffer.from(encoded, "base64");
+  if (bytes.toString("base64") !== encoded) throw new Error("runtime handoff base64 is invalid");
+  let value: unknown;
+  try {
+    value = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as unknown;
+  } catch {
+    throw new Error("runtime handoff base64 does not contain valid UTF-8 JSON");
+  }
   validateRuntimeHandoff(value);
   return value;
 }

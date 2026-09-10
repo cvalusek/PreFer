@@ -11,12 +11,17 @@ PREFER_MODELS="${PREFER_MODELS:-${IMAGE_MODELS:-}}"
 PREFER_SERVER_OVERRIDES="${PREFER_SERVER_OVERRIDES:-${IMAGE_SERVER_OVERRIDES:-}}"
 PREFER_MODEL_OVERRIDES="${PREFER_MODEL_OVERRIDES:-${IMAGE_MODEL_OVERRIDES:-}}"
 PREFER_RUNTIME_HANDOFF="${PREFER_RUNTIME_HANDOFF:-${IMAGE_RUNTIME_HANDOFF:-}}"
+PREFER_RUNTIME_HANDOFF_BASE64="${PREFER_RUNTIME_HANDOFF_BASE64:-${IMAGE_RUNTIME_HANDOFF_BASE64:-}}"
 
 server_config="${IMAGE_SERVER_CONFIG:-/app/server.json}"
 runtime_artifacts=""
-if [ -n "$PREFER_RUNTIME_HANDOFF" ]; then
+if [ -n "$PREFER_RUNTIME_HANDOFF" ] && [ -n "$PREFER_RUNTIME_HANDOFF_BASE64" ]; then
+  echo "[image-entrypoint] path and base64 runtime handoff inputs are mutually exclusive" >&2
+  exit 2
+fi
+if [ -n "${PREFER_RUNTIME_HANDOFF}${PREFER_RUNTIME_HANDOFF_BASE64}" ]; then
   if [ -n "${PREFER_BUNDLE:-}${PREFER_MODELS:-}" ]; then
-    echo "[image-entrypoint] PREFER_RUNTIME_HANDOFF cannot be combined with bundle or model selectors" >&2
+    echo "[image-entrypoint] a runtime handoff cannot be combined with bundle or model selectors" >&2
     exit 2
   fi
   mkdir -p /run/prefer
@@ -25,7 +30,13 @@ if [ -n "$PREFER_RUNTIME_HANDOFF" ]; then
   runtime_config=/run/prefer/image.json
   runtime_prestage=/run/prefer/image.prestage
   runtime_plan=/run/prefer/plan.json
-  prefer runtime materialize --handoff "$PREFER_RUNTIME_HANDOFF" --output "$runtime_handoff" --artifacts-output "$runtime_artifacts"
+  if [ -n "$PREFER_RUNTIME_HANDOFF" ]; then
+    runtime_handoff_input=(--handoff "$PREFER_RUNTIME_HANDOFF")
+  else
+    runtime_handoff_input=(--handoff-base64-env PREFER_RUNTIME_HANDOFF_BASE64)
+  fi
+  prefer runtime materialize "${runtime_handoff_input[@]}" --output "$runtime_handoff" --artifacts-output "$runtime_artifacts"
+  unset PREFER_RUNTIME_HANDOFF_BASE64 IMAGE_RUNTIME_HANDOFF_BASE64
   python3 /prefer-catalog/generate.py \
     --compose-handoff \
     --handoff-input "$runtime_handoff" \

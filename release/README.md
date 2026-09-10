@@ -43,7 +43,8 @@ external `/models` storage after deployment.
 
 The runtime-handoff schema is release-matched. A controller can bind supported
 or controller-extension artifacts to that release's catalog fingerprint and
-pass the resulting JSON to any engine image from the same grouped release.
+pass the resulting JSON to any engine image from the same grouped release by
+mounted path or by the bounded base64 environment transport.
 See [the runtime handoff contract](../docs/runtime-handoff.md).
 
 The model catalog is refreshed from Hugging Face before the six images build.
