@@ -10,6 +10,7 @@
     "vram_gb_each": 48,
     "architecture": "Ada Lovelace",
     "vcpu": 4,
+    "host_ram_gb": 32,
     "local_nvme_gb": 250
   },
   "compatibility": {

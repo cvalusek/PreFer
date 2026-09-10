@@ -26,7 +26,7 @@
     {
       "name": "target-only",
       "description": "Generic RTX 5090 target-only starting route with 262K per-request context, one decode slot, and FP8 E4M3 KV; BF16-KV fidelity is not offered at this capacity.",
-      "model_keys": ["qwen3.8-27b-nvfp4"],
+      "model_keys": ["qwen-3.8-27b-nvfp4"],
       "server": {
         "context_length": 262144,
         "mem_fraction_static": 0.9,
@@ -44,7 +44,7 @@
     {
       "name": "performance",
       "description": "Generic RTX 5090 native NEXTN throughput experiment at a bounded 128K per-request context; target-only remains the control until an exact-card smoke passes.",
-      "model_keys": ["qwen3.8-27b-nvfp4"],
+      "model_keys": ["qwen-3.8-27b-nvfp4"],
       "server": {
         "context_length": 131072,
         "mem_fraction_static": 0.9,

@@ -1,0 +1,106 @@
+schema_version: prefer.model-source.v1
+display_name: Qwen Image Edit 2511
+capabilities:
+  - image-editing
+  - image-to-image
+  - text-guided-image-editing
+profile:
+  summary: Instruction-driven image editor for localized changes, transformations, and preserving requested parts of a
+    source image.
+  architecture:
+    kind: diffusion-image-editing-model
+  modalities:
+    native_input:
+      - text
+      - image
+    configured_input:
+      - text
+      - image
+    output:
+      - image
+  reasoning:
+    control: not-applicable
+  roles:
+    preferred:
+      - image-editing
+      - localized-changes
+      - style-and-scene-transformation
+    capable:
+      - image-variation
+    avoid:
+      - text-only-generation-without-source
+  strengths:
+    - Dedicated editing behavior is better aligned with preserve-versus-change instructions than a generation-only route.
+  limitations:
+    - Identity, small text, and untouched-region preservation must still be visually checked.
+  prompting:
+    - Separate the requested changes from a concise list of elements that must remain unchanged.
+  evidence:
+    confidence: high
+    basis:
+      - official
+      - configured-artifact
+default:
+  repository: unsloth/Qwen-Image-Edit-2511-GGUF
+  quant: q4
+engines:
+  stable-diffusion.cpp:
+    settings:
+      launcher:
+        args:
+          - --cfg-scale
+          - "2.5"
+          - --steps
+          - "40"
+          - --sampling-method
+          - euler
+          - --flow-shift
+          - "3"
+          - --model-args
+          - qwen_image_zero_cond_t=true
+          - --diffusion-fa
+          - --vae-tiling
+repositories:
+  unsloth/Qwen-Image-Edit-2511-GGUF:
+    discover: gguf
+    quants:
+      q4:
+        artifacts:
+          - files:
+              - qwen-image-edit-2511-Q4_K_M.gguf
+            role: target
+          - repository: Comfy-Org/Qwen-Image_ComfyUI
+            files:
+              - split_files/vae/qwen_image_vae.safetensors
+            role: vae
+          - repository: Comfy-Org/Qwen-Image_ComfyUI
+            files:
+              - split_files/text_encoders/qwen_2.5_vl_7b.safetensors
+            role: text_encoder
+      q6:
+        artifacts:
+          - files:
+              - qwen-image-edit-2511-Q6_K.gguf
+            role: target
+          - repository: Comfy-Org/Qwen-Image_ComfyUI
+            files:
+              - split_files/vae/qwen_image_vae.safetensors
+            role: vae
+          - repository: Comfy-Org/Qwen-Image_ComfyUI
+            files:
+              - split_files/text_encoders/qwen_2.5_vl_7b.safetensors
+            role: text_encoder
+      q8:
+        artifacts:
+          - files:
+              - qwen-image-edit-2511-Q8_0.gguf
+            role: target
+          - repository: Comfy-Org/Qwen-Image_ComfyUI
+            files:
+              - split_files/vae/qwen_image_vae.safetensors
+            role: vae
+          - repository: Comfy-Org/Qwen-Image_ComfyUI
+            files:
+              - split_files/text_encoders/qwen_2.5_vl_7b.safetensors
+            role: text_encoder
+  Comfy-Org/Qwen-Image_ComfyUI: {}

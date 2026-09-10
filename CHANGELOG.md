@@ -1,5 +1,39 @@
 # PreFer changelog
 
+## Current
+
+- Release tooling
+  - Added one release-matched model catalog, standalone `prefer` CLI, and `prefer-inference-core` npm package to the grouped stable/preview release.
+  - Added exact hashes for the package, CLI, catalog, and catalog schemas to `prefer-release.json`.
+- Models
+  - Added shared catalog coverage for all 32 configured models: 18 text, seven audio, five image, and two synchronized audio-video routes.
+  - Added prompt-ready role, strength, limitation, modality, context, reasoning, prompting, and evidence guidance for every model.
+  - Exposed the quants published by dedicated GGUF repositories to llama.cpp, SGLang, and vLLM without copying Hugging Face file inventories into source YAML.
+  - Added exact multi-repository bundles for projectors, draft models, encoders, VAEs, tokenizers, and runtime metadata.
+  - `qwen-3.8-27b`
+    - Kept Unsloth UD-Q6_K_XL as the shared cross-engine default; `USE_NVFP4=true` selects the engine-specific SGLang or vLLM NVFP4 source.
+    - Added the official BF16 and FP8 repositories as explicit choices.
+    - Kept KV-cache precision independent from the weight format so selecting NVFP4 does not silently quantize the cache.
+    - Normalized the preview SGLang and vLLM request ID from `qwen3.8-27b` to `qwen-3.8-27b`; the preview-only old ID is not retained.
+  - `deepseek-v4-flash-0731`
+    - Updated the shared catalog to the current root-level Q8 DSpark companion path published by Unsloth.
+  - Resolve repository heads to immutable commits during the release build and publish file sizes, hashes, base-model relationships, and exact selected artifact bytes without embedding model weights.
+- Catalog maintenance
+  - Reduced global defaults to genuine shared runtime behavior; artifact format and NVFP4 launcher mode are inferred from the selected choice.
+  - Moved model storage selection to the library or CLI caller with `/models` as the fallback.
+  - Added complete engine/model/quant/profile coverage checks so the shared and runtime catalogs cannot drift silently.
+- NeurOn
+  - Added stable/preview release resolution, verified asset caching, model-setting resolution, and caller-owned Hugging Face catalog extensions.
+  - Additional repositories may remain metadata-only or use NeurOn-owned model IDs; collisions fail unless NeurOn selects an override policy.
+  - Added GPU-first planning for discrete VRAM and unified memory, runtime observations, quant fallback, workload-aware context/concurrency fitting, and preference-ranked bundle pruning.
+  - Replaced the fixed 6 GiB planning reserve with a configurable 4% reserve bounded to 1.5–4 GiB.
+  - Preserve configured CPU expert/component-offload routes as conditional choices until runtime host RAM is known.
+- Runtime images
+  - Added the release-matched `prefer` CLI and model catalog to all six images with the engine selected automatically.
+  - Source builds now run `npm run prepare:containers` before Docker Compose; published images need no preparation step.
+- Compatibility
+  - Existing engine presets, generated settings, and runtime model downloads remain unchanged apart from the Qwen preview request-ID normalization above.
+
 ## sha-055b23e (preview)
 
 - Images

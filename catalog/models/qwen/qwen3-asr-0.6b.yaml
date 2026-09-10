@@ -1,0 +1,58 @@
+schema_version: prefer.model-source.v1
+display_name: Qwen3 ASR 0.6B
+capabilities:
+  - speech-to-text
+  - streaming-speech-to-text
+profile:
+  summary: Small multilingual streaming transcription model for captions, voice input, and low-latency speech recognition.
+  architecture:
+    kind: speech-recognition-model
+    total_parameters_b: 0.6
+    active_parameters_b: 0.6
+  modalities:
+    native_input:
+      - audio
+    configured_input:
+      - audio
+    output:
+      - text
+  reasoning:
+    control: not-applicable
+  roles:
+    preferred:
+      - streaming-transcription
+      - voice-input
+      - captions
+    capable:
+      - multilingual-asr
+    avoid:
+      - speaker-generation
+      - conversation-reasoning
+  strengths:
+    - A compact route for responsive transcription without loading a general language model.
+  limitations:
+    - Recognition quality varies with noise, accents, overlap, and domain vocabulary.
+  prompting:
+    - Supply clean audio and the correct language or domain hints when the client supports them.
+  evidence:
+    confidence: high
+    basis:
+      - official
+      - configured-artifact
+default:
+  repository: audio-cpp/audio.cpp-gguf
+  quant: q8-0
+settings:
+  model:
+    task: asr
+    mode: streaming
+engines:
+  audio.cpp: {}
+repositories:
+  audio-cpp/audio.cpp-gguf:
+    quants:
+      q8-0:
+        artifacts:
+          - files:
+              - Qwen3-ASR-0.6B-GGUF/qwen3-asr-0.6b-q8_0.gguf
+            role: model

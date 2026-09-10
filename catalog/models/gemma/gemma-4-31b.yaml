@@ -1,0 +1,87 @@
+schema_version: prefer.model-source.v1
+display_name: Gemma 4 31B
+capabilities:
+  - text-generation
+  - chat
+  - streaming
+  - reasoning
+  - tool-calling
+  - structured-output
+  - image-understanding
+  - video-understanding
+profile:
+  summary: Careful editor and high-quality visual or general analyst; prefer it for nuanced writing, critique,
+    summarization, and image understanding when latency is secondary.
+  architecture:
+    kind: dense
+    total_parameters_b: 30.7
+    active_parameters_b: 30.7
+  modalities:
+    native_input:
+      - text
+      - image
+      - video
+    configured_input:
+      - text
+      - image
+    output:
+      - text
+  context:
+    native_tokens: 262144
+  reasoning:
+    control: request-selectable
+  roles:
+    preferred:
+      - nuanced-writing
+      - critique
+      - summarization
+      - image-understanding
+    capable:
+      - deep-reasoning
+      - long-context-synthesis
+      - coding
+    avoid:
+      - latency-sensitive-work
+      - default-autonomous-coding
+  strengths:
+    - Strongest Gemma lane for polished prose, careful interpretation, and visual analysis.
+    - Good at separating evidence, observations, and conclusions when asked explicitly.
+  limitations:
+    - Dense execution is slower than the 26B-A4B lane and throughput-oriented MoE alternatives.
+    - It should not be selected solely by size for autonomous coding or tool orchestration.
+  prompting:
+    - Specify audience and tone, and ask it to separate direct observations from conclusions.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - operator
+    notes: Official family results support the quality tier; prose and image preference is reinforced by recurring operator
+      experience.
+default:
+  repository: unsloth/gemma-4-31B-it-qat-GGUF
+  quant: ud-q4-k-xl
+engines:
+  llama.cpp:
+    settings:
+      launcher:
+        spec-type: draft-mtp
+        spec-draft-n-max: 4
+        top-k: 64
+  sglang: {}
+  vllm: {}
+repositories:
+  unsloth/gemma-4-31B-it-qat-GGUF:
+    discover: gguf
+    quants:
+      ud-q4-k-xl:
+        artifacts:
+          - files:
+              - gemma-4-31B-it-qat-UD-Q4_K_XL.gguf
+            role: model
+          - files:
+              - MTP/mtp-gemma-4-31B-it-Q4_0.gguf
+            role: draft
+          - files:
+              - mmproj-F16.gguf
+            role: projector

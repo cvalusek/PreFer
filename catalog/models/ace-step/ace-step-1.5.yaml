@@ -1,0 +1,67 @@
+schema_version: prefer.model-source.v1
+display_name: ACE-Step 1.5
+capabilities:
+  - audio-generation
+  - text-to-music
+  - music-editing
+profile:
+  summary: Fast song and instrumental generation with optional lyrics and music-editing controls; use it for iterative
+    music creation, not speech synthesis.
+  architecture:
+    kind: music-generation-model
+  modalities:
+    native_input:
+      - text
+      - audio
+    configured_input:
+      - text
+      - audio
+    output:
+      - audio
+  reasoning:
+    control: not-applicable
+  roles:
+    preferred:
+      - text-to-music
+      - lyrics-to-music
+      - music-editing
+    capable:
+      - instrumentals
+      - song-ideation
+    avoid:
+      - speech-synthesis
+      - transcription
+  strengths:
+    - Turbo generation is suited to rapid iteration and the configured Q8 lane preserves a strong practical quality
+      target.
+  limitations:
+    - Musical structure, vocals, and edit fidelity still depend heavily on prompt and source material.
+  prompting:
+    - Describe genre, instrumentation, mood, tempo, arrangement, and vocal intent; provide lyrics separately when words
+      must be followed.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - configured-artifact
+    notes: Task support is publisher-backed; quality and iteration guidance is qualitative.
+default:
+  repository: audio-cpp/audio.cpp-gguf
+  quant: turbo-q8-0
+settings:
+  model:
+    task: gen
+engines:
+  audio.cpp: {}
+repositories:
+  audio-cpp/audio.cpp-gguf:
+    quants:
+      turbo-q8-0:
+        artifacts:
+          - files:
+              - ACE-Step1.5-GGUF/turbo/ace-step-1.5-turbo-q8_0.gguf
+            role: model
+        settings:
+          launcher:
+            session_options:
+              mem_saver: true

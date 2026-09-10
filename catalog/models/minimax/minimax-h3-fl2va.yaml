@@ -1,0 +1,169 @@
+schema_version: prefer.model-source.v1
+display_name: MiniMax H3 FL2VA
+aliases:
+  - fl2va
+  - i2v
+  - minimax-h3-t2va
+  - t2v
+  - t2va
+capabilities:
+  - text-to-video
+  - image-to-video
+  - first-last-frame-video
+  - synchronized-audio-video
+profile:
+  summary: A quality-first synchronized audio-video route for MiniMax H3 text-to-video and first/last-frame generation.
+  architecture:
+    kind: Diffusion transformer with Qwen3-VL text encoding, video VAE, audio VAE, and an INT8 ConvRot transformer
+      derivative.
+  modalities:
+    native_input:
+      - text
+      - image
+      - audio
+      - video
+    configured_input:
+      - text
+      - image
+      - video
+      - audio
+    output:
+      - video
+      - audio
+  context:
+    notes: The model uses duration and frame-conditioning controls rather than a text-server token context budget.
+  reasoning:
+    control: not-applicable
+    notes: Generation is controlled by task, prompt, duration, resolution, and optional frame conditions; it is not a
+      reasoning model.
+  roles:
+    preferred:
+      - short narrated clips
+      - storyboarded first/last-frame transitions
+      - audio-video concept previews
+    capable:
+      - text-to-video
+      - image-conditioned video
+      - synchronized speech and effects
+    avoid:
+      - remote input URLs
+      - production claims before exact-card smoke
+      - Ref2VA requests on the FL2VA route
+  strengths:
+    - Combines text or boundary-frame conditioning with synchronized generated audio in one route.
+  limitations:
+    - large component bundle
+    - configuration-only until target-card load and media-contract smoke
+    - community license terms apply
+  prompting:
+    - Use a concrete scene, camera, motion, and audio description.
+    - Use conditions with local file:// URIs or multipart uploads; the gateway rejects remote URLs.
+  evidence:
+    confidence: limited
+    basis:
+      - official
+      - configured-artifact
+    notes: The route is configuration-only until its target-card media contract is smoked.
+default:
+  repository: MiniMaxAI/MiniMax-H3
+  quant: int8-convrot
+settings:
+  model:
+    task: video
+    tasks:
+      - t2va
+      - fl2va
+    mode: video-audio-diffusion
+    runtime_mode: diffusion
+    modalities:
+      native:
+        - text
+        - image
+        - audio
+        - video
+      configured:
+        - text
+        - image
+        - video
+        - audio
+      input:
+        - text
+        - image
+      output:
+        - video
+        - audio
+    input_contract:
+      conditions_field: conditions
+      condition_types:
+        - image
+        - video
+      allowed_frame_indices:
+        - - 0
+        - - -1
+        - - 0
+          - -1
+      max_conditions: 2
+      remote_uris: false
+      multipart_uploads: true
+    output_contract:
+      container: mp4
+      video_codec: h264
+      fps: 24
+      audio_codec: aac
+      audio_channels: 2
+      audio_sample_rate: 32000
+      duration_seconds:
+        - 4
+        - 15
+    capability_aliases:
+      t2v: t2va
+      i2v: fl2va
+engines:
+  sglang:
+    settings:
+      launcher:
+        runtime_mode: diffusion
+        model_variant: fl2va
+        num_gpus: 1
+        tp_size: 1
+        ulysses_degree: 1
+        encoder_parallel: auto
+        performance_mode: memory
+        attention_backend: fa
+        layerwise_offload_components: dit,text_encoder
+        dit_offload_prefetch_size: 1
+        dit_layerwise_resident_layers: 0
+        pin_cpu_memory: false
+        enable_torch_compile: false
+        output_path: /outputs
+        max_running_requests: 1
+repositories:
+  MiniMaxAI/MiniMax-H3:
+    quants:
+      int8-convrot:
+        artifacts:
+          - include:
+              - FL2VA/**/*.json
+              - FL2VA/**/*.yaml
+              - FL2VA/**/*.py
+              - FL2VA/**/*.txt
+            exclude:
+              - FL2VA/**/*.safetensors.index.json
+            role: runtime-metadata
+          - repository: Comfy-Org/MiniMax-H3
+            files:
+              - diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors
+            role: fl2va-transformer
+          - repository: Comfy-Org/MiniMax-H3
+            files:
+              - text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors
+            role: text-encoder
+          - repository: Comfy-Org/MiniMax-H3
+            files:
+              - vae/minimax_h3_audio_vae_fp32.safetensors
+            role: audio-vae
+          - repository: Comfy-Org/MiniMax-H3
+            files:
+              - vae/minimax_h3_video_vae_fp16.safetensors
+            role: video-vae
+  Comfy-Org/MiniMax-H3: {}

@@ -1,0 +1,62 @@
+{
+  "name": "prefer-inference-core",
+  "version": "0.0.0-development",
+  "description": "PreFer model catalog, configuration, and immutable release client",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cvalusek/PreFer.git",
+    "directory": "packages/prefer"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./catalog": {
+      "types": "./dist/catalog.d.ts",
+      "import": "./dist/catalog.js"
+    },
+    "./huggingface": {
+      "types": "./dist/huggingface.d.ts",
+      "import": "./dist/huggingface.js"
+    },
+    "./releases": {
+      "types": "./dist/releases.d.ts",
+      "import": "./dist/releases.js"
+    },
+    "./resources": {
+      "types": "./dist/resources.d.ts",
+      "import": "./dist/resources.js"
+    },
+    "./planning": {
+      "types": "./dist/planning.d.ts",
+      "import": "./dist/planning.js"
+    },
+    "./schemas/*": "./schemas/*"
+  },
+  "bin": {
+    "prefer": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "schemas"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/bundle.mjs",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "yaml": "2.9.0"
+  }
+}

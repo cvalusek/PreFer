@@ -9,7 +9,8 @@
     "product",
     "release",
     "distribution",
-    "engines"
+    "engines",
+    "tooling"
   ],
   "properties": {
     "schema_version": {
@@ -30,9 +31,11 @@
       ],
       "properties": {
         "id": {
+          "type": "string",
           "pattern": "^sha-[0-9a-f]{7}$"
         },
         "source_revision": {
+          "type": "string",
           "pattern": "^[0-9a-f]{40}$"
         },
         "source_repository": {
@@ -44,6 +47,7 @@
           "minLength": 1
         },
         "artifact_name": {
+          "type": "string",
           "pattern": "^prefer-release-[0-9a-f]{40}$"
         }
       }
@@ -95,6 +99,38 @@
           "$ref": "#/$defs/engine"
         }
       }
+    },
+    "tooling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "package_version",
+        "huggingface_refresh",
+        "catalog_fingerprint",
+        "source_fingerprint",
+        "package",
+        "cli",
+        "model_catalog",
+        "model_catalog_schema",
+        "model_catalog_extension_schema",
+        "resource_profile_schema",
+        "model_plan_schema"
+      ],
+      "properties": {
+        "schema_version": {"const": "prefer.release-tooling.v1"},
+        "package_version": {"type": "string", "pattern": "^0\\.0\\.0-g[0-9a-f]{7}$"},
+        "huggingface_refresh": {"enum": ["live", "last-successful"]},
+        "catalog_fingerprint": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "source_fingerprint": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "package": {"$ref": "#/$defs/tooling_asset"},
+        "cli": {"$ref": "#/$defs/tooling_asset"},
+        "model_catalog": {"$ref": "#/$defs/tooling_asset"},
+        "model_catalog_schema": {"$ref": "#/$defs/tooling_asset"},
+        "model_catalog_extension_schema": {"$ref": "#/$defs/tooling_asset"},
+        "resource_profile_schema": {"$ref": "#/$defs/tooling_asset"},
+        "model_plan_schema": {"$ref": "#/$defs/tooling_asset"}
+      }
     }
   },
   "$defs": {
@@ -142,11 +178,23 @@
           "minLength": 1
         },
         "catalog_fingerprint": {
+          "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         },
         "sha256": {
+          "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         }
+      }
+    },
+    "tooling_asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset", "bytes", "sha256"],
+      "properties": {
+        "asset": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
       }
     },
     "image": {
@@ -164,9 +212,11 @@
           "minLength": 1
         },
         "digest": {
+          "type": "string",
           "pattern": "^sha256:[0-9a-f]{64}$"
         },
         "reference": {
+          "type": "string",
           "pattern": "@sha256:[0-9a-f]{64}$"
         },
         "platforms": {
@@ -174,6 +224,7 @@
           "minItems": 1,
           "uniqueItems": true,
           "items": {
+            "type": "string",
             "pattern": "^linux/(amd64|arm64)$"
           }
         }

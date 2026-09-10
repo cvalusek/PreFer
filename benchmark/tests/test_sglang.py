@@ -23,7 +23,7 @@ class SGLangTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
 
     def test_catalog_pins_the_complete_multimodal_nvfp4_checkpoint(self) -> None:
-        catalog_path = SGLANG_ROOT / "models" / "qwen" / "qwen3.8-27b" / "model.json"
+        catalog_path = SGLANG_ROOT / "models" / "qwen" / "qwen-3.8-27b" / "model.json"
         catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
         self.assertEqual(catalog["shared"]["license"], "Apache-2.0")
         self.assertEqual(catalog["shared"]["native_context_length"], 262144)
@@ -35,7 +35,7 @@ class SGLangTests(unittest.TestCase):
         )
         lane = catalog["quants"]["nvfp4"]
         self.assertTrue(lane["primary"])
-        self.assertEqual(lane["key"], "qwen3.8-27b-nvfp4")
+        self.assertEqual(lane["key"], "qwen-3.8-27b-nvfp4")
         self.assertEqual(lane["artifacts"][0]["revision"], "319f741cce68d7914884900c138a1fbb70a42f30")
         self.assertEqual(len(lane["artifacts"]), 22)
         self.assertEqual(catalog["shared"]["kv_cache_scaling"]["quantization"], "FP8")
@@ -217,15 +217,15 @@ class SGLangTests(unittest.TestCase):
         self.assertEqual(inventory["api"]["ready"], "GET /readyz")
         self.assertEqual(inventory["api"]["videos"], "POST /v1/videos")
         self.assertEqual(inventory["runtime_modes"], ["diffusion", "text"])
-        profile = inventory["model_profiles"]["qwen3.8-27b"]
+        profile = inventory["model_profiles"]["qwen-3.8-27b"]
         self.assertEqual(profile["native_modalities"], ["text", "image", "video"])
-        self.assertEqual(inventory["models"]["qwen3.8-27b-nvfp4"]["profile_id"], "qwen3.8-27b")
+        self.assertEqual(inventory["models"]["qwen-3.8-27b-nvfp4"]["profile_id"], "qwen-3.8-27b")
         self.assertEqual(
-            inventory["models"]["qwen3.8-27b-nvfp4"]["artifact_bytes"],
+            inventory["models"]["qwen-3.8-27b-nvfp4"]["artifact_bytes"],
             21945295265,
         )
         self.assertFalse(
-            inventory["models"]["qwen3.8-27b-nvfp4"]["kv_cache_scaling"]["explicit_scale_metadata"]
+            inventory["models"]["qwen-3.8-27b-nvfp4"]["kv_cache_scaling"]["explicit_scale_metadata"]
         )
         deployments = {deployment["id"]: deployment for deployment in inventory["deployments"]}
         self.assertEqual(deployments["sglang/cuda13"]["kind"], "runtime-default")
@@ -289,7 +289,7 @@ class SGLangTests(unittest.TestCase):
             self.assertIn(config["server"]["kv_cache_dtype"], config["command"])
             self.assertIn("--mamba-ssm-dtype", config["command"])
             self.assertIn("bfloat16", config["command"])
-            self.assertEqual(prestage_path.read_text(encoding="utf-8").strip(), "qwen3.8-27b-nvfp4")
+            self.assertEqual(prestage_path.read_text(encoding="utf-8").strip(), "qwen-3.8-27b-nvfp4")
         balanced = json.loads(
             (SGLANG_ROOT / "server-configs" / "aws" / "g7e" / "2xlarge" / "balanced.json").read_text(
                 encoding="utf-8"
@@ -390,7 +390,7 @@ class SGLangTests(unittest.TestCase):
         self.assertIn("$image_repository:sglang-cuda-preview", workflow)
         self.assertIn("--sglang-digest", workflow)
         self.assertIn("--sglang-inventory", workflow)
-        self.assertIn("needs: [llama, audio_cuda, audio_cpu, image, sglang, vllm]", workflow)
+        self.assertIn("needs: [tooling, llama, audio_cuda, audio_cpu, image, sglang, vllm]", workflow)
 
 
 if __name__ == "__main__":

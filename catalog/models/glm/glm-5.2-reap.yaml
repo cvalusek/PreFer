@@ -1,0 +1,77 @@
+schema_version: prefer.model-source.v1
+display_name: GLM-5.2 REAP 504B
+capabilities:
+  - text-generation
+  - chat
+  - streaming
+  - reasoning
+  - tool-calling
+  - structured-output
+profile:
+  summary: Fit-optimized GLM-5.2 derivative for constrained high-end planning and reasoning; prefer the full model for
+    rare knowledge or quality-critical authority unless this exact derivative has been compared.
+  architecture:
+    kind: moe
+    total_parameters_b: 504
+  modalities:
+    native_input:
+      - text
+    configured_input:
+      - text
+    output:
+      - text
+  context:
+    native_tokens: 1048576
+  reasoning:
+    control: request-selectable
+  roles:
+    preferred:
+      - constrained-planning
+      - constrained-reasoning
+    capable:
+      - research-synthesis
+      - coding-design
+    avoid:
+      - rare-knowledge-authority
+      - quality-critical-decisions
+      - vision
+  strengths:
+    - Expert pruning opens a materially smaller multi-GPU deployment while retaining the GLM-5.2 interface.
+    - Useful when the full 753B route is operationally unavailable.
+  limitations:
+    - Behavioral equivalence to full GLM-5.2 is not established and the model card reports a higher loop rate.
+    - The current GGUF uses a compatibility workaround for shared sparse-attention indexer tensors.
+  prompting:
+    - Use the base GLM template, pin the exact derivative, and require explicit evidence checks for quality-critical
+      conclusions.
+  evidence:
+    confidence: low
+    basis:
+      - maintainer
+      - inference
+    notes: Artifact and pruning facts are documented; practical behavioral equivalence remains a verification item.
+default:
+  repository: 0xSero/GLM-5.2-REAP-504B-GGUF
+  quant: q4-k-xl
+engines:
+  llama.cpp: {}
+  sglang: {}
+  vllm: {}
+repositories:
+  0xSero/GLM-5.2-REAP-504B-GGUF:
+    discover: gguf
+    quants:
+      q4-k-xl:
+        artifacts:
+          - files:
+              - GLM-5.2-REAP-504B-Q4_K_XL-00001-of-00008.gguf
+            role: model
+          - files:
+              - GLM-5.2-REAP-504B-Q4_K_XL-00002-of-00008.gguf
+              - GLM-5.2-REAP-504B-Q4_K_XL-00003-of-00008.gguf
+              - GLM-5.2-REAP-504B-Q4_K_XL-00004-of-00008.gguf
+              - GLM-5.2-REAP-504B-Q4_K_XL-00005-of-00008.gguf
+              - GLM-5.2-REAP-504B-Q4_K_XL-00006-of-00008.gguf
+              - GLM-5.2-REAP-504B-Q4_K_XL-00007-of-00008.gguf
+              - GLM-5.2-REAP-504B-Q4_K_XL-00008-of-00008.gguf
+            role: model-shard

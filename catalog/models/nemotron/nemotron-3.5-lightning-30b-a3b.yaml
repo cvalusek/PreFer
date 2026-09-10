@@ -1,0 +1,93 @@
+schema_version: prefer.model-source.v1
+display_name: Nemotron 3.5 Lightning 30B-A3B
+aliases:
+  - nemotron-3.5-lightning
+capabilities:
+  - text-generation
+  - chat
+  - streaming
+  - reasoning
+  - tool-calling
+  - structured-output
+profile:
+  summary: Throughput-first text worker for bulk summarization, extraction, classification, rewriting, and routing; select
+    a quality-focused model for final adjudication or difficult reasoning.
+  architecture:
+    kind: hybrid-moe
+    total_parameters_b: 30
+    active_parameters_b: 3
+  modalities:
+    native_input:
+      - text
+    configured_input:
+      - text
+    output:
+      - text
+  context:
+    native_tokens: 1048576
+  reasoning:
+    control: request-selectable
+  roles:
+    preferred:
+      - bulk-summarization
+      - extraction
+      - classification
+      - rewriting
+      - routing
+    capable:
+      - routine-coding
+      - structured-output
+      - tool-use
+    avoid:
+      - vision
+      - final-adjudication
+      - quality-first-reasoning
+  strengths:
+    - Three active billion parameters and speculative decoding make it attractive for high-throughput text work.
+    - Configurable thinking permits a speed-versus-quality choice without changing models.
+  limitations:
+    - It is a throughput role, not the strongest intelligence point in the current roster.
+    - Hybrid state, long-context, and tool behavior remain more runtime-sensitive than ordinary dense text models.
+  prompting:
+    - Keep routine jobs bounded and non-thinking; enable thinking only when the added latency is justified by task
+      difficulty.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - inference
+    notes: Architecture, context, and throughput positioning are publisher-backed; exact local tool behavior remains a
+      verification item.
+default:
+  repository: ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF
+  quant: q8-0
+engines:
+  llama.cpp:
+    settings:
+      launcher:
+        spec-type: draft-mtp
+        spec-draft-n-max: 3
+        top-k: 0
+        min-p: 0
+  sglang: {}
+  vllm: {}
+repositories:
+  ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF:
+    discover: gguf
+    quants:
+      q4-0:
+        artifacts:
+          - files:
+              - NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf
+            role: model
+          - files:
+              - mtp-NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf
+            role: draft
+      q8-0:
+        artifacts:
+          - files:
+              - NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q8_0.gguf
+            role: model
+          - files:
+              - mtp-NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q8_0.gguf
+            role: draft

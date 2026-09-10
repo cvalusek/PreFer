@@ -1,0 +1,102 @@
+schema_version: prefer.model-source.v1
+display_name: Ornith 1.5 9B
+aliases:
+  - ornith-1.5
+capabilities:
+  - text-generation
+  - chat
+  - streaming
+  - reasoning
+  - tool-calling
+  - structured-output
+  - image-understanding
+profile:
+  summary: Economical coding and tool subagent for narrow, executable objectives such as patching, repository navigation,
+    and parallel implementation; do not use it as the final architect or research authority.
+  architecture:
+    kind: dense
+    total_parameters_b: 9
+    active_parameters_b: 9
+  modalities:
+    native_input:
+      - text
+      - image
+    configured_input:
+      - text
+      - image
+    output:
+      - text
+  context:
+    native_tokens: 262144
+  reasoning:
+    control: request-selectable
+  roles:
+    preferred:
+      - patching
+      - repository-navigation
+      - tool-research
+      - parallel-implementation
+    capable:
+      - small-coding
+      - visual-qa
+      - structured-output
+    avoid:
+      - final-architecture
+      - nuanced-writing
+      - critical-conclusions
+  strengths:
+    - Publisher tuning targets terminal coding agents and self-improving tool workflows.
+    - Small enough to use as an inexpensive focused worker with a packaged image projector.
+  limitations:
+    - Independent validation is still thin, especially for visual behavior and long agent loops.
+    - Not intended to own final architectural or high-stakes conclusions.
+  prompting:
+    - Preserve the model's modified chat and think/tool format, lower temperature for precise coding, and give one
+      executable objective.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - inference
+    notes: The publisher model card and harness support the coding role; independent route and behavior validation remains
+      limited.
+default:
+  repository: ornith-ai/Ornith-1.5-9B-GGUF
+  quant: q8-0
+engines:
+  llama.cpp:
+    settings:
+      launcher:
+        top-k: 20
+        min-p: 0
+        presence-penalty: 1.5
+  sglang: {}
+  vllm: {}
+repositories:
+  ornith-ai/Ornith-1.5-9B-GGUF:
+    discover: gguf
+    quants:
+      q4-k-m:
+        artifacts:
+          - files:
+              - Ornith-1.5-9B-Q4_K_M.gguf
+            role: model
+          - files:
+              - mmproj-Ornith-1.5-9B-BF16.gguf
+            role: projector
+      q6-k:
+        artifacts:
+          - files:
+              - Ornith-1.5-9B-Q6_K.gguf
+            role: model
+          - files:
+              - mmproj-Ornith-1.5-9B-BF16.gguf
+            role: projector
+      q8-0:
+        artifacts:
+          - files:
+              - Ornith-1.5-9B-Q8_0.gguf
+            role: model
+          - files:
+              - mmproj-Ornith-1.5-9B-BF16.gguf
+            role: projector

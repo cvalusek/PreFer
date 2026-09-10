@@ -1,0 +1,15 @@
+schema_version: prefer.model-defaults.v1
+engines:
+  audio.cpp:
+    model:
+      mode: offline
+engine_artifact_roles:
+  stable-diffusion.cpp:
+    target:
+      argument: --diffusion-model
+    checkpoint:
+      argument: --model
+    vae:
+      argument: --vae
+    text_encoder:
+      argument: --llm

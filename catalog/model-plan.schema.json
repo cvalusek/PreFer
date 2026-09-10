@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/cvalusek/PreFer/blob/develop/catalog/model-plan.schema.json",
+  "title": "PreFer resource-aware model plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "engine", "resources", "selected", "skipped", "capabilities", "staged_artifact_bytes", "complete"],
+  "properties": {
+    "schema_version": {"const": "prefer.model-plan.v1"},
+    "engine": {"type": "string", "minLength": 1},
+    "resources": {"$ref": "resource-profile.schema.json"},
+    "selected": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["model_id", "preferred_quant", "selected", "fit", "quant_changed", "reason"],
+        "properties": {
+          "model_id": {"type": "string", "minLength": 1},
+          "preferred_quant": {"type": "string", "minLength": 1},
+          "requested_quant": {"type": "string", "minLength": 1},
+          "selected": {"type": "object"},
+          "fit": {"$ref": "#/$defs/fit"},
+          "quant_changed": {"type": "boolean"},
+          "reason": {"type": "string", "minLength": 1},
+          "workload_request": {"$ref": "#/$defs/workloadRequest"},
+          "workload": {"$ref": "#/$defs/workloadResult"}
+        }
+      }
+    },
+    "skipped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["model_id", "required", "reason", "details"],
+        "properties": {
+          "model_id": {"type": "string", "minLength": 1},
+          "required": {"type": "boolean"},
+          "reason": {"enum": ["no-compatible-variant", "missing-capability", "insufficient-memory", "storage-budget", "model-limit"]},
+          "details": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "capabilities": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "staged_artifact_bytes": {"type": "integer", "minimum": 0},
+    "complete": {"type": "boolean"},
+    "hints": {"$ref": "#/$defs/hints"}
+  },
+  "$defs": {
+    "hints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required_capabilities": {"$ref": "#/$defs/stringList"},
+        "preferred_capabilities": {"$ref": "#/$defs/stringList"},
+        "preferred_roles": {"$ref": "#/$defs/stringList"},
+        "speed_importance": {"type": "number", "minimum": 0, "maximum": 1},
+        "quality_importance": {"type": "number", "minimum": 0, "maximum": 1},
+        "quant_bias": {"enum": ["quality", "balanced", "capacity"]}
+      }
+    },
+    "stringList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "workloadRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["desired_context_tokens", "desired_concurrency", "bytes_per_token"],
+      "properties": {
+        "desired_context_tokens": {"type": "integer", "minimum": 1},
+        "desired_concurrency": {"type": "integer", "minimum": 1},
+        "minimum_context_tokens": {"type": "integer", "minimum": 1},
+        "minimum_concurrency": {"type": "integer", "minimum": 1},
+        "priority": {"enum": ["context", "concurrency"]},
+        "bytes_per_token": {"type": "number", "exclusiveMinimum": 0},
+        "fixed_device_bytes": {"type": "integer", "minimum": 0},
+        "source": {"enum": ["measured", "architecture", "operator", "estimate"]}
+      }
+    },
+    "workloadResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fits", "context_tokens", "concurrency", "aggregate_token_capacity", "changed", "reason"],
+      "properties": {
+        "fits": {"type": "boolean"},
+        "context_tokens": {"type": "integer", "minimum": 0},
+        "concurrency": {"type": "integer", "minimum": 0},
+        "aggregate_token_capacity": {"type": "integer", "minimum": 0},
+        "changed": {"type": "boolean"},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "fit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "confidence", "weight_bytes", "runtime_overhead_bytes", "workload_bytes", "required_device_bytes", "reasons"],
+      "properties": {
+        "status": {"enum": ["fits", "tight", "host-offload", "does-not-fit", "unknown"]},
+        "confidence": {"enum": ["measured", "architecture", "artifact-only", "unknown"]},
+        "capacity_bytes": {"type": "integer", "minimum": 0},
+        "usable_capacity_bytes": {"type": "integer", "minimum": 0},
+        "weight_bytes": {"type": "integer", "minimum": 0},
+        "runtime_overhead_bytes": {"type": "integer", "minimum": 0},
+        "workload_bytes": {"type": "integer", "minimum": 0},
+        "required_device_bytes": {"type": "integer", "minimum": 0},
+        "remaining_device_bytes": {"type": "integer"},
+        "host_offload_bytes": {"type": "integer", "minimum": 0},
+        "reasons": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}

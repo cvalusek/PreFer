@@ -11,6 +11,7 @@
     "architecture": "Ada Lovelace",
     "compute_capability": "sm_89",
     "vcpu": 4,
+    "host_ram_gb": 32,
     "local_nvme_gb": 250
   },
   "compatibility": {

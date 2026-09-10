@@ -1,12 +1,19 @@
 ARG AUDIO_CPP_BASE_IMAGE=ghcr.io/0xshug0/audio.cpp:full-cuda12-20260828-6d530f4@sha256:88ec7504877ae0ff427dd15089693b260c1228cc511b22cd4a79b44f0b1ee268
 FROM ${AUDIO_CPP_BASE_IMAGE}
 
+ARG TARGETARCH
 USER root
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates python3-pip util-linux \
+    && apt-get install -y --no-install-recommends ca-certificates curl python3-pip util-linux xz-utils \
     && rm -rf /var/lib/apt/lists/* \
     && python3 -m pip install --no-cache-dir --break-system-packages -U "huggingface_hub[cli]" \
     && mkdir -p /models /voices
+
+COPY .prefer-tooling/install-prefer-node.sh /tmp/install-prefer-node.sh
+RUN sed -i 's/\r$//' /tmp/install-prefer-node.sh \
+    && chmod +x /tmp/install-prefer-node.sh \
+    && /tmp/install-prefer-node.sh "$TARGETARCH" \
+    && rm -f /tmp/install-prefer-node.sh
 
 ENV HF_HOME=/models/.prefer-cache/huggingface \
     HF_XET_HIGH_PERFORMANCE=1 \
@@ -21,9 +28,18 @@ COPY generate.py /prefer-catalog/generate.py
 COPY runtime.json deployment-bundles.json /prefer-catalog/
 COPY models /prefer-catalog/models
 COPY deployment-scenarios /prefer-catalog/deployment-scenarios
+COPY .prefer-tooling/prefer.mjs /usr/local/bin/prefer
+COPY .prefer-tooling/prefer-model-catalog.json /prefer-model-catalog.json
+COPY .prefer-tooling/prefer-model-catalog.schema.json /prefer-catalog/schemas/prefer-model-catalog.schema.json
+COPY .prefer-tooling/prefer-model-catalog-extension.schema.json /prefer-catalog/schemas/prefer-model-catalog-extension.schema.json
+COPY .prefer-tooling/prefer-resource-profile.schema.json /prefer-catalog/schemas/prefer-resource-profile.schema.json
+COPY .prefer-tooling/prefer-model-plan.schema.json /prefer-catalog/schemas/prefer-model-plan.schema.json
 COPY entrypoint.sh /prefer-audio-entrypoint.sh
 RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-audio-entrypoint.sh /prefer-catalog/generate.py \
-    && chmod +x /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-audio-entrypoint.sh
+    && chmod +x /usr/local/bin/prefer /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-audio-entrypoint.sh
+
+ENV PREFER_ENGINE=audio.cpp \
+    PREFER_MODEL_CATALOG=/prefer-model-catalog.json
 
 LABEL io.prefer.runtime="audio.cpp" \
       io.prefer.audio.backend="cuda12" \

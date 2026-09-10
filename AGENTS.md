@@ -43,12 +43,13 @@ commit directly to `main` merely to bypass preview validation.
 After all six immutable image indexes publish, the workflow creates the
 GitHub release `sha-<short-commit>` and the matching
 `prefer-release-<full-commit>` Actions artifact. Both contain
-`prefer-release.json`, its schema, the exact five deployment inventories, and
-checksums. `release/build-release.py` owns that manifest. It must reference the
+`prefer-release.json`, its schema, the exact five deployment inventories, the
+release-matched package/CLI/materialized shared model catalog, and checksums.
+`release/build-release.py` owns that manifest. It must reference the
 resolved OCI index digests returned by the six build jobs, never moving tags.
 Each runtime image still embeds its own `/deployment-inventory.json`.
 
-The grouped release contains metadata only. Model weights must never be copied
+The grouped release contains metadata and executable tooling only. Model weights must never be copied
 into a Docker build context, container image, AMI, GitHub release, or workflow
 artifact. They continue to stage at runtime onto the engine's external model
 storage.
@@ -66,7 +67,8 @@ After CI publishes the grouped immutable release, make a root-only follow-up com
 changes the `Current` heading to the resulting `sha-<short-commit>` tag and
 adds all six exact image identities from that release: llama CUDA, Audio CUDA,
 Audio CPU, Image CUDA, SGLang CUDA, and vLLM CUDA. Do not rewrite the approved change bullets during
-finalization. Suffix a preview heading with `(preview)` and a stable heading
+finalization. Also name the matching `prefer-inference-core@0.0.0-g<short-sha>`
+package when the release includes shared tooling. Suffix a preview heading with `(preview)` and a stable heading
 with `(stable)`; pre-channel headings without a suffix are stable. The grouped
 workflow watches runtime and release implementation paths, so this root
 changelog-only commit does not create another build. Include additions,
@@ -233,6 +235,129 @@ AWS, RunPod, and generic local hardware presets are generated, not hand-edited:
   `PRESTAGE_MODELS` unset or blank, `download-models.sh` stages exactly the
   catalog keys referenced by the sidecar. A nonblank environment value still
   wins; use `none` for an intentional no-download run.
+
+### Shared model catalog and package
+
+The engine-local JSON catalogs remain the launch/configuration owners.
+`catalog/defaults.yaml` and
+`catalog/models/<family>/<prefer-id>.yaml` are the cross-engine model-selection
+layer. The YAML filename is the canonical PreFer ID; an `id` field inside the
+file is rejected. Do not rename an upstream Hugging Face repository to make it
+look canonical, and do not duplicate Hugging Face's base-model relationship,
+complete file tree, byte sizes, hashes, library, pipeline, license, or gating
+metadata in authored YAML. Authored YAML should contain only PreFer selection,
+specific file choices, engine applicability, profiles, and tuning.
+
+The shared catalog must cover every logical model and configured quant found in the five
+engine-local catalogs. `scripts/check-model-catalog-coverage.mjs` enforces that
+boundary and also requires all llama.cpp text models to remain visible for
+SGLang and vLLM. Cross-engine visibility is not verification. Readiness belongs
+to deployment/runtime evidence, not duplicated status strings in authored model
+YAML.
+
+Each model owns one top-level prompt-ready `profile` with the normalized
+summary, architecture, modalities, context, reasoning control, role fit,
+strengths, limitations, prompting guidance, and evidence confidence. Never put
+that profile under runtime `settings`. Do not repeat the filename-derived ID as
+an alias or `request_model_id`. Qualitative product judgment is useful here,
+but third-party scores, rankings, and provider throughput remain separately
+attributed inputs rather than copied catalog data.
+
+Use a model-level engine choice or setting when every quant shares it. Empty
+engine objects declare applicability without making a verification claim. A quant
+may select a multi-repository artifact bundle with role-labelled files or a
+compact include/exclude selector. Declare every referenced repository once and
+let the build resolve its file sizes, hashes, license, lineage, and other Hugging
+Face metadata. Omit `revision` for the normal moving upstream head; the release
+build resolves it to an immutable commit. Use an authored immutable `revision`
+only for a deliberate historical pin. Dedicated GGUF repositories should use
+`discover: gguf` so all recognizable primary quants are exposed from metadata;
+mixed repositories must not opt in. Discovery never downloads weights. Keep
+only real cross-model runtime behavior in `catalog/defaults.yaml`; artifact
+format and NVFP4 launcher mode are inferred in code. Repeating an inherited
+value in a model file fails the coverage check.
+
+`prefer-inference-core` is the ESM Node 24 package for this layer. It must remain
+data-driven: never hard-code a parallel supported-model list in TypeScript.
+The standalone `prefer.mjs` bundles its runtime dependencies. All engine images
+copy that CLI to `/usr/local/bin/prefer`, copy the materialized catalog to
+`/prefer-model-catalog.json`, and set `PREFER_ENGINE` at build time. Only the
+Node executable is installed in runtime images; do not add npm, TypeScript,
+package sources, HF model contents, or build tooling to an image.
+
+The setting order is global defaults, engine defaults, inferred artifact/quant
+behavior, model/model-engine, repository, quant, exact
+repository/quant/engine, then caller overrides. Objects merge recursively;
+scalars and arrays replace. Unverified choices may remain visible while the
+normal default should still be useful. Model storage comes from the library
+option or CLI `--model-root`, then `PREFER_MODELS_DIR`, then `/models`; never put
+filesystem layout in authored model defaults.
+
+Qwen3.8 27B uses the Unsloth UD-Q6_K_XL lane as its cross-engine default.
+`USE_NVFP4=true` is an explicit optimization request and maps to the appropriate
+SGLang or vLLM repository through `quant_sources`; it is not implied by choosing
+an engine. Explicit repository/quant selection remains available.
+
+The grouped workflow builds the package and catalog once before any image. A
+live Hugging Face refresh is preferred. A same-channel prior release is a valid
+fallback only when it contains every currently authored repository at the same
+requested ref (`main` normally, or an explicit immutable pin). Even on fallback,
+current YAML is rematerialized over the old repository facts. A new repository
+or changed explicit pin missing from the prior dataset must fail the build. This
+bounds HF outages without allowing a stale release to claim newly authored
+support.
+
+NeurOn and other controllers may call `createCatalogExtension` with their own
+Hugging Face repository/revision selections. A selection without `model_id`
+adds repository metadata only and must not invent a canonical identity. A named
+selection owns a controller-local ID. `createRuntimeModelCatalog` joins these
+extensions to the selected immutable PreFer catalog; ID and repository
+conflicts fail unless the caller explicitly selects `keep` or `replace`.
+Controllers retain refresh scheduling, authentication, rate-limit handling,
+and persistence policy, while the package owns normalization and checks.
+
+The package also normalizes engine deployment records into
+`prefer.resources.v1`. Treat GPU identity, count, usable memory, and precision
+capabilities as primary. Host RAM, CPU, and storage are separate constraints;
+use them only for routes that depend on offload, CPU execution, feeding several
+accelerators, or staging. Unified-memory systems own one shared pool and must
+never be calculated as accelerator memory plus host RAM. Static release facts
+may be overlaid with observed free memory and CPU immediately before planning.
+
+Resource planning starts with the model's normal selection, then considers
+smaller published quants down to the requested quality floor. The normal floor
+is the quality-credible four-bit/native-four-bit tier; IQ1/IQ2 fit-floor lanes
+remain explicit. General bundles may omit optional models that cannot meet
+memory, model-count, or storage constraints, but required omissions remain
+visible as an incomplete plan. User intent may provide required capabilities,
+preferred capabilities/roles, speed and quality importance, and a quant bias.
+Only required capabilities are hard gates. Prefer NeurOn's normalized route speed score;
+active parameters are a low-confidence fallback for ordering fast MoE/smaller
+active routes, not a throughput claim. Quality ranking requires a
+controller-supplied workload score; do not synthesize a release leaderboard
+from unattributed external data. Exact artifact size is not an exact load
+measurement: preserve `artifact-only` confidence until an architecture model
+or NeurOn runtime observation supplies fixed and per-token memory. Engine
+adapters own the final translation into context, concurrency, cache, offload,
+and launcher flags.
+
+The default accelerator reserve is 4% of the usable pool with a 1.5 GiB floor
+and 4 GiB cap. It is an operator-overridable planning margin, not a claim that
+every runtime needs the same fixed slack. An explicitly configured CPU expert
+or component-offload route may remain selected with `unknown` fit when generic
+local metadata intentionally omits host RAM; its estimated offload bytes and
+need for runtime host-memory discovery must remain visible. Never call that a
+verified fit, and never discard a known offload route merely because private
+host facts are absent from the checked-in scenario.
+
+`npm run tooling` builds and stages the metadata-only assets required by local
+Docker contexts. Run `npm install` and `npm run prepare:containers` before a
+source `docker compose build`. CI downloads the exact one-per-SHA tooling
+artifact into each isolated engine context instead. Never broaden Docker build
+contexts to include model storage as a shortcut.
+
+The package version is `0.0.0-g<seven-character-sha>`. Stable builds advance
+the `latest` npm distribution tag; preview builds advance only `preview`.
 
 ### Runtime composition
 

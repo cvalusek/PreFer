@@ -73,6 +73,9 @@ docker/
     models/<family>/<model>/  immutable NVFP4 model artifacts and lineage
     deployment-inventory.generated.json  controller-readable vLLM inventory
     generate.py               deterministic config/downloader/inventory generator
+catalog/              shared YAML model choices plus public catalog schemas
+packages/prefer/      ESM library and standalone catalog/release CLI source
+scripts/              metadata build and pinned minimal Node installer
 aws/                  EC2 deployment (AMI + boot scripts + CDK); see aws/DESIGN.md
 release/              grouped-release manifest builder and public JSON schema
 .github/workflows/    grouped runtime release plus independent AMI/IaC workflows
@@ -86,11 +89,17 @@ Copy the example environment file and adjust as needed:
 cp .env.example .env
 ```
 
-Build the inference image:
+Prepare the metadata-only shared CLI/catalog and build the inference image:
 
 ```bash
+npm install
+npm run prepare:containers
 docker compose build prefer
 ```
+
+This preparation reads Hugging Face metadata for supported repositories but
+does not download model weights. Published release images already contain the
+matching CLI and catalog and do not need this source-build step.
 
 Run the inference server directly:
 
@@ -162,6 +171,43 @@ docker compose --profile vllm build vllm
 docker compose --profile vllm up vllm
 curl http://localhost:8084/v1/models
 ```
+
+## Shared model catalog and CLI (preview)
+
+Every grouped release carries the ESM `prefer-inference-core` package, a bundled
+`prefer` CLI, and a materialized Hugging Face metadata catalog. PreFer-authored
+YAML owns selection and tuning; Hugging Face owns repository relationships,
+available files, byte sizes, and hashes. The filename under
+`catalog/models/<family>/` is the PreFer model ID.
+
+The catalog covers all 32 logical models configured across the five engines:
+18 text models, seven audio models, five image models, and two synchronized
+audio-video models. Every model includes prompt-ready strengths, limitations,
+role fit, and prompting guidance. Dedicated GGUF repositories expose their
+published quants to llama.cpp, SGLang, and vLLM from release-time Hugging Face
+metadata. Applicability is separate from the verification state carried by
+deployment inventories, so an option can remain visible without pretending
+every runtime tuple is tested.
+
+The package resolves model/repository/quant/engine choices, including
+multi-repository companion bundles, reports exact staged bytes for selected
+files, discovers stable or preview grouped releases, and
+verifies release assets before caching them. NeurOn can also supply arbitrary
+additional Hugging Face repositories at runtime. Repository-only selections do
+not invent model IDs; optional named selections remain NeurOn-owned and merge as
+an explicit overlay with collision handling.
+
+The supported catalog is refreshed before engine builds. Repository heads are
+resolved to immutable commits in that catalog; weights are not downloaded. If
+Hugging Face is temporarily unavailable, the workflow can reuse the same
+channel's last successful repository facts only when every current repository
+and requested ref is present, while still applying the current YAML. See the full
+[catalog and extension contract](docs/model-catalog.md).
+
+Each engine image sets its own `PREFER_ENGINE` and contains the standalone CLI
+at `/usr/local/bin/prefer`, so `--engine` is needed only when the package or CLI
+is used outside an engine image. These additions contain metadata only; model
+weights continue to stage on external storage.
 
 ## Runtime composition (preview)
 
@@ -344,11 +390,13 @@ variants.
 
 The immutable GitHub release and the commit-named
 `prefer-release-<full-commit>` workflow artifact contain one
-`prefer-release.json`, its public schema, all five deployment inventories, and
-checksums. Controllers select the needed engine/backend from that manifest and
-then use the referenced inventory for its model, hardware, and configuration
-choices. The manifest binds exact image digests; it does not contain model
-weights. Models continue to stage at runtime on external persistent storage.
+`prefer-release.json`, its public schema, all five deployment inventories, the
+release-matched `prefer-inference-core` tarball, standalone CLI, materialized shared
+model catalog, catalog schemas, and checksums. Controllers select the needed
+engine/backend and tooling assets from that manifest, then use the referenced
+inventory for model, hardware, and configuration choices. The manifest binds
+exact image and asset digests; it does not contain model weights. Models
+continue to stage at runtime on external persistent storage.
 
 Controllers may expose `stable` and `preview` as a branch selector: resolve
 stable releases from `main` and preview releases from `develop`, then accept

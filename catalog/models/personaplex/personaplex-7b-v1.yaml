@@ -1,0 +1,73 @@
+schema_version: prefer.model-source.v1
+display_name: PersonaPlex 7B v1
+aliases:
+  - personaplex-7b
+capabilities:
+  - speech-to-speech
+  - full-duplex-conversation
+  - streaming-audio
+profile:
+  summary: English full-duplex speech-to-speech conversation model for live voice experiences where listening and speaking
+    can overlap.
+  architecture:
+    kind: full-duplex-speech-language-model
+    total_parameters_b: 7
+    active_parameters_b: 7
+  modalities:
+    native_input:
+      - audio
+      - text
+    configured_input:
+      - audio
+      - text
+    output:
+      - audio
+      - text
+  reasoning:
+    control: prompted
+    notes: Optimize the persona and conversation policy for natural turn-taking rather than long written reasoning.
+  roles:
+    preferred:
+      - live-voice-assistant
+      - full-duplex-conversation
+      - spoken-persona
+    capable:
+      - interruptible-dialogue
+    avoid:
+      - offline-voice-rendering
+      - multilingual-guarantees
+      - long-form-text-reasoning
+  strengths:
+    - Designed for streaming conversational overlap instead of a serial ASR-to-LLM-to-TTS pipeline.
+  limitations:
+    - The current model is English-focused, gated upstream, and needs a real-time client rather than the ordinary
+      offline TTS screen.
+  prompting:
+    - Define a concise persona, speaking style, and behavioral boundary; keep replies naturally speakable.
+  evidence:
+    confidence: high
+    basis:
+      - official
+      - configured-artifact
+    notes: The full-duplex role and language scope are publisher-defined.
+default:
+  repository: audio-cpp/audio.cpp-gguf
+  quant: q4-k
+settings:
+  model:
+    task: s2s
+    mode: streaming
+engines:
+  audio.cpp: {}
+repositories:
+  audio-cpp/audio.cpp-gguf:
+    quants:
+      q4-k:
+        artifacts:
+          - files:
+              - PersonaPlex-GGUF/personaplex-7b-v1-q4_k.gguf
+            role: model
+        settings:
+          launcher:
+            session_options:
+              personaplex.graph_arena_mb: 512

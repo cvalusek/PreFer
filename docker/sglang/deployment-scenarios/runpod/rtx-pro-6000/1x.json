@@ -28,7 +28,7 @@
     {
       "name": "balanced",
       "description": "RTX PRO 6000 Blackwell performance route with 524K per-request context, four configured decode slots, FP8 E4M3 KV, BF16 recurrent state, FlashInfer, CUDA graphs, and in-checkpoint NEXTN MTP.",
-      "model_keys": ["qwen3.8-27b-nvfp4"],
+      "model_keys": ["qwen-3.8-27b-nvfp4"],
       "server": {
         "context_length": 524288,
         "mem_fraction_static": 0.92,
@@ -50,7 +50,7 @@
     {
       "name": "target-only",
       "description": "RTX PRO 6000 FP8-KV target-only control with the same 524K per-request pool and concurrency envelope, isolating the target checkpoint from embedded MTP.",
-      "model_keys": ["qwen3.8-27b-nvfp4"],
+      "model_keys": ["qwen-3.8-27b-nvfp4"],
       "server": {
         "context_length": 524288,
         "max_running_requests": 4,
@@ -68,7 +68,7 @@
     {
       "name": "fidelity",
       "description": "RTX PRO 6000 single-user BF16-KV fidelity alternate at 524K; no speculative decoding and no FP8 KV scale dependency.",
-      "model_keys": ["qwen3.8-27b-nvfp4"],
+      "model_keys": ["qwen-3.8-27b-nvfp4"],
       "server": {
         "context_length": 524288,
         "mem_fraction_static": 0.9,

@@ -7,7 +7,10 @@
     "gpu_name": "NVIDIA RTX PRO 6000 Blackwell",
     "gpu_count": 2,
     "vram_gb_each": 96,
+    "architecture": "Blackwell",
+    "compute_capability": "sm_120",
     "vcpu": 48,
+    "host_ram_gb": 512,
     "local_nvme_gb": 3800
   },
   "verification": "owner-verified-fit",

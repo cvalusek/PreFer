@@ -1,0 +1,87 @@
+schema_version: prefer.model-source.v1
+display_name: Qwen3.5 9B
+aliases:
+  - qwen-3.5
+capabilities:
+  - text-generation
+  - chat
+  - streaming
+  - reasoning
+  - tool-calling
+  - structured-output
+  - image-understanding
+  - video-understanding
+profile:
+  summary: Compact multimodal worker for small coding tasks, extraction, translation, visual questions, and routine
+    reasoning; use a larger model for architecture, broad orchestration, or research authority.
+  architecture:
+    kind: dense
+    total_parameters_b: 9.65
+    active_parameters_b: 9.65
+  modalities:
+    native_input:
+      - text
+      - image
+      - video
+    configured_input:
+      - text
+      - image
+    output:
+      - text
+  context:
+    native_tokens: 262144
+  reasoning:
+    control: request-selectable
+  roles:
+    preferred:
+      - small-coding
+      - extraction
+      - translation
+      - visual-qa
+      - routine-reasoning
+    capable:
+      - tool-use
+      - research-helper
+      - structured-output
+    avoid:
+      - architecture-authority
+      - large-repository-orchestration
+      - high-stakes-research
+  strengths:
+    - Strong coding, structured-output, and multimodal utility for a small deployment.
+    - Useful as a focused worker that can be run more cheaply or in parallel.
+  limitations:
+    - Not a dependable final strategist for complex systems or long autonomous workflows.
+    - Its prose is generally more utilitarian than the comparable Gemma writing lanes.
+  prompting:
+    - Enable thinking for difficult work and use non-thinking mode for routine transformations; provide an exact output
+      contract.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - inference
+    notes: Capabilities and publisher results are official; role boundaries partly extrapolate from Qwen family behavior.
+default:
+  repository: unsloth/Qwen3.5-9B-GGUF
+  quant: ud-q4-k-xl
+engines:
+  llama.cpp:
+    settings:
+      launcher:
+        top-k: 20
+        min-p: 0
+  sglang: {}
+  vllm: {}
+repositories:
+  unsloth/Qwen3.5-9B-GGUF:
+    discover: gguf
+    quants:
+      ud-q4-k-xl:
+        artifacts:
+          - files:
+              - Qwen3.5-9B-UD-Q4_K_XL.gguf
+            role: model
+          - files:
+              - mmproj-F16.gguf
+            role: projector

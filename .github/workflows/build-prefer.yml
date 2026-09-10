@@ -9,6 +9,11 @@ on:
       - 'docker/stable-diffusion-cpp/**'
       - 'docker/sglang/**'
       - 'docker/vllm/**'
+      - 'catalog/**'
+      - 'packages/prefer/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
       - 'release/**'
       - 'benchmark/tests/test_runtime_composition.py'
       - '.github/workflows/build-prefer.yml'
@@ -62,8 +67,74 @@ jobs:
       - name: Test vLLM catalog and gateway contract
         run: python -m unittest benchmark.tests.test_vllm -v
 
-  llama:
+  tooling:
     needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+          cache: npm
+
+      - name: Install and test shared PreFer tooling
+        run: |
+          npm ci
+          npm test
+
+      - name: Find the previous successful channel catalog
+        id: fallback
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF_NAME" == "develop" ]]; then
+            prerelease=true
+          else
+            prerelease=false
+          fi
+          release_tag="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            --jq "first(.[] | select(.draft == false and .prerelease == $prerelease and any(.assets[]?; .name == \"prefer-model-catalog.json\"))) | .tag_name // empty")"
+          if [[ -n "$release_tag" ]]; then
+            mkdir -p "$RUNNER_TEMP/prefer-fallback"
+            gh release download "$release_tag" \
+              --repo "$GITHUB_REPOSITORY" \
+              --pattern prefer-model-catalog.json \
+              --dir "$RUNNER_TEMP/prefer-fallback"
+            echo "path=$RUNNER_TEMP/prefer-fallback/prefer-model-catalog.json" >> "$GITHUB_OUTPUT"
+            echo "Using model metadata from $release_tag only if the live Hugging Face refresh fails."
+          else
+            echo "No prior channel catalog exists; this build requires a live Hugging Face refresh."
+          fi
+
+      - name: Build package, CLI, and materialized model catalog
+        shell: bash
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          args=(--commit "$GITHUB_SHA" --output-dir build/prefer-tooling)
+          if [[ -n "${{ steps.fallback.outputs.path }}" ]]; then
+            args+=(--fallback "${{ steps.fallback.outputs.path }}")
+          fi
+          npm run tooling -- "${args[@]}"
+
+      - name: Upload shared tooling for all runtime builds
+        uses: actions/upload-artifact@v4
+        with:
+          name: prefer-tooling-${{ github.sha }}
+          path: build/prefer-tooling/
+          if-no-files-found: error
+          retention-days: 7
+
+  llama:
+    needs: [verify, tooling]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -73,6 +144,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Add release tooling to the llama.cpp build context
+        uses: actions/download-artifact@v4
+        with:
+          name: prefer-tooling-${{ github.sha }}
+          path: docker/llama-cpp/.prefer-tooling
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -95,6 +172,9 @@ jobs:
           labels: |
             io.prefer.runtime=llama.cpp
             io.prefer.release.revision=${{ github.sha }}
+            io.prefer.cli.path=/usr/local/bin/prefer
+            io.prefer.model-catalog.path=/prefer-model-catalog.json
+            io.prefer.model-catalog.schema=prefer.model-catalog.v1
             io.prefer.deployment-inventory.path=/deployment-inventory.json
             io.prefer.deployment-inventory.schema=prefer.deployment-inventory.v1
 
@@ -111,7 +191,7 @@ jobs:
           cache-to: type=gha,scope=llama-cuda,mode=max
 
   audio_cuda:
-    needs: verify
+    needs: [verify, tooling]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -121,6 +201,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Add release tooling to the Audio CUDA build context
+        uses: actions/download-artifact@v4
+        with:
+          name: prefer-tooling-${{ github.sha }}
+          path: docker/audio-cpp/.prefer-tooling
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -146,6 +232,9 @@ jobs:
             io.prefer.runtime=audio.cpp
             io.prefer.audio.backend=cuda12
             io.prefer.release.revision=${{ github.sha }}
+            io.prefer.cli.path=/usr/local/bin/prefer
+            io.prefer.model-catalog.path=/prefer-model-catalog.json
+            io.prefer.model-catalog.schema=prefer.model-catalog.v1
             io.prefer.deployment-inventory.path=/deployment-inventory.json
             io.prefer.deployment-inventory.schema=prefer.audio-deployment-inventory.v1
 
@@ -163,7 +252,7 @@ jobs:
           cache-to: type=gha,scope=audio-cuda12,mode=max
 
   audio_cpu:
-    needs: verify
+    needs: [verify, tooling]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -173,6 +262,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Add release tooling to the Audio CPU build context
+        uses: actions/download-artifact@v4
+        with:
+          name: prefer-tooling-${{ github.sha }}
+          path: docker/audio-cpp/.prefer-tooling
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -198,6 +293,9 @@ jobs:
             io.prefer.runtime=audio.cpp
             io.prefer.audio.backend=cpu
             io.prefer.release.revision=${{ github.sha }}
+            io.prefer.cli.path=/usr/local/bin/prefer
+            io.prefer.model-catalog.path=/prefer-model-catalog.json
+            io.prefer.model-catalog.schema=prefer.model-catalog.v1
             io.prefer.deployment-inventory.path=/deployment-inventory.json
             io.prefer.deployment-inventory.schema=prefer.audio-deployment-inventory.v1
 
@@ -215,7 +313,7 @@ jobs:
           cache-to: type=gha,scope=audio-cpu,mode=max
 
   image:
-    needs: verify
+    needs: [verify, tooling]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -225,6 +323,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Add release tooling to the Image build context
+        uses: actions/download-artifact@v4
+        with:
+          name: prefer-tooling-${{ github.sha }}
+          path: docker/stable-diffusion-cpp/.prefer-tooling
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -247,6 +351,9 @@ jobs:
             io.prefer.runtime=stable-diffusion.cpp
             io.prefer.image.backend=cuda12
             io.prefer.release.revision=${{ github.sha }}
+            io.prefer.cli.path=/usr/local/bin/prefer
+            io.prefer.model-catalog.path=/prefer-model-catalog.json
+            io.prefer.model-catalog.schema=prefer.model-catalog.v1
             io.prefer.deployment-inventory.path=/deployment-inventory.json
             io.prefer.deployment-inventory.schema=prefer.image-deployment-inventory.v1
 
@@ -264,7 +371,7 @@ jobs:
           cache-to: type=gha,scope=image-cuda12,mode=max
 
   sglang_amd64:
-    needs: verify
+    needs: [verify, tooling]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -274,6 +381,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Add release tooling to the SGLang amd64 build context
+        uses: actions/download-artifact@v4
+        with:
+          name: prefer-tooling-${{ github.sha }}
+          path: docker/sglang/.prefer-tooling
 
       - name: Free runner disk space
         shell: bash
@@ -316,13 +429,16 @@ jobs:
             io.prefer.runtime=sglang
             io.prefer.sglang.backend=cuda13
             io.prefer.release.revision=${{ github.sha }}
+            io.prefer.cli.path=/usr/local/bin/prefer
+            io.prefer.model-catalog.path=/prefer-model-catalog.json
+            io.prefer.model-catalog.schema=prefer.model-catalog.v1
             io.prefer.deployment-inventory.path=/deployment-inventory.json
             io.prefer.deployment-inventory.schema=prefer.sglang-deployment-inventory.v2
           cache-from: type=gha,scope=sglang-cuda13-amd64
           cache-to: type=gha,scope=sglang-cuda13-amd64,mode=max
 
   sglang_arm64:
-    needs: verify
+    needs: [verify, tooling]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -332,6 +448,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Add release tooling to the SGLang arm64 build context
+        uses: actions/download-artifact@v4
+        with:
+          name: prefer-tooling-${{ github.sha }}
+          path: docker/sglang/.prefer-tooling
 
       - name: Free runner disk space
         shell: bash
@@ -377,6 +499,9 @@ jobs:
             io.prefer.runtime=sglang
             io.prefer.sglang.backend=cuda13
             io.prefer.release.revision=${{ github.sha }}
+            io.prefer.cli.path=/usr/local/bin/prefer
+            io.prefer.model-catalog.path=/prefer-model-catalog.json
+            io.prefer.model-catalog.schema=prefer.model-catalog.v1
             io.prefer.deployment-inventory.path=/deployment-inventory.json
             io.prefer.deployment-inventory.schema=prefer.sglang-deployment-inventory.v2
           cache-from: type=gha,scope=sglang-cuda13-arm64
@@ -447,7 +572,7 @@ jobs:
           echo "digest=$merged_digest" >> "$GITHUB_OUTPUT"
 
   vllm:
-    needs: verify
+    needs: [verify, tooling]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -457,6 +582,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Add release tooling to the vLLM build context
+        uses: actions/download-artifact@v4
+        with:
+          name: prefer-tooling-${{ github.sha }}
+          path: docker/vllm/.prefer-tooling
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -482,6 +613,9 @@ jobs:
             io.prefer.runtime=vllm
             io.prefer.vllm.backend=cuda13
             io.prefer.release.revision=${{ github.sha }}
+            io.prefer.cli.path=/usr/local/bin/prefer
+            io.prefer.model-catalog.path=/prefer-model-catalog.json
+            io.prefer.model-catalog.schema=prefer.model-catalog.v1
             io.prefer.deployment-inventory.path=/deployment-inventory.json
             io.prefer.deployment-inventory.schema=prefer.vllm-deployment-inventory.v1
 
@@ -499,7 +633,7 @@ jobs:
           cache-to: type=gha,scope=vllm-cuda13,mode=max
 
   release:
-    needs: [llama, audio_cuda, audio_cpu, image, sglang, vllm]
+    needs: [tooling, llama, audio_cuda, audio_cpu, image, sglang, vllm]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -515,6 +649,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Download shared release tooling
+        uses: actions/download-artifact@v4
+        with:
+          name: prefer-tooling-${{ github.sha }}
+          path: prefer-tooling
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -546,9 +686,11 @@ jobs:
             --image-inventory docker/stable-diffusion-cpp/deployment-inventory.generated.json \
             --sglang-inventory docker/sglang/deployment-inventory.generated.json \
             --vllm-inventory docker/vllm/deployment-inventory.generated.json \
+            --tooling-manifest prefer-tooling/prefer-tooling-build.json \
+            --tooling-dir prefer-tooling \
             --output-dir prefer-release
           cp release/prefer-release.schema.json prefer-release/
-          sha256sum prefer-release/*.json > prefer-release/SHA256SUMS
+          sha256sum prefer-release/* > prefer-release/SHA256SUMS
 
       - name: Upload grouped deployment release
         uses: actions/upload-artifact@v4
@@ -636,3 +778,35 @@ jobs:
             fi
           fi
           gh release upload "$release_tag" prefer-release/* --repo "$GITHUB_REPOSITORY" --clobber
+
+      - name: Set up Node.js package publishing
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Publish the release-matched npm package
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          package_version="$(jq -er '.tooling.package_version' prefer-release/prefer-release.json)"
+          if [[ "$GITHUB_REF_NAME" == "main" ]]; then
+            package_dist_tag="latest"
+          elif [[ "$GITHUB_REF_NAME" == "develop" ]]; then
+            package_dist_tag="preview"
+          else
+            echo "Unsupported package release branch: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          if npm view "prefer-inference-core@$package_version" version --registry https://registry.npmjs.org >/dev/null 2>&1; then
+            echo "prefer-inference-core@$package_version is already published."
+            npm dist-tag add "prefer-inference-core@$package_version" "$package_dist_tag" \
+              --registry https://registry.npmjs.org
+          else
+            npm publish prefer-release/prefer-inference-core.tgz \
+              --registry https://registry.npmjs.org \
+              --access public \
+              --tag "$package_dist_tag"
+          fi

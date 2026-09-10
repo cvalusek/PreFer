@@ -1,0 +1,121 @@
+schema_version: prefer.model-source.v1
+display_name: FLUX.2 Klein 4B
+capabilities:
+  - text-to-image
+profile:
+  summary: Fast four-step image generator and instruction-based editor for interactive drafts, variations, and practical
+    local image workflows.
+  architecture:
+    kind: diffusion-transformer
+    total_parameters_b: 4
+    active_parameters_b: 4
+  modalities:
+    native_input:
+      - text
+      - image
+    configured_input:
+      - text
+      - image
+    output:
+      - image
+  reasoning:
+    control: not-applicable
+  roles:
+    preferred:
+      - fast-image-generation
+      - image-editing
+      - iterative-drafts
+    capable:
+      - style-exploration
+      - asset-variation
+    avoid:
+      - maximum-fidelity-final-render
+  strengths:
+    - Low step count makes it the responsive general image route, and the same family supports generation and editing.
+  limitations:
+    - The smallest quant favors speed and fit; subtle edits and typography still need inspection.
+  prompting:
+    - Describe subject, composition, lighting, style, and required changes explicitly; for edits, state what must remain
+      unchanged.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - configured-artifact
+    notes: Capabilities and four-step configuration are direct; role positioning is qualitative.
+default:
+  repository: black-forest-labs/FLUX.2-klein-4B
+  quant: bf16-q8
+engines:
+  stable-diffusion.cpp:
+    settings:
+      launcher:
+        args:
+          - --cfg-scale
+          - "1.0"
+          - --steps
+          - "4"
+          - --sampling-method
+          - euler
+          - --diffusion-fa
+          - --vae-tiling
+repositories:
+  leejet/FLUX.2-klein-4B-GGUF:
+    discover: gguf
+    quants:
+      q4:
+        artifacts:
+          - files:
+              - flux-2-klein-4b-Q4_0.gguf
+            role: target
+          - repository: black-forest-labs/FLUX.2-small-decoder
+            files:
+              - full_encoder_small_decoder.safetensors
+            role: vae
+          - repository: unsloth/Qwen3-4B-GGUF
+            files:
+              - Qwen3-4B-Q4_K_M.gguf
+            role: text_encoder
+      q8-q4:
+        artifacts:
+          - files:
+              - flux-2-klein-4b-Q8_0.gguf
+            role: target
+          - repository: black-forest-labs/FLUX.2-small-decoder
+            files:
+              - full_encoder_small_decoder.safetensors
+            role: vae
+          - repository: unsloth/Qwen3-4B-GGUF
+            files:
+              - Qwen3-4B-Q4_K_M.gguf
+            role: text_encoder
+      q8:
+        artifacts:
+          - files:
+              - flux-2-klein-4b-Q8_0.gguf
+            role: target
+          - repository: black-forest-labs/FLUX.2-small-decoder
+            files:
+              - full_encoder_small_decoder.safetensors
+            role: vae
+          - repository: unsloth/Qwen3-4B-GGUF
+            files:
+              - Qwen3-4B-Q8_0.gguf
+            role: text_encoder
+  black-forest-labs/FLUX.2-small-decoder: {}
+  unsloth/Qwen3-4B-GGUF: {}
+  black-forest-labs/FLUX.2-klein-4B:
+    quants:
+      bf16-q8:
+        artifacts:
+          - files:
+              - flux-2-klein-4b.safetensors
+            role: target
+          - repository: black-forest-labs/FLUX.2-small-decoder
+            files:
+              - full_encoder_small_decoder.safetensors
+            role: vae
+          - repository: unsloth/Qwen3-4B-GGUF
+            files:
+              - Qwen3-4B-Q8_0.gguf
+            role: text_encoder

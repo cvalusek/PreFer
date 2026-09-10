@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/cvalusek/PreFer/blob/develop/catalog/resource-profile.schema.json",
+  "title": "PreFer normalized runtime resources",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "source", "memory_topology", "accelerators", "capabilities"],
+  "properties": {
+    "schema_version": {"const": "prefer.resources.v1"},
+    "source": {"enum": ["deployment", "runtime", "merged"]},
+    "provider": {"type": "string", "minLength": 1},
+    "provider_sku": {"type": "string", "minLength": 1},
+    "memory_topology": {"enum": ["discrete", "unified", "host", "unknown"]},
+    "accelerators": {"type": "array", "items": {"$ref": "#/$defs/accelerator"}},
+    "unified_memory": {"$ref": "#/$defs/memory"},
+    "host_memory": {"$ref": "#/$defs/memory"},
+    "cpu": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "architecture": {"type": "string"},
+        "logical_cores": {"type": "integer", "minimum": 1},
+        "model": {"type": "string"},
+        "capabilities": {"$ref": "#/$defs/stringList"}
+      }
+    },
+    "storage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "total_bytes": {"type": "integer", "minimum": 0},
+        "available_bytes": {"type": "integer", "minimum": 0},
+        "kind": {"enum": ["local", "network", "unknown"]}
+      }
+    },
+    "capabilities": {"$ref": "#/$defs/stringList"}
+  },
+  "$defs": {
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "total_bytes": {"type": "integer", "minimum": 0},
+        "available_bytes": {"type": "integer", "minimum": 0}
+      }
+    },
+    "accelerator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capabilities"],
+      "properties": {
+        "id": {"type": "string"},
+        "slug": {"type": "string"},
+        "canonical_id": {"type": "string"},
+        "provider_id": {"type": "string"},
+        "name": {"type": "string"},
+        "architecture": {"type": "string"},
+        "compute_capability": {"type": "string"},
+        "total_bytes": {"type": "integer", "minimum": 0},
+        "available_bytes": {"type": "integer", "minimum": 0},
+        "capabilities": {"$ref": "#/$defs/stringList"}
+      }
+    },
+    "stringList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

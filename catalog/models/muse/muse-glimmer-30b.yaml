@@ -1,0 +1,102 @@
+schema_version: prefer.model-source.v1
+display_name: Muse Glimmer 30B
+aliases:
+  - muse-glimmer
+capabilities:
+  - text-generation
+  - chat
+  - streaming
+  - reasoning
+  - tool-calling
+  - structured-output
+  - image-understanding
+profile:
+  summary: Eager visual and tool agent for screenshots, OCR, documents, visual workflows, and schema-driven actions; give
+    it strict tool boundaries and stopping rules rather than unrestricted autonomy.
+  architecture:
+    kind: dense
+    total_parameters_b: 29.6
+    active_parameters_b: 29.6
+  modalities:
+    native_input:
+      - text
+      - image
+    configured_input:
+      - text
+      - image
+    output:
+      - text
+  context:
+    native_tokens: 131072
+  reasoning:
+    control: prompted
+  roles:
+    preferred:
+      - screenshot-understanding
+      - ocr
+      - document-analysis
+      - visual-workflows
+      - agentic-tools
+    capable:
+      - coding
+      - research-synthesis
+      - multilingual-work
+    avoid:
+      - unrestricted-tools
+      - prose-first-writing
+      - safety-critical-actions
+  strengths:
+    - Purpose-built for local multimodal agents, with publisher-documented visual and agentic training targets.
+    - Controllable reasoning strength and failure-recovery training suit bounded interactive workflows.
+  limitations:
+    - Operator reports indicate that tool use can become over-eager or inconsistent without clear boundaries.
+    - It is not the natural first choice for prose-only work when Gemma is available.
+  prompting:
+    - Set `Reasoning strength` explicitly, limit the tool budget, require confirmation for irreversible actions, and
+      define a stop condition.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - operator
+    notes: Architecture, modalities, quant quality, and intended roles are publisher-documented; tool eagerness comes from
+      early operator reports.
+default:
+  repository: unsloth/Muse-Glimmer-30B-GGUF
+  quant: ud-q6-k-xl
+engines:
+  llama.cpp:
+    settings:
+      launcher:
+        spec-type: draft-dflash
+        spec-draft-n-max: 15
+        top-k: 64
+        min-p: 0
+  sglang: {}
+  vllm: {}
+repositories:
+  unsloth/Muse-Glimmer-30B-GGUF:
+    discover: gguf
+    quants:
+      ud-q4-k-xl:
+        artifacts:
+          - files:
+              - Muse-Glimmer-30B-UD-Q4_K_XL.gguf
+            role: model
+          - files:
+              - dflash-kquant.gguf
+            role: draft
+          - files:
+              - mmproj-kquant.gguf
+            role: projector
+      ud-q6-k-xl:
+        artifacts:
+          - files:
+              - Muse-Glimmer-30B-UD-Q6_K_XL.gguf
+            role: model
+          - files:
+              - dflash-kquant.gguf
+            role: draft
+          - files:
+              - mmproj-kquant.gguf
+            role: projector

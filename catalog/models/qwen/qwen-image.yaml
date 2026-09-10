@@ -1,0 +1,107 @@
+schema_version: prefer.model-source.v1
+display_name: Qwen Image
+capabilities:
+  - text-to-image
+  - text-rendering
+profile:
+  summary: Quality-oriented text-to-image model with a particular strength in rendered text, signs, labels, and
+    layout-aware compositions.
+  architecture:
+    kind: diffusion-image-model
+  modalities:
+    native_input:
+      - text
+    configured_input:
+      - text
+    output:
+      - image
+  reasoning:
+    control: not-applicable
+  roles:
+    preferred:
+      - text-rendering
+      - poster-and-signage
+      - quality-image-generation
+    capable:
+      - general-image-generation
+    avoid:
+      - low-latency-preview
+      - image-editing
+  strengths:
+    - A stronger choice than generic image models when legible requested text is central to the image.
+  limitations:
+    - The quality-oriented settings use more steps and a larger component bundle than the fast FLUX route.
+  prompting:
+    - Quote exact text, describe its placement and typography, and separately specify the surrounding scene.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - configured-artifact
+    notes: Text-rendering emphasis is publisher-backed; relative quality is qualitative.
+default:
+  repository: unsloth/Qwen-Image-GGUF
+  quant: q4
+engines:
+  stable-diffusion.cpp:
+    settings:
+      launcher:
+        args:
+          - --cfg-scale
+          - "2.5"
+          - --steps
+          - "50"
+          - --sampling-method
+          - euler
+          - --flow-shift
+          - "3"
+          - --diffusion-fa
+          - --vae-tiling
+repositories:
+  unsloth/Qwen-Image-GGUF:
+    discover: gguf
+    quants:
+      q4:
+        artifacts:
+          - files:
+              - qwen-image-Q4_K_M.gguf
+            role: target
+          - repository: Comfy-Org/Qwen-Image_ComfyUI
+            files:
+              - split_files/vae/qwen_image_vae.safetensors
+            role: vae
+          - repository: mradermacher/Qwen2.5-VL-7B-Instruct-GGUF
+            files:
+              - Qwen2.5-VL-7B-Instruct.Q4_K_M.gguf
+            role: text_encoder
+      q8:
+        artifacts:
+          - files:
+              - qwen-image-Q8_0.gguf
+            role: target
+          - repository: Comfy-Org/Qwen-Image_ComfyUI
+            files:
+              - split_files/vae/qwen_image_vae.safetensors
+            role: vae
+          - repository: Comfy-Org/Qwen-Image_ComfyUI
+            files:
+              - split_files/text_encoders/qwen_2.5_vl_7b.safetensors
+            role: text_encoder
+  Comfy-Org/Qwen-Image_ComfyUI: {}
+  mradermacher/Qwen2.5-VL-7B-Instruct-GGUF: {}
+  QuantStack/Qwen-Image-GGUF:
+    discover: gguf
+    quants:
+      q6:
+        artifacts:
+          - files:
+              - Qwen_Image-Q6_K.gguf
+            role: target
+          - repository: Comfy-Org/Qwen-Image_ComfyUI
+            files:
+              - split_files/vae/qwen_image_vae.safetensors
+            role: vae
+          - repository: Comfy-Org/Qwen-Image_ComfyUI
+            files:
+              - split_files/text_encoders/qwen_2.5_vl_7b.safetensors
+            role: text_encoder

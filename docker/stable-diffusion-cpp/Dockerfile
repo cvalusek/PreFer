@@ -1,12 +1,19 @@
 ARG STABLE_DIFFUSION_CPP_BASE_IMAGE=ghcr.io/leejet/stable-diffusion.cpp:master-cuda@sha256:dcd82f38252a32822dcd0c80672d5948df8e63bb4a3064988e0f7c2bec10c100
 FROM ${STABLE_DIFFUSION_CPP_BASE_IMAGE}
 
+ARG TARGETARCH
 USER root
 RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates curl python3 python3-pip tini util-linux \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates curl python3 python3-pip tini util-linux xz-utils \
     && rm -rf /var/lib/apt/lists/* \
     && python3 -m pip install --no-cache-dir --break-system-packages -U "huggingface_hub[cli]" \
     && mkdir -p /models /app /server-configs
+
+COPY .prefer-tooling/install-prefer-node.sh /tmp/install-prefer-node.sh
+RUN sed -i 's/\r$//' /tmp/install-prefer-node.sh \
+    && chmod +x /tmp/install-prefer-node.sh \
+    && /tmp/install-prefer-node.sh "$TARGETARCH" \
+    && rm -f /tmp/install-prefer-node.sh
 
 COPY server.generated.json /app/server.json
 COPY server.generated.prestage /app/server.prestage
@@ -18,10 +25,19 @@ COPY generate.py /prefer-catalog/generate.py
 COPY runtime.json deployment-bundles.json /prefer-catalog/
 COPY models /prefer-catalog/models
 COPY deployment-scenarios /prefer-catalog/deployment-scenarios
+COPY .prefer-tooling/prefer.mjs /usr/local/bin/prefer
+COPY .prefer-tooling/prefer-model-catalog.json /prefer-model-catalog.json
+COPY .prefer-tooling/prefer-model-catalog.schema.json /prefer-catalog/schemas/prefer-model-catalog.schema.json
+COPY .prefer-tooling/prefer-model-catalog-extension.schema.json /prefer-catalog/schemas/prefer-model-catalog-extension.schema.json
+COPY .prefer-tooling/prefer-resource-profile.schema.json /prefer-catalog/schemas/prefer-resource-profile.schema.json
+COPY .prefer-tooling/prefer-model-plan.schema.json /prefer-catalog/schemas/prefer-model-plan.schema.json
 COPY router.py /app/router.py
 COPY entrypoint.sh /prefer-image-entrypoint.sh
 RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-image-entrypoint.sh /prefer-catalog/generate.py \
-    && chmod +x /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-image-entrypoint.sh /app/router.py
+    && chmod +x /usr/local/bin/prefer /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-image-entrypoint.sh /app/router.py
+
+ENV PREFER_ENGINE=stable-diffusion.cpp \
+    PREFER_MODEL_CATALOG=/prefer-model-catalog.json
 
 LABEL io.prefer.runtime="stable-diffusion.cpp" \
       io.prefer.image.backend="cuda12" \

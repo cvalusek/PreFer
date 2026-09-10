@@ -132,9 +132,9 @@ class RuntimeCompositionTests(unittest.TestCase):
         config_text, prestage, _ = self.compose(
             "vllm",
             base="aws/g7e/2xlarge/performance",
-            models="qwen3.8-27b",
+            models="qwen-3.8-27b",
             model={
-                "qwen3.8-27b": {
+                "qwen-3.8-27b": {
                     "gpu_memory_utilization": 0.91,
                     "max_num_seqs": 6,
                     "speculative": {"num_speculative_tokens": 2},
@@ -143,7 +143,7 @@ class RuntimeCompositionTests(unittest.TestCase):
             server={"max_num_seqs": 8},
         )
         config = json.loads(config_text)
-        self.assertEqual(prestage, ["qwen3.8-27b-nvfp4"])
+        self.assertEqual(prestage, ["qwen-3.8-27b-nvfp4"])
         self.assertEqual(config["server"]["gpu_memory_utilization"], 0.91)
         self.assertEqual(config["server"]["max_num_seqs"], 6)
         self.assertTrue(config["server"]["speculative"]["enabled"])
@@ -227,6 +227,26 @@ class RuntimeCompositionTests(unittest.TestCase):
                     "objects merge recursively; scalar and array values replace",
                 )
                 self.assertEqual(composition["precedence"][-1], "raw engine arguments")
+
+    def test_every_deployment_model_preserves_exact_model_and_quant_identity(self):
+        for engine in ("llama-cpp", "audio-cpp", "stable-diffusion-cpp", "sglang", "vllm"):
+            inventory = json.loads(
+                (ROOT / "docker" / engine / "deployment-inventory.generated.json").read_text(encoding="utf-8")
+            )
+            for deployment in inventory["deployments"]:
+                for model in deployment.get("models", []):
+                    with self.subTest(engine=engine, deployment=deployment["id"], model=model.get("key")):
+                        self.assertTrue(model.get("model_slug"))
+                        self.assertTrue(model.get("quant_slug"))
+
+        image_inventory = json.loads(
+            (ROOT / "docker" / "stable-diffusion-cpp" / "deployment-inventory.generated.json").read_text(encoding="utf-8")
+        )
+        local_image = next(
+            deployment for deployment in image_inventory["deployments"]
+            if deployment["id"] == "local/rtx-4060/1x/general"
+        )
+        self.assertEqual(local_image["residency"]["offload"]["components"], ["model", "text_encoder", "vae"])
 
     def test_images_embed_catalog_sources_but_not_weights(self):
         for engine in ("llama-cpp", "audio-cpp", "stable-diffusion-cpp", "sglang", "vllm"):

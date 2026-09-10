@@ -62,7 +62,7 @@
     "speculative_decoding": "native Qwen3.5-family MTP head through vLLM speculative_config"
   },
   "experimental_routes": {
-    "qwen3.8-flash": {
+    "qwen-3.8-flash": {
       "status": "deferred-experimental",
       "reason": "Official recipe requires the dedicated qwen38-flash-next image and multi-GB300-class deployments; it is not part of this first 27B lane."
     },

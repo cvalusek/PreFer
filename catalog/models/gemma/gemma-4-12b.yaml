@@ -1,0 +1,91 @@
+schema_version: prefer.model-source.v1
+display_name: Gemma 4 12B
+capabilities:
+  - text-generation
+  - chat
+  - streaming
+  - reasoning
+  - tool-calling
+  - structured-output
+  - image-understanding
+  - video-understanding
+  - audio-understanding
+profile:
+  summary: Fast one-card QAT writer and visual analyst; prefer it for polished prose, editing, image recognition, and
+    document synthesis when maximum coding or agentic ability is not required.
+  architecture:
+    kind: dense
+    total_parameters_b: 11.95
+    active_parameters_b: 11.95
+  modalities:
+    native_input:
+      - text
+      - image
+      - video
+      - audio
+    configured_input:
+      - text
+      - image
+    output:
+      - text
+  context:
+    native_tokens: 262144
+  reasoning:
+    control: request-selectable
+  roles:
+    preferred:
+      - general-writing
+      - editing
+      - image-understanding
+      - document-synthesis
+    capable:
+      - moderate-reasoning
+      - code-explanation
+      - general-assistance
+    avoid:
+      - long-horizon-coding
+      - tool-orchestration
+      - hardest-reasoning
+  strengths:
+    - Produces polished, natural prose and follows tone or audience instructions well.
+    - Strong practical image recognition and document inspection for its deployment size.
+    - The official QAT-derived deployment is notably fast for its quality tier.
+  limitations:
+    - Less reliable than coding-focused models on long autonomous implementation and tool loops.
+    - Native audio and video are not exposed by the current llama.cpp package.
+  prompting:
+    - State the audience and tone, and name the visual evidence or document details that must be inspected.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - operator
+    notes: Native and configured capabilities are publisher-backed; the writing, image, and speed guidance reflects
+      recurring owner experience.
+default:
+  repository: unsloth/gemma-4-12B-it-qat-GGUF
+  quant: ud-q4-k-xl
+engines:
+  llama.cpp:
+    settings:
+      launcher:
+        spec-type: draft-mtp
+        spec-draft-n-max: 4
+        top-k: 64
+  sglang: {}
+  vllm: {}
+repositories:
+  unsloth/gemma-4-12B-it-qat-GGUF:
+    discover: gguf
+    quants:
+      ud-q4-k-xl:
+        artifacts:
+          - files:
+              - gemma-4-12B-it-qat-UD-Q4_K_XL.gguf
+            role: model
+          - files:
+              - MTP/mtp-gemma-4-12B-it-Q4_0.gguf
+            role: draft
+          - files:
+              - mmproj-F16.gguf
+            role: projector

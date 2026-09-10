@@ -187,7 +187,7 @@ For a 96 GB Blackwell performance shape, set `SGLANG_SERVER_CONFIG` to
 Use `target-only.json` to isolate MTP, or `fidelity.json` for the BF16-KV
 single-user alternate. The 5090 `performance.json` is deliberately bounded to
 128K until exact-card smoke supports a larger speculative envelope.
-The request model ID is `qwen3.8-27b`. The health endpoint is `GET /health`;
+The request model ID is `qwen-3.8-27b`. The health endpoint is `GET /health`;
 chat, completion, and Anthropic messages use the `/v1` API.
 
 For H3, select a generated configuration such as

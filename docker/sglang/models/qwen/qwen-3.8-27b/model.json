@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "family": "qwen",
-  "model_slug": "qwen3.8-27b",
+  "model_slug": "qwen-3.8-27b",
   "shared": {
-    "id": "qwen3.8-27b",
-    "family": "qwen3.8",
+    "id": "qwen-3.8-27b",
+    "family": "qwen-3.8",
     "task": "chat",
     "mode": "multimodal-reasoning",
     "description": "Qwen3.8-27B dense hybrid vision-language model in an SGLang-validated NVFP4 W4A4 checkpoint",
@@ -94,7 +94,7 @@
       "comparability_note": "This is not the earlier approximately 16.5 GB community variant; no throughput result from either variant is interchangeable without a matched smoke."
     },
     "server": {
-      "served_model_name": "qwen3.8-27b",
+      "served_model_name": "qwen-3.8-27b",
       "quantization": "modelopt_fp4",
       "kv_cache_dtype": "fp8_e4m3",
       "attention_backend": "flashinfer",
@@ -126,10 +126,10 @@
   },
   "quants": {
     "nvfp4": {
-      "key": "qwen3.8-27b-nvfp4",
+      "key": "qwen-3.8-27b-nvfp4",
       "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
       "primary": true,
-      "request_model_id": "qwen3.8-27b",
+      "request_model_id": "qwen-3.8-27b",
       "artifacts": [
         {
           "repo": "RadixArk/Qwen3.8-27B-NVFP4",

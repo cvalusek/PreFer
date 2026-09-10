@@ -1,0 +1,102 @@
+schema_version: prefer.model-source.v1
+display_name: Z-Image-Turbo
+capabilities:
+  - text-to-image
+profile:
+  summary: Fast eight-step text-to-image route for polished general generations when more fidelity than the quickest draft
+    path is worth a modest latency increase.
+  architecture:
+    kind: diffusion-image-model
+  modalities:
+    native_input:
+      - text
+    configured_input:
+      - text
+    output:
+      - image
+  reasoning:
+    control: not-applicable
+  roles:
+    preferred:
+      - fast-quality-generation
+      - general-image-generation
+    capable:
+      - concept-art
+      - illustration
+    avoid:
+      - image-editing
+      - exact-text-layout
+  strengths:
+    - Eight-step generation offers a useful speed-versus-finish middle ground across several quant tiers.
+  limitations:
+    - It is generation-only in the current catalog and is not the first choice for typography-heavy output.
+  prompting:
+    - Describe the intended composition and visual finish; use Qwen Image when exact rendered text is the main
+      requirement.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - configured-artifact
+    notes: Configured step count and capabilities are direct; relative positioning is qualitative.
+default:
+  repository: leejet/Z-Image-Turbo-GGUF
+  quant: q8
+engines:
+  stable-diffusion.cpp:
+    settings:
+      launcher:
+        args:
+          - --cfg-scale
+          - "1.0"
+          - --steps
+          - "8"
+          - --sampling-method
+          - euler
+          - --diffusion-fa
+          - --vae-tiling
+repositories:
+  leejet/Z-Image-Turbo-GGUF:
+    discover: gguf
+    quants:
+      q4:
+        artifacts:
+          - files:
+              - z_image_turbo-Q4_K.gguf
+            role: target
+          - repository: black-forest-labs/FLUX.1-schnell
+            files:
+              - ae.safetensors
+            role: vae
+          - repository: unsloth/Qwen3-4B-Instruct-2507-GGUF
+            files:
+              - Qwen3-4B-Instruct-2507-Q4_K_M.gguf
+            role: text_encoder
+      q6:
+        artifacts:
+          - files:
+              - z_image_turbo-Q6_K.gguf
+            role: target
+          - repository: black-forest-labs/FLUX.1-schnell
+            files:
+              - ae.safetensors
+            role: vae
+          - repository: unsloth/Qwen3-4B-Instruct-2507-GGUF
+            files:
+              - Qwen3-4B-Instruct-2507-Q4_K_M.gguf
+            role: text_encoder
+      q8:
+        artifacts:
+          - files:
+              - z_image_turbo-Q8_0.gguf
+            role: target
+          - repository: black-forest-labs/FLUX.1-schnell
+            files:
+              - ae.safetensors
+            role: vae
+          - repository: unsloth/Qwen3-4B-Instruct-2507-GGUF
+            files:
+              - Qwen3-4B-Instruct-2507-Q8_0.gguf
+            role: text_encoder
+  black-forest-labs/FLUX.1-schnell: {}
+  unsloth/Qwen3-4B-Instruct-2507-GGUF: {}

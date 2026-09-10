@@ -106,7 +106,7 @@ The default provider-neutral config is `/app/server.json`. Hardware configs
 are copied under `/server-configs`, for example
 `/server-configs/aws/g7e/2xlarge/performance.json` or
 `/server-configs/runpod/rtx-5090/1x/target-only.json`. The canonical request
-model ID is `qwen3.8-27b`; `qwen-3.8-27b` is an accepted alias. Use
+model ID is `qwen-3.8-27b`. Use
 `GET /readyz` for warmup-aware readiness and `GET /v1/models` for discovery.
 
 ## Verification gates

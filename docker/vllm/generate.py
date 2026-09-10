@@ -350,6 +350,8 @@ def model_config_record(lane: dict) -> dict:
     return {
         "key": lane["key"],
         "request_model_id": lane["request_model_id"],
+        "model_slug": lane["model_slug"],
+        "quant_slug": lane["quant_slug"],
         "aliases": lane["aliases"],
         "profile_id": lane["profile_id"],
         "tasks": lane["tasks"],
@@ -414,6 +416,7 @@ def lane_inventory(lane: dict) -> dict:
     return {
         "key": lane["key"],
         "request_model_id": lane["request_model_id"],
+        "quant_slug": lane["quant_slug"],
         "aliases": lane["aliases"],
         "profile_id": lane["profile_id"],
         "family": lane["family"],

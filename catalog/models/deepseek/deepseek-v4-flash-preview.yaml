@@ -1,0 +1,73 @@
+schema_version: prefer.model-source.v1
+display_name: DeepSeek V4 Flash Preview
+aliases:
+  - deepseek-v4-flash
+capabilities:
+  - text-generation
+  - chat
+  - streaming
+  - reasoning
+  - tool-calling
+  - structured-output
+profile:
+  summary: Deliberate text planner retained for compatibility, long-context synthesis, and regression comparisons; route
+    new high-end work to the 0731 successor when its client protocol is supported.
+  architecture:
+    kind: moe
+    total_parameters_b: 284
+    active_parameters_b: 13
+  modalities:
+    native_input:
+      - text
+    configured_input:
+      - text
+    output:
+      - text
+  context:
+    native_tokens: 1048576
+  reasoning:
+    control: request-selectable
+  roles:
+    preferred:
+      - legacy-evaluations
+      - planning
+      - research
+      - long-context-synthesis
+    capable:
+      - coding-design
+      - difficult-reasoning
+    avoid:
+      - new-default-routing
+      - cheap-drafting
+      - constrained-hardware
+  strengths:
+    - Known compatibility route with strong reasoning and unusually affordable long context for its size.
+    - Useful as the stable comparison point for newer DeepSeek V4 releases.
+  limitations:
+    - It is the Preview lineage rather than the current preferred successor.
+    - The preserved route is target-only and lacks the newer DSpark acceleration path.
+  prompting:
+    - Use the exact Preview chat protocol, allow adequate reasoning space, and keep tool turns consistent with its
+      preserved template.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - operator
+    notes: The route has direct operational history; its present role is primarily compatibility and regression comparison.
+default:
+  repository: antirez/deepseek-v4-gguf
+  quant: q4kexperts
+engines:
+  llama.cpp: {}
+  sglang: {}
+  vllm: {}
+repositories:
+  antirez/deepseek-v4-gguf:
+    discover: gguf
+    quants:
+      q4kexperts:
+        artifacts:
+          - files:
+              - DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf
+            role: model

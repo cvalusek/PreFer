@@ -7,7 +7,10 @@
     "gpu_count": 1,
     "vram_gb": 96,
     "compute_capability": "sm_120",
-    "host_shape": "g7e.2xlarge"
+    "host_shape": "g7e.2xlarge",
+    "vcpu": 8,
+    "host_ram_gb": 64,
+    "local_nvme_gb": 1900
   },
   "compatibility": {
     "status": "configuration-only",
@@ -24,7 +27,7 @@
   "configs": [
     {
       "name": "performance",
-      "model_keys": ["qwen3.8-27b-nvfp4"],
+      "model_keys": ["qwen-3.8-27b-nvfp4"],
       "description": "High-context single-GPU Blackwell starting point with in-checkpoint MTP.",
       "server": {
         "max_model_len": 524288,
@@ -40,7 +43,7 @@
     },
     {
       "name": "target-only",
-      "model_keys": ["qwen3.8-27b-nvfp4"],
+      "model_keys": ["qwen-3.8-27b-nvfp4"],
       "description": "Target-only comparison lane for MTP acceptance and throughput smoke tests.",
       "server": {
         "max_model_len": 262144,

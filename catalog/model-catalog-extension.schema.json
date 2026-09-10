@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/cvalusek/PreFer/blob/develop/catalog/model-catalog-extension.schema.json",
+  "title": "PreFer runtime Hugging Face catalog extension",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "repositories", "models"],
+  "properties": {
+    "schema_version": {"const": "prefer.model-catalog-extension.v1"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "repositories": {"type": "object", "additionalProperties": {"type": "object"}},
+    "models": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["repository", "resolved_revision"],
+        "properties": {
+          "repository": {"type": "string", "pattern": "^[^/]+/[^/]+$"},
+          "resolved_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+        }
+      }
+    }
+  }
+}

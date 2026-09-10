@@ -325,6 +325,8 @@ def lane_inventory(lane: dict) -> dict:
     payload = {"key": lane["key"], "artifacts": lane["artifacts"]}
     return {
         "request_model_id": lane["id"],
+        "model_slug": lane["model_slug"],
+        "quant_slug": lane["quant_slug"],
         "display_name": lane["display_name"],
         "family": lane["family"],
         "description": lane["description"],
@@ -347,9 +349,18 @@ def deployment_record(
     config_path: str,
     prestage_path: str,
     runtime: dict,
+    server_overrides: dict | None = None,
     **extra: object,
 ) -> dict:
     artifacts = unique_artifacts(lanes)
+    append_args = (server_overrides or {}).get("model_args_append", [])
+    offload_components = []
+    if "--offload-to-cpu" in append_args:
+        offload_components.append("model")
+    if "--clip-on-cpu" in append_args:
+        offload_components.append("text_encoder")
+    if "--vae-on-cpu" in append_args:
+        offload_components.append("vae")
     return {
         "id": deployment_id,
         "runtime": "stable-diffusion.cpp",
@@ -366,10 +377,22 @@ def deployment_record(
             "prestage_manifest": prestage_path,
         },
         "environment": {"IMAGE_SERVER_CONFIG": config_path, "IMAGE_PRESTAGE_MODELS": ""},
-        "residency": {"lazy_load": True, "max_loaded_models": 1, "idle_unload_ms": 1800000},
+        "residency": {
+            "lazy_load": True,
+            "max_loaded_models": 1,
+            "idle_unload_ms": 1800000,
+            **({"offload": {"enabled": True, "components": offload_components}} if offload_components else {}),
+        },
         "capabilities": sorted({capability for lane in lanes for capability in lane["capabilities"]}),
         "models": [
-            {"key": lane["key"], "request_model_id": lane["id"], "precision": lane["precision"], "capabilities": lane["capabilities"]}
+            {
+                "key": lane["key"],
+                "request_model_id": lane["id"],
+                "model_slug": lane["model_slug"],
+                "quant_slug": lane["quant_slug"],
+                "precision": lane["precision"],
+                "capabilities": lane["capabilities"],
+            }
             for lane in lanes
         ],
         "prestage_models": [lane["key"] for lane in lanes],
@@ -387,6 +410,7 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
             "/app/server.json",
             "/app/server.prestage",
             runtime,
+            server_overrides={"model_args_append": ["--offload-to-cpu"]},
             kind="default",
             description="All primary image capabilities with capacity-oriented CPU offload",
             verification_status="configuration-only",
@@ -403,6 +427,7 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
                 config_path,
                 prestage_path,
                 runtime,
+                server_overrides=scenario["server"],
                 provider=scenario["provider"],
                 hardware=scenario["hardware"],
                 compatibility=scenario["compatibility"],

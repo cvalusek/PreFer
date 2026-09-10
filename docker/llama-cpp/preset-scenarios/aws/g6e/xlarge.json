@@ -7,7 +7,10 @@
     "gpu_name": "NVIDIA L40S",
     "gpu_count": 1,
     "vram_gb_each": 48,
+    "architecture": "Ada Lovelace",
+    "compute_capability": "sm_89",
     "vcpu": 4,
+    "host_ram_gb": 32,
     "local_nvme_gb": 250
   },
   "verification": "owner-operated",

@@ -146,6 +146,7 @@ def model_lanes() -> list[dict]:
                 "precision": quant["precision"],
                 "primary": bool(quant.get("primary")),
                 **shared,
+                "model_slug": model_slug,
                 "artifacts": artifacts,
                 "server_path": server_path,
                 "container_path": container_path,
@@ -331,6 +332,8 @@ def lane_inventory(lane: dict) -> dict:
     ).hexdigest()
     return {
         "id": lane["id"],
+        "model_slug": lane["model_slug"],
+        "quant_slug": lane["quant_slug"],
         "family": lane["family"],
         "task": lane["task"],
         "mode": lane["mode"],
@@ -388,6 +391,8 @@ def deployment_inventory(
                     {
                         "key": lane["key"],
                         "request_model_id": lane["id"],
+                        "model_slug": lane["model_slug"],
+                        "quant_slug": lane["quant_slug"],
                         "task": lane["task"],
                         "mode": lane["mode"],
                     }
@@ -446,6 +451,8 @@ def deployment_inventory(
                     {
                         "key": lane["key"],
                         "request_model_id": lane["id"],
+                        "model_slug": lane["model_slug"],
+                        "quant_slug": lane["quant_slug"],
                         "task": lane["task"],
                         "mode": lane["mode"],
                         "precision": lane["precision"],

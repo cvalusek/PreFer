@@ -14,7 +14,7 @@
     "--port",
     "8001",
     "--served-model-name",
-    "qwen3.8-27b",
+    "qwen-3.8-27b",
     "--tensor-parallel-size",
     "1",
     "--max-model-len",
@@ -38,7 +38,7 @@
     "{\"method\":\"mtp\",\"num_speculative_tokens\":3}"
   ],
   "server": {
-    "served_model_name": "qwen3.8-27b",
+    "served_model_name": "qwen-3.8-27b",
     "kv_cache_dtype": "fp8",
     "tensor_parallel_size": 1,
     "max_model_len": 131072,
@@ -61,13 +61,14 @@
   },
   "models": [
     {
-      "key": "qwen3.8-27b-nvfp4",
-      "request_model_id": "qwen3.8-27b",
+      "key": "qwen-3.8-27b-nvfp4",
+      "request_model_id": "qwen-3.8-27b",
+      "model_slug": "qwen-3.8-27b",
+      "quant_slug": "nvfp4",
       "aliases": [
-        "qwen3.8-27b",
         "qwen-3.8-27b"
       ],
-      "profile_id": "qwen3.8-27b",
+      "profile_id": "qwen-3.8-27b",
       "tasks": [
         "chat",
         "completion"
@@ -101,5 +102,5 @@
       "max_context_length": 1048576
     }
   ],
-  "served_model_name": "qwen3.8-27b"
+  "served_model_name": "qwen-3.8-27b"
 }

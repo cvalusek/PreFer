@@ -24,7 +24,7 @@
   "configs": [
     {
       "name": "performance",
-      "model_keys": ["qwen3.8-27b-nvfp4"],
+      "model_keys": ["qwen-3.8-27b-nvfp4"],
       "description": "RunPod Blackwell high-context lane with in-checkpoint MTP.",
       "server": {
         "max_model_len": 524288,
@@ -40,7 +40,7 @@
     },
     {
       "name": "target-only",
-      "model_keys": ["qwen3.8-27b-nvfp4"],
+      "model_keys": ["qwen-3.8-27b-nvfp4"],
       "description": "Target-only comparison lane for MTP acceptance and throughput smoke tests.",
       "server": {
         "max_model_len": 262144,

@@ -1,0 +1,58 @@
+schema_version: prefer.model-source.v1
+display_name: Qwen3 TTS 0.6B Base
+capabilities:
+  - text-to-speech
+  - voice-cloning
+profile:
+  summary: Compact reference-voice cloning model for general text-to-speech when a short voice sample is available.
+  architecture:
+    kind: speech-synthesis-model
+    total_parameters_b: 0.6
+    active_parameters_b: 0.6
+  modalities:
+    native_input:
+      - text
+      - audio
+    configured_input:
+      - text
+      - audio
+    output:
+      - audio
+  reasoning:
+    control: not-applicable
+  roles:
+    preferred:
+      - voice-cloning
+      - general-tts
+    capable:
+      - saved-reference-voices
+    avoid:
+      - voice-design-without-reference
+      - live-full-duplex-conversation
+  strengths:
+    - Smallest general voice-cloning route in the catalog and a practical default for reusable reference voices.
+  limitations:
+    - Similarity and delivery depend on reference quality; it does not invent a voice from prose alone.
+  prompting:
+    - Use a clean, representative reference clip and write punctuation for the cadence you want.
+  evidence:
+    confidence: high
+    basis:
+      - official
+      - configured-artifact
+default:
+  repository: audio-cpp/audio.cpp-gguf
+  quant: bf16
+settings:
+  model:
+    task: tts
+engines:
+  audio.cpp: {}
+repositories:
+  audio-cpp/audio.cpp-gguf:
+    quants:
+      bf16:
+        artifacts:
+          - files:
+              - Qwen3-TTS-12Hz-0.6B-Base-GGUF/qwen3-tts-12hz-0.6b-base-bf16.gguf
+            role: model

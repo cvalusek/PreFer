@@ -21,6 +21,13 @@ Each immutable GitHub release and matching Actions artifact contains:
 - `prefer-image-deployment-inventory.json`
 - `prefer-sglang-deployment-inventory.json`
 - `prefer-vllm-deployment-inventory.json`
+- `prefer-inference-core.tgz`: the ESM `prefer-inference-core` package for the release SHA
+- `prefer.mjs`: a standalone Node 24 CLI used inside every engine image
+- `prefer-model-catalog.json`: the last successful materialized supported-model metadata
+- `prefer-model-catalog.schema.json`
+- `prefer-model-catalog-extension.schema.json`
+- `prefer-resource-profile.schema.json`
+- `prefer-model-plan.schema.json`
 - `SHA256SUMS`
 
 A controller starts with `prefer-release.json`, selects the required
@@ -32,6 +39,13 @@ source, but must ignore a branch head until its complete grouped release exists.
 The bundle contains metadata only. Model weights are neither copied into the
 release nor embedded in its container images; each runtime stages them onto its
 external `/models` storage after deployment.
+
+The model catalog is refreshed from Hugging Face before the six images build.
+If that refresh is unavailable, the build can reuse repository metadata from
+the previous successful release only when it covers every currently authored
+repository and immutable revision. Current YAML settings are still
+rematerialized over that last successful metadata. The release manifest records
+whether the dataset came from a live refresh or that bounded fallback.
 
 `build-release.py` runs only after every engine build returns its published OCI
 digest. It validates the source revision and all six image digests, copies the exact

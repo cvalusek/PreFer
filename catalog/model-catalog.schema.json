@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/cvalusek/PreFer/blob/develop/catalog/model-catalog.schema.json",
+  "title": "PreFer materialized model catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "source_fingerprint", "catalog_fingerprint", "defaults", "models", "repositories"],
+  "properties": {
+    "schema_version": {"const": "prefer.model-catalog.v1"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "source_fingerprint": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "catalog_fingerprint": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "defaults": {"type": "object"},
+    "models": {"type": "object", "additionalProperties": {"type": "object"}},
+    "repositories": {"type": "object", "additionalProperties": {"$ref": "#/$defs/repository"}}
+  },
+  "$defs": {
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "requested_revision", "resolved_revision", "base_models", "gated", "private", "tags", "files_complete", "files", "retrieved_at"],
+      "properties": {
+        "repository": {"type": "string", "pattern": "^[^/]+/[^/]+$"},
+        "requested_revision": {"type": "string", "minLength": 1},
+        "resolved_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "base_models": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "pipeline_tag": {"type": "string"},
+        "library_name": {"type": "string"},
+        "license": {"type": "string"},
+        "gated": {"oneOf": [{"type": "boolean"}, {"type": "string"}]},
+        "private": {"type": "boolean"},
+        "tags": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "files_complete": {"type": "boolean"},
+        "include_patterns": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "size"],
+            "properties": {
+              "path": {"type": "string", "minLength": 1},
+              "size": {"type": "integer", "minimum": 0},
+              "blob_oid": {"type": "string"},
+              "lfs_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "xet_hash": {"type": "string"}
+            }
+          }
+        },
+        "retrieved_at": {"type": "string", "format": "date-time"}
+      }
+    }
+  }
+}

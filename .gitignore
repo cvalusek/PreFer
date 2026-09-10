@@ -26,6 +26,11 @@ node_modules/
 **/node_modules/
 dist/
 **/dist/
+.npm-cache/
+build/prefer-tooling/
+build/catalog-validation.json
+build/hf-metadata-cache/
+docker/*/.prefer-tooling/
 
 # Reproducible benchmark outputs are local by default. Deliberately scrubbed,
 # reviewed baselines live in benchmark/baselines/ and remain tracked.

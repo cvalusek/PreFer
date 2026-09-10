@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "family": "qwen",
-  "model_slug": "qwen3.8-27b",
+  "model_slug": "qwen-3.8-27b",
   "shared": {
-    "id": "qwen3.8-27b",
-    "family": "qwen3.8",
+    "id": "qwen-3.8-27b",
+    "family": "qwen-3.8",
     "task": "chat",
     "tasks": ["chat", "completion"],
     "mode": "multimodal-reasoning",
@@ -72,7 +72,7 @@
       "comparability_note": "The official vLLM recipe also lists Unsloth and other NVFP4 variants; their memory and MTP behavior are not interchangeable."
     },
     "server": {
-      "served_model_name": "qwen3.8-27b",
+      "served_model_name": "qwen-3.8-27b",
       "kv_cache_dtype": "fp8",
       "tensor_parallel_size": 1,
       "max_model_len": 262144,
@@ -109,11 +109,11 @@
   },
   "quants": {
     "nvfp4": {
-      "key": "qwen3.8-27b-nvfp4",
+      "key": "qwen-3.8-27b-nvfp4",
       "precision": "NVFP4 W4A4 compressed-tensors with FP8 attention/KV and a pinned MTP companion",
       "primary": true,
-      "request_model_id": "qwen3.8-27b",
-      "aliases": ["qwen3.8-27b", "qwen-3.8-27b"],
+      "request_model_id": "qwen-3.8-27b",
+      "aliases": ["qwen-3.8-27b"],
       "artifacts": [
         {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "LICENSE", "size": 11343, "sha256": "50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32", "role": "license"},
         {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "chat_template.jinja", "size": 8952, "sha256": "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041", "role": "chat-template"},

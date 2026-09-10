@@ -1,0 +1,78 @@
+schema_version: prefer.model-source.v1
+display_name: GLM-4.7-Flash
+capabilities:
+  - text-generation
+  - chat
+  - streaming
+  - reasoning
+  - tool-calling
+  - structured-output
+profile:
+  summary: Fast one-card reasoning and coding helper for bounded implementation, search, tools, drafting, and synthesis;
+    use GLM-5.2 or another supervisor for the hardest long-horizon work.
+  architecture:
+    kind: moe
+    total_parameters_b: 30
+    active_parameters_b: 3
+  modalities:
+    native_input:
+      - text
+    configured_input:
+      - text
+    output:
+      - text
+  context:
+    native_tokens: 202752
+  reasoning:
+    control: request-selectable
+  roles:
+    preferred:
+      - bounded-coding
+      - search
+      - tool-use
+      - drafting
+      - synthesis
+    capable:
+      - reasoning
+      - research-helper
+      - agent-steps
+    avoid:
+      - vision
+      - final-research-authority
+      - unbounded-orchestration
+  strengths:
+    - Its three-billion-active MoE architecture makes it a fast coding, browsing, and agent worker for its total size.
+    - Useful qualitative quality-throughput balance for a single 96 GB deployment.
+  limitations:
+    - Not the preferred final authority when larger high-intelligence routes are available.
+    - Agent behavior depends on preserving its thinking and tool-template semantics.
+  prompting:
+    - Use the exact GLM template and tool schema; preserve thinking across multi-turn agent tasks and define a bounded
+      completion condition.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - inference
+    notes: Architecture and intended capabilities are publisher-backed; precise PreFer role and speed judgment still needs
+      route-level experience.
+default:
+  repository: unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF
+  quant: ud-q6-k-xl
+engines:
+  llama.cpp:
+    settings:
+      launcher:
+        temp: 0.7
+        top-k: 0
+  sglang: {}
+  vllm: {}
+repositories:
+  unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF:
+    discover: gguf
+    quants:
+      ud-q6-k-xl:
+        artifacts:
+          - files:
+              - GLM-4.7-Flash-REAP-23B-A3B-UD-Q6_K_XL.gguf
+            role: model

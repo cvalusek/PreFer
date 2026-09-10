@@ -471,6 +471,8 @@ def model_config_record(lane: dict) -> dict:
     return {
         "key": lane["key"],
         "request_model_id": lane["request_model_id"],
+        "model_slug": lane["model_slug"],
+        "quant_slug": lane["quant_slug"],
         "aliases": lane["aliases"],
         "profile_id": lane.get("profile_id", lane["model_slug"]),
         "runtime_mode": lane.get("runtime_mode", "text"),
@@ -529,6 +531,8 @@ def lane_inventory(lane: dict) -> dict:
         "key": lane["key"],
         "id": lane["id"],
         "request_model_id": lane["request_model_id"],
+        "model_slug": lane["model_slug"],
+        "quant_slug": lane["quant_slug"],
         "aliases": lane["aliases"],
         "profile_id": lane.get("profile_id", lane["model_slug"]),
         "runtime_mode": lane.get("runtime_mode", "text"),

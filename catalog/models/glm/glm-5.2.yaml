@@ -1,0 +1,84 @@
+schema_version: prefer.model-source.v1
+display_name: GLM-5.2
+capabilities:
+  - text-generation
+  - chat
+  - streaming
+  - reasoning
+  - tool-calling
+  - structured-output
+profile:
+  summary: High-end text supervisor for difficult reasoning, research synthesis, coding design, and long-context planning;
+    reserve it for high-leverage work rather than cheap fan-out.
+  architecture:
+    kind: moe
+    total_parameters_b: 753
+    active_parameters_b: 40
+  modalities:
+    native_input:
+      - text
+    configured_input:
+      - text
+    output:
+      - text
+  context:
+    native_tokens: 1048576
+  reasoning:
+    control: request-selectable
+  roles:
+    preferred:
+      - difficult-reasoning
+      - research-synthesis
+      - coding-design
+      - long-context-planning
+    capable:
+      - orchestration
+      - architecture-review
+      - complex-coding
+    avoid:
+      - cheap-fanout
+      - latency-sensitive-work
+      - vision
+  strengths:
+    - Flagship long-horizon model with flexible thinking effort and a publisher-supported one-million-token context.
+    - Good supervisor candidate for complex plans, evidence synthesis, and coding architecture.
+  limitations:
+    - Its multi-accelerator footprint and latency make it wasteful for routine worker tasks.
+    - The local GGUF route still needs contract, tool, and long-context validation on target hardware.
+  prompting:
+    - Provide the objective, evidence requirements, decision criteria, and sufficient reasoning budget; keep the exact
+      GLM template.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - maintainer
+    notes: Flagship capabilities are publisher-backed; local quality, speed, and route behavior remain deployment-specific.
+default:
+  repository: unsloth/GLM-5.2-GGUF
+  quant: ud-q4-k-xl
+engines:
+  llama.cpp: {}
+  sglang: {}
+  vllm: {}
+repositories:
+  unsloth/GLM-5.2-GGUF:
+    discover: gguf
+    quants:
+      ud-q4-k-xl:
+        artifacts:
+          - files:
+              - UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00001-of-00011.gguf
+            role: model
+          - files:
+              - UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00002-of-00011.gguf
+              - UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00003-of-00011.gguf
+              - UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00004-of-00011.gguf
+              - UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00005-of-00011.gguf
+              - UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00006-of-00011.gguf
+              - UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00007-of-00011.gguf
+              - UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00008-of-00011.gguf
+              - UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00009-of-00011.gguf
+              - UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00010-of-00011.gguf
+              - UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00011-of-00011.gguf
+            role: model-shard

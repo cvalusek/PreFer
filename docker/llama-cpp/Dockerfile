@@ -5,10 +5,18 @@
 ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b10362@sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c
 FROM ${LLAMA_CPP_BASE_IMAGE}
 
+ARG TARGETARCH
+
 # huggingface-cli is deprecated; the `hf` command (from huggingface_hub) replaces it.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3-pip curl ca-certificates \
+    && apt-get install -y --no-install-recommends python3-pip curl ca-certificates xz-utils \
     && rm -rf /var/lib/apt/lists/*
+
+COPY .prefer-tooling/install-prefer-node.sh /tmp/install-prefer-node.sh
+RUN sed -i 's/\r$//' /tmp/install-prefer-node.sh \
+    && chmod +x /tmp/install-prefer-node.sh \
+    && /tmp/install-prefer-node.sh "$TARGETARCH" \
+    && rm -f /tmp/install-prefer-node.sh
 
 RUN pip install --no-cache-dir --break-system-packages -U "huggingface_hub[cli]"
 
@@ -47,11 +55,20 @@ COPY generate-presets.py /prefer-catalog/generate-presets.py
 COPY preset-catalog.json /prefer-catalog/preset-catalog.json
 COPY models/ /prefer-catalog/models/
 COPY preset-scenarios/ /prefer-catalog/preset-scenarios/
+COPY .prefer-tooling/prefer.mjs /usr/local/bin/prefer
+COPY .prefer-tooling/prefer-model-catalog.json /prefer-model-catalog.json
+COPY .prefer-tooling/prefer-model-catalog.schema.json /prefer-catalog/schemas/prefer-model-catalog.schema.json
+COPY .prefer-tooling/prefer-model-catalog-extension.schema.json /prefer-catalog/schemas/prefer-model-catalog-extension.schema.json
+COPY .prefer-tooling/prefer-resource-profile.schema.json /prefer-catalog/schemas/prefer-resource-profile.schema.json
+COPY .prefer-tooling/prefer-model-plan.schema.json /prefer-catalog/schemas/prefer-model-plan.schema.json
 COPY detect-preset.sh /detect-preset.sh
 COPY download-models.sh /download-models.sh
 COPY entrypoint.sh /entrypoint.sh
 RUN sed -i 's/\r$//' /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh /prefer-catalog/generate-presets.py \
-    && chmod +x /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh
+    && chmod +x /usr/local/bin/prefer /model-downloads.generated.sh /detect-preset.sh /download-models.sh /entrypoint.sh
+
+ENV PREFER_ENGINE=llama.cpp \
+    PREFER_MODEL_CATALOG=/prefer-model-catalog.json
 
 EXPOSE 8080
 

@@ -116,7 +116,7 @@
         },
         "jpezzulli_custom_fork": {
           "status": "custom-qualified-separate-route",
-          "details": "The fork's Flash-Next route uses RadixArk/Qwen3.8-Flash-Next-NVFP4, while its 27B route uses DFlash2; neither campaign is this qwen3.8-27b NVFP4 artifact.",
+          "details": "The fork's Flash-Next route uses RadixArk/Qwen3.8-Flash-Next-NVFP4, while its 27B route uses DFlash2; neither campaign is this qwen-3.8-27b NVFP4 artifact.",
           "source_repo": "jpezzulli/sglang-rtxpro6000",
           "source_branch": "pennyroyal-main-sm120-final",
           "source_revision": "fb1216c6c459cb024e709eba892d9e7ded103688"

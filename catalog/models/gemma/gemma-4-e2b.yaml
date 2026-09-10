@@ -1,0 +1,87 @@
+schema_version: prefer.model-source.v1
+display_name: Gemma 4 E2B
+capabilities:
+  - text-generation
+  - chat
+  - streaming
+  - reasoning
+  - tool-calling
+  - structured-output
+  - image-understanding
+  - audio-understanding
+profile:
+  summary: Tiny, very fast QAT generalist for tightly scoped rewriting, extraction, classification, captions, and light
+    image understanding; use a larger model for reasoning, coding, or research authority.
+  architecture:
+    kind: dense
+  modalities:
+    native_input:
+      - text
+      - image
+      - audio
+    configured_input:
+      - text
+      - image
+    output:
+      - text
+  context:
+    native_tokens: 131072
+  reasoning:
+    control: request-selectable
+  roles:
+    preferred:
+      - routing
+      - classification
+      - extraction
+      - simple-writing
+      - image-captioning
+    capable:
+      - summarization
+      - translation
+    avoid:
+      - complex-reasoning
+      - coding-agent
+      - autonomous-tools
+      - research-authority
+  strengths:
+    - Very fast, low-cost QAT first pass for simple language and visual tasks.
+    - Gemma-style prose is often more natural than similarly small utility models.
+  limitations:
+    - Limited depth, coding reliability, and multi-step tool persistence.
+    - Native audio capability is not exposed by the current llama.cpp package.
+  prompting:
+    - Give one explicit task, the output shape, and a short example; do not rely on hidden planning.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - inference
+    notes: Capability facts are publisher-backed; role fit is a conservative product inference pending broader local use.
+default:
+  repository: unsloth/gemma-4-E2B-it-qat-GGUF
+  quant: ud-q4-k-xl
+engines:
+  llama.cpp:
+    settings:
+      launcher:
+        spec-type: draft-mtp
+        spec-draft-n-max: 4
+        flash-attn: off
+        top-k: 64
+  sglang: {}
+  vllm: {}
+repositories:
+  unsloth/gemma-4-E2B-it-qat-GGUF:
+    discover: gguf
+    quants:
+      ud-q4-k-xl:
+        artifacts:
+          - files:
+              - gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf
+            role: model
+          - files:
+              - mtp-gemma-4-E2B-it.gguf
+            role: draft
+          - files:
+              - mmproj-F16.gguf
+            role: projector

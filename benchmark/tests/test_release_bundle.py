@@ -13,7 +13,52 @@ WORKFLOW = REPO_ROOT / ".github" / "workflows" / "build-prefer.yml"
 
 
 class GroupedReleaseTests(unittest.TestCase):
-    def build_release(self, output_dir: Path, image_digest: str | None = None) -> subprocess.CompletedProcess[str]:
+    def build_release(
+        self,
+        output_dir: Path,
+        image_digest: str | None = None,
+        package_version: str = "0.0.0-gabcdef0",
+    ) -> subprocess.CompletedProcess[str]:
+        tooling_dir = output_dir / "tooling-input"
+        tooling_dir.mkdir(parents=True)
+        tooling_assets = {
+            "package": ("prefer-inference-core.tgz", b"package"),
+            "cli": ("prefer.mjs", b"cli"),
+            "model_catalog": ("prefer-model-catalog.json", b"catalog"),
+            "model_catalog_schema": ("prefer-model-catalog.schema.json", b"schema"),
+            "model_catalog_extension_schema": (
+                "prefer-model-catalog-extension.schema.json",
+                b"extension-schema",
+            ),
+            "resource_profile_schema": (
+                "prefer-resource-profile.schema.json",
+                b"resource-schema",
+            ),
+            "model_plan_schema": (
+                "prefer-model-plan.schema.json",
+                b"plan-schema",
+            ),
+        }
+        manifest_assets: dict[str, dict[str, object]] = {}
+        for key, (name, payload) in tooling_assets.items():
+            (tooling_dir / name).write_bytes(payload)
+            manifest_assets[key] = {
+                "asset": name,
+                "bytes": len(payload),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            }
+        tooling_manifest = {
+            "schema_version": "prefer.tooling-build.v1",
+            "source_revision": "abcdef0123456789abcdef0123456789abcdef01",
+            "package_version": package_version,
+            "huggingface_refresh": "live",
+            "catalog_fingerprint": "7" * 64,
+            "source_fingerprint": "8" * 64,
+            "distribution": {"model_weights_embedded": False, "metadata_only": True},
+            "assets": manifest_assets,
+        }
+        tooling_manifest_path = tooling_dir / "prefer-tooling-build.json"
+        tooling_manifest_path.write_text(json.dumps(tooling_manifest), encoding="utf-8")
         digests = {
             "llama": "sha256:" + "1" * 64,
             "audio_cuda": "sha256:" + "2" * 64,
@@ -69,6 +114,10 @@ class GroupedReleaseTests(unittest.TestCase):
                     / "vllm"
                     / "deployment-inventory.generated.json"
                 ),
+                "--tooling-manifest",
+                str(tooling_manifest_path),
+                "--tooling-dir",
+                str(tooling_dir),
                 "--output-dir",
                 str(output_dir),
             ],
@@ -97,6 +146,20 @@ class GroupedReleaseTests(unittest.TestCase):
                 set(manifest["engines"]),
                 {"llama", "audio", "image", "sglang", "vllm"},
             )
+            self.assertEqual(manifest["tooling"]["package_version"], "0.0.0-gabcdef0")
+            self.assertEqual(manifest["tooling"]["huggingface_refresh"], "live")
+            for key in (
+                "package",
+                "cli",
+                "model_catalog",
+                "model_catalog_schema",
+                "model_catalog_extension_schema",
+                "resource_profile_schema",
+                "model_plan_schema",
+            ):
+                binding = manifest["tooling"][key]
+                copied = output_dir / binding["asset"]
+                self.assertEqual(binding["sha256"], hashlib.sha256(copied.read_bytes()).hexdigest())
 
             expected_images = {
                 ("llama", "cuda"): (
@@ -158,6 +221,14 @@ class GroupedReleaseTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("invalid digest for image-cuda12-sha-abcdef0", result.stderr)
 
+    def test_bundle_rejects_tooling_that_is_not_release_matched(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            result = self.build_release(
+                Path(directory), package_version="0.0.0-gfffffff"
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("tooling package version does not match the release", result.stderr)
+
     def test_one_workflow_builds_and_publishes_all_engines(self) -> None:
         workflow = WORKFLOW.read_text(encoding="utf-8")
         self.assertFalse((WORKFLOW.parent / "build-audio.yml").exists())
@@ -169,6 +240,9 @@ class GroupedReleaseTests(unittest.TestCase):
             "docker/sglang/**",
             "docker/vllm/**",
             "release/**",
+            "catalog/**",
+            "packages/prefer/**",
+            "scripts/**",
         ):
             self.assertIn(watched_path, workflow)
         for immutable_tag in (
@@ -180,10 +254,21 @@ class GroupedReleaseTests(unittest.TestCase):
             "vllm-cuda13-sha-",
         ):
             self.assertIn(immutable_tag, workflow)
-        self.assertIn("needs: [llama, audio_cuda, audio_cpu, image, sglang, vllm]", workflow)
+        self.assertIn("needs: [tooling, llama, audio_cuda, audio_cpu, image, sglang, vllm]", workflow)
         self.assertIn("name: prefer-release-${{ github.sha }}", workflow)
         self.assertIn("gh release create", workflow)
         self.assertIn("prefer-release.json", workflow)
+        self.assertIn("prefer-inference-core.tgz", workflow)
+        self.assertIn("https://registry.npmjs.org", workflow)
+        self.assertIn("secrets.NPM_TOKEN", workflow)
+        self.assertIn("prefer-inference-core@$package_version", workflow)
+        self.assertNotIn("https://npm.pkg.github.com", workflow)
+        self.assertNotIn("@cvalusek/prefer", workflow)
+        self.assertIn("prefer-model-catalog.json", workflow)
+        self.assertIn("sha256sum prefer-release/* > prefer-release/SHA256SUMS", workflow)
+        self.assertIn('package_dist_tag="latest"', workflow)
+        self.assertIn('package_dist_tag="preview"', workflow)
+        self.assertIn('--tag "$package_dist_tag"', workflow)
 
     def test_release_channels_are_branch_scoped(self) -> None:
         workflow = WORKFLOW.read_text(encoding="utf-8")
@@ -220,6 +305,7 @@ class GroupedReleaseTests(unittest.TestCase):
             set(schema["properties"]["engines"]["required"]),
             {"llama", "audio", "image", "sglang", "vllm"},
         )
+        self.assertIn("tooling", schema["required"])
 
 
 if __name__ == "__main__":

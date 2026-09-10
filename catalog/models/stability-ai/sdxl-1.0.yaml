@@ -1,0 +1,64 @@
+schema_version: prefer.model-source.v1
+display_name: Stable Diffusion XL 1.0
+capabilities:
+  - text-to-image
+profile:
+  summary: Mature lightweight fallback for ordinary text-to-image and simple image-to-image work with broad ecosystem
+    familiarity.
+  architecture:
+    kind: latent-diffusion-model
+  modalities:
+    native_input:
+      - text
+      - image
+    configured_input:
+      - text
+      - image
+    output:
+      - image
+  reasoning:
+    control: not-applicable
+  roles:
+    preferred:
+      - compatibility-fallback
+      - general-image-generation
+    capable:
+      - simple-image-to-image
+    avoid:
+      - best-text-rendering
+      - state-of-the-art-editing
+  strengths:
+    - Predictable, widely understood behavior and a single compact checkpoint make it a useful fallback.
+  limitations:
+    - Newer specialized routes generally offer better speed, text rendering, or editing behavior.
+  prompting:
+    - Use conventional positive visual descriptions and be explicit about composition, medium, and lighting.
+  evidence:
+    confidence: high
+    basis:
+      - official
+      - mature-ecosystem
+default:
+  repository: stabilityai/stable-diffusion-xl-base-1.0
+  quant: fp16
+engines:
+  stable-diffusion.cpp:
+    settings:
+      launcher:
+        args:
+          - --cfg-scale
+          - "7.0"
+          - --steps
+          - "30"
+          - --sampling-method
+          - dpm++2m
+          - --diffusion-fa
+          - --vae-tiling
+repositories:
+  stabilityai/stable-diffusion-xl-base-1.0:
+    quants:
+      fp16:
+        artifacts:
+          - files:
+              - sd_xl_base_1.0.safetensors
+            role: checkpoint

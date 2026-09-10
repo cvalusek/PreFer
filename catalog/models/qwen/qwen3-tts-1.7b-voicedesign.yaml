@@ -1,0 +1,58 @@
+schema_version: prefer.model-source.v1
+display_name: Qwen3 TTS 1.7B VoiceDesign
+capabilities:
+  - text-to-speech
+  - voice-design
+profile:
+  summary: Instruction-driven voice creation for producing a new vocal character from a natural-language description.
+  architecture:
+    kind: speech-synthesis-model
+    total_parameters_b: 1.7
+    active_parameters_b: 1.7
+  modalities:
+    native_input:
+      - text
+    configured_input:
+      - text
+    output:
+      - audio
+  reasoning:
+    control: not-applicable
+  roles:
+    preferred:
+      - voice-design
+      - character-voice-prototyping
+    capable:
+      - styled-tts-samples
+    avoid:
+      - direct-reference-cloning
+      - live-full-duplex-conversation
+  strengths:
+    - Can express vocal age, texture, register, cadence, mood, and dramatic style directly from instructions.
+  limitations:
+    - A generated sample is audio, not automatically a reusable saved-voice identity; save or import it into a cloning
+      workflow when consistency is required.
+  prompting:
+    - Describe vocal texture, pitch, pace, accent only when appropriate, emotional tone, and speaking intent; keep the
+      spoken text separate.
+  evidence:
+    confidence: high
+    basis:
+      - official
+      - configured-artifact
+default:
+  repository: audio-cpp/audio.cpp-gguf
+  quant: bf16
+settings:
+  model:
+    task: vdes
+engines:
+  audio.cpp: {}
+repositories:
+  audio-cpp/audio.cpp-gguf:
+    quants:
+      bf16:
+        artifacts:
+          - files:
+              - Qwen3-TTS-12Hz-1.7B-VoiceDesign-GGUF/qwen3-tts-12hz-1.7b-voicedesign-bf16.gguf
+            role: model

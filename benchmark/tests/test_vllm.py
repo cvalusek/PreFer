@@ -36,7 +36,7 @@ class VLLMTests(unittest.TestCase):
 
     def test_catalog_pins_the_inferact_nvfp4_bundle(self) -> None:
         catalog = json.loads(
-            (VLLM_ROOT / "models" / "qwen" / "qwen3.8-27b" / "model.json").read_text(
+            (VLLM_ROOT / "models" / "qwen" / "qwen-3.8-27b" / "model.json").read_text(
                 encoding="utf-8"
             )
         )
@@ -49,7 +49,7 @@ class VLLMTests(unittest.TestCase):
         )
         lane = catalog["quants"]["nvfp4"]
         self.assertTrue(lane["primary"])
-        self.assertEqual(lane["key"], "qwen3.8-27b-nvfp4")
+        self.assertEqual(lane["key"], "qwen-3.8-27b-nvfp4")
         self.assertEqual(len(lane["artifacts"]), 19)
         self.assertEqual(lane["artifacts"][0]["revision"], "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462")
         self.assertEqual(sum(artifact["size"] for artifact in lane["artifacts"]), 26404413873)
@@ -68,8 +68,8 @@ class VLLMTests(unittest.TestCase):
         self.assertEqual(inventory["base_image"]["platform_manifests"]["linux/amd64"], "sha256:ffaf945675c81fa7ed3e6a66c7c2d7189dd012614e2c961fac1c2702a7ba04be")
         self.assertEqual(inventory["requirements"]["minimum_compute_capability"], "sm_100")
         self.assertEqual(inventory["requirements"]["cuda_major"], 13)
-        self.assertEqual(inventory["experimental_routes"]["qwen3.8-flash"]["status"], "deferred-experimental")
-        self.assertEqual(inventory["models"]["qwen3.8-27b-nvfp4"]["artifact_bytes"], 26404413873)
+        self.assertEqual(inventory["experimental_routes"]["qwen-3.8-flash"]["status"], "deferred-experimental")
+        self.assertEqual(inventory["models"]["qwen-3.8-27b-nvfp4"]["artifact_bytes"], 26404413873)
         self.assertEqual(inventory["api"]["ready"], "GET /readyz")
         deployments = {deployment["id"]: deployment for deployment in inventory["deployments"]}
         self.assertEqual(deployments["vllm/cuda13"]["kind"], "runtime-default")
@@ -139,7 +139,7 @@ class VLLMTests(unittest.TestCase):
             models = json.loads(models_response.read())
             connection.close()
             self.assertEqual(models_response.status, 200)
-            self.assertEqual(models["data"][0]["id"], "qwen3.8-27b")
+            self.assertEqual(models["data"][0]["id"], "qwen-3.8-27b")
             self.assertIn("qwen-3.8-27b", models["data"][0]["aliases"])
 
             connection = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)

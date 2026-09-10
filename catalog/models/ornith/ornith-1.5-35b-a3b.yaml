@@ -1,0 +1,92 @@
+schema_version: prefer.model-source.v1
+display_name: Ornith 1.5 35B-A3B
+capabilities:
+  - text-generation
+  - chat
+  - streaming
+  - reasoning
+  - tool-calling
+  - structured-output
+  - image-understanding
+profile:
+  summary: Persistent, fast agentic coder for bounded multi-file implementation, repository or browser agents, and
+    structured tool loops; validate it before trusting prose, visual judgment, or final architecture.
+  architecture:
+    kind: hybrid-moe
+    total_parameters_b: 35
+    active_parameters_b: 3
+  modalities:
+    native_input:
+      - text
+      - image
+    configured_input:
+      - text
+      - image
+    output:
+      - text
+  context:
+    native_tokens: 262144
+  reasoning:
+    control: request-selectable
+  roles:
+    preferred:
+      - multi-file-coding
+      - repository-agents
+      - browser-agents
+      - tool-loops
+    capable:
+      - structured-execution
+      - research-helper
+      - visual-qa
+    avoid:
+      - prose-first-writing
+      - final-architecture
+      - quality-critical-visual-judgment
+  strengths:
+    - Low active compute supports persistent, multi-step implementation at useful throughput.
+    - Publisher training and harness focus directly on coding agents and tool use.
+  limitations:
+    - Publisher quality claims should not be assumed to transfer unchanged to PreFer's llama.cpp route.
+    - The configured projector and long tool loops still need route-specific validation.
+  prompting:
+    - Use the exact bundled template and parser, pin the artifact, and provide bounded tools with explicit acceptance
+      tests.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - inference
+    notes: Publisher documentation targets agentic coding; local artifact, parser, and visual stability remain verification
+      items.
+default:
+  repository: ornith-ai/Ornith-1.5-35B-A3B-GGUF
+  quant: q8-0
+engines:
+  llama.cpp:
+    settings:
+      launcher:
+        temp: 0.6
+        top-k: 20
+        min-p: 0
+  sglang: {}
+  vllm: {}
+repositories:
+  ornith-ai/Ornith-1.5-35B-A3B-GGUF:
+    discover: gguf
+    quants:
+      q4-k-m:
+        artifacts:
+          - files:
+              - Ornith-1.5-35B-Q4_K_M.gguf
+            role: model
+          - files:
+              - mmproj-Ornith-1.5-35B-BF16.gguf
+            role: projector
+      q8-0:
+        artifacts:
+          - files:
+              - Ornith-1.5-35B-Q8_0.gguf
+            role: model
+          - files:
+              - mmproj-Ornith-1.5-35B-BF16.gguf
+            role: projector

@@ -1,6 +1,6 @@
 {
   "schema_version": "prefer.sglang-deployment-inventory.v2",
-  "catalog_fingerprint": "52941ddc7b8ef852e4abf65c17ffdb5169c5d832190988098d77d65a8091e889",
+  "catalog_fingerprint": "231662d43b2935a180953d36c8d2c8e6a717d74c3df3bbae8a78f05a82e7ab96",
   "product": "PreFer",
   "distribution": {
     "embedded_image_path": "/deployment-inventory.json",
@@ -203,7 +203,7 @@
         },
         "jpezzulli_custom_fork": {
           "status": "custom-qualified-separate-route",
-          "details": "The fork's Flash-Next route uses RadixArk/Qwen3.8-Flash-Next-NVFP4, while its 27B route uses DFlash2; neither campaign is this qwen3.8-27b NVFP4 artifact.",
+          "details": "The fork's Flash-Next route uses RadixArk/Qwen3.8-Flash-Next-NVFP4, while its 27B route uses DFlash2; neither campaign is this qwen-3.8-27b NVFP4 artifact.",
           "source_repo": "jpezzulli/sglang-rtxpro6000",
           "source_branch": "pennyroyal-main-sm120-final",
           "source_revision": "fb1216c6c459cb024e709eba892d9e7ded103688"
@@ -559,7 +559,7 @@
         ]
       }
     },
-    "qwen3.8-27b": {
+    "qwen-3.8-27b": {
       "summary": "A high-intelligence multimodal Qwen route for modern Blackwell GPUs, with native image/video understanding and optional in-checkpoint MTP acceleration.",
       "architecture": "64-layer hybrid linear/full-attention vision-language model with 48 GDN layers, 16 full-attention layers, and one embedded MTP layer.",
       "native_capabilities": [
@@ -616,8 +616,8 @@
         ]
       },
       "evidence_confidence": "high for upstream capability and artifact provenance; mixed for this repository's target-card fit and throughput until hardware smoke tests complete",
-      "model_slug": "qwen3.8-27b",
-      "profile_id": "qwen3.8-27b",
+      "model_slug": "qwen-3.8-27b",
+      "profile_id": "qwen-3.8-27b",
       "license": "Apache-2.0",
       "lineage": {
         "repo": "Qwen/Qwen3.8-27B",
@@ -654,6 +654,8 @@
       "key": "minimax-h3-fl2va-int8-convrot",
       "id": "minimax-h3-fl2va",
       "request_model_id": "minimax-h3-fl2va",
+      "model_slug": "minimax-h3-fl2va",
+      "quant_slug": "int8-convrot",
       "aliases": [
         "minimax-h3-fl2va",
         "minimax-h3-t2va",
@@ -1358,6 +1360,8 @@
       "key": "minimax-h3-ref2va-int8-convrot",
       "id": "minimax-h3-ref2va",
       "request_model_id": "minimax-h3-ref2va",
+      "model_slug": "minimax-h3-ref2va",
+      "quant_slug": "int8-convrot",
       "aliases": [
         "minimax-h3-ref2va",
         "minimax-h3-v2v",
@@ -2035,20 +2039,22 @@
         }
       ]
     },
-    "qwen3.8-27b-nvfp4": {
-      "key": "qwen3.8-27b-nvfp4",
-      "id": "qwen3.8-27b",
-      "request_model_id": "qwen3.8-27b",
+    "qwen-3.8-27b-nvfp4": {
+      "key": "qwen-3.8-27b-nvfp4",
+      "id": "qwen-3.8-27b",
+      "request_model_id": "qwen-3.8-27b",
+      "model_slug": "qwen-3.8-27b",
+      "quant_slug": "nvfp4",
       "aliases": [
-        "qwen3.8-27b"
+        "qwen-3.8-27b"
       ],
-      "profile_id": "qwen3.8-27b",
+      "profile_id": "qwen-3.8-27b",
       "runtime_mode": "text",
       "tasks": [
         "chat"
       ],
       "capability_aliases": {},
-      "family": "qwen3.8",
+      "family": "qwen-3.8",
       "task": "chat",
       "mode": "multimodal-reasoning",
       "description": "Qwen3.8-27B dense hybrid vision-language model in an SGLang-validated NVFP4 W4A4 checkpoint",
@@ -2146,7 +2152,7 @@
       "lora_options": null,
       "server_path": "/models/RadixArk/Qwen3.8-27B-NVFP4",
       "server": {
-        "served_model_name": "qwen3.8-27b",
+        "served_model_name": "qwen-3.8-27b",
         "quantization": "modelopt_fp4",
         "kv_cache_dtype": "fp8_e4m3",
         "attention_backend": "flashinfer",
@@ -2159,7 +2165,7 @@
         "trust_remote_code": true,
         "runtime_mode": "text"
       },
-      "download_fingerprint": "0ce1f36e252e7cd623e9d7db41ddbcc29efc05b4eed83d1d682f10ea45295f3a",
+      "download_fingerprint": "494b2ca201e7ce43d99aaaa0a06c3ad95fa27708b00eea9de8b92851699ec2db",
       "artifact_bytes": 21945295265,
       "artifacts": [
         {
@@ -2410,10 +2416,10 @@
       },
       "environment": {
         "SGLANG_SERVER_CONFIG": "/app/server.json",
-        "SGLANG_PRESTAGE_MODELS": "qwen3.8-27b-nvfp4"
+        "SGLANG_PRESTAGE_MODELS": "qwen-3.8-27b-nvfp4"
       },
       "server": {
-        "served_model_name": "qwen3.8-27b",
+        "served_model_name": "qwen-3.8-27b",
         "quantization": "modelopt_fp4",
         "kv_cache_dtype": "fp8_e4m3",
         "attention_backend": "flashinfer",
@@ -2446,7 +2452,7 @@
         "--model-path",
         "/models/RadixArk/Qwen3.8-27B-NVFP4",
         "--served-model-name",
-        "qwen3.8-27b",
+        "qwen-3.8-27b",
         "--trust-remote-code",
         "--quantization",
         "modelopt_fp4",
@@ -2519,12 +2525,14 @@
       ],
       "models": [
         {
-          "key": "qwen3.8-27b-nvfp4",
-          "request_model_id": "qwen3.8-27b",
+          "key": "qwen-3.8-27b-nvfp4",
+          "request_model_id": "qwen-3.8-27b",
+          "model_slug": "qwen-3.8-27b",
+          "quant_slug": "nvfp4",
           "aliases": [
-            "qwen3.8-27b"
+            "qwen-3.8-27b"
           ],
-          "profile_id": "qwen3.8-27b",
+          "profile_id": "qwen-3.8-27b",
           "runtime_mode": "text",
           "tasks": [
             "chat"
@@ -2566,7 +2574,7 @@
         }
       ],
       "prestage_models": [
-        "qwen3.8-27b-nvfp4"
+        "qwen-3.8-27b-nvfp4"
       ],
       "staged_artifact_bytes": 21945295265,
       "verification_status": "configuration-only",
@@ -2589,6 +2597,7 @@
         "architecture": "Ada Lovelace",
         "compute_capability": "sm_89",
         "vcpu": 4,
+        "host_ram_gb": 32,
         "local_nvme_gb": 250
       },
       "compatibility": {
@@ -2736,6 +2745,8 @@
         {
           "key": "minimax-h3-fl2va-int8-convrot",
           "request_model_id": "minimax-h3-fl2va",
+          "model_slug": "minimax-h3-fl2va",
+          "quant_slug": "int8-convrot",
           "aliases": [
             "minimax-h3-fl2va",
             "minimax-h3-t2va",
@@ -2812,6 +2823,7 @@
         "architecture": "Blackwell",
         "compute_capability": "sm_120",
         "vcpu": 8,
+        "host_ram_gb": 64,
         "local_nvme_gb": 1900
       },
       "compatibility": {
@@ -2843,7 +2855,7 @@
         "SGLANG_DOWNLOAD_JOBS": "4"
       },
       "server": {
-        "served_model_name": "qwen3.8-27b",
+        "served_model_name": "qwen-3.8-27b",
         "quantization": "modelopt_fp4",
         "kv_cache_dtype": "fp8_e4m3",
         "attention_backend": "flashinfer",
@@ -2880,7 +2892,7 @@
         "--model-path",
         "/models/RadixArk/Qwen3.8-27B-NVFP4",
         "--served-model-name",
-        "qwen3.8-27b",
+        "qwen-3.8-27b",
         "--trust-remote-code",
         "--quantization",
         "modelopt_fp4",
@@ -2973,12 +2985,14 @@
       ],
       "models": [
         {
-          "key": "qwen3.8-27b-nvfp4",
-          "request_model_id": "qwen3.8-27b",
+          "key": "qwen-3.8-27b-nvfp4",
+          "request_model_id": "qwen-3.8-27b",
+          "model_slug": "qwen-3.8-27b",
+          "quant_slug": "nvfp4",
           "aliases": [
-            "qwen3.8-27b"
+            "qwen-3.8-27b"
           ],
-          "profile_id": "qwen3.8-27b",
+          "profile_id": "qwen-3.8-27b",
           "runtime_mode": "text",
           "tasks": [
             "chat"
@@ -3020,7 +3034,7 @@
         }
       ],
       "prestage_models": [
-        "qwen3.8-27b-nvfp4"
+        "qwen-3.8-27b-nvfp4"
       ],
       "staged_artifact_bytes": 21945295265,
       "verification_status": "configuration-only",
@@ -3043,6 +3057,7 @@
         "architecture": "Blackwell",
         "compute_capability": "sm_120",
         "vcpu": 8,
+        "host_ram_gb": 64,
         "local_nvme_gb": 1900
       },
       "compatibility": {
@@ -3074,7 +3089,7 @@
         "SGLANG_DOWNLOAD_JOBS": "4"
       },
       "server": {
-        "served_model_name": "qwen3.8-27b",
+        "served_model_name": "qwen-3.8-27b",
         "quantization": "modelopt_fp4",
         "kv_cache_dtype": "fp8_e4m3",
         "attention_backend": "flashinfer",
@@ -3107,7 +3122,7 @@
         "--model-path",
         "/models/RadixArk/Qwen3.8-27B-NVFP4",
         "--served-model-name",
-        "qwen3.8-27b",
+        "qwen-3.8-27b",
         "--trust-remote-code",
         "--quantization",
         "modelopt_fp4",
@@ -3188,12 +3203,14 @@
       ],
       "models": [
         {
-          "key": "qwen3.8-27b-nvfp4",
-          "request_model_id": "qwen3.8-27b",
+          "key": "qwen-3.8-27b-nvfp4",
+          "request_model_id": "qwen-3.8-27b",
+          "model_slug": "qwen-3.8-27b",
+          "quant_slug": "nvfp4",
           "aliases": [
-            "qwen3.8-27b"
+            "qwen-3.8-27b"
           ],
-          "profile_id": "qwen3.8-27b",
+          "profile_id": "qwen-3.8-27b",
           "runtime_mode": "text",
           "tasks": [
             "chat"
@@ -3235,7 +3252,7 @@
         }
       ],
       "prestage_models": [
-        "qwen3.8-27b-nvfp4"
+        "qwen-3.8-27b-nvfp4"
       ],
       "staged_artifact_bytes": 21945295265,
       "verification_status": "configuration-only",
@@ -3258,6 +3275,7 @@
         "architecture": "Blackwell",
         "compute_capability": "sm_120",
         "vcpu": 8,
+        "host_ram_gb": 64,
         "local_nvme_gb": 1900
       },
       "compatibility": {
@@ -3289,7 +3307,7 @@
         "SGLANG_DOWNLOAD_JOBS": "4"
       },
       "server": {
-        "served_model_name": "qwen3.8-27b",
+        "served_model_name": "qwen-3.8-27b",
         "quantization": "modelopt_fp4",
         "kv_cache_dtype": "bfloat16",
         "attention_backend": "flashinfer",
@@ -3322,7 +3340,7 @@
         "--model-path",
         "/models/RadixArk/Qwen3.8-27B-NVFP4",
         "--served-model-name",
-        "qwen3.8-27b",
+        "qwen-3.8-27b",
         "--trust-remote-code",
         "--quantization",
         "modelopt_fp4",
@@ -3403,12 +3421,14 @@
       ],
       "models": [
         {
-          "key": "qwen3.8-27b-nvfp4",
-          "request_model_id": "qwen3.8-27b",
+          "key": "qwen-3.8-27b-nvfp4",
+          "request_model_id": "qwen-3.8-27b",
+          "model_slug": "qwen-3.8-27b",
+          "quant_slug": "nvfp4",
           "aliases": [
-            "qwen3.8-27b"
+            "qwen-3.8-27b"
           ],
-          "profile_id": "qwen3.8-27b",
+          "profile_id": "qwen-3.8-27b",
           "runtime_mode": "text",
           "tasks": [
             "chat"
@@ -3450,7 +3470,7 @@
         }
       ],
       "prestage_models": [
-        "qwen3.8-27b-nvfp4"
+        "qwen-3.8-27b-nvfp4"
       ],
       "staged_artifact_bytes": 21945295265,
       "verification_status": "configuration-only",
@@ -3473,6 +3493,7 @@
         "architecture": "Blackwell",
         "compute_capability": "sm_120",
         "vcpu": 8,
+        "host_ram_gb": 64,
         "local_nvme_gb": 1900
       },
       "compatibility": {
@@ -3613,6 +3634,8 @@
         {
           "key": "minimax-h3-fl2va-int8-convrot",
           "request_model_id": "minimax-h3-fl2va",
+          "model_slug": "minimax-h3-fl2va",
+          "quant_slug": "int8-convrot",
           "aliases": [
             "minimax-h3-fl2va",
             "minimax-h3-t2va",
@@ -3689,6 +3712,7 @@
         "architecture": "Blackwell",
         "compute_capability": "sm_120",
         "vcpu": 8,
+        "host_ram_gb": 64,
         "local_nvme_gb": 1900
       },
       "compatibility": {
@@ -3829,6 +3853,8 @@
         {
           "key": "minimax-h3-ref2va-int8-convrot",
           "request_model_id": "minimax-h3-ref2va",
+          "model_slug": "minimax-h3-ref2va",
+          "quant_slug": "int8-convrot",
           "aliases": [
             "minimax-h3-ref2va",
             "minimax-h3-v2v",
@@ -3898,6 +3924,8 @@
         "gpu_name": "NVIDIA GB10",
         "gpu_count": 1,
         "vram_gb_each": 128,
+        "memory_topology": "unified",
+        "unified_memory_gb": 128,
         "architecture": "Blackwell",
         "compute_capability": "sm_121"
       },
@@ -3930,7 +3958,7 @@
         "SGLANG_DOWNLOAD_JOBS": "4"
       },
       "server": {
-        "served_model_name": "qwen3.8-27b",
+        "served_model_name": "qwen-3.8-27b",
         "quantization": "modelopt_fp4",
         "kv_cache_dtype": "fp8_e4m3",
         "attention_backend": "flashinfer",
@@ -3967,7 +3995,7 @@
         "--model-path",
         "/models/RadixArk/Qwen3.8-27B-NVFP4",
         "--served-model-name",
-        "qwen3.8-27b",
+        "qwen-3.8-27b",
         "--trust-remote-code",
         "--quantization",
         "modelopt_fp4",
@@ -4053,12 +4081,14 @@
       ],
       "models": [
         {
-          "key": "qwen3.8-27b-nvfp4",
-          "request_model_id": "qwen3.8-27b",
+          "key": "qwen-3.8-27b-nvfp4",
+          "request_model_id": "qwen-3.8-27b",
+          "model_slug": "qwen-3.8-27b",
+          "quant_slug": "nvfp4",
           "aliases": [
-            "qwen3.8-27b"
+            "qwen-3.8-27b"
           ],
-          "profile_id": "qwen3.8-27b",
+          "profile_id": "qwen-3.8-27b",
           "runtime_mode": "text",
           "tasks": [
             "chat"
@@ -4100,7 +4130,7 @@
         }
       ],
       "prestage_models": [
-        "qwen3.8-27b-nvfp4"
+        "qwen-3.8-27b-nvfp4"
       ],
       "staged_artifact_bytes": 21945295265,
       "verification_status": "configuration-only",
@@ -4119,6 +4149,8 @@
         "gpu_name": "NVIDIA GB10",
         "gpu_count": 1,
         "vram_gb_each": 128,
+        "memory_topology": "unified",
+        "unified_memory_gb": 128,
         "architecture": "Blackwell",
         "compute_capability": "sm_121"
       },
@@ -4151,7 +4183,7 @@
         "SGLANG_DOWNLOAD_JOBS": "4"
       },
       "server": {
-        "served_model_name": "qwen3.8-27b",
+        "served_model_name": "qwen-3.8-27b",
         "quantization": "modelopt_fp4",
         "kv_cache_dtype": "fp8_e4m3",
         "attention_backend": "flashinfer",
@@ -4184,7 +4216,7 @@
         "--model-path",
         "/models/RadixArk/Qwen3.8-27B-NVFP4",
         "--served-model-name",
-        "qwen3.8-27b",
+        "qwen-3.8-27b",
         "--trust-remote-code",
         "--quantization",
         "modelopt_fp4",
@@ -4258,12 +4290,14 @@
       ],
       "models": [
         {
-          "key": "qwen3.8-27b-nvfp4",
-          "request_model_id": "qwen3.8-27b",
+          "key": "qwen-3.8-27b-nvfp4",
+          "request_model_id": "qwen-3.8-27b",
+          "model_slug": "qwen-3.8-27b",
+          "quant_slug": "nvfp4",
           "aliases": [
-            "qwen3.8-27b"
+            "qwen-3.8-27b"
           ],
-          "profile_id": "qwen3.8-27b",
+          "profile_id": "qwen-3.8-27b",
           "runtime_mode": "text",
           "tasks": [
             "chat"
@@ -4305,7 +4339,7 @@
         }
       ],
       "prestage_models": [
-        "qwen3.8-27b-nvfp4"
+        "qwen-3.8-27b-nvfp4"
       ],
       "staged_artifact_bytes": 21945295265,
       "verification_status": "configuration-only",
@@ -4324,6 +4358,8 @@
         "gpu_name": "NVIDIA GB10",
         "gpu_count": 1,
         "vram_gb_each": 128,
+        "memory_topology": "unified",
+        "unified_memory_gb": 128,
         "architecture": "Blackwell",
         "compute_capability": "sm_121"
       },
@@ -4356,7 +4392,7 @@
         "SGLANG_DOWNLOAD_JOBS": "4"
       },
       "server": {
-        "served_model_name": "qwen3.8-27b",
+        "served_model_name": "qwen-3.8-27b",
         "quantization": "modelopt_fp4",
         "kv_cache_dtype": "bfloat16",
         "attention_backend": "flashinfer",
@@ -4389,7 +4425,7 @@
         "--model-path",
         "/models/RadixArk/Qwen3.8-27B-NVFP4",
         "--served-model-name",
-        "qwen3.8-27b",
+        "qwen-3.8-27b",
         "--trust-remote-code",
         "--quantization",
         "modelopt_fp4",
@@ -4463,12 +4499,14 @@
       ],
       "models": [
         {
-          "key": "qwen3.8-27b-nvfp4",
-          "request_model_id": "qwen3.8-27b",
+          "key": "qwen-3.8-27b-nvfp4",
+          "request_model_id": "qwen-3.8-27b",
+          "model_slug": "qwen-3.8-27b",
+          "quant_slug": "nvfp4",
           "aliases": [
-            "qwen3.8-27b"
+            "qwen-3.8-27b"
           ],
-          "profile_id": "qwen3.8-27b",
+          "profile_id": "qwen-3.8-27b",
           "runtime_mode": "text",
           "tasks": [
             "chat"
@@ -4510,7 +4548,7 @@
         }
       ],
       "prestage_models": [
-        "qwen3.8-27b-nvfp4"
+        "qwen-3.8-27b-nvfp4"
       ],
       "staged_artifact_bytes": 21945295265,
       "verification_status": "configuration-only",
@@ -4670,6 +4708,8 @@
         {
           "key": "minimax-h3-fl2va-int8-convrot",
           "request_model_id": "minimax-h3-fl2va",
+          "model_slug": "minimax-h3-fl2va",
+          "quant_slug": "int8-convrot",
           "aliases": [
             "minimax-h3-fl2va",
             "minimax-h3-t2va",
@@ -4774,7 +4814,7 @@
         "SGLANG_DOWNLOAD_JOBS": "4"
       },
       "server": {
-        "served_model_name": "qwen3.8-27b",
+        "served_model_name": "qwen-3.8-27b",
         "quantization": "modelopt_fp4",
         "kv_cache_dtype": "fp8_e4m3",
         "attention_backend": "flashinfer",
@@ -4807,7 +4847,7 @@
         "--model-path",
         "/models/RadixArk/Qwen3.8-27B-NVFP4",
         "--served-model-name",
-        "qwen3.8-27b",
+        "qwen-3.8-27b",
         "--trust-remote-code",
         "--quantization",
         "modelopt_fp4",
@@ -4881,12 +4921,14 @@
       ],
       "models": [
         {
-          "key": "qwen3.8-27b-nvfp4",
-          "request_model_id": "qwen3.8-27b",
+          "key": "qwen-3.8-27b-nvfp4",
+          "request_model_id": "qwen-3.8-27b",
+          "model_slug": "qwen-3.8-27b",
+          "quant_slug": "nvfp4",
           "aliases": [
-            "qwen3.8-27b"
+            "qwen-3.8-27b"
           ],
-          "profile_id": "qwen3.8-27b",
+          "profile_id": "qwen-3.8-27b",
           "runtime_mode": "text",
           "tasks": [
             "chat"
@@ -4928,7 +4970,7 @@
         }
       ],
       "prestage_models": [
-        "qwen3.8-27b-nvfp4"
+        "qwen-3.8-27b-nvfp4"
       ],
       "staged_artifact_bytes": 21945295265,
       "verification_status": "configuration-only",
@@ -4979,7 +5021,7 @@
         "SGLANG_DOWNLOAD_JOBS": "4"
       },
       "server": {
-        "served_model_name": "qwen3.8-27b",
+        "served_model_name": "qwen-3.8-27b",
         "quantization": "modelopt_fp4",
         "kv_cache_dtype": "fp8_e4m3",
         "attention_backend": "flashinfer",
@@ -5016,7 +5058,7 @@
         "--model-path",
         "/models/RadixArk/Qwen3.8-27B-NVFP4",
         "--served-model-name",
-        "qwen3.8-27b",
+        "qwen-3.8-27b",
         "--trust-remote-code",
         "--quantization",
         "modelopt_fp4",
@@ -5102,12 +5144,14 @@
       ],
       "models": [
         {
-          "key": "qwen3.8-27b-nvfp4",
-          "request_model_id": "qwen3.8-27b",
+          "key": "qwen-3.8-27b-nvfp4",
+          "request_model_id": "qwen-3.8-27b",
+          "model_slug": "qwen-3.8-27b",
+          "quant_slug": "nvfp4",
           "aliases": [
-            "qwen3.8-27b"
+            "qwen-3.8-27b"
           ],
-          "profile_id": "qwen3.8-27b",
+          "profile_id": "qwen-3.8-27b",
           "runtime_mode": "text",
           "tasks": [
             "chat"
@@ -5149,7 +5193,7 @@
         }
       ],
       "prestage_models": [
-        "qwen3.8-27b-nvfp4"
+        "qwen-3.8-27b-nvfp4"
       ],
       "staged_artifact_bytes": 21945295265,
       "verification_status": "configuration-only",
@@ -5202,7 +5246,7 @@
         "SGLANG_DOWNLOAD_JOBS": "4"
       },
       "server": {
-        "served_model_name": "qwen3.8-27b",
+        "served_model_name": "qwen-3.8-27b",
         "quantization": "modelopt_fp4",
         "kv_cache_dtype": "fp8_e4m3",
         "attention_backend": "flashinfer",
@@ -5235,7 +5279,7 @@
         "--model-path",
         "/models/RadixArk/Qwen3.8-27B-NVFP4",
         "--served-model-name",
-        "qwen3.8-27b",
+        "qwen-3.8-27b",
         "--trust-remote-code",
         "--quantization",
         "modelopt_fp4",
@@ -5309,12 +5353,14 @@
       ],
       "models": [
         {
-          "key": "qwen3.8-27b-nvfp4",
-          "request_model_id": "qwen3.8-27b",
+          "key": "qwen-3.8-27b-nvfp4",
+          "request_model_id": "qwen-3.8-27b",
+          "model_slug": "qwen-3.8-27b",
+          "quant_slug": "nvfp4",
           "aliases": [
-            "qwen3.8-27b"
+            "qwen-3.8-27b"
           ],
-          "profile_id": "qwen3.8-27b",
+          "profile_id": "qwen-3.8-27b",
           "runtime_mode": "text",
           "tasks": [
             "chat"
@@ -5356,7 +5402,7 @@
         }
       ],
       "prestage_models": [
-        "qwen3.8-27b-nvfp4"
+        "qwen-3.8-27b-nvfp4"
       ],
       "staged_artifact_bytes": 21945295265,
       "verification_status": "configuration-only",
@@ -5409,7 +5455,7 @@
         "SGLANG_DOWNLOAD_JOBS": "4"
       },
       "server": {
-        "served_model_name": "qwen3.8-27b",
+        "served_model_name": "qwen-3.8-27b",
         "quantization": "modelopt_fp4",
         "kv_cache_dtype": "fp8_e4m3",
         "attention_backend": "flashinfer",
@@ -5446,7 +5492,7 @@
         "--model-path",
         "/models/RadixArk/Qwen3.8-27B-NVFP4",
         "--served-model-name",
-        "qwen3.8-27b",
+        "qwen-3.8-27b",
         "--trust-remote-code",
         "--quantization",
         "modelopt_fp4",
@@ -5532,12 +5578,14 @@
       ],
       "models": [
         {
-          "key": "qwen3.8-27b-nvfp4",
-          "request_model_id": "qwen3.8-27b",
+          "key": "qwen-3.8-27b-nvfp4",
+          "request_model_id": "qwen-3.8-27b",
+          "model_slug": "qwen-3.8-27b",
+          "quant_slug": "nvfp4",
           "aliases": [
-            "qwen3.8-27b"
+            "qwen-3.8-27b"
           ],
-          "profile_id": "qwen3.8-27b",
+          "profile_id": "qwen-3.8-27b",
           "runtime_mode": "text",
           "tasks": [
             "chat"
@@ -5579,7 +5627,7 @@
         }
       ],
       "prestage_models": [
-        "qwen3.8-27b-nvfp4"
+        "qwen-3.8-27b-nvfp4"
       ],
       "staged_artifact_bytes": 21945295265,
       "verification_status": "configuration-only",
@@ -5632,7 +5680,7 @@
         "SGLANG_DOWNLOAD_JOBS": "4"
       },
       "server": {
-        "served_model_name": "qwen3.8-27b",
+        "served_model_name": "qwen-3.8-27b",
         "quantization": "modelopt_fp4",
         "kv_cache_dtype": "fp8_e4m3",
         "attention_backend": "flashinfer",
@@ -5669,7 +5717,7 @@
         "--model-path",
         "/models/RadixArk/Qwen3.8-27B-NVFP4",
         "--served-model-name",
-        "qwen3.8-27b",
+        "qwen-3.8-27b",
         "--trust-remote-code",
         "--quantization",
         "modelopt_fp4",
@@ -5755,12 +5803,14 @@
       ],
       "models": [
         {
-          "key": "qwen3.8-27b-nvfp4",
-          "request_model_id": "qwen3.8-27b",
+          "key": "qwen-3.8-27b-nvfp4",
+          "request_model_id": "qwen-3.8-27b",
+          "model_slug": "qwen-3.8-27b",
+          "quant_slug": "nvfp4",
           "aliases": [
-            "qwen3.8-27b"
+            "qwen-3.8-27b"
           ],
-          "profile_id": "qwen3.8-27b",
+          "profile_id": "qwen-3.8-27b",
           "runtime_mode": "text",
           "tasks": [
             "chat"
@@ -5802,7 +5852,7 @@
         }
       ],
       "prestage_models": [
-        "qwen3.8-27b-nvfp4"
+        "qwen-3.8-27b-nvfp4"
       ],
       "staged_artifact_bytes": 21945295265,
       "verification_status": "configuration-only",
@@ -5855,7 +5905,7 @@
         "SGLANG_DOWNLOAD_JOBS": "4"
       },
       "server": {
-        "served_model_name": "qwen3.8-27b",
+        "served_model_name": "qwen-3.8-27b",
         "quantization": "modelopt_fp4",
         "kv_cache_dtype": "fp8_e4m3",
         "attention_backend": "flashinfer",
@@ -5888,7 +5938,7 @@
         "--model-path",
         "/models/RadixArk/Qwen3.8-27B-NVFP4",
         "--served-model-name",
-        "qwen3.8-27b",
+        "qwen-3.8-27b",
         "--trust-remote-code",
         "--quantization",
         "modelopt_fp4",
@@ -5962,12 +6012,14 @@
       ],
       "models": [
         {
-          "key": "qwen3.8-27b-nvfp4",
-          "request_model_id": "qwen3.8-27b",
+          "key": "qwen-3.8-27b-nvfp4",
+          "request_model_id": "qwen-3.8-27b",
+          "model_slug": "qwen-3.8-27b",
+          "quant_slug": "nvfp4",
           "aliases": [
-            "qwen3.8-27b"
+            "qwen-3.8-27b"
           ],
-          "profile_id": "qwen3.8-27b",
+          "profile_id": "qwen-3.8-27b",
           "runtime_mode": "text",
           "tasks": [
             "chat"
@@ -6009,7 +6061,7 @@
         }
       ],
       "prestage_models": [
-        "qwen3.8-27b-nvfp4"
+        "qwen-3.8-27b-nvfp4"
       ],
       "staged_artifact_bytes": 21945295265,
       "verification_status": "configuration-only",
@@ -6062,7 +6114,7 @@
         "SGLANG_DOWNLOAD_JOBS": "4"
       },
       "server": {
-        "served_model_name": "qwen3.8-27b",
+        "served_model_name": "qwen-3.8-27b",
         "quantization": "modelopt_fp4",
         "kv_cache_dtype": "bfloat16",
         "attention_backend": "flashinfer",
@@ -6095,7 +6147,7 @@
         "--model-path",
         "/models/RadixArk/Qwen3.8-27B-NVFP4",
         "--served-model-name",
-        "qwen3.8-27b",
+        "qwen-3.8-27b",
         "--trust-remote-code",
         "--quantization",
         "modelopt_fp4",
@@ -6169,12 +6221,14 @@
       ],
       "models": [
         {
-          "key": "qwen3.8-27b-nvfp4",
-          "request_model_id": "qwen3.8-27b",
+          "key": "qwen-3.8-27b-nvfp4",
+          "request_model_id": "qwen-3.8-27b",
+          "model_slug": "qwen-3.8-27b",
+          "quant_slug": "nvfp4",
           "aliases": [
-            "qwen3.8-27b"
+            "qwen-3.8-27b"
           ],
-          "profile_id": "qwen3.8-27b",
+          "profile_id": "qwen-3.8-27b",
           "runtime_mode": "text",
           "tasks": [
             "chat"
@@ -6216,7 +6270,7 @@
         }
       ],
       "prestage_models": [
-        "qwen3.8-27b-nvfp4"
+        "qwen-3.8-27b-nvfp4"
       ],
       "staged_artifact_bytes": 21945295265,
       "verification_status": "configuration-only",
@@ -6371,6 +6425,8 @@
         {
           "key": "minimax-h3-fl2va-int8-convrot",
           "request_model_id": "minimax-h3-fl2va",
+          "model_slug": "minimax-h3-fl2va",
+          "quant_slug": "int8-convrot",
           "aliases": [
             "minimax-h3-fl2va",
             "minimax-h3-t2va",
@@ -6579,6 +6635,8 @@
         {
           "key": "minimax-h3-ref2va-int8-convrot",
           "request_model_id": "minimax-h3-ref2va",
+          "model_slug": "minimax-h3-ref2va",
+          "quant_slug": "int8-convrot",
           "aliases": [
             "minimax-h3-ref2va",
             "minimax-h3-v2v",

@@ -31,6 +31,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--image-inventory", type=Path, required=True)
     parser.add_argument("--sglang-inventory", type=Path, required=True)
     parser.add_argument("--vllm-inventory", type=Path, required=True)
+    parser.add_argument("--tooling-manifest", type=Path, required=True)
+    parser.add_argument("--tooling-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     return parser.parse_args()
 
@@ -82,6 +84,72 @@ def image_entry(
     }
 
 
+def tooling_assets(args: argparse.Namespace, commit: str) -> dict[str, object]:
+    manifest = json.loads(args.tooling_manifest.read_text(encoding="utf-8"))
+    if manifest.get("schema_version") != "prefer.tooling-build.v1":
+        raise ValueError("tooling manifest schema is incompatible")
+    if manifest.get("source_revision") != commit:
+        raise ValueError("tooling manifest source revision does not match the release")
+    distribution = manifest.get("distribution")
+    if (
+        not isinstance(distribution, dict)
+        or distribution.get("model_weights_embedded") is not False
+        or distribution.get("metadata_only") is not True
+    ):
+        raise ValueError("tooling manifest must describe a metadata-only build with no embedded model weights")
+    package_version = manifest.get("package_version")
+    if package_version != f"0.0.0-g{commit[:7]}":
+        raise ValueError("tooling package version does not match the release")
+    refresh = manifest.get("huggingface_refresh")
+    if refresh not in ("live", "last-successful"):
+        raise ValueError("tooling Hugging Face refresh state is invalid")
+    for key in ("catalog_fingerprint", "source_fingerprint"):
+        if not isinstance(manifest.get(key), str) or not re.fullmatch(r"[0-9a-f]{64}", manifest[key]):
+            raise ValueError(f"tooling manifest has no valid {key}")
+    source_assets = manifest.get("assets")
+    if not isinstance(source_assets, dict):
+        raise ValueError("tooling manifest has no assets")
+    required = {
+        "package": "prefer-inference-core.tgz",
+        "cli": "prefer.mjs",
+        "model_catalog": "prefer-model-catalog.json",
+        "model_catalog_schema": "prefer-model-catalog.schema.json",
+        "model_catalog_extension_schema": "prefer-model-catalog-extension.schema.json",
+        "resource_profile_schema": "prefer-resource-profile.schema.json",
+        "model_plan_schema": "prefer-model-plan.schema.json",
+    }
+    copied: dict[str, object] = {
+        "schema_version": "prefer.release-tooling.v1",
+        "package_version": package_version,
+        "huggingface_refresh": refresh,
+        "catalog_fingerprint": manifest.get("catalog_fingerprint"),
+        "source_fingerprint": manifest.get("source_fingerprint"),
+    }
+    for key, required_name in required.items():
+        binding = source_assets.get(key)
+        if not isinstance(binding, dict):
+            raise ValueError(f"tooling manifest is missing {key}")
+        asset_name = binding.get("asset")
+        expected_size = binding.get("bytes")
+        expected_sha = binding.get("sha256")
+        if asset_name != required_name or Path(asset_name).name != asset_name:
+            raise ValueError(f"invalid tooling asset name for {key}")
+        if not isinstance(expected_size, int) or expected_size < 0:
+            raise ValueError(f"invalid tooling asset size for {key}")
+        require_match(str(expected_sha), re.compile(r"^[0-9a-f]{64}$"), f"tooling SHA-256 for {key}")
+        source = args.tooling_dir / asset_name
+        payload = source.read_bytes()
+        if len(payload) != expected_size or hashlib.sha256(payload).hexdigest() != expected_sha:
+            raise ValueError(f"tooling asset {asset_name} does not match its manifest")
+        shutil.copyfile(source, args.output_dir / asset_name)
+        copied[key] = {
+            "asset": asset_name,
+            "bytes": expected_size,
+            "sha256": expected_sha,
+        }
+    return copied
+
+
 def build_manifest(args: argparse.Namespace) -> dict[str, object]:
     commit = require_match(args.commit.lower(), COMMIT_PATTERN, "commit")
     short_commit = commit[:7]
@@ -122,6 +190,7 @@ def build_manifest(args: argparse.Namespace) -> dict[str, object]:
         "prefer-vllm-deployment-inventory.json",
         "prefer.vllm-deployment-inventory.v1",
     )
+    tooling = tooling_assets(args, commit)
 
     return {
         "schema_version": "prefer.release.v1",
@@ -206,6 +275,7 @@ def build_manifest(args: argparse.Namespace) -> dict[str, object]:
                 },
             },
         },
+        "tooling": tooling,
     }
 
 

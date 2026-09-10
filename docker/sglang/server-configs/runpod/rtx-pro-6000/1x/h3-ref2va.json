@@ -76,6 +76,8 @@
     {
       "key": "minimax-h3-ref2va-int8-convrot",
       "request_model_id": "minimax-h3-ref2va",
+      "model_slug": "minimax-h3-ref2va",
+      "quant_slug": "int8-convrot",
       "aliases": [
         "minimax-h3-ref2va",
         "minimax-h3-v2v",

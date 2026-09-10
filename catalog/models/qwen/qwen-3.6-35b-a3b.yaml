@@ -1,0 +1,90 @@
+schema_version: prefer.model-source.v1
+display_name: Qwen3.6 35B-A3B
+aliases:
+  - qwen-3.6
+capabilities:
+  - text-generation
+  - chat
+  - streaming
+  - reasoning
+  - tool-calling
+  - structured-output
+  - image-understanding
+  - video-understanding
+profile:
+  summary: Fast implementation and tool-execution worker for coding, code search, structured tools, and parallel
+    subagents; give final planning or architectural judgment to a stronger supervisor.
+  architecture:
+    kind: hybrid-moe
+    total_parameters_b: 35
+    active_parameters_b: 3
+  modalities:
+    native_input:
+      - text
+      - image
+      - video
+    configured_input:
+      - text
+    output:
+      - text
+  context:
+    native_tokens: 262144
+  reasoning:
+    control: request-selectable
+  roles:
+    preferred:
+      - coding
+      - code-search
+      - structured-tools
+      - parallel-workers
+    capable:
+      - repository-fixes
+      - routine-reasoning
+      - research-helper
+    avoid:
+      - sole-planner
+      - final-architecture
+      - long-horizon-orchestration
+  strengths:
+    - Low active parameter count makes it a high-throughput coding and tool worker.
+    - Publisher guidance and practical use favor concrete repository tasks and explicit tests.
+  limitations:
+    - Can look capable early in a nested workflow and still lose the larger orchestration thread.
+    - The current PreFer artifact omits its native visual projector and is configured text-only.
+  prompting:
+    - Use the exact Qwen tool format, define acceptance tests, and keep the objective concrete and bounded.
+  evidence:
+    confidence: mixed
+    basis:
+      - official
+      - operator
+      - maintainer
+    notes: Coding and tool surfaces are official; the worker-versus-orchestrator distinction is reinforced by operator and
+      agent-harness experience.
+default:
+  repository: unsloth/Qwen3.6-35B-A3B-MTP-GGUF
+  quant: ud-q6-k-xl
+engines:
+  llama.cpp:
+    settings:
+      launcher:
+        spec-type: draft-mtp
+        spec-draft-n-max: 2
+        top-k: 20
+        min-p: 0
+  sglang: {}
+  vllm: {}
+repositories:
+  unsloth/Qwen3.6-35B-A3B-MTP-GGUF:
+    discover: gguf
+    quants:
+      ud-q4-k-xl:
+        artifacts:
+          - files:
+              - Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
+            role: model
+      ud-q6-k-xl:
+        artifacts:
+          - files:
+              - Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf
+            role: model

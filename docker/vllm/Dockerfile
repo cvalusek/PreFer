@@ -6,7 +6,7 @@ ARG S5CMD_VERSION=2.2.2
 
 USER root
 RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates curl python3 python3-pip util-linux \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates curl python3 python3-pip util-linux xz-utils \
     && rm -rf /var/lib/apt/lists/* \
     && python3 -m pip install --no-cache-dir --break-system-packages -U "huggingface_hub[cli]" \
     && case "$TARGETARCH" in \
@@ -17,6 +17,12 @@ RUN apt-get update \
     && curl -fsSL "https://github.com/peak/s5cmd/releases/download/v${S5CMD_VERSION}/s5cmd_${S5CMD_VERSION}_Linux-${s5cmd_arch}.tar.gz" \
        | tar -xz -C /usr/local/bin s5cmd \
     && mkdir -p /models /app /server-configs
+
+COPY .prefer-tooling/install-prefer-node.sh /tmp/install-prefer-node.sh
+RUN sed -i 's/\r$//' /tmp/install-prefer-node.sh \
+    && chmod +x /tmp/install-prefer-node.sh \
+    && /tmp/install-prefer-node.sh "$TARGETARCH" \
+    && rm -f /tmp/install-prefer-node.sh
 
 ENV HF_HOME=/models \
     HF_XET_HIGH_PERFORMANCE=1 \
@@ -32,10 +38,19 @@ COPY generate.py /prefer-catalog/generate.py
 COPY runtime.json /prefer-catalog/runtime.json
 COPY models /prefer-catalog/models
 COPY deployment-scenarios /prefer-catalog/deployment-scenarios
+COPY .prefer-tooling/prefer.mjs /usr/local/bin/prefer
+COPY .prefer-tooling/prefer-model-catalog.json /prefer-model-catalog.json
+COPY .prefer-tooling/prefer-model-catalog.schema.json /prefer-catalog/schemas/prefer-model-catalog.schema.json
+COPY .prefer-tooling/prefer-model-catalog-extension.schema.json /prefer-catalog/schemas/prefer-model-catalog-extension.schema.json
+COPY .prefer-tooling/prefer-resource-profile.schema.json /prefer-catalog/schemas/prefer-resource-profile.schema.json
+COPY .prefer-tooling/prefer-model-plan.schema.json /prefer-catalog/schemas/prefer-model-plan.schema.json
 COPY entrypoint.sh /prefer-vllm-entrypoint.sh
 COPY router.py /prefer-vllm-router.py
 RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-vllm-entrypoint.sh /prefer-vllm-router.py /prefer-catalog/generate.py \
-    && chmod +x /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-vllm-entrypoint.sh /prefer-vllm-router.py
+    && chmod +x /usr/local/bin/prefer /prefer-download-artifacts.sh /model-downloads.generated.sh /prefer-vllm-entrypoint.sh /prefer-vllm-router.py
+
+ENV PREFER_ENGINE=vllm \
+    PREFER_MODEL_CATALOG=/prefer-model-catalog.json
 
 LABEL io.prefer.runtime="vllm" \
       io.prefer.vllm.backend="cuda13" \

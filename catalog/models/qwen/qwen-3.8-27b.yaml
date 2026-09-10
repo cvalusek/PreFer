@@ -1,0 +1,156 @@
+schema_version: prefer.model-source.v1
+display_name: Qwen3.8 27B
+capabilities:
+  - text-generation
+  - chat
+  - streaming
+  - reasoning
+  - tool-calling
+  - structured-output
+  - image-understanding
+  - video-understanding
+profile:
+  summary: High-intelligence dense coder and generalist for repository work, debugging, tools, research synthesis,
+    difficult reasoning, and bounded planning; its template defaults to xhigh reasoning, so choose a lower mode only
+    when the task or latency goal calls for it.
+  architecture:
+    kind: dense
+    total_parameters_b: 27
+    active_parameters_b: 27
+  modalities:
+    native_input:
+      - text
+      - image
+      - video
+    configured_input:
+      - text
+      - image
+    output:
+      - text
+  context:
+    native_tokens: 262144
+  reasoning:
+    control: request-selectable
+  roles:
+    preferred:
+      - repository-coding
+      - debugging
+      - tool-use
+      - research-synthesis
+      - difficult-reasoning
+    capable:
+      - bounded-planning
+      - long-context-review
+      - architecture-review
+      - structured-output
+      - visual-analysis
+    avoid:
+      - latency-sensitive-fanout
+  strengths:
+    - Strong practical coding, tool use, synthesis, and controllable reasoning in a one-card quality lane.
+    - Dense execution favors quality and consistency over the 35B-A3B route's throughput.
+  limitations:
+    - Xhigh reasoning can carry substantial token and latency costs, but difficult planning, proofs, or architecture
+      work may benefit materially.
+    - Image input depends on the packaged F16 projector and still requires deployment-specific visual validation.
+  prompting:
+    - "Disable thinking for work that should not reason. With thinking enabled, use only low, medium, or xhigh: low asks
+      for brief focused thinking, medium adds no effort instruction, and xhigh is the careful-validation default."
+    - On the pinned b10362 runtime, pass reasoning control through the template kwargs path and verify it is rendered;
+      do not assume an OpenAI-style top-level reasoning_effort field is forwarded.
+  evidence:
+    confidence: high
+    basis:
+      - official
+      - operator
+    notes: Capabilities and supported reasoning values come from the released model and template; role guidance is
+      qualitative product judgment reinforced by operator experience.
+default:
+  repository: unsloth/Qwen3.8-27B-GGUF
+  quant: ud-q6-k-xl
+engines:
+  llama.cpp:
+    settings:
+      launcher:
+        spec-type: draft-mtp
+        spec-draft-n-max: 2
+        top-k: 20
+        min-p: 0
+  sglang:
+    settings:
+      launcher:
+        attention_backend: flashinfer
+        chunked_prefill_size: 2048
+        mamba_ssm_dtype: bfloat16
+        reasoning_parser: qwen3
+        tool_call_parser: qwen3_coder
+        trust_remote_code: true
+  vllm:
+    settings:
+      launcher:
+        enable_prefix_caching: true
+        enable_auto_tool_choice: true
+        reasoning_parser: qwen3
+        tool_call_parser: qwen3_coder
+quant_sources:
+  bf16:
+    sglang: Qwen/Qwen3.8-27B
+    vllm: Qwen/Qwen3.8-27B
+  fp8:
+    sglang: Qwen/Qwen3.8-27B-FP8
+    vllm: Qwen/Qwen3.8-27B-FP8
+  nvfp4:
+    sglang: RadixArk/Qwen3.8-27B-NVFP4
+    vllm: Inferact/Qwen3.8-27B-NVFP4
+repositories:
+  unsloth/Qwen3.8-27B-GGUF:
+    discover: gguf
+    quants:
+      ud-q6-k-xl:
+        artifacts:
+          - files:
+              - Qwen3.8-27B-UD-Q6_K_XL.gguf
+            role: model
+          - files:
+              - mmproj-F16.gguf
+            role: projector
+  RadixArk/Qwen3.8-27B-NVFP4:
+    quants:
+      nvfp4:
+        engines:
+          sglang: {}
+  Inferact/Qwen3.8-27B-NVFP4:
+    quants:
+      nvfp4:
+        engines:
+          vllm:
+            settings:
+              launcher:
+                speculative:
+                  enabled: true
+                  method: mtp
+                  num_speculative_tokens: 3
+  Qwen/Qwen3.8-27B:
+    quants:
+      bf16:
+        include:
+          - "*.json"
+          - "*.jinja"
+          - "*.model"
+          - "*.safetensors"
+          - "*.txt"
+        engines:
+          sglang: {}
+          vllm: {}
+  Qwen/Qwen3.8-27B-FP8:
+    quants:
+      fp8:
+        include:
+          - "*.json"
+          - "*.jinja"
+          - "*.model"
+          - "*.safetensors"
+          - "*.txt"
+        engines:
+          sglang: {}
+          vllm: {}
