@@ -1,6 +1,17 @@
 # PreFer changelog
 
-## Current
+## sha-0be6ef9 (preview)
+
+- Images
+  - Llama CUDA: `ghcr.io/cvalusek/prefer:llama-cuda-sha-0be6ef9@sha256:45417c7857e8aa931d8ac318e6676f3e24fbf11ea68f326d2b8337257a608c02`.
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-0be6ef9@sha256:1a411aab7afac8e4909b14e202813a3a950de75c66f7a16c34ddd414064d75cd`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-0be6ef9@sha256:c4e4d4eb5ef3288505fcd0de3d91df5d5136ea80d16044dbe7ec7ca26129b9cc`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-0be6ef9@sha256:0000aa5ac9957f73cdd475a7932df9cf51d479ed067f242846554491a49c5756`.
+  - SGLang CUDA 13: `ghcr.io/cvalusek/prefer:sglang-cuda13-sha-0be6ef9@sha256:3b69ecf006903462724328de452572c5b91e24da29ce7de4b4242a6a95fe1ebc`.
+  - vLLM CUDA 13: `ghcr.io/cvalusek/prefer:vllm-cuda13-sha-0be6ef9@sha256:5cebd1c06b6e330e7cb4c0133a71e6bff17ea3ff80dd3b56f0a212940a8850d2`.
+
+- Package
+  - npm: `prefer-inference-core@0.0.0-g0be6ef9`.
 
 - Release tooling
   - Added one release-matched model catalog, standalone `prefer` CLI, and `prefer-inference-core` npm package to the grouped stable/preview release.
