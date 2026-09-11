@@ -1,6 +1,17 @@
 # PreFer changelog
 
-## Current
+## sha-e9da79c (preview)
+
+- Images
+  - Llama CUDA: `ghcr.io/cvalusek/prefer:llama-cuda-sha-e9da79c@sha256:20925079642e6bc77bff9fd2463906d21550fae8c448753de992497f4398c9ee`.
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-e9da79c@sha256:cc2233141cd5fa2ada3dadde91b72bc5c9dfeb0b11ca015f4b47fc181d59e512`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-e9da79c@sha256:af1808c849007949f2f4fb369f8c8e74dd29550c6b51457bbdd2233a00b292ba`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-e9da79c@sha256:0926ea0fa6d12982244c6b549d63f8cebb472df77020b43011600509149a27bf`.
+  - SGLang CUDA 13: `ghcr.io/cvalusek/prefer:sglang-cuda13-sha-e9da79c@sha256:1222fdec84e94c77ba17aa16b1cc760c04f3d9536f120e310b99bf3a9a5af9f8`.
+  - vLLM CUDA 13: `ghcr.io/cvalusek/prefer:vllm-cuda13-sha-e9da79c@sha256:443f77a92762f57d7172d0e269a6c3c06e2384e3c67a136906cdb02d0b3d50b6`.
+
+- Package
+  - npm: `prefer-inference-core@0.0.0-ge9da79c`.
 
 - Runtime handoff
   - Added `PREFER_RUNTIME_HANDOFF_BASE64` for environment-only provisioning such as RunPod Pod creation.
