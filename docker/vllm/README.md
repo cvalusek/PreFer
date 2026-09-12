@@ -73,8 +73,12 @@ The vLLM-specific variables take precedence when set:
 - `VLLM_SERVER_CONFIG` selects a generated JSON configuration.
 - `VLLM_PRESTAGE_MODELS` selects catalog keys; blank follows the selected
   config's `.prestage` sidecar and `none` skips downloads.
-- `VLLM_DOWNLOAD_JOBS` bounds transfers from one through eight.
+- `VLLM_DOWNLOAD_JOBS` bounds concurrent immutable repository/revision
+  transfers from one through eight; files within one repository share a single
+  `hf download` invocation.
 - `VLLM_S3_BUCKET_NAME` and `VLLM_S3_MODEL_PREFIX` enable S3 read-through.
+- `PREFER_HF_MAX_ATTEMPTS`, `PREFER_HF_RETRY_BASE_SECONDS`, and
+  `PREFER_HF_RETRY_MAX_SECONDS` bound 429 retries (defaults `5`, `5`, and `60`).
 - `PRESTAGE_MODELS` and `MODEL_DOWNLOAD_JOBS` remain accepted as compatibility
   aliases.
 

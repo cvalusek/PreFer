@@ -541,6 +541,7 @@ def download_script(lanes: list[dict]) -> str:
         for artifact in lane["artifacts"]:
             artifacts.setdefault((artifact["repo"], artifact["path"]), artifact)
     artifact_cases = []
+    artifact_record_cases = []
     for artifact in artifacts.values():
         artifact_id = artifact_download_id(artifact)
         artifact_cases.append(
@@ -548,6 +549,13 @@ def download_script(lanes: list[dict]) -> str:
             f"    prefer_download_hf_artifact \"image-download\" \"$1\" "
             f"{json.dumps(artifact['repo'])} {json.dumps(artifact['revision'])} "
             f"{json.dumps(artifact['path'])} {artifact['size']} {json.dumps(artifact['sha256'])}\n"
+            "    ;;"
+        )
+        artifact_record_cases.append(
+            f"  {artifact_id})\n"
+            f"    printf '%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n' \"$1\" "
+            f"{json.dumps(artifact['repo'])} {json.dumps(artifact['revision'])} "
+            f"{json.dumps(artifact['path'])} {artifact['size']} sha256 {json.dumps(artifact['sha256'])}\n"
             "    ;;"
         )
     return f'''#!/usr/bin/env bash
@@ -569,10 +577,17 @@ image_download_artifact_id() {{
   esac
 }}
 
+image_artifact_record() {{
+  case "$1" in
+{chr(10).join(artifact_record_cases)}
+    *) echo "[image-download] unknown artifact id: $1" >&2; return 2 ;;
+  esac
+}}
+
 image_download_model_keys() {{
-  prefer_download_model_keys \
+  prefer_download_model_keys_hf \
     "image-download" "${{IMAGE_DOWNLOAD_JOBS:-4}}" 8 \
-    image_model_artifact_ids image_download_artifact_id "$@"
+    image_model_artifact_ids image_artifact_record "$@"
 }}
 
 image_download_model_key() {{

@@ -68,7 +68,7 @@
     },
     "artifact_variant": {
       "label": "Inferact Qwen3.8-27B NVFP4 revision 6128240",
-      "total_bytes": 26404413873,
+      "total_bytes": 26404402530,
       "comparability_note": "The official vLLM recipe also lists Unsloth and other NVFP4 variants; their memory and MTP behavior are not interchangeable."
     },
     "server": {
@@ -115,7 +115,6 @@
       "request_model_id": "qwen-3.8-27b",
       "aliases": ["qwen-3.8-27b"],
       "artifacts": [
-        {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "LICENSE", "size": 11343, "sha256": "50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32", "role": "license"},
         {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "chat_template.jinja", "size": 8952, "sha256": "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041", "role": "chat-template"},
         {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "config.json", "size": 19252, "sha256": "267be2125ee2ec272555748c87cc636b25a96107946f05491bd6043151c7fe4e", "role": "model-config"},
         {"repo": "Inferact/Qwen3.8-27B-NVFP4", "revision": "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462", "path": "generation_config.json", "size": 214, "sha256": "d0dbf670c6a372817b2ff92d5d47e3130d35de9c3a7164ba455fd7a88255b362", "role": "generation-config"},

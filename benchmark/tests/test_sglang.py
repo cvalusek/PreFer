@@ -22,7 +22,7 @@ class SGLangTests(unittest.TestCase):
         )
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
 
-    def test_catalog_pins_the_complete_multimodal_nvfp4_checkpoint(self) -> None:
+    def test_catalog_pins_the_runtime_multimodal_nvfp4_bundle(self) -> None:
         catalog_path = SGLANG_ROOT / "models" / "qwen" / "qwen-3.8-27b" / "model.json"
         catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
         self.assertEqual(catalog["shared"]["license"], "Apache-2.0")
@@ -37,14 +37,14 @@ class SGLangTests(unittest.TestCase):
         self.assertTrue(lane["primary"])
         self.assertEqual(lane["key"], "qwen-3.8-27b-nvfp4")
         self.assertEqual(lane["artifacts"][0]["revision"], "319f741cce68d7914884900c138a1fbb70a42f30")
-        self.assertEqual(len(lane["artifacts"]), 22)
+        self.assertEqual(len(lane["artifacts"]), 14)
         self.assertEqual(catalog["shared"]["kv_cache_scaling"]["quantization"], "FP8")
         self.assertFalse(catalog["shared"]["kv_cache_scaling"]["explicit_scale_metadata"])
         self.assertEqual(catalog["shared"]["kv_cache_scaling"]["parameter_file"], None)
-        self.assertEqual(catalog["shared"]["artifact_variant"]["total_bytes"], 21945295265)
+        self.assertEqual(catalog["shared"]["artifact_variant"]["total_bytes"], 21944935298)
         self.assertEqual(
             sum(artifact["size"] for artifact in lane["artifacts"]),
-            21945295265,
+            21944935298,
         )
         shards = {
             artifact["path"]: artifact
@@ -63,7 +63,8 @@ class SGLangTests(unittest.TestCase):
         self.assertIn("image-preprocessor", roles)
         self.assertIn("video-preprocessor", roles)
         self.assertIn("chat-template", roles)
-        self.assertIn("license", roles)
+        self.assertNotIn("license", roles)
+        self.assertNotIn("documentation", roles)
 
     def test_h3_stages_pinned_local_metadata_instead_of_remote_weight_trees(self) -> None:
         cases = {
@@ -222,7 +223,7 @@ class SGLangTests(unittest.TestCase):
         self.assertEqual(inventory["models"]["qwen-3.8-27b-nvfp4"]["profile_id"], "qwen-3.8-27b")
         self.assertEqual(
             inventory["models"]["qwen-3.8-27b-nvfp4"]["artifact_bytes"],
-            21945295265,
+            21944935298,
         )
         self.assertFalse(
             inventory["models"]["qwen-3.8-27b-nvfp4"]["kv_cache_scaling"]["explicit_scale_metadata"]

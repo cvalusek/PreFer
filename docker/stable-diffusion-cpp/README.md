@@ -135,10 +135,13 @@ Environment variables:
   default.
 - `IMAGE_PRESTAGE_MODELS` overrides the sibling prestage manifest. Blank uses
   the selected config; `none` skips downloads.
-- `IMAGE_DOWNLOAD_JOBS` accepts 1 through 8 independent artifact transfers and
-  defaults to 4.
+- `IMAGE_DOWNLOAD_JOBS` accepts 1 through 8 concurrent immutable
+  repository/revision transfers and defaults to 4. Files from one repository
+  revision share a single `hf download` invocation.
 - `HF_TOKEN`, `HF_HUB_DISABLE_XET`, and the `HF_XET_*` controls are passed to
   Hugging Face staging. Xet high-performance mode is enabled by default.
+- `PREFER_HF_MAX_ATTEMPTS`, `PREFER_HF_RETRY_BASE_SECONDS`, and
+  `PREFER_HF_RETRY_MAX_SECONDS` bound 429 retries (defaults `5`, `5`, and `60`).
 
 ### Runtime composition (preview)
 

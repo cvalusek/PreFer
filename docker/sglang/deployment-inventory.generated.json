@@ -1,6 +1,6 @@
 {
   "schema_version": "prefer.sglang-deployment-inventory.v2",
-  "catalog_fingerprint": "231662d43b2935a180953d36c8d2c8e6a717d74c3df3bbae8a78f05a82e7ab96",
+  "catalog_fingerprint": "6d28903285a452affe25c12ee27b9594fee415733dd2cee93f3a6a119ece76cb",
   "product": "PreFer",
   "distribution": {
     "embedded_image_path": "/deployment-inventory.json",
@@ -2164,7 +2164,7 @@
       },
       "artifact_variant": {
         "label": "RadixArk current 21.945 GB NVFP4 snapshot",
-        "total_bytes": 21945295265,
+        "total_bytes": 21944935298,
         "comparability_note": "This is not the earlier approximately 16.5 GB community variant; no throughput result from either variant is interchangeable without a matched smoke."
       },
       "lora_options": null,
@@ -2183,49 +2183,9 @@
         "trust_remote_code": true,
         "runtime_mode": "text"
       },
-      "download_fingerprint": "494b2ca201e7ce43d99aaaa0a06c3ad95fa27708b00eea9de8b92851699ec2db",
-      "artifact_bytes": 21945295265,
+      "download_fingerprint": "510de70a8bdfa5363430bba4fe345730579aed08ab48c3c0656f54cfd097cb4f",
+      "artifact_bytes": 21944935298,
       "artifacts": [
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": ".gitattributes",
-          "size": 1570,
-          "sha256": "34448b82c17d60fec9b65b1f093c115ddbaadc04beb1b0140b6bfed2e012a930",
-          "role": "repository-metadata",
-          "container_path": "/models/RadixArk/Qwen3.8-27B-NVFP4/.gitattributes",
-          "download_id": "7730912859c10cda3ca68bae6dccbf7d20a4bb4d903a716ff03fe21825f713b7"
-        },
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": ".quant_summary.txt",
-          "size": 314291,
-          "sha256": "5920198f1770fc91c0f8032108e6d861ce7e0ef196eca140c9681231d8d99967",
-          "role": "quantization-metadata",
-          "container_path": "/models/RadixArk/Qwen3.8-27B-NVFP4/.quant_summary.txt",
-          "download_id": "9fcf0e3d01dddeb0706cee411148baafecf6d838014603887e9853bf20ba99ab"
-        },
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": "LICENSE",
-          "size": 11544,
-          "sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a",
-          "role": "license",
-          "container_path": "/models/RadixArk/Qwen3.8-27B-NVFP4/LICENSE",
-          "download_id": "0df27f305811c8941e9c6d993da0de3e301e372a9d78fa2c757ea307655ac872"
-        },
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": "README.md",
-          "size": 4574,
-          "sha256": "3cfd18e07422e6eff20fcdf8dcdb3c864976dcef0e1e0f2c3f8bf788603203c2",
-          "role": "model-card",
-          "container_path": "/models/RadixArk/Qwen3.8-27B-NVFP4/README.md",
-          "download_id": "fdeab13bd6cb362cd5ea348ef47485f5f2293b6af4addd400b80a48aeb3e1647"
-        },
         {
           "repo": "RadixArk/Qwen3.8-27B-NVFP4",
           "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
@@ -2245,16 +2205,6 @@
           "role": "model-config",
           "container_path": "/models/RadixArk/Qwen3.8-27B-NVFP4/config.json",
           "download_id": "bd4d870488e327b76b72c88c8720083052627fbb0b93f1fa10ff858ebb155b2c"
-        },
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": "conversion-manifest.json",
-          "size": 23587,
-          "sha256": "c71e938cadabd25b2d6ec6b1bd15afecb618674cd8004cf1ecf04e28badbbf55",
-          "role": "conversion-metadata",
-          "container_path": "/models/RadixArk/Qwen3.8-27B-NVFP4/conversion-manifest.json",
-          "download_id": "f9749a4da39e1c3dc1433dbd28b6f6346575eb8438190a76628d90e7b728fdd8"
         },
         {
           "repo": "RadixArk/Qwen3.8-27B-NVFP4",
@@ -2335,36 +2285,6 @@
           "role": "image-preprocessor",
           "container_path": "/models/RadixArk/Qwen3.8-27B-NVFP4/preprocessor_config.json",
           "download_id": "ba5d8f1df983d9283c17076c60f2426e27f4917cfdd25e4e436826bdc563245c"
-        },
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": "qualification-criteria.json",
-          "size": 1145,
-          "sha256": "8e3b57367245354acb040a133e63df8eb1f4aef787e036156b944dfda217352a",
-          "role": "qualification-metadata",
-          "container_path": "/models/RadixArk/Qwen3.8-27B-NVFP4/qualification-criteria.json",
-          "download_id": "09d26ecac6b59b0885c1fcb494a6031690f16c9f21cdce8a43e3a1a6e522609c"
-        },
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": "qualification.json",
-          "size": 2717,
-          "sha256": "7be9d60606fc9590ca7b5717018e12050deaa6d7d93abb5e8cad0845240983a8",
-          "role": "qualification-metadata",
-          "container_path": "/models/RadixArk/Qwen3.8-27B-NVFP4/qualification.json",
-          "download_id": "3c2618df1abcadf08501a56b79ac294b4d83bce17b57d1602a994635d5bcf4d1"
-        },
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": "tensor-audit.json",
-          "size": 539,
-          "sha256": "8a7801e2b46298432a129689879c9e4f8c69444e0b71b4c971470c2747794679",
-          "role": "tensor-audit",
-          "container_path": "/models/RadixArk/Qwen3.8-27B-NVFP4/tensor-audit.json",
-          "download_id": "af8df8fb4997b9844e57f120f63408396d6852fc16472ff0fcd8542eaa94be8f"
         },
         {
           "repo": "RadixArk/Qwen3.8-27B-NVFP4",
@@ -2594,7 +2514,7 @@
       "prestage_models": [
         "qwen-3.8-27b-nvfp4"
       ],
-      "staged_artifact_bytes": 21945295265,
+      "staged_artifact_bytes": 21944935298,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -3054,7 +2974,7 @@
       "prestage_models": [
         "qwen-3.8-27b-nvfp4"
       ],
-      "staged_artifact_bytes": 21945295265,
+      "staged_artifact_bytes": 21944935298,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -3272,7 +3192,7 @@
       "prestage_models": [
         "qwen-3.8-27b-nvfp4"
       ],
-      "staged_artifact_bytes": 21945295265,
+      "staged_artifact_bytes": 21944935298,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -3490,7 +3410,7 @@
       "prestage_models": [
         "qwen-3.8-27b-nvfp4"
       ],
-      "staged_artifact_bytes": 21945295265,
+      "staged_artifact_bytes": 21944935298,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -4150,7 +4070,7 @@
       "prestage_models": [
         "qwen-3.8-27b-nvfp4"
       ],
-      "staged_artifact_bytes": 21945295265,
+      "staged_artifact_bytes": 21944935298,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -4359,7 +4279,7 @@
       "prestage_models": [
         "qwen-3.8-27b-nvfp4"
       ],
-      "staged_artifact_bytes": 21945295265,
+      "staged_artifact_bytes": 21944935298,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -4568,7 +4488,7 @@
       "prestage_models": [
         "qwen-3.8-27b-nvfp4"
       ],
-      "staged_artifact_bytes": 21945295265,
+      "staged_artifact_bytes": 21944935298,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -4990,7 +4910,7 @@
       "prestage_models": [
         "qwen-3.8-27b-nvfp4"
       ],
-      "staged_artifact_bytes": 21945295265,
+      "staged_artifact_bytes": 21944935298,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -5213,7 +5133,7 @@
       "prestage_models": [
         "qwen-3.8-27b-nvfp4"
       ],
-      "staged_artifact_bytes": 21945295265,
+      "staged_artifact_bytes": 21944935298,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -5422,7 +5342,7 @@
       "prestage_models": [
         "qwen-3.8-27b-nvfp4"
       ],
-      "staged_artifact_bytes": 21945295265,
+      "staged_artifact_bytes": 21944935298,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -5647,7 +5567,7 @@
       "prestage_models": [
         "qwen-3.8-27b-nvfp4"
       ],
-      "staged_artifact_bytes": 21945295265,
+      "staged_artifact_bytes": 21944935298,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -5872,7 +5792,7 @@
       "prestage_models": [
         "qwen-3.8-27b-nvfp4"
       ],
-      "staged_artifact_bytes": 21945295265,
+      "staged_artifact_bytes": 21944935298,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -6081,7 +6001,7 @@
       "prestage_models": [
         "qwen-3.8-27b-nvfp4"
       ],
-      "staged_artifact_bytes": 21945295265,
+      "staged_artifact_bytes": 21944935298,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },
@@ -6290,7 +6210,7 @@
       "prestage_models": [
         "qwen-3.8-27b-nvfp4"
       ],
-      "staged_artifact_bytes": 21945295265,
+      "staged_artifact_bytes": 21944935298,
       "verification_status": "configuration-only",
       "verification": "configuration-only"
     },

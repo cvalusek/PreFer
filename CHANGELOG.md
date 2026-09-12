@@ -1,5 +1,14 @@
 # PreFer changelog
 
+## Current (preview)
+
+- Model staging
+  - Cold starts now group all selected files from one immutable Hugging Face repository revision into one `hf download` invocation instead of one client process per file.
+  - Hugging Face 429 responses retry the same resumable transfer with bounded backoff; other transfer failures still return immediately.
+  - Valid completion markers still make warm starts local-only, with exact size and digest checks preserved before publication.
+- `qwen-3.8-27b`
+  - SGLang and vLLM NVFP4 staging now excludes repository documentation, audit, qualification, and source-control metadata that the runtime does not load.
+
 ## sha-e9da79c (preview)
 
 - Images

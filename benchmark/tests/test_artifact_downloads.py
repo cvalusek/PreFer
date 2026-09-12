@@ -13,6 +13,7 @@ from prefer_bench.paths import REPO_ROOT
 AUDIO_ROOT = REPO_ROOT / "docker" / "audio-cpp"
 IMAGE_ROOT = REPO_ROOT / "docker" / "stable-diffusion-cpp"
 SGLANG_ROOT = REPO_ROOT / "docker" / "sglang"
+VLLM_ROOT = REPO_ROOT / "docker" / "vllm"
 REVISION = "1" * 40
 
 
@@ -70,36 +71,50 @@ if [ "${FAKE_HF_MUST_NOT_RUN:-0}" = "1" ]; then
 fi
 [ "$1" = "download" ]
 repo="$2"
-artifact="$3"
-shift 3
+shift 2
+artifacts=()
 local_dir=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --revision) shift 2 ;;
     --local-dir) local_dir="$2"; shift 2 ;;
-    *) exit 98 ;;
+    *) artifacts+=("$1"); shift ;;
   esac
 done
 [ -n "$local_dir" ]
-partial="$local_dir/.cache/huggingface/download/${artifact//\//--}.incomplete"
-mkdir -p "$(dirname "$partial")" "$(dirname "$local_dir/$artifact")"
+[ "${#artifacts[@]}" -gt 0 ]
+first_artifact="${artifacts[0]}"
+partial="$local_dir/.cache/huggingface/download/${first_artifact//\//--}.incomplete"
+mkdir -p "$(dirname "$partial")" "$(dirname "$local_dir/$first_artifact")"
 resume_size=0
 if [ -f "$partial" ]; then
   resume_size="$(stat -c '%s' "$partial")"
 fi
-printf '%s\t%s\t%s\n' "$repo" "$artifact" "$resume_size" >> "$FAKE_HF_LOG"
+joined="$(IFS=,; printf '%s' "${artifacts[*]}")"
+printf '%s\t%s\t%s\n' "$repo" "$joined" "$resume_size" >> "$FAKE_HF_LOG"
+if [ "${FAKE_HF_ALWAYS_429:-0}" = "1" ] || { [ "${FAKE_HF_429_ONCE:-0}" = "1" ] && [ ! -e "${FAKE_HF_429_STATE:-$FAKE_HF_STATE.429}" ]; }; then
+  : > "${FAKE_HF_429_STATE:-$FAKE_HF_STATE.429}"
+  echo "HTTP 429 Too Many Requests; Retry-After: 0" >&2
+  exit 29
+fi
 if [ "${FAKE_HF_FAIL_ONCE:-0}" = "1" ] && [ ! -e "$FAKE_HF_STATE" ]; then
   head -c "${FAKE_HF_SPLIT_BYTES:-1}" "$FAKE_HF_SOURCE" > "$partial"
   : > "$FAKE_HF_STATE"
   exit 42
 fi
-if [ "$resume_size" -gt 0 ]; then
-  tail -c "+$((resume_size + 1))" "$FAKE_HF_SOURCE" >> "$partial"
-else
-  cp "$FAKE_HF_SOURCE" "$partial"
-fi
-mv -f "$partial" "$local_dir/$artifact"
-printf '%s\n' "$local_dir/$artifact"
+for artifact in "${artifacts[@]}"; do
+  partial="$local_dir/.cache/huggingface/download/${artifact//\//--}.incomplete"
+  mkdir -p "$(dirname "$partial")" "$(dirname "$local_dir/$artifact")"
+  current_size=0
+  if [ -f "$partial" ]; then current_size="$(stat -c '%s' "$partial")"; fi
+  if [ "$current_size" -gt 0 ]; then
+    tail -c "+$((current_size + 1))" "$FAKE_HF_SOURCE" >> "$partial"
+  else
+    cp "$FAKE_HF_SOURCE" "$partial"
+  fi
+  mv -f "$partial" "$local_dir/$artifact"
+  printf '%s\n' "$local_dir/$artifact"
+done
 """,
             encoding="utf-8",
             newline="\n",
@@ -212,15 +227,20 @@ prefer_download_hf_artifact \
         audio_helper = (AUDIO_ROOT / "download-artifacts.sh").read_bytes()
         image_helper = (IMAGE_ROOT / "download-artifacts.sh").read_bytes()
         sglang_helper = (SGLANG_ROOT / "download-artifacts.sh").read_bytes()
+        vllm_helper = (VLLM_ROOT / "download-artifacts.sh").read_bytes()
         self.assertEqual(audio_helper, image_helper)
         self.assertEqual(audio_helper, sglang_helper)
+        self.assertEqual(audio_helper, vllm_helper)
         self.assertIn(b"hf download", audio_helper)
         self.assertIn(b"prefer_download_s3_artifact", audio_helper)
         self.assertIn(b"downloads-v2/staging", audio_helper)
         self.assertIn(b"prefer_download_model_keys", audio_helper)
-        for root in (AUDIO_ROOT, IMAGE_ROOT, SGLANG_ROOT):
+        self.assertIn(b"prefer_download_model_keys_hf", audio_helper)
+        self.assertIn(b"repository-staging", audio_helper)
+        for root in (AUDIO_ROOT, IMAGE_ROOT, SGLANG_ROOT, VLLM_ROOT):
             generated = (root / "model-downloads.generated.sh").read_text(encoding="utf-8")
             self.assertIn("prefer_download_hf_artifact", generated)
+            self.assertIn("prefer_download_model_keys_hf", generated)
             self.assertNotIn("curl ", generated)
             self.assertNotIn("partial.$$", generated)
         self.assertIn("sglang_download_model_keys_s3", (SGLANG_ROOT / "model-downloads.generated.sh").read_text(encoding="utf-8"))
@@ -343,7 +363,143 @@ prefer_download_runtime_manifest runtime-handoff 2 8 "$3"
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertEqual((self.models / "owner" / "repo" / "first" / "model.bin").read_bytes(), content)
         self.assertEqual((self.models / "owner" / "repo" / "second" / "adapter.bin").read_bytes(), content)
+        log_lines = self.log.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(log_lines), 1)
+        self.assertIn("first/model.bin,second/adapter.bin", log_lines[0])
+
+    def test_repository_transfer_retries_a_bounded_rate_limit(self) -> None:
+        content = b"rate-limited-artifact\n" * 16
+        expected_sha = hashlib.sha256(content).hexdigest()
+        self.source.write_bytes(content)
+        manifest = self.root / "rate-limit.tsv"
+        manifest.write_text(
+            "\t".join(["a" * 64, "owner/repo", REVISION, "model.bin", str(len(content)), "sha256", expected_sha]) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        script = """
+set -euo pipefail
+export PATH="$FAKE_BIN:$PATH"
+source "$1"
+prefer_download_hf_manifest rate-limit 4 8 "$2"
+"""
+        env = {
+            **os.environ,
+            "FAKE_BIN": repo_relative(self.bin_dir),
+            "PREFER_MODELS_DIR": repo_relative(self.models),
+            "FAKE_HF_SOURCE": repo_relative(self.source),
+            "FAKE_HF_STATE": repo_relative(self.state),
+            "FAKE_HF_LOG": repo_relative(self.log),
+            "FAKE_HF_429_ONCE": "1",
+            "PREFER_HF_RETRY_BASE_SECONDS": "0",
+            "PREFER_HF_RETRY_MAX_SECONDS": "0",
+        }
+        completed = subprocess.run(
+            [self.bash, "-c", script, "_", repo_relative(AUDIO_ROOT / "download-artifacts.sh"), repo_relative(manifest)],
+            cwd=REPO_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertEqual(len(self.log.read_text(encoding="utf-8").splitlines()), 2)
+        self.assertIn("rate limited attempt 1/5", completed.stderr)
+        self.assertEqual((self.models / "owner" / "repo" / "model.bin").read_bytes(), content)
+
+    def test_model_key_download_groups_artifacts_by_repository_revision(self) -> None:
+        content = b"repository-group-artifact\n" * 16
+        expected_sha = hashlib.sha256(content).hexdigest()
+        self.source.write_bytes(content)
+        first_id = "a" * 64
+        second_id = "b" * 64
+        script = f"""
+set -euo pipefail
+export PATH="$FAKE_BIN:$PATH"
+source "$1"
+resolver() {{ printf '%s\\n' {first_id} {second_id}; }}
+records() {{
+  case "$1" in
+    {first_id}) printf '%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n' "$1" owner/repo {REVISION} first.bin {len(content)} sha256 {expected_sha} ;;
+    {second_id}) printf '%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n' "$1" owner/repo {REVISION} second.bin {len(content)} sha256 {expected_sha} ;;
+  esac
+}}
+prefer_download_model_keys_hf grouped-model 4 8 resolver records model-a
+"""
+        env = {
+            **os.environ,
+            "FAKE_BIN": repo_relative(self.bin_dir),
+            "PREFER_MODELS_DIR": repo_relative(self.models),
+            "FAKE_HF_SOURCE": repo_relative(self.source),
+            "FAKE_HF_STATE": repo_relative(self.state),
+            "FAKE_HF_LOG": repo_relative(self.log),
+        }
+        completed = subprocess.run(
+            [self.bash, "-c", script, "_", repo_relative(AUDIO_ROOT / "download-artifacts.sh")],
+            cwd=REPO_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertEqual(self.log.read_text(encoding="utf-8").splitlines(), ["owner/repo\tfirst.bin,second.bin\t0"])
+        self.assertEqual((self.models / "owner" / "repo" / "first.bin").read_bytes(), content)
+        self.assertEqual((self.models / "owner" / "repo" / "second.bin").read_bytes(), content)
+
+    def test_repository_rate_limit_stops_at_configured_attempt_count(self) -> None:
+        content = b"bounded-rate-limit\n"
+        expected_sha = hashlib.sha256(content).hexdigest()
+        self.source.write_bytes(content)
+        manifest = self.root / "persistent-rate-limit.tsv"
+        manifest.write_text(
+            "\t".join(["a" * 64, "owner/repo", REVISION, "model.bin", str(len(content)), "sha256", expected_sha]) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        script = """
+set -uo pipefail
+set +e
+export PATH="$FAKE_BIN:$PATH"
+source "$1"
+prefer_download_hf_manifest rate-limit 1 8 "$2"
+"""
+        env = {
+            **os.environ,
+            "FAKE_BIN": repo_relative(self.bin_dir),
+            "PREFER_MODELS_DIR": repo_relative(self.models),
+            "FAKE_HF_SOURCE": repo_relative(self.source),
+            "FAKE_HF_STATE": repo_relative(self.state),
+            "FAKE_HF_LOG": repo_relative(self.log),
+            "FAKE_HF_ALWAYS_429": "1",
+            "PREFER_HF_MAX_ATTEMPTS": "3",
+            "PREFER_HF_RETRY_BASE_SECONDS": "0",
+            "PREFER_HF_RETRY_MAX_SECONDS": "0",
+        }
+        completed = subprocess.run(
+            [self.bash, "-c", script, "_", repo_relative(AUDIO_ROOT / "download-artifacts.sh"), repo_relative(manifest)],
+            cwd=REPO_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 29, completed.stdout + completed.stderr)
+        self.assertEqual(len(self.log.read_text(encoding="utf-8").splitlines()), 3)
+        self.assertIn("rate limit persisted after 3 attempts", completed.stderr)
+        self.assertFalse((self.models / "owner" / "repo" / "model.bin").exists())
+
+    def test_qwen_nvfp4_stages_runtime_files_only(self) -> None:
+        sglang_model = (SGLANG_ROOT / "models" / "qwen" / "qwen-3.8-27b" / "model.json").read_text(encoding="utf-8")
+        sglang_generated = (SGLANG_ROOT / "model-downloads.generated.sh").read_text(encoding="utf-8")
+        vllm_model = (VLLM_ROOT / "models" / "qwen" / "qwen-3.8-27b" / "model.json").read_text(encoding="utf-8")
+        for excluded in (".gitattributes", ".quant_summary.txt", "README.md", "conversion-manifest.json", "qualification.json", "tensor-audit.json"):
+            self.assertNotIn(excluded, sglang_model)
+            self.assertNotIn(excluded, sglang_generated)
+        self.assertNotIn('"path": "LICENSE"', sglang_model)
+        self.assertNotIn('"path": "LICENSE"', vllm_model)
+        self.assertIn("model-00001-of-00003.safetensors", sglang_generated)
+        self.assertIn("nvfp4_experts_mtp.safetensors", (VLLM_ROOT / "model-downloads.generated.sh").read_text(encoding="utf-8"))
 
     def test_interrupted_transfer_resumes_and_marker_skips_restart_hash(self) -> None:
         content = b"pinned-artifact-content\n" * 64

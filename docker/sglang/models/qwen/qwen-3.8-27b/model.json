@@ -90,7 +90,7 @@
     },
     "artifact_variant": {
       "label": "RadixArk current 21.945 GB NVFP4 snapshot",
-      "total_bytes": 21945295265,
+      "total_bytes": 21944935298,
       "comparability_note": "This is not the earlier approximately 16.5 GB community variant; no throughput result from either variant is interchangeable without a matched smoke."
     },
     "server": {
@@ -134,38 +134,6 @@
         {
           "repo": "RadixArk/Qwen3.8-27B-NVFP4",
           "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": ".gitattributes",
-          "size": 1570,
-          "sha256": "34448b82c17d60fec9b65b1f093c115ddbaadc04beb1b0140b6bfed2e012a930",
-          "role": "repository-metadata"
-        },
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": ".quant_summary.txt",
-          "size": 314291,
-          "sha256": "5920198f1770fc91c0f8032108e6d861ce7e0ef196eca140c9681231d8d99967",
-          "role": "quantization-metadata"
-        },
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": "LICENSE",
-          "size": 11544,
-          "sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a",
-          "role": "license"
-        },
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": "README.md",
-          "size": 4574,
-          "sha256": "3cfd18e07422e6eff20fcdf8dcdb3c864976dcef0e1e0f2c3f8bf788603203c2",
-          "role": "model-card"
-        },
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
           "path": "chat_template.jinja",
           "size": 8952,
           "sha256": "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041",
@@ -178,14 +146,6 @@
           "size": 73003,
           "sha256": "7ff41ec6f96ad50efea3c92751cd261b63839d39936eb6e6ffc9066db8672740",
           "role": "model-config"
-        },
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": "conversion-manifest.json",
-          "size": 23587,
-          "sha256": "c71e938cadabd25b2d6ec6b1bd15afecb618674cd8004cf1ecf04e28badbbf55",
-          "role": "conversion-metadata"
         },
         {
           "repo": "RadixArk/Qwen3.8-27B-NVFP4",
@@ -250,30 +210,6 @@
           "size": 390,
           "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
           "role": "image-preprocessor"
-        },
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": "qualification-criteria.json",
-          "size": 1145,
-          "sha256": "8e3b57367245354acb040a133e63df8eb1f4aef787e036156b944dfda217352a",
-          "role": "qualification-metadata"
-        },
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": "qualification.json",
-          "size": 2717,
-          "sha256": "7be9d60606fc9590ca7b5717018e12050deaa6d7d93abb5e8cad0845240983a8",
-          "role": "qualification-metadata"
-        },
-        {
-          "repo": "RadixArk/Qwen3.8-27B-NVFP4",
-          "revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-          "path": "tensor-audit.json",
-          "size": 539,
-          "sha256": "8a7801e2b46298432a129689879c9e4f8c69444e0b71b4c971470c2747794679",
-          "role": "tensor-audit"
         },
         {
           "repo": "RadixArk/Qwen3.8-27B-NVFP4",

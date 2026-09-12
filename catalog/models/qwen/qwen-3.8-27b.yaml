@@ -117,11 +117,38 @@ repositories:
   RadixArk/Qwen3.8-27B-NVFP4:
     quants:
       nvfp4:
+        include:
+          - chat_template.jinja
+          - config.json
+          - generation_config.json
+          - hf_quant_config.json
+          - merges.txt
+          - model-*.safetensors
+          - model.safetensors.index.json
+          - preprocessor_config.json
+          - tokenizer.json
+          - tokenizer_config.json
+          - video_preprocessor_config.json
+          - vocab.json
         engines:
           sglang: {}
   Inferact/Qwen3.8-27B-NVFP4:
     quants:
       nvfp4:
+        include:
+          - chat_template.jinja
+          - config.json
+          - generation_config.json
+          - hf_quant_config.json
+          - merges.txt
+          - model-*.safetensors
+          - model.safetensors.index.json
+          - nvfp4_experts_mtp.safetensors
+          - preprocessor_config.json
+          - tokenizer.json
+          - tokenizer_config.json
+          - video_preprocessor_config.json
+          - vocab.json
         engines:
           vllm:
             settings:

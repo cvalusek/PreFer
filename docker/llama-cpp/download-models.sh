@@ -5,6 +5,7 @@ MODELS_DIR="/models"
 mkdir -p "$MODELS_DIR"
 
 source /model-downloads.generated.sh
+source /prefer-download-artifacts.sh
 
 # Comma-separated list of model keys to pre-stage. presets use local `model =`
 # paths (not HF-direct `hf =` loading; that was tried and reverted, see
@@ -78,14 +79,9 @@ download() {
   shift 2
   local dest="$MODELS_DIR/$repo"
   local download_args=("$@")
-  local revision_args=()
   local artifact=""
   local repo_artifacts=()
   mkdir -p "$dest"
-
-  if [ -n "$revision" ]; then
-    revision_args=(--revision "$revision")
-  fi
 
   # S3 uses the exact generated artifact manifest rather than filters over HF's
   # sometimes broad include globs. Besides preventing old .cache metadata and
@@ -124,7 +120,7 @@ download() {
   fi
 
   echo "[download-models] $repo: syncing to $dest"
-  hf download "$repo" "${revision_args[@]}" --local-dir "$dest" "${download_args[@]}"
+  prefer_hf_download_with_retry "download-models" "$repo" "$revision" "$dest" "${download_args[@]}"
 }
 
 MARKER_REASON=""

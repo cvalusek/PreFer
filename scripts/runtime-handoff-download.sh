@@ -137,6 +137,11 @@ prefer_download_runtime_manifest() {
     return 2
   fi
 
+  if [ -z "$bucket" ]; then
+    prefer_download_hf_manifest "$log_prefix" "$requested_jobs" "$maximum_jobs" "$manifest"
+    return $?
+  fi
+
   while [ "$cursor" -lt "${#ids[@]}" ]; do
     end=$((cursor + requested_jobs))
     if [ "$end" -gt "${#ids[@]}" ]; then

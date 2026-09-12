@@ -295,8 +295,9 @@ Useful knobs:
   prestage sidecar when `AUDIO_PRESTAGE_MODELS` is blank.
 - `AUDIO_PRESTAGE_MODELS` selects pinned audio packages to stage. Blank or
   unset follows the selected server config; use `none` to skip downloads.
-- `AUDIO_DOWNLOAD_JOBS` bounds independent audio artifact transfers from 1 to
-  8 (default `4`). Shared component paths are deduplicated before work starts.
+- `AUDIO_DOWNLOAD_JOBS` bounds concurrent audio repository/revision transfers
+  from 1 to 8 (default `4`). Files from the same immutable repository are sent
+  through one Hugging Face client invocation, and shared component paths are deduplicated.
 - `PREFER_AUDIO_MODEL_VOLUME` and `PREFER_AUDIO_VOICE_VOLUME` name the audio
   model and server-side voice-library volumes.
 - `IMAGE_PORT` sets the image service host port (default `8082`).
@@ -304,8 +305,9 @@ Useful knobs:
   uses the all-capabilities default.
 - `IMAGE_PRESTAGE_MODELS` selects pinned image lanes to stage. Blank follows
   the selected config; use `none` to skip downloads.
-- `IMAGE_DOWNLOAD_JOBS` bounds independent image artifact transfers from 1 to
-  8 (default `4`). Image discovery remains available while those jobs run.
+- `IMAGE_DOWNLOAD_JOBS` bounds concurrent image repository/revision transfers
+  from 1 to 8 (default `4`). Image discovery remains available while those
+  groups run.
 - `PREFER_IMAGE_MODEL_VOLUME` names the persistent image `/models` volume.
 - `SGLANG_PORT` sets the opt-in SGLang host port (default `8083`).
 - `PREFER_SGLANG_VIDEO_INPUT_VOLUME` and
@@ -317,8 +319,8 @@ Useful knobs:
   `.prestage` sidecar when `SGLANG_PRESTAGE_MODELS` is blank.
 - `SGLANG_PRESTAGE_MODELS` selects the pinned SGLang package to stage. Blank
   follows the selected config; use `none` to skip downloads.
-- `SGLANG_DOWNLOAD_JOBS` bounds independent SGLang artifact transfers from 1
-  through 8 (default `4`). `PREFER_SGLANG_MODEL_VOLUME` defaults to the same
+- `SGLANG_DOWNLOAD_JOBS` bounds concurrent SGLang repository/revision transfers
+  from 1 through 8 (default `4`). `PREFER_SGLANG_MODEL_VOLUME` defaults to the same
   named `prefer-model-cache` volume used by llama.cpp, so the two downloaders
   share the `/models` layout.
 - `SGLANG_S3_BUCKET_NAME` and `SGLANG_S3_MODEL_PREFIX` opt SGLang into AWS
@@ -331,7 +333,8 @@ Useful knobs:
 - `VLLM_SERVER_CONFIG` selects a generated vLLM configuration; blank uses the
   provider-neutral native-context lane. `VLLM_PRESTAGE_MODELS` selects the
   pinned model key, with the selected `.prestage` sidecar used when blank.
-- `VLLM_DOWNLOAD_JOBS` bounds vLLM artifact transfers from one through eight.
+- `VLLM_DOWNLOAD_JOBS` bounds concurrent vLLM repository/revision transfers
+  from one through eight.
   `VLLM_S3_BUCKET_NAME` and `VLLM_S3_MODEL_PREFIX` enable optional S3
   read-through, with the common `S3_BUCKET_NAME` and `S3_MODEL_PREFIX` names
   accepted as compatibility aliases.
@@ -342,6 +345,13 @@ size and SHA-256 are verified before atomic publication. A verified completion
 marker avoids rehashing unchanged multi-gigabyte files on every restart. SGLang
 uses the same exact artifact layout and writes the llama-compatible local model
 marker after its stricter per-file checks.
+
+All exact-artifact downloaders combine the selected files for one immutable
+repository revision into one `hf download` invocation. A 429 response retries that same
+resumable transfer up to `PREFER_HF_MAX_ATTEMPTS` (default `5`) with bounded
+backoff (`PREFER_HF_RETRY_BASE_SECONDS=5`,
+`PREFER_HF_RETRY_MAX_SECONDS=60`). Warm starts with valid completion markers do
+not contact Hugging Face.
 
 ## Contract and benchmark harness
 

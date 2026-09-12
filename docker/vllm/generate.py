@@ -629,6 +629,22 @@ def download_script(lanes: list[dict]) -> str:
         "  esac",
         "}",
         "",
+        "vllm_artifact_record() {",
+        '  case "$1" in',
+    ])
+    for artifact_id, artifact in artifacts.items():
+        lines.extend(
+            [
+                f"  {artifact_id})",
+                f"    printf '%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n' \"$1\" \"{artifact['repo']}\" \"{artifact['revision']}\" \"{artifact['path']}\" {artifact['size']} sha256 \"{artifact['sha256']}\"",
+                "    ;;",
+            ]
+        )
+    lines.extend([
+        '    *) echo "[vllm-download] unknown artifact id: $1" >&2; return 2 ;;',
+        "  esac",
+        "}",
+        "",
         "vllm_download_artifact_id_s3() {",
         '  case "$1" in',
     ])
@@ -654,9 +670,9 @@ def download_script(lanes: list[dict]) -> str:
         "}",
         "",
         "vllm_download_model_keys() {",
-        "  prefer_download_model_keys \\",
+        "  prefer_download_model_keys_hf \\",
         "    \"vllm-download\" \"${VLLM_DOWNLOAD_JOBS:-4}\" 8 \\",
-        "    vllm_model_key_artifact_ids vllm_download_artifact_id \"$@\"",
+        "    vllm_model_key_artifact_ids vllm_artifact_record \"$@\"",
         "}",
         "",
         "vllm_download_model_keys_s3() {",

@@ -34,7 +34,7 @@ class VLLMTests(unittest.TestCase):
         )
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
 
-    def test_catalog_pins_the_inferact_nvfp4_bundle(self) -> None:
+    def test_catalog_pins_the_inferact_nvfp4_runtime_bundle(self) -> None:
         catalog = json.loads(
             (VLLM_ROOT / "models" / "qwen" / "qwen-3.8-27b" / "model.json").read_text(
                 encoding="utf-8"
@@ -50,9 +50,9 @@ class VLLMTests(unittest.TestCase):
         lane = catalog["quants"]["nvfp4"]
         self.assertTrue(lane["primary"])
         self.assertEqual(lane["key"], "qwen-3.8-27b-nvfp4")
-        self.assertEqual(len(lane["artifacts"]), 19)
+        self.assertEqual(len(lane["artifacts"]), 18)
         self.assertEqual(lane["artifacts"][0]["revision"], "6128240ebaf4eaa7bad2b3d1c72c37d677c5f462")
-        self.assertEqual(sum(artifact["size"] for artifact in lane["artifacts"]), 26404413873)
+        self.assertEqual(sum(artifact["size"] for artifact in lane["artifacts"]), 26404402530)
         roles = {artifact["role"] for artifact in lane["artifacts"]}
         self.assertIn("speculative-mtp", roles)
         self.assertIn("image-preprocessor", roles)
@@ -69,7 +69,7 @@ class VLLMTests(unittest.TestCase):
         self.assertEqual(inventory["requirements"]["minimum_compute_capability"], "sm_100")
         self.assertEqual(inventory["requirements"]["cuda_major"], 13)
         self.assertEqual(inventory["experimental_routes"]["qwen-3.8-flash"]["status"], "deferred-experimental")
-        self.assertEqual(inventory["models"]["qwen-3.8-27b-nvfp4"]["artifact_bytes"], 26404413873)
+        self.assertEqual(inventory["models"]["qwen-3.8-27b-nvfp4"]["artifact_bytes"], 26404402530)
         self.assertEqual(inventory["api"]["ready"], "GET /readyz")
         deployments = {deployment["id"]: deployment for deployment in inventory["deployments"]}
         self.assertEqual(deployments["vllm/cuda13"]["kind"], "runtime-default")

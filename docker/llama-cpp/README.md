@@ -411,6 +411,9 @@ shell env vars):
 - `PREFER_MODEL_VOLUME` - Docker volume mounted at `/models` (default
   `prefer-model-cache`)
 - `HF_TOKEN` - optional, helps with Hugging Face rate limits
+- `PREFER_HF_MAX_ATTEMPTS`, `PREFER_HF_RETRY_BASE_SECONDS`, and
+  `PREFER_HF_RETRY_MAX_SECONDS` - bounded 429 retry controls (defaults `5`,
+  `5`, and `60`). Retries reuse the same resumable model directory
 - `HF_HUB_DISABLE_XET`, `HF_XET_HIGH_PERFORMANCE`,
   `HF_XET_FIXED_DOWNLOAD_CONCURRENCY`,
   `HF_XET_DATA_MAX_CONCURRENT_FILE_DOWNLOADS`, and the

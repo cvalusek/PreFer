@@ -893,6 +893,7 @@ def download_script(lanes: list[dict]) -> str:
             artifacts.setdefault((artifact["repo"], artifact["path"]), artifact)
     artifact_cases = []
     artifact_s3_cases = []
+    download_record_cases = []
     for artifact in artifacts.values():
         artifact_id = artifact_download_id(artifact)
         artifact_cases.append(
@@ -908,6 +909,13 @@ def download_script(lanes: list[dict]) -> str:
             f"{json.dumps(artifact['repo'])} {json.dumps(artifact['path'])} "
             f"{artifact['size']} {json.dumps(artifact['sha256'])} "
             f"\"$SGLANG_S3_BUCKET_NAME\" \"${{SGLANG_S3_MODEL_PREFIX:-}}\"\n"
+            "    ;;"
+        )
+        download_record_cases.append(
+            f"  {artifact_id})\n"
+            f"    printf '%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n' \"$1\" "
+            f"{json.dumps(artifact['repo'])} {json.dumps(artifact['revision'])} "
+            f"{json.dumps(artifact['path'])} {artifact['size']} sha256 {json.dumps(artifact['sha256'])}\n"
             "    ;;"
         )
     fingerprint_cases = []
@@ -969,6 +977,13 @@ sglang_download_artifact_id() {{
   esac
 }}
 
+sglang_artifact_record() {{
+  case "$1" in
+{chr(10).join(download_record_cases)}
+    *) echo "[sglang-download] unknown artifact id: $1" >&2; return 2 ;;
+  esac
+}}
+
 sglang_s3_download_artifact_id() {{
   if [ -z "${{SGLANG_S3_BUCKET_NAME:-}}" ]; then
     echo "[sglang-download] SGLANG_S3_BUCKET_NAME is required for S3 staging" >&2
@@ -993,9 +1008,9 @@ sglang_s3_stage_artifact() {{
 }}
 
 sglang_download_model_keys() {{
-  prefer_download_model_keys \\
+  prefer_download_model_keys_hf \\
     "sglang-download" "${{SGLANG_DOWNLOAD_JOBS:-4}}" 8 \\
-    sglang_model_artifact_ids sglang_download_artifact_id "$@"
+    sglang_model_artifact_ids sglang_artifact_record "$@"
 }}
 
 sglang_download_model_keys_s3() {{

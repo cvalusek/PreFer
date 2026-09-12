@@ -152,10 +152,14 @@ The SGLang-specific variables take precedence when set:
 - `SGLANG_SERVER_CONFIG` selects a generated JSON config.
 - `SGLANG_PRESTAGE_MODELS` selects catalog keys; blank follows the selected
   config's `.prestage` sidecar and `none` skips downloads.
-- `SGLANG_DOWNLOAD_JOBS` bounds transfers from one through eight.
+- `SGLANG_DOWNLOAD_JOBS` bounds concurrent immutable repository/revision
+  transfers from one through eight; files within one repository share a single
+  `hf download` invocation.
 - `SGLANG_S3_BUCKET_NAME` and `SGLANG_S3_MODEL_PREFIX` explicitly opt in to
   SGLang's S3 read-through; the AWS launcher also accepts the common
   `S3_BUCKET_NAME` and `S3_MODEL_PREFIX` names.
+- `PREFER_HF_MAX_ATTEMPTS`, `PREFER_HF_RETRY_BASE_SECONDS`, and
+  `PREFER_HF_RETRY_MAX_SECONDS` bound 429 retries (defaults `5`, `5`, and `60`).
 - `PRESTAGE_MODELS` and `MODEL_DOWNLOAD_JOBS` remain accepted for operators
   reusing the llama.cpp staging environment.
 

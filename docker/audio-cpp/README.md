@@ -92,10 +92,14 @@ container stop retains Hugging Face's resumable `.incomplete` state. The final
 path is replaced only after exact size and SHA-256 validation, using a
 same-volume atomic rename. Unchanged artifacts then use a stat-bound completion
 marker; an existing pre-marker installation is hashed once after upgrade and
-does not pay that cost on later starts. `AUDIO_DOWNLOAD_JOBS` defaults to four
-independent artifact paths and accepts 1 through 8. Shared paths are
-deduplicated before jobs launch, and failures are joined and reported in stable
-catalog order.
+does not pay that cost on later starts. Files from one immutable repository
+revision are transferred in one `hf download` call. `AUDIO_DOWNLOAD_JOBS`
+defaults to four concurrent repository groups and accepts 1 through 8. Shared
+paths are deduplicated before groups launch, and failures are joined and
+reported in stable catalog order. HTTP 429 responses use bounded retry/backoff;
+non-rate-limit failures return immediately with resumable state intact. The
+shared controls are `PREFER_HF_MAX_ATTEMPTS=5`,
+`PREFER_HF_RETRY_BASE_SECONDS=5`, and `PREFER_HF_RETRY_MAX_SECONDS=60`.
 
 The container stages as root because RunPod and other external mounts replace
 the image-layer ownership of `/models`. This matches the llama.cpp container

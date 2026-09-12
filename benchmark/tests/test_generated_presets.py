@@ -566,6 +566,8 @@ class GeneratedPresetTests(unittest.TestCase):
 
     def test_s3_staging_uses_ttl_markers_bounded_jobs_and_exact_artifacts(self) -> None:
         downloader = (PREFER_ROOT / "download-models.sh").read_text(encoding="utf-8")
+        self.assertIn("source /prefer-download-artifacts.sh", downloader)
+        self.assertIn("prefer_hf_download_with_retry", downloader)
         self.assertIn('MODEL_CACHE_RECHECK_DAYS="${MODEL_CACHE_RECHECK_DAYS:-7}"', downloader)
         self.assertIn('DEFAULT_MODEL_DOWNLOAD_JOBS=4', downloader)
         self.assertIn('MARKER_BUCKET_NAME="${S3_BUCKET_NAME:--}"', downloader)

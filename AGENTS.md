@@ -1020,12 +1020,24 @@ and image remain HF-only; SGLang and vLLM additionally support optional AWS-only
 read-through S3 cache using the same `S3_BUCKET_NAME` convention as llama.cpp
 plus an optional `S3_MODEL_PREFIX` namespace. Compose passes
 `HF_TOKEN`, `HF_HUB_DISABLE_XET`, and the existing `HF_XET_*` tuning variables
-to each service. `AUDIO_DOWNLOAD_JOBS`, `IMAGE_DOWNLOAD_JOBS`, and
-`SGLANG_DOWNLOAD_JOBS`, and `VLLM_DOWNLOAD_JOBS` default to four and accept only 1 through 8. Generators reject two immutable
-identities that target the same final repository/path; selected model keys are
-resolved and deduplicated to artifact IDs before batches launch. Batches join
-in catalog order, report the first failure in that stable order, and do not
-launch a later batch after a failed one.
+to each service. `AUDIO_DOWNLOAD_JOBS`, `IMAGE_DOWNLOAD_JOBS`,
+`SGLANG_DOWNLOAD_JOBS`, and `VLLM_DOWNLOAD_JOBS` default to four and accept
+only 1 through 8. They bound concurrent immutable repository/revision
+transfers, not individual files. Selected artifacts from one repository
+revision are passed to one `hf download` invocation, reducing Hub API pressure
+while retaining Xet's internal data-plane concurrency. Generators reject two
+immutable identities that target the same final repository/path; selected
+model keys are resolved and deduplicated to artifact IDs before groups launch.
+Groups join in catalog order, report the first failure in that stable order,
+and do not launch a later group after a failed one.
+
+HTTP 429/rate-limit failures retry the same stable repository staging path up
+to `PREFER_HF_MAX_ATTEMPTS` (default 5), honoring a numeric `Retry-After` when
+reported and otherwise using exponential delay from
+`PREFER_HF_RETRY_BASE_SECONDS` (default 5) capped by
+`PREFER_HF_RETRY_MAX_SECONDS` (default 60). Non-rate-limit failures return
+immediately. Keep these retries bounded; a restart must continue to reuse the
+same resumable Hugging Face state rather than creating a fresh transfer tree.
 
 All sibling runtime entrypoints stage artifacts as root. External RunPod and other
 mounted model volumes replace image-layer ownership, so build-time `chown`
@@ -1037,10 +1049,12 @@ on the persistent volume. Never add a recursive startup `chown` over a populated
 model volume. If privilege separation is introduced later, staging must finish
 as root before only the server process drops privileges.
 
-Each artifact uses a stable hidden staging directory under
-`/models/.prefer-cache/downloads-v2/`. `hf download --local-dir` owns its
-resumable `.incomplete` state there; never add PID-scoped cleanup or delete the
-staging tree on transfer failure. A completed staging file must pass the
+Each repository/revision group uses a stable hidden staging directory under
+`/models/.prefer-cache/downloads-v2/repository-staging/`. `hf download
+--local-dir` owns its resumable `.incomplete` state there; never add PID-scoped
+cleanup or delete the staging tree on transfer failure. Legacy direct and S3
+artifact paths retain their existing stable `staging/` and `s3-staging/`
+locations. A completed staging file must pass the
 catalog byte size and SHA-256 before `mv` atomically replaces the final path on
 the same volume. An invalid staged *completed* file may be removed so the next
 `hf` call repairs it, but any separate `.incomplete` state is retained. An
@@ -1053,6 +1067,13 @@ its marker is rehashed. Existing installations without markers pay one exact
 SHA-256 pass, then unchanged restarts use the marker instead of rescanning
 multi-gigabyte files. A crash after file publication but before marker
 publication is safe: the next run hashes the final and repairs the marker.
+
+Authored runtime catalogs should stage files required to launch the selected
+model, not repository README, qualification, audit, or source-control metadata.
+Those facts can remain in the release-matched Hugging Face metadata catalog
+without being copied onto every model volume. Do not drop model shards,
+indexes, tokenizer/template/configuration files, multimodal preprocessors, or
+speculative companions merely to reduce the file count.
 
 Image prestaging remains a background child and must never delay router
 discovery. The router reports a requested artifact staged only when its exact
