@@ -1,6 +1,17 @@
 # PreFer changelog
 
-## Current (preview)
+## sha-b746f7d (preview)
+
+- Images
+  - Llama CUDA: `ghcr.io/cvalusek/prefer:llama-cuda-sha-b746f7d@sha256:76651d96511b3c02580a549441156e893a3bc994a8c44c4759ba830e37ccbe6c`.
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-b746f7d@sha256:26254ffe18816521cc02b5289875a52361efe24184a171c4be1afad245559ca2`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-b746f7d@sha256:90d05e241890787df76820ca72939bc9dffb7f2f0ea20b354270c6185affff8a`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-b746f7d@sha256:663c80db7b1785decc93d4750a10f6f74f1581de7d4f38761aa3d85715d522a4`.
+  - SGLang CUDA 13: `ghcr.io/cvalusek/prefer:sglang-cuda13-sha-b746f7d@sha256:1cdaaa17b839711ba60897a52a1c15bcccea7298acddc9dbc291ebecaeaeeae3`.
+  - vLLM CUDA 13: `ghcr.io/cvalusek/prefer:vllm-cuda13-sha-b746f7d@sha256:78e9fc0f661bed0decee2643df515acc222f41269206fa569af3456824e8ec4f`.
+
+- Package
+  - npm: `prefer-inference-core@0.0.0-gb746f7d`.
 
 - Model staging
   - Cold starts now group all selected files from one immutable Hugging Face repository revision into one `hf download` invocation instead of one client process per file.
