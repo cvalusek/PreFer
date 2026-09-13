@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import importlib.util
+import http.client
 import json
 from pathlib import Path
 import tempfile
+import threading
 import unittest
 from unittest import mock
 
@@ -37,6 +39,18 @@ class RouterTests(unittest.TestCase):
         self.assertEqual(
             router.extract_model_id("application/json", body, "flux-2-klein-4b"),
             "flux-2-klein-4b",
+        )
+
+    def test_sdapi_model_selection_supports_override_settings(self) -> None:
+        body = json.dumps(
+            {
+                "prompt": "cat",
+                "override_settings": {"sd_model_checkpoint": "qwen-image"},
+            }
+        ).encode()
+        self.assertEqual(
+            router.extract_sdapi_model_id("application/json", body),
+            "qwen-image",
         )
 
     def test_discovery_does_not_load(self) -> None:
@@ -157,6 +171,136 @@ class RouterTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(ValueError, "max_loaded_models=1"):
                 router.load_config(path)
+
+    def test_sdapi_routes_select_and_proxy_one_worker(self) -> None:
+        config = {
+            "default_model": "generator",
+            "max_loaded_models": 1,
+            "idle_unload_ms": 1800000,
+            "busy_timeout_ms": 1000,
+            "max_request_body_bytes": 4096,
+            "models": [
+                {
+                    "id": "generator",
+                    "capabilities": ["generation"],
+                    "required_files": [
+                        {
+                            "role": "target",
+                            "container_path": "/models/generator.gguf",
+                            "sha256": "1" * 64,
+                        }
+                    ],
+                },
+                {
+                    "id": "editor",
+                    "capabilities": ["edit"],
+                    "required_files": [
+                        {
+                            "role": "target",
+                            "container_path": "/models/editor.gguf",
+                            "sha256": "2" * 64,
+                        }
+                    ],
+                },
+            ],
+        }
+        manager = router.ModelManager(config)
+        loaded = []
+        proxied = []
+
+        def ensure_model(model_id: str) -> None:
+            manager.validate_model(model_id)
+            manager.active_model = model_id
+            manager.selected_model = model_id
+            loaded.append(model_id)
+
+        def proxy(method: str, path: str, headers: dict, body: bytes):
+            proxied.append((method, path, body))
+            return 200, [("Content-Type", "application/json")], b'{"ok":true}'
+
+        class TestHandler(router.ImageRequestHandler):
+            def log_message(self, _format: str, *_args: object) -> None:
+                pass
+
+        TestHandler.manager = manager
+        server = router.ThreadingHTTPServer(("127.0.0.1", 0), TestHandler)
+        server.daemon_threads = True
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        connection = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+        try:
+            with (
+                mock.patch.object(manager, "ensure_model", side_effect=ensure_model),
+                mock.patch.object(manager, "proxy", side_effect=proxy),
+            ):
+                connection.request("GET", "/sdapi/v1/sd-models")
+                response = connection.getresponse()
+                models = json.loads(response.read())
+                self.assertEqual(response.status, 200)
+                self.assertEqual([model["title"] for model in models], ["generator", "editor"])
+                self.assertEqual(loaded, [])
+
+                options_body = json.dumps({"sd_model_checkpoint": "editor"}).encode()
+                connection.request(
+                    "POST",
+                    "/sdapi/v1/options",
+                    body=options_body,
+                    headers={"Content-Type": "application/json"},
+                )
+                response = connection.getresponse()
+                options = json.loads(response.read())
+                self.assertEqual(response.status, 200)
+                self.assertEqual(options["sd_model_checkpoint"], "editor")
+                self.assertEqual(loaded, ["editor"])
+
+                connection.request(
+                    "POST",
+                    "/sdapi/v1/img2img",
+                    body=b"{}",
+                    headers={"Content-Type": "application/json"},
+                )
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertEqual(json.loads(response.read()), {"ok": True})
+                self.assertEqual(proxied[-1][:2], ("POST", "/sdapi/v1/img2img"))
+                self.assertEqual(loaded[-1], "editor")
+
+                connection.request(
+                    "GET", "/sdapi/v1/samplers?model=generator&refresh=1"
+                )
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                response.read()
+                self.assertEqual(
+                    proxied[-1][:2],
+                    ("GET", "/sdapi/v1/samplers?refresh=1"),
+                )
+                self.assertEqual(loaded[-1], "generator")
+
+                connection.request(
+                    "OPTIONS",
+                    "/sdapi/v1/txt2img",
+                    headers={"Origin": "http://localhost:3000"},
+                )
+                response = connection.getresponse()
+                response.read()
+                self.assertEqual(response.status, 204)
+                self.assertEqual(
+                    response.getheader("Access-Control-Allow-Origin"),
+                    "*",
+                )
+
+                connection.request("GET", "/sdcpp/v1/capabilities")
+                response = connection.getresponse()
+                response.read()
+                self.assertEqual(response.status, 404)
+                self.assertEqual(loaded[-1], "generator")
+        finally:
+            connection.close()
+            server.shutdown()
+            server.server_close()
+            manager.close()
+            thread.join(timeout=5)
 
 
 if __name__ == "__main__":

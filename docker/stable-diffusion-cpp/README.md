@@ -15,6 +15,8 @@ The public service listens on container port 8080 and exposes:
 - `GET /v1/models`
 - `POST /v1/images/generations`
 - `POST /v1/images/edits`
+- synchronous WebUI compatibility under `/sdapi/v1`, including model/options
+  discovery, `txt2img`, `img2img`, LoRAs, upscalers, samplers, and schedulers
 
 Discovery is side-effect free. `GET /v1/models` reports every configured model,
 its capabilities, precision, staging state, and active state without downloading
@@ -47,9 +49,21 @@ that cannot include `model` in a multipart body. If no model is supplied, the
 first model in the selected config is used. Unsupported model/capability pairs
 fail before a worker is started.
 
-The upstream native async `/sdcpp/v1` and WebUI `/sdapi/v1` surfaces are not
-routed in this first release because their jobs outlive a single request and
-would make safe model swapping ambiguous.
+`GET /sdapi/v1/sd-models` lists the complete configured PreFer catalog without
+loading a model. `GET /sdapi/v1/options` reports the current selection, and
+`POST /sdapi/v1/options` accepts `sd_model_checkpoint` to select it. WebUI
+generation calls can also select a model with `X-Prefer-Model`, the `model`
+query parameter, a top-level `model` or `sd_model_checkpoint`, or
+`override_settings.sd_model_checkpoint`. Changing the selection restarts the
+private stable-diffusion.cpp worker with the selected model; it is a process
+swap, not an in-process weight hot-swap. Requests stay serialized while that
+happens.
+
+The upstream native asynchronous `/sdcpp/v1` job API is intentionally not
+exposed by the multi-model router. Those jobs outlive the submission request,
+so allowing a subsequent model swap could destroy the worker and its job state.
+Run the upstream server directly for that surface, or use the synchronous
+OpenAI/`sdapi` routes through PreFer.
 
 ## Models
 

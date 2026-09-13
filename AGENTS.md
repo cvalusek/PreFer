@@ -731,9 +731,16 @@ untested on target hardware and require their first-boot gates below:
 `docker/stable-diffusion-cpp/` wraps upstream stable-diffusion.cpp rather than
 ComfyUI. Its supported public surface is deliberately small:
 `GET /health`, `GET /v1/models`, `POST /v1/images/generations`, and
-`POST /v1/images/edits`. Do not claim the native asynchronous `/sdcpp/v1` or
-WebUI `/sdapi/v1` surfaces until the router has a durable job-to-worker
-lifetime contract.
+`POST /v1/images/edits`, plus the synchronous WebUI-compatible `/sdapi/v1`
+surface implemented by the pinned upstream server. The router owns
+`sd-models` and `options` so discovery lists every configured PreFer model
+without loading one. `POST /sdapi/v1/options` and per-request model selectors
+restart the private worker when the selection changes; upstream does not
+hot-swap weights in one process. Keep these calls under the same serialized
+request lock as the OpenAI routes. Do not expose or claim the native
+asynchronous `/sdcpp/v1` surface until the router has a durable job-to-worker
+lifetime contract: a later model swap currently terminates that worker and
+would invalidate its outstanding job state.
 
 The upstream server loads exactly one pipeline at process start and reports a
 generic model id. PreFer's Python router owns the real catalog and starts a

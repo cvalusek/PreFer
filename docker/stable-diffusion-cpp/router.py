@@ -15,7 +15,7 @@ import signal
 import subprocess
 import threading
 import time
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, parse_qsl, urlencode, urlsplit, urlunsplit
 
 
 HOP_BY_HOP_HEADERS = {
@@ -30,6 +30,21 @@ HOP_BY_HOP_HEADERS = {
 }
 PRESTAGE_STATUS_PATH = Path("/tmp/prefer-image-prestage.status")
 MODELS_ROOT = Path(os.environ.get("PREFER_MODELS_DIR", "/models"))
+SDAPI_PROXY_GET_PATHS = frozenset(
+    {
+        "/sdapi/v1/loras",
+        "/sdapi/v1/upscalers",
+        "/sdapi/v1/latent-upscale-modes",
+        "/sdapi/v1/samplers",
+        "/sdapi/v1/schedulers",
+    }
+)
+IMAGE_POST_CAPABILITIES = {
+    "/v1/images/generations": "generation",
+    "/v1/images/edits": "edit",
+    "/sdapi/v1/txt2img": "generation",
+    "/sdapi/v1/img2img": "edit",
+}
 
 
 class RequestError(Exception):
@@ -80,6 +95,30 @@ def extract_model_id(content_type: str, body: bytes, header_model: str | None = 
                     return value.strip() if isinstance(value, str) and value.strip() else None
         except Exception as exc:
             raise RequestError(400, "invalid multipart image request") from exc
+    return None
+
+
+def extract_sdapi_model_id(
+    content_type: str, body: bytes, explicit_model: str | None = None
+) -> str | None:
+    if explicit_model and explicit_model.strip():
+        return explicit_model.strip()
+    media_type = content_type.split(";", 1)[0].strip().lower()
+    if media_type != "application/json":
+        return extract_model_id(content_type, body)
+    try:
+        payload = json.loads(body or b"{}")
+    except json.JSONDecodeError as exc:
+        raise RequestError(400, f"invalid JSON request: {exc.msg}") from exc
+    if not isinstance(payload, dict):
+        raise RequestError(400, "JSON request must be an object")
+    override_settings = payload.get("override_settings")
+    candidates = [payload.get("model"), payload.get("sd_model_checkpoint")]
+    if isinstance(override_settings, dict):
+        candidates.append(override_settings.get("sd_model_checkpoint"))
+    for candidate in candidates:
+        if isinstance(candidate, str) and candidate.strip():
+            return candidate.strip()
     return None
 
 
@@ -173,6 +212,7 @@ class ModelManager:
         self.models = {model["id"]: model for model in config["models"]}
         self.process: subprocess.Popen | None = None
         self.active_model: str | None = None
+        self.selected_model = config.get("default_model") or config["models"][0]["id"]
         self.last_used = time.monotonic()
         self.switch_lock = threading.Lock()
         self.request_lock = threading.Lock()
@@ -197,6 +237,7 @@ class ModelManager:
                     "capabilities": model.get("capabilities", []),
                     "staged": model_files_present(model),
                     "active": model["id"] == active,
+                    "selected": model["id"] == self.selected_model,
                 }
                 for model in self.config["models"]
             ],
@@ -208,23 +249,62 @@ class ModelManager:
             "runtime": "stable-diffusion.cpp",
             "configured_models": len(self.models),
             "active_model": self.active_model if self._process_running() else None,
+            "selected_model": self.selected_model,
             "prestage": prestage_state(),
         }
 
-    def validate_model(self, model_id: str, capability: str) -> dict:
+    def preferred_model(self) -> str:
+        if self._process_running() and self.active_model in self.models:
+            return self.active_model
+        return self.selected_model
+
+    def sdapi_models(self) -> list[dict]:
+        result = []
+        for model in self.config["models"]:
+            artifacts = model.get("required_files", [])
+            artifact = next(
+                (
+                    item
+                    for item in artifacts
+                    if item.get("role") in {"target", "model", "diffusion_model"}
+                ),
+                artifacts[0] if artifacts else {},
+            )
+            digest = artifact.get("sha256", "")
+            filename = Path(artifact.get("container_path", model["id"])).name
+            result.append(
+                {
+                    "title": model["id"],
+                    "model_name": model["id"],
+                    "filename": filename,
+                    "hash": digest[:10],
+                    "sha256": digest,
+                    "config": None,
+                }
+            )
+        return result
+
+    def sdapi_options(self) -> dict:
+        return {
+            "samples_format": "png",
+            "sd_model_checkpoint": self.preferred_model(),
+        }
+
+    def validate_model(self, model_id: str, capability: str | None = None) -> dict:
         model = self.models.get(model_id)
         if model is None:
             raise RequestError(404, f"model '{model_id}' not found")
-        if capability not in model.get("capabilities", []):
+        if capability is not None and capability not in model.get("capabilities", []):
             raise RequestError(400, f"model '{model_id}' does not support {capability}")
         return model
 
     def ensure_model(self, model_id: str) -> None:
         with self.switch_lock:
             if self.active_model == model_id and self._process_running():
+                self.selected_model = model_id
                 return
             self._stop_backend()
-            model = self.models[model_id]
+            model = self.validate_model(model_id)
             self._wait_for_files(model)
             command = [
                 self.config["backend_binary"],
@@ -243,6 +323,7 @@ class ModelManager:
                 self._stop_backend()
                 raise
             self.last_used = time.monotonic()
+            self.selected_model = model_id
             print(f"[image-router] ready {model_id}", flush=True)
 
     def proxy(self, method: str, path: str, headers: dict[str, str], body: bytes) -> tuple[int, list[tuple[str, str]], bytes]:
@@ -348,61 +429,150 @@ class ImageRequestHandler(BaseHTTPRequestHandler):
     manager: ModelManager
     server_version = "PreFerImage/1"
 
-    def do_GET(self) -> None:
-        path = urlsplit(self.path).path
-        if path == "/health":
-            self._json_response(200, self.manager.health())
-        elif path == "/v1/models":
-            self._json_response(200, self.manager.catalog())
-        elif path == "/":
-            self._json_response(
-                200,
-                {
-                    "service": "PreFer image",
-                    "runtime": "stable-diffusion.cpp",
-                    "endpoints": ["GET /v1/models", "POST /v1/images/generations", "POST /v1/images/edits"],
-                },
-            )
-        else:
-            self._error_response(RequestError(404, "not found"))
+    def do_OPTIONS(self) -> None:
+        self.send_response(204)
+        self._cors_headers()
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
-    def do_POST(self) -> None:
-        path = urlsplit(self.path).path
-        capability = {"/v1/images/generations": "generation", "/v1/images/edits": "edit"}.get(path)
-        if capability is None:
-            self._error_response(RequestError(404, "not found"))
-            return
+    def do_GET(self) -> None:
         try:
-            body = self._read_body()
-            query_model = parse_qs(urlsplit(self.path).query).get("model", [None])[0]
-            model_id = extract_model_id(
-                self.headers.get("Content-Type", ""),
-                body,
-                self.headers.get("X-Prefer-Model") or query_model,
-            ) or self.manager.config["default_model"]
-            self.manager.validate_model(model_id, capability)
-            timeout = self.manager.config["busy_timeout_ms"] / 1000
-            if not self.manager.request_lock.acquire(timeout=timeout):
-                raise RequestError(503, "image server is busy", "server_error")
-            try:
-                self.manager.ensure_model(model_id)
-                status, headers, response_body = self.manager.proxy(
-                    "POST", path, dict(self.headers.items()), body
+            path = urlsplit(self.path).path
+            if path == "/health":
+                self._json_response(200, self.manager.health())
+            elif path == "/v1/models":
+                self._json_response(200, self.manager.catalog())
+            elif path == "/sdapi/v1/sd-models":
+                self._json_response(200, self.manager.sdapi_models())
+            elif path == "/sdapi/v1/options":
+                self._json_response(200, self.manager.sdapi_options())
+            elif path in SDAPI_PROXY_GET_PATHS:
+                self._proxy_request(
+                    "GET",
+                    self._backend_path(),
+                    b"",
+                    self._explicit_model() or self.manager.preferred_model(),
                 )
-                self.manager.last_used = time.monotonic()
-            finally:
-                self.manager.request_lock.release()
-            self.send_response(status)
-            for name, value in headers:
-                self.send_header(name, value)
-            self.send_header("Content-Length", str(len(response_body)))
-            self.send_header("X-Prefer-Model", model_id)
-            self.end_headers()
-            self.wfile.write(response_body)
+            elif path == "/":
+                self._json_response(
+                    200,
+                    {
+                        "service": "PreFer image",
+                        "runtime": "stable-diffusion.cpp",
+                        "endpoints": [
+                            "GET /v1/models",
+                            "POST /v1/images/generations",
+                            "POST /v1/images/edits",
+                            "GET /sdapi/v1/sd-models",
+                            "GET|POST /sdapi/v1/options",
+                            "POST /sdapi/v1/txt2img",
+                            "POST /sdapi/v1/img2img",
+                        ],
+                    },
+                )
+            else:
+                raise RequestError(404, "not found")
         except RequestError as exc:
             self._error_response(exc)
         except Exception as exc:
-            self._error_response(RequestError(500, f"unexpected image router error: {exc}", "server_error"))
+            self._error_response(
+                RequestError(500, f"unexpected image router error: {exc}", "server_error")
+            )
+
+    def do_POST(self) -> None:
+        try:
+            path = urlsplit(self.path).path
+            if path != "/sdapi/v1/options" and path not in IMAGE_POST_CAPABILITIES:
+                raise RequestError(404, "not found")
+            body = self._read_body()
+            explicit_model = self._explicit_model()
+            if path == "/sdapi/v1/options":
+                model_id = extract_sdapi_model_id(
+                    self.headers.get("Content-Type", ""), body, explicit_model
+                )
+                if model_id is not None:
+                    self._activate_model(model_id)
+                self._json_response(200, self.manager.sdapi_options())
+                return
+
+            capability = IMAGE_POST_CAPABILITIES[path]
+            if path.startswith("/sdapi/"):
+                model_id = extract_sdapi_model_id(
+                    self.headers.get("Content-Type", ""), body, explicit_model
+                ) or self.manager.preferred_model()
+            else:
+                model_id = extract_model_id(
+                    self.headers.get("Content-Type", ""), body, explicit_model
+                ) or self.manager.config["default_model"]
+            self._proxy_request("POST", self._backend_path(), body, model_id, capability)
+        except RequestError as exc:
+            self._error_response(exc)
+        except Exception as exc:
+            self._error_response(
+                RequestError(500, f"unexpected image router error: {exc}", "server_error")
+            )
+
+    def _explicit_model(self) -> str | None:
+        query_model = parse_qs(urlsplit(self.path).query).get("model", [None])[0]
+        return self.headers.get("X-Prefer-Model") or query_model
+
+    def _backend_path(self) -> str:
+        parsed = urlsplit(self.path)
+        query = urlencode(
+            [(name, value) for name, value in parse_qsl(parsed.query) if name != "model"]
+        )
+        return urlunsplit(("", "", parsed.path, query, ""))
+
+    def _activate_model(self, model_id: str, capability: str | None = None) -> None:
+        self.manager.validate_model(model_id, capability)
+        timeout = self.manager.config["busy_timeout_ms"] / 1000
+        if not self.manager.request_lock.acquire(timeout=timeout):
+            raise RequestError(503, "image server is busy", "server_error")
+        try:
+            self.manager.ensure_model(model_id)
+            self.manager.last_used = time.monotonic()
+        finally:
+            self.manager.request_lock.release()
+
+    def _proxy_request(
+        self,
+        method: str,
+        path: str,
+        body: bytes,
+        model_id: str,
+        capability: str | None = None,
+    ) -> None:
+        self.manager.validate_model(model_id, capability)
+        timeout = self.manager.config["busy_timeout_ms"] / 1000
+        if not self.manager.request_lock.acquire(timeout=timeout):
+            raise RequestError(503, "image server is busy", "server_error")
+        try:
+            self.manager.ensure_model(model_id)
+            status, headers, response_body = self.manager.proxy(
+                method, path, dict(self.headers.items()), body
+            )
+            self.manager.last_used = time.monotonic()
+        finally:
+            self.manager.request_lock.release()
+        self._backend_response(status, headers, response_body, model_id)
+
+    def _backend_response(
+        self,
+        status: int,
+        headers: list[tuple[str, str]],
+        body: bytes,
+        model_id: str,
+    ) -> None:
+        self.send_response(status)
+        response_names = set()
+        for name, value in headers:
+            response_names.add(name.lower())
+            self.send_header(name, value)
+        self._cors_headers(response_names)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("X-Prefer-Model", model_id)
+        self.end_headers()
+        self.wfile.write(body)
 
     def _read_body(self) -> bytes:
         try:
@@ -414,10 +584,23 @@ class ImageRequestHandler(BaseHTTPRequestHandler):
             raise RequestError(413, f"request body exceeds {maximum} bytes")
         return self.rfile.read(length)
 
-    def _json_response(self, status: int, payload: dict) -> None:
+    def _cors_headers(self, existing_headers: set[str] | None = None) -> None:
+        existing = existing_headers or set()
+        if "access-control-allow-origin" not in existing:
+            self.send_header("Access-Control-Allow-Origin", "*")
+        if "access-control-allow-methods" not in existing:
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        if "access-control-allow-headers" not in existing:
+            self.send_header(
+                "Access-Control-Allow-Headers",
+                "Content-Type, Authorization, X-Prefer-Model",
+            )
+
+    def _json_response(self, status: int, payload: object) -> None:
         body = json.dumps(payload, separators=(",", ":")).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
+        self._cors_headers()
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)

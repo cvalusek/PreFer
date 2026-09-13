@@ -1,5 +1,12 @@
 # PreFer changelog
 
+## Current (preview)
+
+- Image API
+  - Added the synchronous WebUI-compatible `/sdapi/v1` model, options, generation, editing, LoRA, upscaler, sampler, and scheduler routes.
+  - Added side-effect-free model discovery and `POST /sdapi/v1/options` selection across the configured PreFer image catalog.
+  - Model changes restart the private one-model worker; existing OpenAI image routes remain available and native asynchronous `/sdcpp/v1` jobs remain intentionally excluded.
+
 ## sha-b746f7d (preview)
 
 - Images

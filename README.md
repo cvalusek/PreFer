@@ -137,6 +137,10 @@ lazily. The TTS Base model is a voice-cloning route and needs `voice_ref` plus
 
 The image service exposes FLUX.2 Klein, Z-Image-Turbo, Qwen Image, Qwen Image
 Edit 2511, and SDXL through `/v1/images/generations` and `/v1/images/edits`.
+It also exposes stable-diffusion.cpp's synchronous WebUI-compatible
+`/sdapi/v1` generation, editing, sampler, scheduler, LoRA, and upscaler routes;
+`POST /sdapi/v1/options` selects a configured model by restarting the private
+one-model worker.
 Discovery and background prestaging do not load a model; the first request
 starts the selected worker and the router retains only one model. See
 [the image runtime guide](docker/stable-diffusion-cpp/README.md) for request

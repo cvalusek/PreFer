@@ -73,11 +73,26 @@ class ImageCppTests(unittest.TestCase):
                 "models": "GET /v1/models",
                 "generations": "POST /v1/images/generations",
                 "edits": "POST /v1/images/edits",
+                "sdapi": {
+                    "models": "GET /sdapi/v1/sd-models",
+                    "options": ["GET /sdapi/v1/options", "POST /sdapi/v1/options"],
+                    "txt2img": "POST /sdapi/v1/txt2img",
+                    "img2img": "POST /sdapi/v1/img2img",
+                    "loras": "GET /sdapi/v1/loras",
+                    "upscalers": "GET /sdapi/v1/upscalers",
+                    "latent_upscale_modes": "GET /sdapi/v1/latent-upscale-modes",
+                    "samplers": "GET /sdapi/v1/samplers",
+                    "schedulers": "GET /sdapi/v1/schedulers",
+                },
             },
         )
         self.assertFalse(inventory["residency"]["discovery_loads_models"])
         self.assertEqual(inventory["residency"]["max_loaded_models"], 1)
         self.assertEqual(inventory["residency"]["idle_unload_ms"], 1_800_000)
+        self.assertEqual(
+            inventory["residency"]["model_switch_strategy"],
+            "restart-private-worker",
+        )
 
         edit_lane = inventory["models"]["qwen-image-edit-2511-q6"]
         self.assertEqual(
