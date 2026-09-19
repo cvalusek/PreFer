@@ -1,6 +1,17 @@
 # PreFer changelog
 
-## Current (preview)
+## sha-43b06c1 (preview)
+
+- Images
+  - Llama CUDA: `ghcr.io/cvalusek/prefer:llama-cuda-sha-43b06c1@sha256:76881603292a52418972f3fdfbc801411259a7c5ef8c411157689f340e24e80a`.
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-43b06c1@sha256:978c48b33c82efda15dd5193b347f2a9d3360954ed4441706747529aa47343b7`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-43b06c1@sha256:7e0af225653530666e8e9f119b2c10b40582763ba26e47c50a52ce50cb8679b0`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-43b06c1@sha256:e8594549ed9dad7a4a8819699ace6a31b23372b900a1f802235c91b7e14299a0`.
+  - SGLang CUDA 13: `ghcr.io/cvalusek/prefer:sglang-cuda13-sha-43b06c1@sha256:c919d15aa3a25019839f3a966a56eedbb8e747b94cf8dd366ab49e328b6676ab`.
+  - vLLM CUDA 13: `ghcr.io/cvalusek/prefer:vllm-cuda13-sha-43b06c1@sha256:69a4719830a23774dc4d8ae3df742134a7a696da0020f21ebc20c0f455776163`.
+  - CPU downloader: `ghcr.io/cvalusek/prefer:downloader-sha-43b06c1@sha256:76a7d3b38803ef57367b10c8871ac1a276df3ade5a79002f5ff1ea1e9b0d7bd4`.
+- Package
+  - npm: `prefer-inference-core@0.0.0-g43b06c1`.
 
 - Image API
   - Added the synchronous WebUI-compatible `/sdapi/v1` model, options, generation, editing, LoRA, upscaler, sampler, and scheduler routes.
