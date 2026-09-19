@@ -1,5 +1,11 @@
 # PreFer on AWS EC2 — design and operations
 
+> **Breaking preview update:** Generated hardware/model presets and automatic
+> preset detection have been removed. Provider hardware facts now live in
+> `catalog/hardware-profiles.json` for library-side planning only. The EC2 stack
+> requires a release-bound `RuntimeHandoffBase64`; runtime containers do not
+> receive a named hardware profile.
+
 Goal: make launching the PreFer container on EC2 with GPU support close to
 one click, and shareable with other accounts. IaC is **CDK**, but the
 distributed artifact is the **synthesized CloudFormation template**, so the
@@ -70,18 +76,18 @@ aws/                          all EC2 deployment lives here (parallels docker/)
     20-run-container.sh      docker pull (pinned tag) + docker run with /models on NVMe
     prefer-boot.env          immutable AMI defaults (image, paths, router limit)
   cdk/                       thin wrapper: instance + IAM + IMDS + S3/endpoint wiring
+catalog/
+  hardware-profiles.json     provider hardware facts consumed only by planners
+  models/                    cross-engine model-selection catalog
 docker/llama-cpp/
-  preset-catalog.json        runtime + legacy prestage metadata
+  preset-catalog.json        pinned runtime metadata
   models/<family>/<model>/   model.json files with quant/artifact source of truth
-  preset-scenarios/aws/      AWS deployment shapes split by instance family
-  generate-presets.py        emits presets, prestage sidecars, downloader cases, inventory
-  deployment-inventory.generated.json  controller-readable resolved deployments
-  download-models.sh         S3 sync + preset-aware catalog downloads
-docker/sglang/
-  runtime.json               pinned SGLang runtime and Blackwell requirements
-  deployment-scenarios/aws/  generated AWS SGLang deployment configurations
+  generate-presets.py        emits exact downloader metadata and inventory
+  deployment-inventory.generated.json  controller-readable runtime contract
+  download-models.sh         exact handoff-driven staging
+docker/downloader/           release-matched CPU-only handoff staging image
 .github/workflows/
-  build-prefer.yml           grouped llama/audio/image/SGLang release -> GHCR + GitHub Release
+  build-prefer.yml           grouped runtime/downloader release -> GHCR + GitHub Release
   build-aws.yml              ami job (Packer, path-gated) -> cdk job (synth + release) [aws/**]
 ```
 
@@ -130,8 +136,9 @@ without a user-data `systemctl start` race.
    `/opt/prefer/deployment.env` and exits. The unit reads immutable
    `/opt/prefer/prefer-boot.env` first and the optional deployment file second,
    so deployment values override defaults without editing or appending to the
-   baked file. `LLAMA_ARG_MODELS_MAX=1` is a safe default in both the AMI and
-   generated deployment configuration.
+   baked file. The deployment must provide a release-bound
+   `PREFER_RUNTIME_HANDOFF_BASE64`; no preset is inferred from the instance.
+   `LLAMA_ARG_MODELS_MAX=1` remains the conservative router default.
 
 1. **Prep NVMe** (`10-prep-nvme.sh`): the DLAMI's `dlami-nvme` service already
    formats/mounts the instance store at `/opt/dlami/nvme` each boot (the unit
@@ -143,23 +150,15 @@ without a user-data `systemctl start` race.
    `docker run --gpus all -p 8080:8080 -v /opt/dlami/nvme/models:/models -e
    S3_BUCKET_NAME=$BUCKET ...`.
 
-Container side — existing `entrypoint.sh` → `detect-preset.sh` →
-`download-models.sh`, with `download-models.sh` gaining an S3 block when
-`S3_BUCKET_NAME` is set:
-
-1. Fetch each model key's small completion marker, then stage only the catalog's
-   include patterns from `s3://$BUCKET/<hf-repo>/` to `/models`. Independent
-   model keys run concurrently (four jobs by default) and join before startup.
-2. A marker whose catalog fingerprint, bucket, age, artifact list, and observed
-   byte sizes all match skips `hf download`. Missing/invalid markers fall back
-   to Hugging Face; markers expire after seven days by default so moving repos
-   are periodically checked again.
-3. Sync exact catalog artifacts back to S3 **in the background**, then publish
-   the completion marker last. Hugging Face `.cache`, locks, and xet data are
-   never uploaded and are removed locally after the foreground jobs join.
-
-When `S3_BUCKET_NAME` is unset (local / RunPod), `download-models.sh` behaves
-exactly as today — HF only.
+Container side — `entrypoint.sh` validates and materializes the immutable
+runtime handoff, then `download-models.sh` stages its exact artifact manifest
+before starting llama-server. The handoff binds the image's embedded catalog
+fingerprint, engine, immutable revisions, paths, byte sizes, and content
+identities. Every completed artifact is published atomically beneath
+`/models/<repository>/<path>` and receives a shared `downloads-v2` integrity
+marker. Optional S3 read-through uses the same exact object layout and falls
+back to the pinned Hugging Face revision on a miss or mismatch. No GPU or
+instance-name detection participates in model or setting selection.
 
 ## S3 model cache
 
@@ -177,11 +176,10 @@ exactly as today — HF only.
   which blocks bridge-networked containers from reaching IMDS); the IaC must set
   `HttpPutResponseHopLimit: 2`.
 - Layout mirrors the container's `/models/<hf-org>/<hf-repo>/...` so objects map
-  1:1 to on-disk paths and multiple presets share one bucket.
-- Completion markers live at
-  `.prefer-cache/downloads-v1/<model-key>.complete`. Set
-  `MODEL_CACHE_RECHECK_DAYS=0` for an every-launch recheck, or delete one marker
-  to force only that model key through Hugging Face on its next launch.
+  1:1 to on-disk paths and every engine can reuse one bucket.
+- Local verification markers use the shared `downloads-v2` artifact identity,
+  size, device, and inode contract. A stale or absent marker causes an exact
+  content check before the artifact is reused.
 - At rest ~$2.30/mo per 100GB (S3 Standard). Replicate cross-region with bucket
   replication if the shareable artifact needs to launch elsewhere.
 
@@ -192,15 +190,15 @@ map directly to `s3://<bucket>/<repository>/<path>` just like the llama.cpp
 cache. SGLang copies only its exact pinned catalog objects, verifies size and
 SHA-256 before atomic publication, and falls back to Hugging Face on a miss or
 mismatch. It never uploads, so its instance role needs only `s3:GetObject` and
-`s3:ListBucket`; the generated local and RunPod scenarios stay HF-only unless
-an operator explicitly supplies the S3 variables.
+`s3:ListBucket`; non-AWS launches stay HF-only unless an operator explicitly
+supplies the S3 variables.
 
 ## IaC layer (CDK, distributed as CloudFormation)
 
-Inputs (CFN parameters): instance type, generated model preset path, optional
-prestage override, key pair, allowed ingress CIDR, and an *optional* AMI id
-override (blank uses the baked-in RegionMap). Outputs the instance + IAM
-profile + S3 gateway endpoint.
+Inputs (CFN parameters): instance type, required release-bound runtime handoff
+base64, key pair, allowed ingress CIDR, and an *optional* AMI id override (blank
+uses the baked-in RegionMap). Outputs the instance + IAM profile + S3 gateway
+endpoint.
 
 **Distribution**: CDK is the authoring tool, but the *public artifact* is the
 **synthesized CloudFormation template** (`cdk synth`), published to the
@@ -215,33 +213,18 @@ Because we stop/start one long-lived instance rather than churning instances,
 the stack primarily **provisions once** (instance + profile + endpoint). It can
 also emit a launch template for anyone who *does* want to relaunch fresh.
 
-**Per-deployment config** (region, bucket name, selected preset, router limit,
-and optional prestage override) is *not* baked into the AMI. The AMI ships
-immutable `/opt/prefer/prefer-boot.env` defaults. First-boot user-data writes a
-complete `/opt/prefer/deployment.env` with mode `0600`; it never edits the baked
-file and never controls the service. `prefer-boot.service` requires a successful
+**Per-deployment config** (region, bucket name, immutable runtime handoff,
+and router limit) is *not* baked into the AMI. The AMI ships immutable
+`/opt/prefer/prefer-boot.env` defaults. First-boot user-data writes a complete
+`/opt/prefer/deployment.env` with mode `0600`; it never edits the baked file
+and never controls the service. `prefer-boot.service` requires a successful
 `cloud-final.service`, then loads the deployment file after the defaults and
-launches exactly once. A cloud-init failure therefore blocks PreFer instead of
-silently launching the auto-detected preset. An empty `PRESTAGE_MODELS` lets
-the selected preset's sibling `.prestage` manifest choose exact catalog
-artifacts. Both files persist on the root volume and are re-read on later
-starts. Generated `general.ini` presets are cumulative by instance tier, so
-their sidecars stage every best-quant route supported on that tier and lower
-tiers. Select a family or single-model preset when the complete cumulative
-transfer is not intended.
-
-Preview releases also accept the shared runtime-composition inputs through
-this deployment file. The launcher forwards both the generic `PREFER_*` names
-and the llama-scoped `LLAMA_*` names. For example,
-`LLAMA_DEPLOYMENT=aws/g7e/2xlarge/general`, `LLAMA_BUNDLE=gemma`, and
-`LLAMA_MODELS=qwen-3.8-27b` dynamically produce the effective preset and its
-matching prestage manifest at container start. Existing
-`LLAMA_ARG_MODELS_PRESET` deployments remain unchanged when those inputs are
-blank. JSON override values should be written as compact single-line values in
-the systemd environment file.
-Because the boot launcher is baked into the AMI, this passthrough becomes
-available on AMIs built from this source; pulling a newer runtime image does
-not rewrite an older AMI's launcher.
+launches exactly once. A cloud-init failure or missing handoff therefore blocks
+PreFer instead of selecting models from the EC2 instance type. The controller
+resolves provider hardware facts through `prefer-inference-core`, chooses
+models and settings, and supplies the release-bound handoff as strict base64.
+Because the boot launcher is baked into the AMI, pulling a newer runtime image
+does not rewrite an older AMI's launcher.
 
 For a direct EC2 launch outside CDK, ordinary shell user-data is sufficient on
 an AMI containing this boot contract:
@@ -254,9 +237,8 @@ umask 077
 cat > /opt/prefer/deployment.env.tmp <<'PREFER_DEPLOYMENT_ENV'
 AWS_REGION=us-east-2
 S3_BUCKET_NAME=YOUR_BUCKET_NAME
-LLAMA_ARG_MODELS_PRESET=/presets/aws/g6/xlarge/general.ini
+PREFER_RUNTIME_HANDOFF_BASE64=YOUR_RELEASE_BOUND_HANDOFF
 LLAMA_ARG_MODELS_MAX=1
-PRESTAGE_MODELS=
 PREFER_DEPLOYMENT_ENV
 chmod 0600 /opt/prefer/deployment.env.tmp
 mv /opt/prefer/deployment.env.tmp /opt/prefer/deployment.env
@@ -264,8 +246,7 @@ mv /opt/prefer/deployment.env.tmp /opt/prefer/deployment.env
 
 Do not add `systemctl start` or `systemctl restart` to that script. The service
 is already enabled, waits for cloud-init to finish, and owns the only container
-launch. A missing deployment file intentionally falls back to the baked
-auto-detection behavior.
+launch. A missing deployment file or runtime handoff fails closed.
 
 **IAM**: instance profile needs `s3:GetObject`/`s3:ListBucket` (and
 `s3:PutObject` for the self-populating upload) scoped to the cache bucket, and
@@ -295,8 +276,8 @@ and the `cdk` job `needs:` it. This expresses the dependency natively — no
 cross-run `workflow_run`/artifact-polling — while still skipping the AMI build
 for CDK-only edits.
 
-- Edit any runtime preset / Dockerfile → `build-prefer.yml` → one grouped
-  llama/audio/image/SGLang release in GHCR and GitHub → selected images are
+- Edit any runtime catalog / Dockerfile → `build-prefer.yml` → one grouped
+  runtime/downloader release in GHCR and GitHub → selected images are
   picked up on the next instance **start** (no AMI rebuild).
 - Edit boot scripts / Packer → `build-aws.yml`: `ami` job builds, then `cdk` job
   re-releases the template with the new AMI ids.

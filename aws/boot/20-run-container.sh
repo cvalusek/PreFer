@@ -8,6 +8,7 @@ MODELS_SUBDIR="${MODELS_SUBDIR:-models}"
 PREFER_IMAGE="${PREFER_IMAGE:?PREFER_IMAGE must be set (see /opt/prefer/prefer-boot.env)}"
 LLM_PORT="${LLM_PORT:-8080}"
 CONTAINER_NAME="${CONTAINER_NAME:-prefer}"
+PREFER_RUNTIME_HANDOFF_BASE64="${PREFER_RUNTIME_HANDOFF_BASE64:?AWS deployment requires a release-bound base64 runtime handoff}"
 
 log() { echo "[run-container] $*"; }
 
@@ -21,20 +22,15 @@ docker pull "$PREFER_IMAGE" || log "pull failed; using locally cached image"
 # the container itself uses --restart no below.
 docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
 
-# Pass through only env vars that are actually set, so unset ones fall back to
-# the container's own defaults (detect-preset, HF-only download, etc.).
+# Pass through only explicit runtime-planning and transfer inputs. The image no
+# longer detects or selects a hardware preset.
 ENV_ARGS=()
 for v in \
   S3_BUCKET_NAME S3_MODEL_PREFIX \
   SGLANG_S3_BUCKET_NAME SGLANG_S3_MODEL_PREFIX \
-  HF_TOKEN PRESTAGE_MODELS MODEL_CACHE_RECHECK_DAYS MODEL_DOWNLOAD_JOBS \
-  PREFER_DEPLOYMENT PREFER_BUNDLE PREFER_MODELS \
-  PREFER_SERVER_OVERRIDES PREFER_MODEL_OVERRIDES \
-  PREFER_RUNTIME_HANDOFF PREFER_RUNTIME_HANDOFF_BASE64 \
-  LLAMA_DEPLOYMENT LLAMA_BUNDLE LLAMA_MODELS \
-  LLAMA_SERVER_OVERRIDES LLAMA_MODEL_OVERRIDES \
-  LLAMA_RUNTIME_HANDOFF LLAMA_RUNTIME_HANDOFF_BASE64 \
-  LLAMA_ARG_MODELS_PRESET LLAMA_ARG_MODELS_MAX AWS_REGION
+  HF_TOKEN MODEL_DOWNLOAD_JOBS \
+  PREFER_RUNTIME_HANDOFF_BASE64 \
+  LLAMA_ARG_MODELS_MAX AWS_REGION
 do
   if [ -n "${!v:-}" ]; then
     ENV_ARGS+=(-e "$v=${!v}")

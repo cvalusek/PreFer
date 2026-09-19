@@ -25,7 +25,12 @@ class GroupedReleaseTests(unittest.TestCase):
             "package": ("prefer-inference-core.tgz", b"package"),
             "cli": ("prefer.mjs", b"cli"),
             "model_catalog": ("prefer-model-catalog.json", b"catalog"),
+            "hardware_profiles": ("prefer-hardware-profiles.json", b"hardware"),
             "model_catalog_schema": ("prefer-model-catalog.schema.json", b"schema"),
+            "hardware_profile_catalog_schema": (
+                "prefer-hardware-profile-catalog.schema.json",
+                b"hardware-schema",
+            ),
             "model_catalog_extension_schema": (
                 "prefer-model-catalog-extension.schema.json",
                 b"extension-schema",
@@ -70,6 +75,7 @@ class GroupedReleaseTests(unittest.TestCase):
             "image": image_digest or "sha256:" + "4" * 64,
             "sglang": "sha256:" + "5" * 64,
             "vllm": "sha256:" + "6" * 64,
+            "downloader": "sha256:" + "9" * 64,
         }
         return subprocess.run(
             [
@@ -93,6 +99,8 @@ class GroupedReleaseTests(unittest.TestCase):
                 digests["sglang"],
                 "--vllm-digest",
                 digests["vllm"],
+                "--downloader-digest",
+                digests["downloader"],
                 "--llama-inventory",
                 str(REPO_ROOT / "docker" / "llama-cpp" / "deployment-inventory.generated.json"),
                 "--audio-inventory",
@@ -156,7 +164,9 @@ class GroupedReleaseTests(unittest.TestCase):
                 "package",
                 "cli",
                 "model_catalog",
+                "hardware_profiles",
                 "model_catalog_schema",
+                "hardware_profile_catalog_schema",
                 "model_catalog_extension_schema",
                 "resource_profile_schema",
                 "model_plan_schema",
@@ -192,6 +202,10 @@ class GroupedReleaseTests(unittest.TestCase):
                     ["linux/amd64", "linux/arm64"],
                 ),
             }
+            downloader = manifest["utilities"]["downloader"]["images"]["cpu"]
+            self.assertEqual(downloader["tag"], "downloader-sha-abcdef0")
+            self.assertEqual(downloader["platforms"], ["linux/amd64", "linux/arm64"])
+
             for (engine, variant), (tag, platforms) in expected_images.items():
                 image = manifest["engines"][engine]["images"][variant]
                 self.assertEqual(image["tag"], tag)
@@ -244,6 +258,7 @@ class GroupedReleaseTests(unittest.TestCase):
             "docker/stable-diffusion-cpp/**",
             "docker/sglang/**",
             "docker/vllm/**",
+            "docker/downloader/**",
             "release/**",
             "catalog/**",
             "packages/prefer/**",
@@ -257,9 +272,10 @@ class GroupedReleaseTests(unittest.TestCase):
             "image-cuda12-sha-",
             "sglang-cuda13-sha-",
             "vllm-cuda13-sha-",
+            "downloader-sha-",
         ):
             self.assertIn(immutable_tag, workflow)
-        self.assertIn("needs: [tooling, llama, audio_cuda, audio_cpu, image, sglang, vllm]", workflow)
+        self.assertIn("needs: [tooling, llama, audio_cuda, audio_cpu, image, sglang, vllm, downloader]", workflow)
         self.assertIn("name: prefer-release-${{ github.sha }}", workflow)
         self.assertIn("gh release create", workflow)
         self.assertIn("prefer-release.json", workflow)
@@ -289,6 +305,7 @@ class GroupedReleaseTests(unittest.TestCase):
             "audio-cpu-preview",
             "image-cuda12-preview",
             "vllm-cuda-preview",
+            "downloader-preview",
         ):
             self.assertIn(preview_tag, workflow)
         for stable_tag in (
@@ -298,6 +315,7 @@ class GroupedReleaseTests(unittest.TestCase):
             '"$image_repository:audio-cpu"',
             '"$image_repository:image-cuda12"',
             '"$image_repository:vllm-cuda"',
+            '"$image_repository:downloader"',
         ):
             self.assertIn(stable_tag, workflow)
         self.assertIn('release_channel="stable"', workflow)
@@ -314,6 +332,7 @@ class GroupedReleaseTests(unittest.TestCase):
             set(schema["properties"]["engines"]["required"]),
             {"llama", "audio", "image", "sglang", "vllm"},
         )
+        self.assertIn("utilities", schema["required"])
         self.assertIn("tooling", schema["required"])
 
 

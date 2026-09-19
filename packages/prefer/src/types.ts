@@ -241,7 +241,6 @@ export interface RuntimeHandoff {
   catalog_fingerprint: string;
   handoff_fingerprint: string;
   engine: EngineId;
-  base_deployment?: string;
   server_settings: JsonObject;
   models: RuntimeHandoffModel[];
   artifacts: RuntimeHandoffArtifact[];
@@ -317,6 +316,18 @@ export interface RuntimeResourceObservation {
   cpu?: CpuResource;
   storage?: StorageResource;
   capabilities?: string[];
+}
+
+/** Provider-owned capacity metadata used by controllers; never a runtime preset. */
+export interface HardwareProfileSource {
+  provider: "aws" | "runpod";
+  hardware: JsonObject;
+  compatibility?: JsonObject;
+}
+
+export interface HardwareProfileCatalog {
+  schema_version: "prefer.hardware-profile-catalog.v1";
+  profiles: Record<string, HardwareProfileSource>;
 }
 
 export type QuantQualityTier =

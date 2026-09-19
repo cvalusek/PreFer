@@ -37,9 +37,12 @@ const refreshed = await refreshModelCatalog(catalogRoot, {
 
 const catalogPath = resolve(outputDir, "prefer-model-catalog.json");
 await writeJsonAtomic(catalogPath, refreshed.catalog);
+const hardwareCatalogPath = resolve(outputDir, "prefer-hardware-profiles.json");
+await cp(resolve("catalog/hardware-profiles.json"), hardwareCatalogPath);
 const schemaAssets = [
   ["catalog/model-catalog.schema.json", "prefer-model-catalog.schema.json"],
   ["catalog/model-catalog-extension.schema.json", "prefer-model-catalog-extension.schema.json"],
+  ["catalog/hardware-profile-catalog.schema.json", "prefer-hardware-profile-catalog.schema.json"],
   ["catalog/resource-profile.schema.json", "prefer-resource-profile.schema.json"],
   ["catalog/model-plan.schema.json", "prefer-model-plan.schema.json"],
   ["catalog/runtime-handoff.schema.json", "prefer-runtime-handoff.schema.json"]
@@ -61,6 +64,7 @@ await mkdir(resolve(packageStage, "schemas"), { recursive: true });
 await cp(resolve("packages/prefer/dist"), resolve(packageStage, "dist"), { recursive: true });
 await cp(resolve("packages/prefer/README.md"), resolve(packageStage, "README.md"));
 await cp(resolve("packages/prefer/LICENSE"), resolve(packageStage, "LICENSE"));
+await cp(hardwareCatalogPath, resolve(packageStage, "hardware-profiles.json"));
 for (const [source, name] of schemaAssets) await copySchemaAsset(source, resolve(packageStage, "schemas", name));
 const packageJson = JSON.parse(await readFile(resolve("packages/prefer/package.json"), "utf8"));
 packageJson.version = `0.0.0-g${commit.slice(0, 7)}`;
@@ -75,7 +79,9 @@ const assets = Object.fromEntries(await Promise.all([
   ["package", packagePath],
   ["cli", cliPath],
   ["model_catalog", catalogPath],
+  ["hardware_profiles", hardwareCatalogPath],
   ["model_catalog_schema", resolve(outputDir, "prefer-model-catalog.schema.json")],
+  ["hardware_profile_catalog_schema", resolve(outputDir, "prefer-hardware-profile-catalog.schema.json")],
   ["model_catalog_extension_schema", resolve(outputDir, "prefer-model-catalog-extension.schema.json")],
   ["resource_profile_schema", resolve(outputDir, "prefer-resource-profile.schema.json")],
   ["model_plan_schema", resolve(outputDir, "prefer-model-plan.schema.json")],
@@ -105,7 +111,8 @@ for (const context of [
   "docker/audio-cpp",
   "docker/stable-diffusion-cpp",
   "docker/sglang",
-  "docker/vllm"
+  "docker/vllm",
+  "docker/downloader"
 ]) {
   const destination = resolve(context, ".prefer-tooling");
   await rm(destination, { recursive: true, force: true });

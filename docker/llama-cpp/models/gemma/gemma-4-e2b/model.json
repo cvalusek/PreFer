@@ -9,16 +9,39 @@
       "kind": "dense"
     },
     "capabilities": {
-      "native_input_modalities": ["text", "image", "audio"],
-      "configured_input_modalities": ["text", "image"],
-      "output_modalities": ["text"],
+      "native_input_modalities": [
+        "text",
+        "image",
+        "audio"
+      ],
+      "configured_input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
       "native_context_tokens": 131072,
       "reasoning_control": "request-selectable"
     },
     "roles": {
-      "preferred": ["routing", "classification", "extraction", "simple-writing", "image-captioning"],
-      "capable": ["summarization", "translation"],
-      "avoid": ["complex-reasoning", "coding-agent", "autonomous-tools", "research-authority"]
+      "preferred": [
+        "routing",
+        "classification",
+        "extraction",
+        "simple-writing",
+        "image-captioning"
+      ],
+      "capable": [
+        "summarization",
+        "translation"
+      ],
+      "avoid": [
+        "complex-reasoning",
+        "coding-agent",
+        "autonomous-tools",
+        "research-authority"
+      ]
     },
     "strengths": [
       "Very fast, low-cost QAT first pass for simple language and visual tasks.",
@@ -33,7 +56,10 @@
     ],
     "evidence": {
       "confidence": "mixed",
-      "basis": ["official", "inference"],
+      "basis": [
+        "official",
+        "inference"
+      ],
       "notes": "Capability facts are publisher-backed; role fit is a conservative product inference pending broader local use."
     }
   },
@@ -59,7 +85,7 @@
       "downloads": [
         {
           "repo": "unsloth/gemma-4-E2B-it-qat-GGUF",
-          "revision": null,
+          "revision": "66a399f68ddd113b06dff02fca9523e55465d11d",
           "include": [
             "*UD-Q4_K_XL*",
             "mtp-gemma-4-E2B-it.gguf",
@@ -71,17 +97,23 @@
         {
           "role": "model",
           "repo": "unsloth/gemma-4-E2B-it-qat-GGUF",
-          "path": "gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf"
+          "path": "gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf",
+          "size": 2620370976,
+          "sha256": "e531007218dfab990486a5de7676a6932d6ea8dea233d1f698d7c21cf8a16889"
         },
         {
           "role": "draft",
           "repo": "unsloth/gemma-4-E2B-it-qat-GGUF",
-          "path": "mtp-gemma-4-E2B-it.gguf"
+          "path": "mtp-gemma-4-E2B-it.gguf",
+          "size": 59235648,
+          "sha256": "586f2460b909008640981ec34060aa864e03c144fbabfb3173c4335087e4aae0"
         },
         {
           "role": "projector",
           "repo": "unsloth/gemma-4-E2B-it-qat-GGUF",
-          "path": "mmproj-F16.gguf"
+          "path": "mmproj-F16.gguf",
+          "size": 985654080,
+          "sha256": "13c8966d1635d02e6727f27402880614906fa291850c07feda18dbcddf2291b6"
         }
       ]
     }

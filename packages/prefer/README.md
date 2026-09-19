@@ -41,22 +41,32 @@ Dedicated GGUF repositories opt into metadata-only quant discovery, so their
 full published quant selection is available without copying Hugging Face's file
 catalog into YAML. All llama.cpp text artifacts are selectable for SGLang and
 vLLM as well as llama.cpp. Discoverability is not a claim that an
-engine/model/quant/hardware tuple has been validated; deployment inventories
-carry that state.
+engine/model/quant/hardware tuple has been validated; runtime evidence remains
+separate from model discoverability.
 
 ## Resource-aware planning
 
-The package normalizes every engine's deployment inventory into the same
-`prefer.resources.v1` shape. GPU identity, count, usable memory, architecture,
+The package ships a provider-only hardware catalog and normalizes those records
+or live observations into the same `prefer.resources.v1` shape. The catalog
+contains AWS and RunPod capacity/identity facts only; it never selects models,
+quants, context, concurrency, cache, offload, or speculation. GPU identity,
+count, usable memory, architecture,
 compute capability, and format capabilities are primary. Host RAM, CPU, and
 storage remain independent resources and only participate when a route uses
 them. Unified-memory systems use one shared pool; the planner never adds the
 same bytes once as VRAM and again as host RAM.
 
 ```ts
-import { normalizeDeploymentResources, planModelSet } from "prefer-inference-core";
+import {
+  readHardwareProfileCatalog,
+  resolveHardwareProfile,
+  readModelCatalog,
+  planModelSet
+} from "prefer-inference-core";
 
-const resources = normalizeDeploymentResources(deployment, runtimeObservation);
+const hardware = await readHardwareProfileCatalog("prefer-hardware-profiles.json");
+const catalog = await readModelCatalog("prefer-model-catalog.json");
+const resources = resolveHardwareProfile(hardware, "aws/g7e.2xlarge", runtimeObservation);
 const plan = planModelSet(catalog, {
   engine: "llama.cpp",
   resources,
@@ -96,17 +106,18 @@ and 4 GiB cap. `--headroom-gib` fixes that reserve directly and
 architecture-derived or measured fixed memory and bytes-per-token, exact free
 device memory, and host-memory availability. `tuneWorkloadToFit` can then trade
 context and concurrency while respecting the caller's minimums and stated
-priority. Existing deployments that explicitly configure CPU expert/component
-offload remain conditional rather than being rejected when static local
-inventory omits private host RAM; runtime discovery must supply that capacity
-before launch. This lets NeurOn replace a static launch estimate with runtime
-measurements without forking PreFer's selection rules.
+priority. Explicit planner choices that use CPU expert/component offload remain
+conditional rather than being rejected when provider metadata omits host RAM;
+runtime discovery must supply that capacity before launch. This lets NeurOn
+replace static provider capacity with runtime measurements without forking
+PreFer's selection rules. Unmanaged local execution should use live detection;
+there are no bundled `local/*` hardware profiles.
 
 The standalone CLI exposes the same boundary:
 
 ```text
-prefer hardware normalize --input prefer-llama-deployment-inventory.json --deployment aws/g6/xlarge/general
-prefer hardware detect --base prefer-vllm-deployment-inventory.json --deployment local/gb10/1x/performance
+prefer hardware normalize --input observed-or-provider-resource.json
+prefer hardware detect --base observed-or-provider-resource.json
 prefer model plan --resources resources.json --engine llama.cpp --models qwen-3.8-27b,gemma-4-12b --preferred-role repository-coding --speed-importance 0.8 --headroom-gib 2
 ```
 

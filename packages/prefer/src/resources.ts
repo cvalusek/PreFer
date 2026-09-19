@@ -3,12 +3,14 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type {
   AcceleratorResource,
+  HardwareProfileCatalog,
+  HardwareProfileSource,
   MemoryResource,
   MemoryTopology,
   ResourceProfile,
   RuntimeResourceObservation
 } from "./types.js";
-import { isObject } from "./utils.js";
+import { isObject, readJson, requireObject, requireString } from "./utils.js";
 
 const GIB = 1024 ** 3;
 const MIB = 1024 ** 2;
@@ -21,6 +23,95 @@ const DERIVED_RESOURCE_CAPABILITIES = new Set([
 export interface DetectRuntimeResourcesOptions {
   base?: ResourceProfile;
   runNvidiaSmi?: (() => Promise<string>) | undefined;
+}
+
+const HARDWARE_PROFILE_RECORD_FIELDS = new Set(["provider", "hardware", "compatibility"]);
+const HARDWARE_PROFILE_FIELDS = new Set([
+  "provider_sku",
+  "provider_gpu_type_id",
+  "gpu_slug",
+  "gpu_name",
+  "gpu_count",
+  "vram_gb_each",
+  "architecture",
+  "compute_capability",
+  "vcpu",
+  "host_ram_gb",
+  "local_nvme_gb",
+  "observed_vcpu",
+  "observed_host_ram_gb",
+  "advertised_hourly_usd_per_gpu",
+  "pricing_observed_on",
+  "pricing_reference"
+]);
+const HARDWARE_COMPATIBILITY_FIELDS = new Set([
+  "container_runtime",
+  "model_storage",
+  "provisioning_api",
+  "minimum_host_ram_gb",
+  "minimum_volume_gb"
+]);
+
+export function validateHardwareProfileCatalog(value: unknown): asserts value is HardwareProfileCatalog {
+  const catalog = requireObject(value, "hardware profile catalog");
+  if (catalog.schema_version !== "prefer.hardware-profile-catalog.v1") {
+    throw new Error("hardware profile catalog schema is incompatible");
+  }
+  const profiles = requireObject(catalog.profiles, "hardware profile catalog profiles");
+  if (!Object.keys(profiles).length) throw new Error("hardware profile catalog is empty");
+  for (const [id, raw] of Object.entries(profiles)) {
+    if (!/^(aws|runpod)\/[a-z0-9][a-z0-9./-]*$/u.test(id)) {
+      throw new Error(`invalid provider hardware profile id ${id}`);
+    }
+    const profile = requireObject(raw, `hardware profile ${id}`);
+    for (const field of Object.keys(profile)) {
+      if (!HARDWARE_PROFILE_RECORD_FIELDS.has(field)) {
+        throw new Error(`hardware profile ${id} contains unsupported field ${field}`);
+      }
+    }
+    const provider = requireString(profile.provider, `hardware profile ${id} provider`);
+    if (provider !== "aws" && provider !== "runpod") {
+      throw new Error(`hardware profile ${id} must use provider aws or runpod`);
+    }
+    if (!id.startsWith(`${provider}/`)) throw new Error(`hardware profile ${id} provider does not match its id`);
+    const hardware = requireObject(profile.hardware, `hardware profile ${id} hardware`);
+    for (const field of Object.keys(hardware)) {
+      if (!HARDWARE_PROFILE_FIELDS.has(field)) {
+        throw new Error(`hardware profile ${id} contains unsupported hardware field ${field}`);
+      }
+    }
+    if (!Number.isInteger(hardware.gpu_count) || Number(hardware.gpu_count) < 1) {
+      throw new Error(`hardware profile ${id} must declare a positive gpu_count`);
+    }
+    if (typeof hardware.vram_gb_each !== "number" || hardware.vram_gb_each <= 0) {
+      throw new Error(`hardware profile ${id} must declare positive vram_gb_each`);
+    }
+    if (profile.compatibility !== undefined) {
+      const compatibility = requireObject(profile.compatibility, `hardware profile ${id} compatibility`);
+      for (const field of Object.keys(compatibility)) {
+        if (!HARDWARE_COMPATIBILITY_FIELDS.has(field)) {
+          throw new Error(`hardware profile ${id} contains unsupported compatibility field ${field}`);
+        }
+      }
+    }
+  }
+}
+
+export async function readHardwareProfileCatalog(path: string): Promise<HardwareProfileCatalog> {
+  const value = await readJson(path);
+  validateHardwareProfileCatalog(value);
+  return value;
+}
+
+export function resolveHardwareProfile(
+  catalog: HardwareProfileCatalog,
+  id: string,
+  observation?: RuntimeResourceObservation
+): ResourceProfile {
+  validateHardwareProfileCatalog(catalog);
+  const profile = catalog.profiles[id] as HardwareProfileSource | undefined;
+  if (!profile) throw new Error(`unknown provider hardware profile ${id}`);
+  return normalizeDeploymentResources(profile, observation);
 }
 
 export function normalizeDeploymentResources(

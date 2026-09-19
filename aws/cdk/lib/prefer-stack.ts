@@ -30,11 +30,11 @@ export class PreferStack extends cdk.Stack {
         'GPU instance type with local NVMe instance store (the models run off NVMe).',
     });
 
-    const modelsPresetParam = new cdk.CfnParameter(this, 'ModelsPreset', {
+    const runtimeHandoffParam = new cdk.CfnParameter(this, 'RuntimeHandoffBase64', {
       type: 'String',
-      default: '/presets/aws/g7e/2xlarge/general.ini',
+      noEcho: true,
       description:
-        'Absolute in-container preset path. Use the generated AWS preset matching InstanceType.',
+        'Required release-bound llama.cpp runtime handoff encoded as RFC 4648 base64 JSON.',
     });
 
     // AMI resolution: a RegionMap baked into the template (region -> ami id)
@@ -77,12 +77,6 @@ export class PreferStack extends cdk.Stack {
       type: 'Number',
       default: 100,
       description: 'Root EBS size (GB). Models do NOT live here — OS + container image only.',
-    });
-
-    const prestageModelsParam = new cdk.CfnParameter(this, 'PrestageModels', {
-      type: 'String',
-      default: '',
-      description: 'Optional comma-separated override. Blank uses the selected preset sibling .prestage manifest.',
     });
 
     // ---- Network: single-AZ public VPC, no NAT, free S3 gateway endpoint ----
@@ -146,9 +140,8 @@ export class PreferStack extends cdk.Stack {
       "cat > /opt/prefer/deployment.env.tmp <<'PREFER_DEPLOYMENT_ENV'",
       `AWS_REGION=${cdk.Aws.REGION}`,
       `S3_BUCKET_NAME=${bucket.bucketName}`,
-      `LLAMA_ARG_MODELS_PRESET=${modelsPresetParam.valueAsString}`,
+      `PREFER_RUNTIME_HANDOFF_BASE64=${runtimeHandoffParam.valueAsString}`,
       'LLAMA_ARG_MODELS_MAX=1',
-      `PRESTAGE_MODELS=${prestageModelsParam.valueAsString}`,
       'PREFER_DEPLOYMENT_ENV',
       'chmod 0600 /opt/prefer/deployment.env.tmp',
       'mv /opt/prefer/deployment.env.tmp /opt/prefer/deployment.env',

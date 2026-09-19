@@ -41,6 +41,7 @@
       "types": "./dist/runtime.d.ts",
       "import": "./dist/runtime.js"
     },
+    "./hardware-profiles.json": "./hardware-profiles.json",
     "./schemas/*": "./schemas/*"
   },
   "bin": {
@@ -48,6 +49,7 @@
   },
   "files": [
     "dist",
+    "hardware-profiles.json",
     "LICENSE",
     "README.md",
     "schemas"

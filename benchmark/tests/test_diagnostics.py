@@ -1,7 +1,6 @@
 import json
 import unittest
 
-from prefer_bench.contract import parse_preset
 from prefer_bench.diagnostics import (
     classify_runtime_failure,
     linux_amd64_manifest_digests,
@@ -9,39 +8,15 @@ from prefer_bench.diagnostics import (
     reason_category,
 )
 from prefer_bench.local import LANES
-from prefer_bench.paths import PRESETS_ROOT, REPO_ROOT
+from prefer_bench.paths import REPO_ROOT
 
 
 class DiagnosticAndCompatibilityTests(unittest.TestCase):
-    def test_pascal_preset_only_removes_e4b_mtp(self) -> None:
-        standard_path = PRESETS_ROOT / "12gb.ini"
-        pascal_path = PRESETS_ROOT / "12gb-pascal.ini"
-        standard = standard_path.read_text(encoding="utf-8").splitlines()
-        pascal = pascal_path.read_text(encoding="utf-8").splitlines()
-        removed = {
-            "model-draft = /models/unsloth/gemma-4-E4B-it-qat-GGUF/mtp-gemma-4-E4B-it.gguf",
-            "spec-type = draft-mtp",
-            "spec-draft-n-max = 4",
-        }
-        e4b_start = standard.index("[unsloth/gemma-4-E4B-it-qat-GGUF:UD-Q4_K_XL]")
-        next_section = standard.index("[unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL]")
-        expected = standard[:e4b_start] + [line for line in standard[e4b_start:next_section] if line not in removed] + standard[next_section:]
-        self.assertEqual(pascal, expected)
-
-        standard_models = {model["canonical_id"]: model for model in parse_preset(standard_path)}
-        pascal_models = {model["canonical_id"]: model for model in parse_preset(pascal_path)}
-        self.assertEqual(set(standard_models), set(pascal_models))
-        e4b = "unsloth/gemma-4-E4B-it-qat-GGUF:UD-Q4_K_XL"
-        e2b = "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL"
-        self.assertIsNotNone(standard_models[e4b]["model_draft_path"])
-        self.assertIsNone(pascal_models[e4b]["model_draft_path"])
-        self.assertEqual(standard_models[e2b]["model_draft_path"], pascal_models[e2b]["model_draft_path"])
-
-    def test_pascal_preset_is_explicit_and_does_not_change_detected_tiers(self) -> None:
-        detected_tier_names = {path.name for path in PRESETS_ROOT.glob("*gb.ini")}
-        self.assertNotIn("12gb-pascal.ini", detected_tier_names)
-        self.assertIn("12gb.ini", detected_tier_names)
-        dockerfile = (REPO_ROOT / "docker" / "llama-cpp" / "Dockerfile").read_text(encoding="utf-8")
+    def test_legacy_hardware_presets_and_detection_are_removed(self) -> None:
+        llama_root = REPO_ROOT / "docker" / "llama-cpp"
+        self.assertFalse((llama_root / "presets").exists())
+        self.assertFalse((llama_root / "detect-preset.sh").exists())
+        dockerfile = (llama_root / "Dockerfile").read_text(encoding="utf-8")
         self.assertIn("server-cuda-b10362", dockerfile)
         self.assertIn("sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c", dockerfile)
 

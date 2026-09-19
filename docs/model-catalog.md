@@ -21,10 +21,9 @@ storage.
 The shared source covers all 32 logical models currently configured across
 llama.cpp, audio.cpp, stable-diffusion.cpp, SGLang, and vLLM. A coverage test
 compares it with every engine-local model and quant so either side cannot drift
-silently. Existing engine-local catalogs and generated deployment inventories
-remain the authoritative launch/deployment inputs; the shared layer gives
-controllers one release-matched cross-engine view without changing those
-routes.
+silently. Engine-local catalogs remain the authoritative launch-semantics
+inputs. Generated inventories expose model/runtime facts and base-free
+composition contracts; they no longer publish hardware/model routes.
 
 Every model has a consistent prompt-ready profile: summary, architecture,
 modalities, context, reasoning controls, preferred/capable/avoid roles,
@@ -62,9 +61,8 @@ escape hatch for a deliberate historical pin.
 
 Nested objects merge recursively. Arrays and scalar values replace earlier
 values. A model's ordinary default applies to every engine unless an explicit
-engine selection changes the repository or quant. Engine entries express
-applicability and tuning, not a duplicated readiness verdict; deployment
-inventories remain the owner of hardware/runtime verification state.
+engine selection changes the repository or quant. Engine entries express applicability and tuning, not a duplicated readiness
+verdict. Runtime observations remain the owner of route verification state.
 
 Every llama.cpp text model is also visible as a selectable GGUF option for
 SGLang and vLLM. Visibility does not claim that every cross-engine tuple has
@@ -87,12 +85,15 @@ model-catalog setting.
 
 ## Resources, fit, and bundle selection
 
-Host scenarios remain engine-owned because they contain real launcher choices.
-The shared package translates their differing hardware records into one
-resource profile rather than copying those choices into model YAML. The GPU is
-the primary identity: device count, memory, architecture, compute capability,
-and precision support. Provider SKU, host RAM, logical CPU count, and storage
-are additional facts.
+`catalog/hardware-profiles.json` owns provider-only AWS and RunPod capacity
+records. `readHardwareProfileCatalog` validates that catalog and
+`resolveHardwareProfile` converts one record, optionally overlaid with a live
+observation, into `prefer.resources.v1`. The GPU is the primary identity:
+device count, memory, architecture, compute capability, and precision support.
+Provider SKU, host RAM, logical CPU count, and storage are additional facts.
+Hardware profiles never contain model, quant, context, concurrency, cache,
+offload, or speculation choices, and there are no authored `local/*` profiles.
+Unmanaged local execution uses live detection and explicit policy.
 
 Discrete VRAM, host memory, and unified memory are distinct accounting models.
 On a unified-memory system, host and accelerator observations constrain one
@@ -114,16 +115,16 @@ route score when one is supplied and otherwise uses active parameters only as
 a low-confidence proxy. Quality importance consumes only a controller-supplied
 workload score, keeping attributed external evaluations and NeurOn results out
 of the release catalog. A quality, balanced, or capacity quant bias is
-independent of the quant quality floor. Without hints, the authored deployment
-order and normal quant remain the defaults.
+independent of the quant quality floor. Without hints, the caller's request
+order and each model's normal quant remain the defaults.
 
 Exact artifact bytes are only the static starting point. Fit output states
 whether its confidence is measured, architecture-derived, artifact-only, or
 unknown. The default device reserve is 4% of capacity, bounded to 1.5–4 GiB;
 callers may replace it with a fixed byte allowance or another percentage.
-Configured CPU expert/component-offload routes remain visible as conditional
-choices when static inventory lacks host RAM instead of being misclassified as
-GPU-only failures. The controller must observe enough host memory before
+Explicit CPU expert/component-offload choices remain visible as conditional
+choices when provider metadata lacks host RAM instead of being misclassified
+as GPU-only failures. The controller must observe enough host memory before
 launch. Callers can also supply observed fixed allocation and per-token
 cache/state cost; the workload tuner then adjusts context and concurrency to
 caller-defined minimums. Engine adapters remain responsible for translating
@@ -158,16 +159,19 @@ the runtime image.
 
 ## Release artifacts
 
-After all six images build, `prefer-release.json` binds the following tooling to
+After all seven image indexes build, `prefer-release.json` binds the following tooling to
 the same full source SHA and checksums as the images:
 
 - `prefer-inference-core.tgz`
 - `prefer.mjs`
 - `prefer-model-catalog.json`
+- `prefer-hardware-profiles.json`
 - `prefer-model-catalog.schema.json`
+- `prefer-hardware-profile-catalog.schema.json`
 - `prefer-model-catalog-extension.schema.json`
 - `prefer-resource-profile.schema.json`
 - `prefer-model-plan.schema.json`
+- `prefer-runtime-handoff.schema.json`
 
 The package version is `0.0.0-g<seven-character-sha>` and is published as
 `prefer-inference-core` on npm only after the grouped runtime jobs succeed. Controllers may

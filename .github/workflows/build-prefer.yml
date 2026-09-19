@@ -9,6 +9,7 @@ on:
       - 'docker/stable-diffusion-cpp/**'
       - 'docker/sglang/**'
       - 'docker/vllm/**'
+      - 'docker/downloader/**'
       - 'catalog/**'
       - 'packages/prefer/**'
       - 'scripts/**'
@@ -632,8 +633,66 @@ jobs:
           cache-from: type=gha,scope=vllm-cuda13
           cache-to: type=gha,scope=vllm-cuda13,mode=max
 
+  downloader:
+    needs: [verify, tooling]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add release tooling to the downloader build context
+        uses: actions/download-artifact@v4
+        with:
+          name: prefer-tooling-${{ github.sha }}
+          path: docker/downloader/.prefer-tooling
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=downloader-sha-,format=short
+          labels: |
+            io.prefer.runtime=artifact-downloader
+            io.prefer.release.revision=${{ github.sha }}
+            io.prefer.cli.path=/usr/local/bin/prefer
+            io.prefer.model-catalog.path=/prefer-model-catalog.json
+            io.prefer.model-catalog.schema=prefer.model-catalog.v1
+
+      - name: Build and push CPU-only artifact downloader
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/downloader
+          file: docker/downloader/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=artifact-downloader
+          cache-to: type=gha,scope=artifact-downloader,mode=max
+
   release:
-    needs: [tooling, llama, audio_cuda, audio_cpu, image, sglang, vllm]
+    needs: [tooling, llama, audio_cuda, audio_cpu, image, sglang, vllm, downloader]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -645,6 +704,7 @@ jobs:
       IMAGE_DIGEST: ${{ needs.image.outputs.digest }}
       SGLANG_DIGEST: ${{ needs.sglang.outputs.digest }}
       VLLM_DIGEST: ${{ needs.vllm.outputs.digest }}
+      DOWNLOADER_DIGEST: ${{ needs.downloader.outputs.digest }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
@@ -681,6 +741,7 @@ jobs:
             --image-digest "$IMAGE_DIGEST" \
             --sglang-digest "$SGLANG_DIGEST" \
             --vllm-digest "$VLLM_DIGEST" \
+            --downloader-digest "$DOWNLOADER_DIGEST" \
             --llama-inventory docker/llama-cpp/deployment-inventory.generated.json \
             --audio-inventory docker/audio-cpp/deployment-inventory.generated.json \
             --image-inventory docker/stable-diffusion-cpp/deployment-inventory.generated.json \
@@ -724,6 +785,9 @@ jobs:
             docker buildx imagetools create \
               --tag "$image_repository:vllm-cuda" \
               "$image_repository@$VLLM_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:downloader" \
+              "$image_repository@$DOWNLOADER_DIGEST"
           elif [[ "$GITHUB_REF_NAME" == "develop" ]]; then
             docker buildx imagetools create \
               --tag "$image_repository:preview" \
@@ -744,6 +808,9 @@ jobs:
             docker buildx imagetools create \
               --tag "$image_repository:vllm-cuda-preview" \
               "$image_repository@$VLLM_DIGEST"
+            docker buildx imagetools create \
+              --tag "$image_repository:downloader-preview" \
+              "$image_repository@$DOWNLOADER_DIGEST"
           else
             echo "Unsupported release branch: $GITHUB_REF_NAME" >&2
             exit 1
@@ -763,7 +830,7 @@ jobs:
             exit 1
           fi
           release_title="PreFer $release_tag ($release_channel)"
-          release_notes="Grouped PreFer $release_channel release for commit $GITHUB_SHA. Download prefer-release.json to select exact llama.cpp, audio.cpp, stable-diffusion.cpp, SGLang, and vLLM images and inventories. Model weights are staged separately at runtime."
+          release_notes="Grouped PreFer $release_channel release for commit $GITHUB_SHA. Download prefer-release.json to select exact llama.cpp, audio.cpp, stable-diffusion.cpp, SGLang, vLLM, and CPU-only downloader images plus runtime inventories. Model weights are staged separately from the same runtime handoff."
           if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             if [[ "$release_channel" == "stable" ]]; then
               gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" --title "$release_title" --notes "$release_notes" --prerelease=false --latest

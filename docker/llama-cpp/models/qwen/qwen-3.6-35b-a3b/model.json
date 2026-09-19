@@ -11,16 +11,37 @@
       "active_parameters_b": 3
     },
     "capabilities": {
-      "native_input_modalities": ["text", "image", "video"],
-      "configured_input_modalities": ["text"],
-      "output_modalities": ["text"],
+      "native_input_modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "configured_input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
       "native_context_tokens": 262144,
       "reasoning_control": "request-selectable"
     },
     "roles": {
-      "preferred": ["coding", "code-search", "structured-tools", "parallel-workers"],
-      "capable": ["repository-fixes", "routine-reasoning", "research-helper"],
-      "avoid": ["sole-planner", "final-architecture", "long-horizon-orchestration"]
+      "preferred": [
+        "coding",
+        "code-search",
+        "structured-tools",
+        "parallel-workers"
+      ],
+      "capable": [
+        "repository-fixes",
+        "routine-reasoning",
+        "research-helper"
+      ],
+      "avoid": [
+        "sole-planner",
+        "final-architecture",
+        "long-horizon-orchestration"
+      ]
     },
     "strengths": [
       "Low active parameter count makes it a high-throughput coding and tool worker.",
@@ -35,7 +56,11 @@
     ],
     "evidence": {
       "confidence": "mixed",
-      "basis": ["official", "operator", "maintainer"],
+      "basis": [
+        "official",
+        "operator",
+        "maintainer"
+      ],
       "notes": "Coding and tool surfaces are official; the worker-versus-orchestrator distinction is reinforced by operator and agent-harness experience."
     }
   },
@@ -90,7 +115,7 @@
       "downloads": [
         {
           "repo": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF",
-          "revision": null,
+          "revision": "5bc3e238d916f48a861bac2f8a1990a0e9b7e98d",
           "include": [
             "*UD-Q6_K_XL*"
           ]
@@ -100,7 +125,9 @@
         {
           "role": "model",
           "repo": "unsloth/Qwen3.6-35B-A3B-MTP-GGUF",
-          "path": "Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf"
+          "path": "Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf",
+          "size": 32611711264,
+          "sha256": "35fce994cd36104a7dc1bd8a4bdf13778145664c00fdef6773aebc9246e5019c"
         }
       ]
     }

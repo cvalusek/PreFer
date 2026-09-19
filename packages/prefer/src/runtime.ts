@@ -57,7 +57,6 @@ export interface RuntimeHandoffModelInput {
 export interface CreateRuntimeHandoffOptions {
   engine: EngineId;
   models: RuntimeHandoffModelInput[];
-  baseDeployment?: string;
   serverSettings?: JsonObject;
   additionalArtifacts?: RuntimeHandoffArtifactInput[];
 }
@@ -170,7 +169,6 @@ export function createRuntimeHandoff(
     schema_version: "prefer.runtime-handoff.v1" as const,
     catalog_fingerprint: catalogFingerprint,
     engine,
-    ...(options.baseDeployment ? { base_deployment: requireSafeText(options.baseDeployment, "base deployment") } : {}),
     server_settings: jsonObjectClone(options.serverSettings ?? {}, "runtime handoff server settings"),
     models,
     artifacts: [...artifactsById.values()]
@@ -186,7 +184,6 @@ export function validateRuntimeHandoff(value: unknown): asserts value is Runtime
   const fingerprint = requireString(handoff.handoff_fingerprint, "runtime handoff fingerprint").toLowerCase();
   validateSha256(fingerprint, "runtime handoff fingerprint");
   requireSafeText(handoff.engine, "runtime handoff engine");
-  if (handoff.base_deployment !== undefined) requireSafeText(handoff.base_deployment, "runtime handoff base deployment");
   jsonObjectClone(handoff.server_settings, "runtime handoff server settings");
   if (!Array.isArray(handoff.models) || !handoff.models.length) throw new Error("runtime handoff requires at least one model");
   if (!Array.isArray(handoff.artifacts) || !handoff.artifacts.length) throw new Error("runtime handoff requires at least one artifact");

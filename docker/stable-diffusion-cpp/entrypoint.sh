@@ -5,7 +5,6 @@ source /prefer-download-artifacts.sh
 source /prefer-runtime-handoff-download.sh
 source /model-downloads.generated.sh
 
-PREFER_DEPLOYMENT="${PREFER_DEPLOYMENT:-${IMAGE_DEPLOYMENT:-}}"
 PREFER_BUNDLE="${PREFER_BUNDLE:-${IMAGE_BUNDLE:-}}"
 PREFER_MODELS="${PREFER_MODELS:-${IMAGE_MODELS:-}}"
 PREFER_SERVER_OVERRIDES="${PREFER_SERVER_OVERRIDES:-${IMAGE_SERVER_OVERRIDES:-}}"
@@ -13,7 +12,7 @@ PREFER_MODEL_OVERRIDES="${PREFER_MODEL_OVERRIDES:-${IMAGE_MODEL_OVERRIDES:-}}"
 PREFER_RUNTIME_HANDOFF="${PREFER_RUNTIME_HANDOFF:-${IMAGE_RUNTIME_HANDOFF:-}}"
 PREFER_RUNTIME_HANDOFF_BASE64="${PREFER_RUNTIME_HANDOFF_BASE64:-${IMAGE_RUNTIME_HANDOFF_BASE64:-}}"
 
-server_config="${IMAGE_SERVER_CONFIG:-/app/server.json}"
+server_config="/app/server.json"
 runtime_artifacts=""
 if [ -n "$PREFER_RUNTIME_HANDOFF" ] && [ -n "$PREFER_RUNTIME_HANDOFF_BASE64" ]; then
   echo "[image-entrypoint] path and base64 runtime handoff inputs are mutually exclusive" >&2
@@ -40,8 +39,6 @@ if [ -n "${PREFER_RUNTIME_HANDOFF}${PREFER_RUNTIME_HANDOFF_BASE64}" ]; then
   python3 /prefer-catalog/generate.py \
     --compose-handoff \
     --handoff-input "$runtime_handoff" \
-    --base "${PREFER_DEPLOYMENT:-}" \
-    --default-base "$server_config" \
     --server-overrides "${PREFER_SERVER_OVERRIDES:-}" \
     --model-overrides "${PREFER_MODEL_OVERRIDES:-}" \
     --output "$runtime_config" \
@@ -49,14 +46,13 @@ if [ -n "${PREFER_RUNTIME_HANDOFF}${PREFER_RUNTIME_HANDOFF_BASE64}" ]; then
     --plan-output "$runtime_plan"
   server_config="$runtime_config"
   export PREFER_EFFECTIVE_PLAN="$runtime_plan"
-elif [ -n "${PREFER_DEPLOYMENT:-}${PREFER_BUNDLE:-}${PREFER_MODELS:-}${PREFER_SERVER_OVERRIDES:-}${PREFER_MODEL_OVERRIDES:-}" ]; then
+elif [ -n "${PREFER_BUNDLE:-}${PREFER_MODELS:-}${PREFER_SERVER_OVERRIDES:-}${PREFER_MODEL_OVERRIDES:-}" ]; then
   mkdir -p /run/prefer
   runtime_config=/run/prefer/image.json
   runtime_prestage=/run/prefer/image.prestage
   runtime_plan=/run/prefer/plan.json
   python3 /prefer-catalog/generate.py \
     --compose \
-    --base "${PREFER_DEPLOYMENT:-$server_config}" \
     --bundles "${PREFER_BUNDLE:-}" \
     --models "${PREFER_MODELS:-}" \
     --server-overrides "${PREFER_SERVER_OVERRIDES:-}" \
@@ -66,6 +62,9 @@ elif [ -n "${PREFER_DEPLOYMENT:-}${PREFER_BUNDLE:-}${PREFER_MODELS:-}${PREFER_SE
     --plan-output "$runtime_plan"
   server_config="$runtime_config"
   export PREFER_EFFECTIVE_PLAN="$runtime_plan"
+else
+  echo "[image-entrypoint] select a bundle/model or supply PREFER_RUNTIME_HANDOFF" >&2
+  exit 2
 fi
 if [ ! -f "$server_config" ]; then
   echo "[image-entrypoint] server config not found: $server_config" >&2

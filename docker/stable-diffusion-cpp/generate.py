@@ -402,21 +402,7 @@ def deployment_record(
 
 
 def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict], bundles: dict[str, dict]) -> dict:
-    primary = [lane for lane in lanes if lane["primary"]]
-    deployments = [
-        deployment_record(
-            "image/cuda12",
-            primary,
-            "/app/server.json",
-            "/app/server.prestage",
-            runtime,
-            server_overrides={"model_args_append": ["--offload-to-cpu"]},
-            kind="default",
-            description="All primary image capabilities with capacity-oriented CPU offload",
-            verification_status="configuration-only",
-            verification="configuration-only",
-        )
-    ]
+    deployments: list[dict] = []
     for scenario in scenarios:
         config_path = f"/server-configs/{scenario['path']}"
         prestage_path = str(PurePosixPath(config_path).with_suffix(".prestage"))
@@ -463,7 +449,7 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
         "runtime": runtime["runtime"],
         "composition": {
             "schema_version": "prefer.runtime-composition.v1",
-            "activation": "opt-in; existing IMAGE_SERVER_CONFIG remains compatible when no composition variable is set",
+            "activation": "required; select a bundle/model or supply an immutable runtime handoff",
             "multi_model": True,
             "effective_config_path": "/run/prefer/image.json",
             "effective_plan_path": "/run/prefer/plan.json",
@@ -473,7 +459,6 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
             "compose_environment_prefix": "IMAGE",
             "override_merge": "objects merge recursively; scalar and array values replace",
             "environment": {
-                "PREFER_DEPLOYMENT": {"type": "string", "source": "deployments[].id"},
                 "PREFER_BUNDLE": {"type": "string-list", "source": "bundles keys"},
                 "PREFER_MODELS": {"type": "string-list", "source": "models key, model_slug, or request_model_id"},
                 "PREFER_SERVER_OVERRIDES": {"type": "json-object", "applies_to": "image router settings"},
@@ -493,19 +478,18 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
             "selection_rules": [
                 "bundle and model selections are additive",
                 "an exact quant key replaces another lane for the same logical model",
-                "a friendly model selection inherits the selected hardware deployment's lane",
+                "a friendly model selection uses the catalog primary lane",
                 "a runtime handoff replaces bundle/model selection and may include controller-extension artifacts",
                 "path and base64 runtime handoff inputs are mutually exclusive",
             ],
             "precedence": [
                 "catalog model and lane defaults",
-                "hardware deployment defaults",
                 "PREFER_SERVER_OVERRIDES",
                 "PREFER_MODEL_OVERRIDES",
                 "raw engine arguments",
             ],
             "setting_sources": {
-                "server": "composition.server_defaults plus deployment config",
+                "server": "composition.server_defaults",
                 "model": "models[].server_args",
             },
             "server_defaults": default_server(),
@@ -622,19 +606,12 @@ def expected_outputs() -> dict[Path, str]:
         raise ValueError("runtime.json schema_version must be 1")
     lanes, by_key, primary_by_id = load_lanes()
     bundles = load_bundles(set(primary_by_id))
-    scenarios = load_scenarios(by_key, bundles)
-    primary = [primary_by_id[model_id] for model_id in sorted(primary_by_id)]
-    outputs: dict[Path, str] = {
-        ROOT / "server.generated.json": render_json(server_config(primary, {"model_args_append": ["--offload-to-cpu"]})),
-        ROOT / "server.generated.prestage": ",".join(lane["key"] for lane in primary) + "\n",
-        ROOT / "deployment-inventory.generated.json": render_json(deployment_inventory(runtime, lanes, scenarios, bundles)),
+    return {
+        ROOT / "server.generated.json": render_json(server_config([])),
+        ROOT / "server.generated.prestage": "\n",
+        ROOT / "deployment-inventory.generated.json": render_json(deployment_inventory(runtime, lanes, [], bundles)),
         ROOT / "model-downloads.generated.sh": download_script(lanes),
     }
-    for scenario in scenarios:
-        config_path = CONFIGS_ROOT / PurePosixPath(scenario["path"])
-        outputs[config_path] = render_json(server_config(scenario["lanes"], scenario["server"]))
-        outputs[config_path.with_suffix(".prestage")] = ",".join(lane["key"] for lane in scenario["lanes"]) + "\n"
-    return outputs
 
 
 def parse_composition_list(value: str) -> list[str]:
@@ -701,52 +678,13 @@ def compose_runtime_config(
 ) -> tuple[dict, list[str], dict]:
     lanes, by_key, primary_by_id = load_lanes()
     bundles = load_bundles(set(primary_by_id))
-    scenarios = load_scenarios(by_key, bundles)
-    scenario_by_path = {scenario["path"]: scenario for scenario in scenarios}
-    normalized = normalize_runtime_config(base)
-    explicit_base_path = Path(base)
-
-    if normalized == "default" or explicit_base_path.is_file():
-        base_path = explicit_base_path
-        if not base_path.is_file():
-            installed_default = Path("/app/server.json")
-            base_path = installed_default if installed_default.is_file() else ROOT / "server.generated.json"
-        base_config = load_json(base_path)
-        base_lanes = []
-        for model in base_config.get("models", []):
-            lane = by_key.get(model.get("catalog_key"))
-            if lane is None:
-                raise ValueError(f"cannot map image base model {model.get('id')!r} to the catalog")
-            lane = copy.deepcopy(lane)
-            lane["args"] = copy.deepcopy(model.get("args", lane["args"]))
-            base_lanes.append(lane)
-        base_server = {
-            key: value
-            for key, value in base_config.items()
-            if key not in {"models", "lazy_load", "max_loaded_models"}
-        }
-        base_deployment = (
-            PurePosixPath(normalized).with_suffix("").as_posix()
-            if normalized != "default"
-            else "image/cuda12"
-        )
-        cohort = []
-    else:
-        scenario = scenario_by_path.get(normalized)
-        if scenario is None:
-            raise ValueError(f"unknown image deployment: {base!r}")
-        base_lanes = [copy.deepcopy(lane) for lane in scenario["lanes"]]
-        base_server = copy.deepcopy(scenario["server"])
-        base_deployment = PurePosixPath(normalized).with_suffix("").as_posix()
-        base_parent = PurePosixPath(normalized).parent
-        cohort = [
-            record
-            for record in scenarios
-            if PurePosixPath(record["path"]).parent == base_parent
-        ]
-
-    hardware_lanes = {lane["id"]: lane for record in cohort for lane in record["lanes"]}
-    hardware_lanes.update({lane["id"]: lane for lane in base_lanes})
+    if base and base not in {"/app/server.json", "image/cuda12"} and not Path(base).is_file():
+        raise ValueError("hardware deployments and generated server configs have been removed")
+    base_server = {
+        key: value for key, value in default_server().items()
+        if key not in {"models", "lazy_load", "max_loaded_models"}
+    }
+    hardware_lanes: dict[str, dict] = {}
     requested_bundles = parse_composition_list(bundle_value)
     requested_models = parse_composition_list(model_value)
     server_overrides = parse_composition_object(server_overrides_value, "PREFER_SERVER_OVERRIDES")
@@ -789,10 +727,8 @@ def compose_runtime_config(
                 lane = matches[0]
         add_lane(lane)
 
-    if not requested_bundles and not requested_models:
-        selected = [copy.deepcopy(lane) for lane in base_lanes]
     if not selected:
-        raise ValueError("runtime composition selected no image models")
+        raise ValueError("runtime composition requires an image bundle or model selection")
 
     applied_model_overrides: dict[str, dict] = {}
     for lane in selected:
@@ -835,7 +771,6 @@ def compose_runtime_config(
     plan = {
         "schema_version": "prefer.runtime-plan.v1",
         "runtime": "stable-diffusion.cpp",
-        "base_deployment": base_deployment,
         "bundles": requested_bundles,
         "requested_models": requested_models,
         "resolved_model_keys": prestage,
@@ -843,7 +778,6 @@ def compose_runtime_config(
         "model_overrides": applied_model_overrides,
         "precedence": [
             "catalog model and lane defaults",
-            "hardware deployment defaults",
             "PREFER_SERVER_OVERRIDES",
             "PREFER_MODEL_OVERRIDES",
             "router command arguments",
@@ -852,24 +786,13 @@ def compose_runtime_config(
     return config, prestage, plan
 
 
-def resolve_handoff_base(base: str, default_base: str, handoff: dict) -> tuple[dict, str]:
-    reference = base or str(handoff.get("base_deployment") or default_base)
-    normalized = normalize_runtime_config(reference or "default")
-    explicit = Path(reference) if reference else Path()
-    if normalized == "default" or explicit.is_file():
-        config_path = explicit if explicit.is_file() else Path(default_base)
-        if not config_path.is_file():
-            config_path = Path("/app/server.json") if Path("/app/server.json").is_file() else ROOT / "server.generated.json"
-        config = load_json(config_path)
-        server = {key: copy.deepcopy(value) for key, value in config.items() if key not in {"models", "lazy_load", "max_loaded_models"}}
-        return server, "image/cuda12"
-    lanes, by_key, primary_by_id = load_lanes()
-    bundles = load_bundles(set(primary_by_id))
-    scenarios = load_scenarios(by_key, bundles)
-    scenario = next((record for record in scenarios if record["path"] == normalized), None)
-    if scenario is None:
-        raise ValueError(f"unknown image runtime handoff deployment: {reference!r}")
-    return copy.deepcopy(scenario["server"]), PurePosixPath(normalized).with_suffix("").as_posix()
+def resolve_handoff_base(base: str, default_base: str, handoff: dict) -> dict:
+    if base or handoff.get("base_deployment"):
+        raise ValueError("runtime handoffs no longer accept hardware deployments or generated configs")
+    return {
+        key: value for key, value in default_server().items()
+        if key not in {"models", "lazy_load", "max_loaded_models"}
+    }
 
 
 def handoff_image_lane(model: dict, artifacts: dict[str, dict]) -> dict:
@@ -969,7 +892,7 @@ def compose_runtime_handoff_config(
     artifacts = {artifact.get("id"): artifact for artifact in raw_artifacts if isinstance(artifact, dict)}
     if len(artifacts) != len(raw_artifacts):
         raise ValueError("materialized runtime handoff has duplicate or invalid artifacts")
-    base_server, base_deployment = resolve_handoff_base(base, default_base, handoff)
+    base_server = resolve_handoff_base(base, default_base, handoff)
     selected = [handoff_image_lane(model, artifacts) for model in models]
     ids = [lane["id"] for lane in selected]
     if len(ids) != len(set(ids)):
@@ -1019,7 +942,6 @@ def compose_runtime_handoff_config(
     plan = {
         "schema_version": "prefer.runtime-plan.v1",
         "runtime": "stable-diffusion.cpp",
-        "base_deployment": base_deployment,
         "handoff_fingerprint": handoff.get("handoff_fingerprint"),
         "bundles": [],
         "requested_models": [lane["key"] for lane in selected],
@@ -1029,7 +951,6 @@ def compose_runtime_handoff_config(
         "model_overrides": applied,
         "precedence": [
             "runtime handoff model and artifact settings",
-            "hardware deployment defaults",
             "runtime handoff server settings",
             "PREFER_SERVER_OVERRIDES",
             "PREFER_MODEL_OVERRIDES",
@@ -1077,8 +998,8 @@ def main() -> int:
             print(f"image composition failed: {exc}", file=sys.stderr)
             return 1
     if args.compose:
-        if args.check or not args.base or not args.output or not args.prestage_output or not args.plan_output:
-            parser.error("--compose requires --base, --output, --prestage-output, and --plan-output")
+        if args.check or not args.output or not args.prestage_output or not args.plan_output:
+            parser.error("--compose requires --output, --prestage-output, and --plan-output")
         try:
             config, prestage, plan = compose_runtime_config(
                 base=args.base,
@@ -1092,7 +1013,7 @@ def main() -> int:
             Path(args.output).write_text(render_json(config), encoding="utf-8", newline="\n")
             Path(args.prestage_output).write_text(",".join(prestage) + "\n", encoding="utf-8", newline="\n")
             Path(args.plan_output).write_text(render_json(plan), encoding="utf-8", newline="\n")
-            print(f"composed image runtime config from {plan['base_deployment']}: {', '.join(prestage)}")
+            print(f"composed image runtime config: {', '.join(prestage)}")
             return 0
         except (KeyError, TypeError, ValueError, OSError, json.JSONDecodeError) as exc:
             print(f"image composition failed: {exc}", file=sys.stderr)

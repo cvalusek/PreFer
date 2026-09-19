@@ -2,7 +2,7 @@
 
 Context for AI agents (and future humans) working on this repo. This
 captures decisions and rationale that aren't visible from the files alone —
-read this before changing presets, the Dockerfile, or the detection scripts.
+read this before changing catalogs, runtime composition, or Dockerfiles.
 
 ## Project overview
 
@@ -18,7 +18,7 @@ variants. `docker/stable-diffusion-cpp/` provides image generation/editing with
 a separate API, inventory, and model volume. All five engines publish as one
 grouped PreFer release. `docker/sglang/` is the opt-in CUDA 13 sibling for
 Qwen3.8-27B NVFP4 on modern NVIDIA Blackwell hardware; it has its own API,
-inventory, model catalog, and generated deployment configs while using the same
+inventory and model catalog while using the same
 `/models` artifact layout as llama.cpp. `docker/vllm/` is the opt-in official
 vLLM CUDA 13 sibling for the Inferact Qwen3.8-27B NVFP4 text lane on the same
 Blackwell generation, with its own gateway, inventory, and catalog.
@@ -40,13 +40,13 @@ work by merging it to `main`, and merge any exceptional stable hotfix back into
 `develop` immediately so the lines do not drift. Do not publish a runtime
 commit directly to `main` merely to bypass preview validation.
 
-After all six immutable image indexes publish, the workflow creates the
+After all seven immutable image indexes publish, the workflow creates the
 GitHub release `sha-<short-commit>` and the matching
 `prefer-release-<full-commit>` Actions artifact. Both contain
 `prefer-release.json`, its schema, the exact five deployment inventories, the
 release-matched package/CLI/materialized shared model catalog, and checksums.
 `release/build-release.py` owns that manifest. It must reference the
-resolved OCI index digests returned by the six build jobs, never moving tags.
+resolved OCI index digests returned by the seven image build jobs, never moving tags.
 Each runtime image still embeds its own `/deployment-inventory.json`.
 
 The grouped release contains metadata and executable tooling only. Model weights must never be copied
@@ -57,16 +57,16 @@ storage.
 ## Published change reference
 
 The root `CHANGELOG.md` is the consumer-facing history for hosted models and
-presets. It has no `Unreleased` section and no independent PreFer calendar or
+runtime composition. It has no `Unreleased` section and no independent PreFer calendar or
 semantic version. Update it in the same commit as every consumer-visible
-hosted-model or preset change by adding a populated `Current` section at the
+hosted-model or runtime-contract change by adding a populated `Current` section at the
 top. `Current` describes the changes already merged while their image is still
 building; never leave an empty `Current` section in the file.
 
 After CI publishes the grouped immutable release, make a root-only follow-up commit that
 changes the `Current` heading to the resulting `sha-<short-commit>` tag and
-adds all six exact image identities from that release: llama CUDA, Audio CUDA,
-Audio CPU, Image CUDA, SGLang CUDA, and vLLM CUDA. Do not rewrite the approved change bullets during
+adds all seven exact image identities from that release: llama CUDA, Audio CUDA,
+Audio CPU, Image CUDA, SGLang CUDA, vLLM CUDA, and the CPU-only downloader. Do not rewrite the approved change bullets during
 finalization. Also name the matching `prefer-inference-core@0.0.0-g<short-sha>`
 package when the release includes shared tooling. Suffix a preview heading with `(preview)` and a stable heading
 with `(stable)`; pre-channel headings without a suffix are stable. The grouped
@@ -78,16 +78,41 @@ entries concise, user-facing, nested by platform and instance, and limited to
 one model per line. Maintenance instructions and implementation rationale
 belong in this file, not in `CHANGELOG.md`.
 
+## Breaking preview planning and runtime contract
+
+The legacy hardware/model preset architecture has been removed. This section
+supersedes historical preset, scenario, auto-detection, and deployment-selector
+details retained later in this file as benchmark rationale:
+
+- `catalog/hardware-profiles.json` is the only authored provider hardware
+  catalog. It contains AWS and RunPod identity, capacity, compatibility, and
+  dated evidence facts for `prefer-inference-core`; it must never select a
+  model, quant, context, concurrency, cache type, offload shape, or speculative
+  companion.
+- No `local/*` hardware profile survives. Unmanaged local execution uses live
+  resource detection and explicit planner/runtime settings. Historical local
+  measurements remain evidence only.
+- Engine deployment inventories publish models, profiles, semantic bundles
+  where useful, and base-free composition contracts. Their `deployments`
+  arrays are intentionally empty. Do not restore generated provider configs,
+  preset scenarios, VRAM-tier INIs, named compatibility presets, or
+  `detect-preset.sh`.
+- `PREFER_DEPLOYMENT`, engine-scoped deployment aliases, and generated
+  `*_SERVER_CONFIG` selectors are removed. Runtime containers require explicit
+  model selection or an immutable runtime handoff and fail rather than guess.
+- Context, concurrency, cache, offload, and speculation are planner/controller
+  outputs. Base-free runtime generation applies catalog defaults, server
+  overrides, model overrides, then raw engine arguments.
+- `docker/downloader/` is the release-matched CPU-only staging image. It and all
+  runtime images consume the same handoff, use `/models/<repo>/<path>`, and
+  publish common `downloads-v2` verification markers. It must not require CUDA
+  or copy model weights into an image.
+
 ## Conventions
 
-- **Preset naming**: `presets/<N>gb.ini`, where `N` is a VRAM tier in GB.
-  `detect-preset.sh` picks the largest tier that fits the detected GPU's
-  total VRAM (falling back to the smallest tier if VRAM is below all of
-  them). Adding a new tier (e.g. `16gb.ini`) requires no changes to the
-  detection script. `12gb-pascal.ini` is an intentional named compatibility
-  preset and is never auto-detected; it is retained as a rollback for the
-  historical b9843 Gemma E4B MTP issue described below. Nested generated provider
-  presets are also named presets and must be selected explicitly.
+- Generated llama runtime INI files are ephemeral composition outputs, not
+  selectable hardware presets. Keep hardware identity out of their names and
+  derive every model and server setting from explicit controller input.
 - **Router model id naming**: use llama.cpp's HF-style section ids for the
   primary sections (e.g. `unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q6_K_XL`) and
   expose short aliases for clients (e.g. `gemma-4`, `qwen-3.6`,

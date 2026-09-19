@@ -11,16 +11,17 @@ import {
   encodeRuntimeHandoffBase64,
   loadCatalogSources,
   mergeCatalogExtensions,
-  modelRequestsFromDeployment,
   normalizeDeploymentResources,
   parseNvidiaSmi,
   planModelSet,
   quantQuality,
+  readHardwareProfileCatalog,
   refreshModelCatalog,
   listModelVariants,
   materializeRuntimeHandoff,
   resolveHuggingFaceSelections,
   resolveExtensionModelVariant,
+  resolveHardwareProfile,
   resolveModelVariant,
   estimateVariantFit,
   tuneWorkloadToFit
@@ -129,7 +130,6 @@ test("immutable runtime handoffs bind exact artifacts to one release catalog and
     const variant = resolveModelVariant(catalog, "sample-7b", { engine: "llama.cpp" });
     const handoff = createRuntimeHandoff(catalog, {
       engine: "llama.cpp",
-      baseDeployment: "local/example/1x/general",
       serverSettings: { parallel: 2 },
       models: [{ variant, request_model_id: "sample" }],
       additionalArtifacts: [{
@@ -350,6 +350,42 @@ repositories:
     assert.equal(vllm.repository, "owner/sample-vllm");
     assert.equal(sglang.settings.launcher.quantization, "modelopt_fp4");
   });
+});
+
+test("provider hardware profiles are planner inputs without model selection", async () => {
+  const catalog = await readHardwareProfileCatalog(join(process.cwd(), "..", "..", "catalog", "hardware-profiles.json"));
+  assert.ok(Object.keys(catalog.profiles).length > 0);
+  assert.ok(Object.keys(catalog.profiles).every((id) => id.startsWith("aws/") || id.startsWith("runpod/")));
+  assert.ok(Object.keys(catalog.profiles).every((id) => !id.startsWith("local/")));
+  const resources = resolveHardwareProfile(catalog, "aws/g6.xlarge");
+  assert.equal(resources.accelerators.length, 1);
+  assert.equal(resources.accelerators[0].total_bytes, 24 * GIB);
+  assert.equal(resources.host_memory?.total_bytes, 16 * GIB);
+  assert.throws(
+    () => resolveHardwareProfile({
+      schema_version: "prefer.hardware-profile-catalog.v1",
+      profiles: {
+        "aws/invalid": {
+          provider: "aws",
+          hardware: {gpu_name: "GPU", gpu_count: 1, vram_gb_each: 24, models: ["forbidden"]}
+        }
+      }
+    }, "aws/invalid"),
+    /unsupported hardware field models/
+  );
+  assert.throws(
+    () => resolveHardwareProfile({
+      schema_version: "prefer.hardware-profile-catalog.v1",
+      profiles: {
+        "aws/invalid": {
+          provider: "aws",
+          hardware: {gpu_name: "GPU", gpu_count: 1, vram_gb_each: 24},
+          models: ["forbidden"]
+        }
+      }
+    }, "aws/invalid"),
+    /unsupported field models/
+  );
 });
 
 test("deployment hardware normalizes discrete and unified memory without double counting", () => {
@@ -597,42 +633,6 @@ test("bundle planning skips optional models that cannot satisfy memory or stagin
     assert.equal(plan.skipped[0].reason, "storage-budget");
     assert.equal(plan.complete, true);
   });
-});
-
-test("generated general deployments become optional planner requests with host-specific starting quants", () => {
-  const requests = modelRequestsFromDeployment({
-    id: "aws/g6/xlarge/general",
-    kind: "bundle",
-    models: [
-      { profile_id: "qwen-3.8-27b", quant_slug: "ud-q4-k-xl" },
-      { model_slug: "gemma-4-12b", quant_slug: "ud-q4-k-xl" }
-    ]
-  });
-  assert.deepEqual(requests, [
-    { model_id: "qwen-3.8-27b", preferred_quant: "ud-q4-k-xl", required: false, priority: 2 },
-    { model_id: "gemma-4-12b", preferred_quant: "ud-q4-k-xl", required: false, priority: 1 }
-  ]);
-  assert.ok(modelRequestsFromDeployment({
-    id: "audio/cuda12",
-    models: [{ model_slug: "qwen3-tts-0.6b" }, { model_slug: "qwen3-asr-0.6b" }]
-  }).every((entry) => entry.required === false));
-
-  assert.deepEqual(modelRequestsFromDeployment({
-    id: "local/rtx-4090/1x/h3-fl2va",
-    residency: { offload: { components: "dit,text_encoder" } },
-    models: [{
-      request_model_id: "minimax-h3-fl2va",
-      model_slug: "minimax-h3-fl2va",
-      profile_id: "minimax-h3",
-      quant_slug: "int8-convrot"
-    }]
-  }), [{
-    model_id: "minimax-h3-fl2va",
-    preferred_quant: "int8-convrot",
-    required: true,
-    priority: 1,
-    fit: { allow_host_offload: true, allow_unknown_host_offload: true }
-  }]);
 });
 
 test("workload tuning preserves the selected priority within a measured token budget", () => {

@@ -40,7 +40,7 @@ const variant = resolveModelVariant(catalog, "qwen-3.8-27b", {
 });
 const handoff = createRuntimeHandoff(catalog, {
   engine: "vllm",
-  baseDeployment: "aws/g7e/2xlarge/performance",
+  serverSettings: { max_num_seqs: 4 },
   models: [{ variant, request_model_id: "qwen-3.8-27b" }]
 });
 const runPodEnvironment = {
@@ -73,7 +73,6 @@ const variant = resolveExtensionModelVariant(extension, "neuron-model", {
 });
 const handoff = createRuntimeHandoff(catalog, {
   engine: "sglang",
-  baseDeployment: "aws/g7e/2xlarge/balanced",
   models: [{ variant, source: "extension" }]
 });
 ```
@@ -94,7 +93,7 @@ The bundled CLI exposes the same steps:
 
 ```text
 prefer model resolve qwen-3.8-27b --engine vllm --quant ud-q6-k-xl --output variant.json
-prefer runtime create --engine vllm --variant variant.json --base-deployment aws/g7e/2xlarge/performance --output handoff.json
+prefer runtime create --engine vllm --variant variant.json --server-settings '{"max_num_seqs":4}' --output handoff.json
 prefer runtime validate --engine vllm --handoff handoff.json
 ```
 
@@ -110,7 +109,10 @@ Inside a PreFer image, `PREFER_ENGINE` is already set. The entrypoint calls
 `prefer runtime materialize`, derives all destination paths beneath
 `PREFER_MODELS_DIR` (default `/models`), writes an exact artifact manifest, and
 stages it with the shared resumable downloader. Optional S3 read-through uses
-the same repository/path layout as existing model staging.
+the same repository/path layout as existing model staging. The release-matched
+CPU-only downloader image performs this materialize-and-stage step without a
+GPU, exits after verification, and writes markers directly reusable by the
+runtime image.
 
 ## Container selection
 
@@ -135,10 +137,10 @@ exclusive, and both are mutually exclusive with bundle/model selectors. The
 decoded object passes the identical schema, fingerprint, release, engine, and
 artifact validation before any transfer or server launch.
 
-A handoff replaces bundle/model selection. Hardware deployment defaults and
-explicit server/model overrides still apply in the documented composition
-order. Existing preset/config startup remains unchanged when no handoff is
-selected.
+A handoff replaces bundle/model selection. It already contains the resolved
+planner settings; runtime overrides remain explicit. There is no hardware
+preset or deployment-default layer, and a runtime with no handoff or direct
+model selection fails instead of guessing.
 
 ## Engine translation
 

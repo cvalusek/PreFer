@@ -34,14 +34,12 @@ ENV PYTHONUNBUFFERED=1
 ENV LLAMA_CACHE=/models
 ENV LD_LIBRARY_PATH=/app
 
-COPY docker/llama-cpp/presets/ /presets/
 COPY docker/llama-cpp/preset-catalog.json /preset-catalog.json
 COPY docker/llama-cpp/deployment-inventory.generated.json /deployment-inventory.json
 COPY docker/llama-cpp/model-downloads.generated.sh /model-downloads.generated.sh
 COPY docker/llama-cpp/generate-presets.py /prefer-catalog/generate-presets.py
 COPY docker/llama-cpp/preset-catalog.json /prefer-catalog/preset-catalog.json
 COPY docker/llama-cpp/models/ /prefer-catalog/models/
-COPY docker/llama-cpp/preset-scenarios/ /prefer-catalog/preset-scenarios/
 COPY docker/llama-cpp/.prefer-tooling/prefer.mjs /usr/local/bin/prefer
 COPY docker/llama-cpp/.prefer-tooling/prefer-model-catalog.json /prefer-model-catalog.json
 COPY docker/llama-cpp/.prefer-tooling/prefer-model-catalog.schema.json /prefer-catalog/schemas/prefer-model-catalog.schema.json
@@ -51,11 +49,10 @@ COPY docker/llama-cpp/.prefer-tooling/prefer-model-plan.schema.json /prefer-cata
 COPY docker/llama-cpp/.prefer-tooling/prefer-runtime-handoff.schema.json /prefer-catalog/schemas/prefer-runtime-handoff.schema.json
 COPY docker/llama-cpp/.prefer-tooling/prefer-download-artifacts.sh /prefer-download-artifacts.sh
 COPY docker/llama-cpp/.prefer-tooling/prefer-runtime-handoff-download.sh /prefer-runtime-handoff-download.sh
-COPY docker/llama-cpp/detect-preset.sh /detect-preset.sh
 COPY docker/llama-cpp/download-models.sh /download-models.sh
 COPY docker/llama-cpp/entrypoint.sh /entrypoint.sh
-RUN sed -i 's/\r$//' /model-downloads.generated.sh /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /detect-preset.sh /download-models.sh /entrypoint.sh /prefer-catalog/generate-presets.py \
-    && chmod +x /usr/local/bin/prefer /model-downloads.generated.sh /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /detect-preset.sh /download-models.sh /entrypoint.sh
+RUN sed -i 's/\r$//' /model-downloads.generated.sh /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /download-models.sh /entrypoint.sh /prefer-catalog/generate-presets.py \
+    && chmod +x /usr/local/bin/prefer /model-downloads.generated.sh /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /download-models.sh /entrypoint.sh
 
 ENV PREFER_ENGINE=llama.cpp \
     PREFER_MODEL_CATALOG=/prefer-model-catalog.json

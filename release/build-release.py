@@ -26,6 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--image-digest", required=True)
     parser.add_argument("--sglang-digest", required=True)
     parser.add_argument("--vllm-digest", required=True)
+    parser.add_argument("--downloader-digest", required=True)
     parser.add_argument("--llama-inventory", type=Path, required=True)
     parser.add_argument("--audio-inventory", type=Path, required=True)
     parser.add_argument("--image-inventory", type=Path, required=True)
@@ -113,7 +114,9 @@ def tooling_assets(args: argparse.Namespace, commit: str) -> dict[str, object]:
         "package": "prefer-inference-core.tgz",
         "cli": "prefer.mjs",
         "model_catalog": "prefer-model-catalog.json",
+        "hardware_profiles": "prefer-hardware-profiles.json",
         "model_catalog_schema": "prefer-model-catalog.schema.json",
+        "hardware_profile_catalog_schema": "prefer-hardware-profile-catalog.schema.json",
         "model_catalog_extension_schema": "prefer-model-catalog-extension.schema.json",
         "resource_profile_schema": "prefer-resource-profile.schema.json",
         "model_plan_schema": "prefer-model-plan.schema.json",
@@ -275,6 +278,19 @@ def build_manifest(args: argparse.Namespace) -> dict[str, object]:
                     )
                 },
             },
+        },
+        "utilities": {
+            "downloader": {
+                "runtime": "artifact-downloader",
+                "images": {
+                    "cpu": image_entry(
+                        image_repository,
+                        f"downloader-{release_id}",
+                        args.downloader_digest,
+                        ["linux/amd64", "linux/arm64"],
+                    )
+                },
+            }
         },
         "tooling": tooling,
     }

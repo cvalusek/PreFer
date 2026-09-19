@@ -268,7 +268,6 @@ def preset_contract_diff(contract: dict[str, Any] | None = None) -> list[str]:
 def inspect_models_max(repo_root: Path) -> dict[str, Any]:
     compose = (repo_root / "docker-compose.yml").read_text(encoding="utf-8")
     env_example = (repo_root / ".env.example").read_text(encoding="utf-8")
-    detect = (repo_root / "docker" / "llama-cpp" / "detect-preset.sh").read_text(encoding="utf-8")
     compose_match = re.search(r"LLAMA_ARG_MODELS_MAX=\$\{LLAMA_ARG_MODELS_MAX:-([0-9]+)\}", compose)
     example_match = re.search(r"^LLAMA_ARG_MODELS_MAX=([0-9]+)$", env_example, re.MULTILINE)
     preset_load = {
@@ -278,7 +277,7 @@ def inspect_models_max(repo_root: Path) -> dict[str, Any]:
     return {
         "compose_default": int(compose_match.group(1)) if compose_match else None,
         "env_example_default": int(example_match.group(1)) if example_match else None,
-        "auto_detection_default": 1 if 'LLAMA_ARG_MODELS_MAX:-1' in detect else None,
+        "auto_detection_default": None,
         "upstream_fallback_default": 4,
         "presets_with_load_on_startup": sorted(name for name, enabled in preset_load.items() if enabled),
         "tier_presets_with_load_on_startup": sorted(
@@ -287,7 +286,6 @@ def inspect_models_max(repo_root: Path) -> dict[str, Any]:
         "precedence": [
             "llama-server --models-max command-line argument",
             "LLAMA_ARG_MODELS_MAX environment value",
-            "auto-detection fallback 1 when no selected tier entry uses load-on-startup",
             "llama.cpp router fallback 4 when PreFer leaves the setting unset"
         ]
     }

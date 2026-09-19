@@ -9,16 +9,39 @@
       "kind": "dense"
     },
     "capabilities": {
-      "native_input_modalities": ["text", "image", "video", "audio"],
-      "configured_input_modalities": ["text", "image"],
-      "output_modalities": ["text"],
+      "native_input_modalities": [
+        "text",
+        "image",
+        "video",
+        "audio"
+      ],
+      "configured_input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
       "native_context_tokens": 131072,
       "reasoning_control": "request-selectable"
     },
     "roles": {
-      "preferred": ["summarization", "translation", "short-writing", "document-extraction", "image-understanding"],
-      "capable": ["code-explanation", "general-assistance"],
-      "avoid": ["autonomous-agents", "repository-coding", "deep-planning"]
+      "preferred": [
+        "summarization",
+        "translation",
+        "short-writing",
+        "document-extraction",
+        "image-understanding"
+      ],
+      "capable": [
+        "code-explanation",
+        "general-assistance"
+      ],
+      "avoid": [
+        "autonomous-agents",
+        "repository-coding",
+        "deep-planning"
+      ]
     },
     "strengths": [
       "Very fast QAT route with a useful balance of readable prose and multimodal extraction.",
@@ -33,7 +56,11 @@
     ],
     "evidence": {
       "confidence": "mixed",
-      "basis": ["official", "operator", "inference"],
+      "basis": [
+        "official",
+        "operator",
+        "inference"
+      ],
       "notes": "Hard capabilities are official; relative writing and role guidance combine operator experience with family-level inference."
     }
   },
@@ -59,7 +86,7 @@
       "downloads": [
         {
           "repo": "unsloth/gemma-4-E4B-it-qat-GGUF",
-          "revision": null,
+          "revision": "8c5a9e4fd5482e2be20fe0bf013b4c262a8f4265",
           "include": [
             "*UD-Q4_K_XL*",
             "mtp-gemma-4-E4B-it.gguf",
@@ -71,17 +98,23 @@
         {
           "role": "model",
           "repo": "unsloth/gemma-4-E4B-it-qat-GGUF",
-          "path": "gemma-4-E4B-it-qat-UD-Q4_K_XL.gguf"
+          "path": "gemma-4-E4B-it-qat-UD-Q4_K_XL.gguf",
+          "size": 4215695776,
+          "sha256": "df0fd4ee07072c607c29a0a1cb4f98918426cca12f45a2776bdd6ee6d09a4de3"
         },
         {
           "role": "draft",
           "repo": "unsloth/gemma-4-E4B-it-qat-GGUF",
-          "path": "mtp-gemma-4-E4B-it.gguf"
+          "path": "mtp-gemma-4-E4B-it.gguf",
+          "size": 59678016,
+          "sha256": "423074e537504b4f9ec5eafed5c639fac82c96631626efccacdd3c4039b20605"
         },
         {
           "role": "projector",
           "repo": "unsloth/gemma-4-E4B-it-qat-GGUF",
-          "path": "mmproj-F16.gguf"
+          "path": "mmproj-F16.gguf",
+          "size": 990372672,
+          "sha256": "6a255159ee4b01b304f633a57f017dd7d5a69d30fff52abb2614bf0813cef034"
         }
       ]
     }

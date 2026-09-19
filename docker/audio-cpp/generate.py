@@ -359,50 +359,7 @@ def deployment_inventory(
     primary = [lane for lane in lanes if lane["primary"]]
     primary_by_key = {lane["key"]: lane for lane in primary}
     models = {lane["key"]: lane_inventory(lane) for lane in lanes}
-    deployments = []
-    for backend, image_tag in (("cuda12", "audio-cuda12"), ("cpu", "audio-cpu")):
-        prestage_keys = [lane["key"] for lane in primary]
-        deployments.append(
-            {
-                "id": f"audio/{backend}",
-                "runtime": "audio.cpp",
-                "backend": "cuda" if backend == "cuda12" else "cpu",
-                "image_tag": image_tag,
-                "base_image": runtime["base_images"][backend]["reference"],
-                "requires_gpu": backend == "cuda12",
-                "container": {
-                    "name": "prefer-audio",
-                    "internal_port": 8080,
-                    "health_path": "/health",
-                    "model_mount": "/models",
-                    "voice_mount": "/voices",
-                },
-                "server_config": "/app/server.json",
-                "prestage_manifest": None,
-                "environment": {
-                    "AUDIO_PRESTAGE_MODELS": ",".join(prestage_keys),
-                },
-                "residency": {
-                    "lazy_load": True,
-                    "max_loaded_models": 1,
-                    "idle_unload_ms": 1800000,
-                },
-                "models": [
-                    {
-                        "key": lane["key"],
-                        "request_model_id": lane["id"],
-                        "model_slug": lane["model_slug"],
-                        "quant_slug": lane["quant_slug"],
-                        "task": lane["task"],
-                        "mode": lane["mode"],
-                    }
-                    for lane in primary
-                ],
-                "prestage_models": prestage_keys,
-                "verification_status": "configuration-only",
-                "verification": "configuration-only",
-            }
-        )
+    deployments: list[dict] = []
     for scenario in scenarios:
         selected = [primary_by_key[key] for key in scenario["model_keys"]]
         config_path = f"/server-configs/{scenario['path']}"
@@ -501,7 +458,7 @@ def deployment_inventory(
         "runtime": runtime["runtime"],
         "composition": {
             "schema_version": "prefer.runtime-composition.v1",
-            "activation": "opt-in; existing AUDIO_SERVER_CONFIG remains compatible when no composition variable is set",
+            "activation": "required; select a bundle/model or supply an immutable runtime handoff",
             "multi_model": True,
             "effective_config_path": "/run/prefer/audio.json",
             "effective_plan_path": "/run/prefer/plan.json",
@@ -511,7 +468,6 @@ def deployment_inventory(
             "compose_environment_prefix": "AUDIO",
             "override_merge": "objects merge recursively; scalar and array values replace",
             "environment": {
-                "PREFER_DEPLOYMENT": {"type": "string", "source": "deployments[].id"},
                 "PREFER_BUNDLE": {"type": "string-list", "source": "bundles keys"},
                 "PREFER_MODELS": {"type": "string-list", "source": "models key or request_model_id"},
                 "PREFER_SERVER_OVERRIDES": {"type": "json-object", "applies_to": "audio.cpp server settings"},
@@ -533,14 +489,13 @@ def deployment_inventory(
             ],
             "precedence": [
                 "catalog model and lane defaults",
-                "hardware deployment defaults",
                 "bundle defaults",
                 "PREFER_SERVER_OVERRIDES",
                 "PREFER_MODEL_OVERRIDES",
                 "raw engine arguments",
             ],
             "setting_sources": {
-                "server": "composition.server_defaults plus bundles[].server and deployment config",
+                "server": "composition.server_defaults plus bundles[].server",
                 "model": "models[].server",
             },
             "server_defaults": {
@@ -644,23 +599,14 @@ def rendered_outputs() -> dict[Path, str]:
     primary = [lane for lane in lanes if lane["primary"]]
     primary_by_key = {lane["key"]: lane for lane in primary}
     bundles = load_bundles(primary_by_key)
-    scenarios = load_scenarios(primary_by_key, bundles)
-    outputs = {
-        ROOT / "server.cuda.generated.json": json.dumps(server_config("cuda", primary), indent=2) + "\n",
-        ROOT / "server.cpu.generated.json": json.dumps(server_config("cpu", primary), indent=2) + "\n",
+    return {
+        ROOT / "server.cuda.generated.json": json.dumps(server_config("cuda", []), indent=2) + "\n",
+        ROOT / "server.cpu.generated.json": json.dumps(server_config("cpu", []), indent=2) + "\n",
         ROOT / "deployment-inventory.generated.json": json.dumps(
-            deployment_inventory(runtime, lanes, scenarios, bundles), indent=2
+            deployment_inventory(runtime, lanes, [], bundles), indent=2
         ) + "\n",
         ROOT / "model-downloads.generated.sh": download_script(lanes),
     }
-    for scenario in scenarios:
-        selected = [primary_by_key[key] for key in scenario["model_keys"]]
-        config_path = CONFIGS_ROOT / PurePosixPath(scenario["path"])
-        outputs[config_path] = json.dumps(
-            server_config("cuda", selected, scenario["server"]), indent=2
-        ) + "\n"
-        outputs[config_path.with_suffix(".prestage")] = ",".join(scenario["model_keys"]) + "\n"
-    return outputs
 
 
 def parse_composition_list(value: str) -> list[str]:
@@ -713,43 +659,15 @@ def compose_runtime_config(
     primary = [lane for lane in lanes if lane["primary"]]
     primary_by_key = {lane["key"]: lane for lane in primary}
     bundles = load_bundles(primary_by_key)
-    scenarios = load_scenarios(primary_by_key, bundles)
-    scenario_by_path = {scenario["path"]: scenario for scenario in scenarios}
-    normalized = normalize_runtime_config(base)
-    explicit_base_path = Path(base)
-
-    if normalized == "default" or explicit_base_path.is_file():
-        base_path = explicit_base_path
-        if not base_path.is_file():
-            installed_default = Path("/app/server.json")
-            if installed_default.is_file():
-                base_path = installed_default
-            else:
-                generated_name = "server.cpu.generated.json" if base.strip() == "audio/cpu" else "server.cuda.generated.json"
-                base_path = ROOT / generated_name
-        base_config = load_json(base_path)
-        by_id = {lane["id"]: lane for lane in primary}
-        base_lanes = []
-        for model in base_config.get("models", []):
-            lane = by_id.get(model.get("id"))
-            if lane is None:
-                raise ValueError(f"cannot map audio base model {model.get('id')!r} to the catalog")
-            base_lanes.append(lane)
-        backend = base_config.get("backend", "cuda")
-        base_server = {key: value for key, value in base_config.items() if key not in {"backend", "models"}}
-        base_deployment = (
-            PurePosixPath(normalized).with_suffix("").as_posix()
-            if normalized != "default"
-            else ("audio/cuda12" if backend == "cuda" else "audio/cpu")
-        )
-    else:
-        scenario = scenario_by_path.get(normalized)
-        if scenario is None:
-            raise ValueError(f"unknown audio deployment: {base!r}")
-        base_lanes = [primary_by_key[key] for key in scenario["model_keys"]]
-        backend = "cuda"
-        base_server = scenario["server"]
-        base_deployment = PurePosixPath(normalized).with_suffix("").as_posix()
+    if base and base not in {"/app/server.json", "audio/cuda12", "audio/cpu"} and not Path(base).is_file():
+        raise ValueError("hardware deployments and generated server configs have been removed")
+    base_path = Path(base) if base and Path(base).is_file() else Path("/app/server.json")
+    if not base_path.is_file():
+        generated_name = "server.cpu.generated.json" if base == "audio/cpu" else "server.cuda.generated.json"
+        base_path = ROOT / generated_name
+    base_config = load_json(base_path)
+    backend = base_config.get("backend", "cuda")
+    base_server = {key: value for key, value in base_config.items() if key not in {"backend", "models"}}
 
     requested_bundles = parse_composition_list(bundle_value)
     requested_models = parse_composition_list(model_value)
@@ -788,10 +706,8 @@ def compose_runtime_config(
             )
         add_lane(lane)
 
-    if not requested_bundles and not requested_models:
-        selected = [copy.deepcopy(lane) for lane in base_lanes]
     if not selected:
-        raise ValueError("runtime composition selected no audio models")
+        raise ValueError("runtime composition requires an audio bundle or model selection")
 
     applied_model_overrides: dict[str, dict] = {}
     for lane in selected:
@@ -820,7 +736,6 @@ def compose_runtime_config(
     plan = {
         "schema_version": "prefer.runtime-plan.v1",
         "runtime": "audio.cpp",
-        "base_deployment": base_deployment,
         "bundles": requested_bundles,
         "requested_models": requested_models,
         "resolved_model_keys": prestage,
@@ -828,7 +743,6 @@ def compose_runtime_config(
         "model_overrides": applied_model_overrides,
         "precedence": [
             "catalog model and lane defaults",
-            "hardware deployment defaults",
             "bundle defaults",
             "PREFER_SERVER_OVERRIDES",
             "PREFER_MODEL_OVERRIDES",
@@ -838,28 +752,16 @@ def compose_runtime_config(
     return config, prestage, plan
 
 
-def resolve_handoff_base(base: str, default_base: str, handoff: dict) -> tuple[str, dict, str]:
-    reference = base or str(handoff.get("base_deployment") or default_base)
-    normalized = normalize_runtime_config(reference or "default")
-    explicit = Path(reference) if reference else Path()
-    if normalized == "default" or explicit.is_file():
-        config_path = explicit if explicit.is_file() else Path(default_base)
-        if not config_path.is_file():
-            config_path = Path("/app/server.json") if Path("/app/server.json").is_file() else ROOT / "server.cuda.generated.json"
-        config = load_json(config_path)
-        backend = str(config.get("backend", "cuda"))
-        server = {key: copy.deepcopy(value) for key, value in config.items() if key not in {"backend", "models"}}
-        deployment = "audio/cpu" if backend == "cpu" else "audio/cuda12"
-        return backend, server, deployment
-    lanes = model_lanes()
-    primary = [lane for lane in lanes if lane["primary"]]
-    primary_by_key = {lane["key"]: lane for lane in primary}
-    bundles = load_bundles(primary_by_key)
-    scenarios = load_scenarios(primary_by_key, bundles)
-    scenario = next((record for record in scenarios if record["path"] == normalized), None)
-    if scenario is None:
-        raise ValueError(f"unknown audio runtime handoff deployment: {reference!r}")
-    return "cuda", copy.deepcopy(scenario["server"]), PurePosixPath(normalized).with_suffix("").as_posix()
+def resolve_handoff_base(base: str, default_base: str, handoff: dict) -> tuple[str, dict]:
+    if base or handoff.get("base_deployment"):
+        raise ValueError("runtime handoffs no longer accept hardware deployments or generated configs")
+    config_path = Path(default_base)
+    if not config_path.is_file():
+        config_path = Path("/app/server.json") if Path("/app/server.json").is_file() else ROOT / "server.cuda.generated.json"
+    config = load_json(config_path)
+    backend = str(config.get("backend", "cuda"))
+    server = {key: copy.deepcopy(value) for key, value in config.items() if key not in {"backend", "models"}}
+    return backend, server
 
 
 def handoff_audio_lane(model: dict, artifacts: dict[str, dict]) -> dict:
@@ -930,7 +832,7 @@ def compose_runtime_handoff_config(
     artifacts = {artifact.get("id"): artifact for artifact in raw_artifacts if isinstance(artifact, dict)}
     if len(artifacts) != len(raw_artifacts):
         raise ValueError("materialized runtime handoff has duplicate or invalid artifacts")
-    backend, base_server, base_deployment = resolve_handoff_base(base, default_base, handoff)
+    backend, base_server = resolve_handoff_base(base, default_base, handoff)
     selected = [handoff_audio_lane(model, artifacts) for model in models]
     ids = [lane["id"] for lane in selected]
     if len(ids) != len(set(ids)):
@@ -967,7 +869,6 @@ def compose_runtime_handoff_config(
     plan = {
         "schema_version": "prefer.runtime-plan.v1",
         "runtime": "audio.cpp",
-        "base_deployment": base_deployment,
         "handoff_fingerprint": handoff.get("handoff_fingerprint"),
         "bundles": [],
         "requested_models": [lane["key"] for lane in selected],
@@ -977,7 +878,6 @@ def compose_runtime_handoff_config(
         "model_overrides": applied,
         "precedence": [
             "runtime handoff model and artifact settings",
-            "hardware deployment defaults",
             "runtime handoff server settings",
             "PREFER_SERVER_OVERRIDES",
             "PREFER_MODEL_OVERRIDES",
@@ -1025,8 +925,8 @@ def main() -> int:
             print(f"generate.py: {error}", file=sys.stderr)
             return 1
     if args.compose:
-        if args.check or not args.base or not args.output or not args.prestage_output or not args.plan_output:
-            parser.error("--compose requires --base, --output, --prestage-output, and --plan-output")
+        if args.check or not args.output or not args.prestage_output or not args.plan_output:
+            parser.error("--compose requires --output, --prestage-output, and --plan-output")
         try:
             config, prestage, plan = compose_runtime_config(
                 base=args.base,
@@ -1040,7 +940,7 @@ def main() -> int:
             Path(args.output).write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8", newline="\n")
             Path(args.prestage_output).write_text(",".join(prestage) + "\n", encoding="utf-8", newline="\n")
             Path(args.plan_output).write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8", newline="\n")
-            print(f"composed audio.cpp runtime config from {plan['base_deployment']}: {', '.join(prestage)}")
+            print(f"composed audio.cpp runtime config: {', '.join(prestage)}")
             return 0
         except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
             print(f"generate.py: {error}", file=sys.stderr)

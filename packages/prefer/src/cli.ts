@@ -11,7 +11,6 @@ import {
   listModelVariants,
   listPreferReleases,
   loadCatalogSources,
-  modelRequestsFromDeployment,
   normalizeDeploymentResources,
   parseRepositorySelection,
   planModelSet,
@@ -188,6 +187,7 @@ async function detectHardware(args: string[]): Promise<void> {
 
 async function createHandoff(args: string[]): Promise<void> {
   const flags = parseFlags(args);
+  if (one(flags, "base-deployment")) throw new Error("runtime create no longer accepts --base-deployment; resolve hardware-derived settings before creating the handoff");
   const catalog = await readModelCatalog(one(flags, "catalog") ?? process.env.PREFER_MODEL_CATALOG ?? "/prefer-model-catalog.json");
   const engine = one(flags, "engine") ?? process.env.PREFER_ENGINE;
   if (!engine) throw new Error("runtime create requires --engine outside a PreFer engine image");
@@ -215,7 +215,6 @@ async function createHandoff(args: string[]): Promise<void> {
   const handoff = createRuntimeHandoff(catalog, {
     engine,
     models,
-    ...(one(flags, "base-deployment") ? { baseDeployment: one(flags, "base-deployment")! } : {}),
     serverSettings: jsonObject(one(flags, "server-settings") ?? "{}", "--server-settings"),
     ...(additionalArtifacts.length ? { additionalArtifacts } : {})
   });
@@ -294,8 +293,7 @@ async function planModels(args: string[]): Promise<void> {
       ...(required.has(modelId) ? { required: true } : {})
     };
   });
-  if (!models.length) models.push(...modelRequestsFromDeployment(resourceValue));
-  if (!models.length) throw new Error("model plan requires --model selections or a deployment containing models");
+  if (!models.length) throw new Error("model plan requires explicit --model selections");
   for (const model of models) {
     if (required.has(model.model_id)) model.required = true;
     const speedScore = speedScores.get(model.model_id);
@@ -553,7 +551,7 @@ function help(): void {
     `    [--headroom-gib 2 | --headroom-percent 5] [--allow-host-offload] [--accept-tight]\n` +
     `  prefer hardware normalize --input inventory.json [--deployment aws/g6/xlarge/general]\n` +
     `  prefer hardware detect [--base inventory.json --deployment local/gb10/1x/balanced]\n` +
-    `  prefer runtime create --variant resolved-model.json --output handoff.json [--base-deployment deployment] [--server-settings JSON]\n` +
+    `  prefer runtime create --variant resolved-model.json --output handoff.json [--server-settings JSON]\n` +
     `    [--request-model-id model-id=request-id] [--additional-artifacts artifacts.json] [--extension]\n` +
     `  prefer runtime validate (--handoff handoff.json | --handoff-base64 VALUE | --handoff-base64-env NAME) [--engine sglang]\n` +
     `  prefer runtime materialize (--handoff handoff.json | --handoff-base64 VALUE | --handoff-base64-env NAME)\n` +

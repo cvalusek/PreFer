@@ -16,7 +16,7 @@ from .contract import load_contract, load_corpus, model_record
 from .diagnostics import classify_runtime_failure, linux_amd64_manifest_digests, manifest_failure_code
 from .http_client import ClientTimeout, TransportError, request_json
 from .memory import gpu_inventory
-from .paths import COMPOSE_PATH, REPO_ROOT, preset_relative, resolve_preset
+from .paths import COMPOSE_PATH, REPO_ROOT
 from .report import write_report
 from .results import empty_cell, finish_result, skip_cell, utc_now, write_json
 from .runner import LiveConfig, run_live_suite
@@ -244,15 +244,26 @@ def _container_snapshot(name: str) -> dict[str, Any]:
     return {"inspection_ok": True, "present": True, "raw": raw, "status": parts[-1] if parts else None}
 
 
-def _compose_environment(project: str, volume: str, port: int, lane: dict[str, Any], preset: str, models_max: int) -> dict[str, str]:
+def _compose_environment(
+    project: str,
+    volume: str,
+    port: int,
+    lane: dict[str, Any],
+    model_keys: list[str],
+    models_max: int,
+    server_overrides: dict[str, Any],
+    model_overrides: dict[str, Any],
+) -> dict[str, str]:
     return {
         "PREFER_BENCH_PROJECT": project,
         "PREFER_BENCH_VOLUME": volume,
         "PREFER_BENCH_PORT": str(port),
         "PREFER_BENCH_BASE_IMAGE": lane["base_image"],
         "PREFER_BENCH_IMAGE": lane["image"],
-        "PREFER_BENCH_PRESET": preset,
+        "PREFER_BENCH_MODELS": ",".join(model_keys),
         "PREFER_BENCH_MODELS_MAX": str(models_max),
+        "PREFER_BENCH_SERVER_OVERRIDES": json.dumps(server_overrides, separators=(",", ":")),
+        "PREFER_BENCH_MODEL_OVERRIDES": json.dumps(model_overrides, separators=(",", ":")),
     }
 
 
@@ -415,8 +426,9 @@ class LocalOptions:
     lane: str
     cache_source_volume: str
     model_keys: list[str]
-    preset: str
     models_max: int
+    server_overrides: dict[str, Any]
+    model_overrides: dict[str, Any]
     contexts: tuple[int, ...]
     concurrency: int
     timeout_seconds: float
@@ -432,14 +444,22 @@ def run_local(options: LocalOptions) -> dict[str, Any]:
         raise ValueError(f"unknown lane: {options.lane}")
     if not options.model_keys or any(key not in CACHE_MODELS for key in options.model_keys):
         raise ValueError(f"models must be selected from {sorted(CACHE_MODELS)}")
-    options.preset = preset_relative(resolve_preset(options.preset))
     lane = LANES[options.lane]
     suffix = uuid.uuid4().hex[:10]
     project = f"prefer-bench-{suffix}"
     volume = f"prefer-bench-{suffix}-models"
     port = _free_port()
     base_url = f"http://127.0.0.1:{port}"
-    compose_environment = _compose_environment(project, volume, port, lane, options.preset, options.models_max)
+    compose_environment = _compose_environment(
+        project,
+        volume,
+        port,
+        lane,
+        options.model_keys,
+        options.models_max,
+        options.server_overrides,
+        options.model_overrides,
+    )
     source_revision, source_dirty = _source_state()
     contract = load_contract()
     corpus = load_corpus()
@@ -471,7 +491,7 @@ def run_local(options: LocalOptions) -> dict[str, Any]:
             "contract_version": contract["contract_version"],
             "eval_version": corpus["eval_version"],
             "hardware": hardware,
-            "preset": options.preset,
+            "preset": "runtime-composed",
             "models_max": options.models_max,
             "command": options.command,
             "cleanup": {},
@@ -556,7 +576,7 @@ def run_local(options: LocalOptions) -> dict[str, Any]:
                 run_live_suite(
                     LiveConfig(
                         base_url=base_url,
-                        preset=options.preset,
+                        preset="runtime-composed",
                         models_max=options.models_max,
                         model_a=model_a,
                         model_b=model_b,
@@ -611,7 +631,7 @@ def run_local(options: LocalOptions) -> dict[str, Any]:
                     diagnostic = classify_runtime_failure(
                         excerpt if use_log_excerpt else "",
                         error_detail=error_detail,
-                        preset=options.preset,
+                        preset="runtime-composed",
                         backend_revision=str(result["run"]["backend"]["revision"]),
                     )
                     if diagnostic:

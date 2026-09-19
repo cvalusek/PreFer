@@ -26,7 +26,6 @@ COPY model-downloads.generated.sh /model-downloads.generated.sh
 COPY generate.py /prefer-catalog/generate.py
 COPY runtime.json deployment-bundles.json /prefer-catalog/
 COPY models /prefer-catalog/models
-COPY deployment-scenarios /prefer-catalog/deployment-scenarios
 COPY .prefer-tooling/prefer.mjs /usr/local/bin/prefer
 COPY .prefer-tooling/prefer-model-catalog.json /prefer-model-catalog.json
 COPY .prefer-tooling/prefer-model-catalog.schema.json /prefer-catalog/schemas/prefer-model-catalog.schema.json

@@ -1,5 +1,10 @@
 # PreFer contract and benchmark harness
 
+> Current live runs use explicit `LLAMA_MODELS` runtime composition. Hardware
+> presets and automatic VRAM detection have been removed. Older preset names in
+> baseline reports and historical analysis below identify the configuration
+> measured at that time; they are evidence labels, not selectable profiles.
+
 This repository owns a small, versioned client contract and a measurement
 harness for the existing llama.cpp router. It does not select a new serving
 backend, translate another vendor API, or manage operational capacity.
@@ -87,30 +92,17 @@ python -m unittest discover -s benchmark/tests -v
 
 ## `models-max` facts and open policy
 
-The checked-in behavior is now documented without changing it:
-
-1. A `--models-max N` argument passed to `llama-server` has highest precedence.
-2. `LLAMA_ARG_MODELS_MAX` is next. The normal `docker-compose.yml` always
-   passes it and defaults it to `1`; `.env.example` also says `1`.
-3. When no preset was explicitly selected, `detect-preset.sh` chooses a tier
-   and assigns `1` if that preset has no `load-on-startup` entries. None of the
-   current `8gb.ini`, `12gb.ini`, or `96gb.ini` entries load on startup, so a
-   direct auto-detected tier also resolves to `1`.
-4. If a preset is selected explicitly outside the normal Compose path and no
-   CLI/environment value is supplied, detection does not assign a fallback and
-   llama.cpp uses its router default of `4`. The named single-model presets
-   contain `load-on-startup`, but their effective loaded-model count is still
-   one because each contains one model.
-
-The effective normal Compose default is therefore **1 for every preset unless
-the operator overrides it**. The old README statement that 96 GB normally used
-4 was documentation drift, not evidence that production should change.
+A `--models-max N` argument passed to `llama-server` has highest precedence,
+followed by `LLAMA_ARG_MODELS_MAX`. Root Compose and the isolated benchmark
+both pass an explicit value and default it to **1**. There is no preset or
+hardware-detection fallback. Direct callers that omit both values receive
+llama.cpp's upstream router default, so launchers should always be explicit.
 
 `models-max` is an explicit benchmark flag:
 
 ```bash
 python -m prefer_bench models-max
-python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb-pascal.ini --models-max 4 --contexts 8k
+python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --models-max 4 --contexts 8k
 ```
 
 The remaining policy choice is whether the normal 96 GB path should continue
@@ -142,17 +134,18 @@ prompt.
 
 The default baseline builds the production-pinned b10362 Dockerfile, never
 downloads models, and copies only selected files from an existing Docker cache
-into a generated run volume. Current b10362 includes the upstream E4B Pascal
-MTP fix, so use the normal preset for a new run:
+into a generated run volume. The harness composes the selected catalog models
+at startup; use `--server-overrides` and `--model-overrides` with compact JSON
+when a measurement needs settings derived from live hardware detection:
 
 ```bash
-python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb.ini --models-max 1 --contexts 8k,32k
+python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --models-max 1 --contexts 8k,32k
 ```
 
-`12gb-pascal.ini` is retained to reproduce or roll back the old b9843 failure.
-It is never auto-detected and differs only by omitting E4B's MTP draft; model
-identity, aliases, quantization, q4_0 K/V cache, FlashAttention, and E2B MTP
-remain the same.
+Historical `12gb-pascal.ini` baseline labels reproduce the old b9843 failure;
+the preset itself is no longer shipped. Reproduction now requires explicit
+model overrides matching the recorded q4_0 K/V cache, FlashAttention, and
+E2B/E4B draft settings.
 
 The command records cold router startup/readiness (Compose service start through
 the first successful `/v1/models`, excluding image build and cache clone), first model load, warm request,
@@ -175,16 +168,16 @@ Optional extensions:
 
 ```bash
 # Run the measured-safe 8K and 32K cells. Keep 128K a separate opt-in decision.
-python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b --preset 12gb-pascal.ini --models-max 1 --contexts 8k,32k
+python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b --models-max 1 --contexts 8k,32k
 
 # Explicit 128K attempt; a skip or backend rejection is not converted to success.
-python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b --preset 12gb-pascal.ini --models-max 1 --contexts 128k
+python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b --models-max 1 --contexts 128k
 
-# Wait past the 12 GB preset's actual 1800-second idle threshold.
-python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b --preset 12gb-pascal.ini --models-max 1 --contexts none --idle-wait-seconds 1805
+# Wait past an explicitly configured 1800-second idle threshold.
+python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b --models-max 1 --server-overrides '{"sleep-idle-seconds":1800}' --contexts none --idle-wait-seconds 1805
 
 # Reuse an already-built benchmark image without pulling or building.
-python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --preset 12gb-pascal.ini --models-max 1 --contexts 8k,32k --no-build
+python -m prefer_bench local --lane current --cache-source-volume prefer-model-cache --models gemma-4-e2b,gemma-4-e4b --models-max 1 --contexts 8k,32k --no-build
 ```
 
 ## E4B Pascal diagnosis and bounded fallback
@@ -206,10 +199,10 @@ and adds the missing ratio-2 specialization. `flash-attn=off` is not a usable
 12 GB substitution while `cache-type-v=q4_0`, because llama.cpp requires
 FlashAttention for a quantized V cache.
 
-`12gb-pascal.ini` is therefore a narrow b9843 compatibility override: it is an
-exact copy of `12gb.ini` with only E4B's three draft keys omitted. It is named
-so `detect-preset.sh` cannot auto-select it. Tests enforce that exact delta and
-that the normal 8/12/96 GB presets retain E4B MTP. The remaining cost is E4B
+The historical `12gb-pascal.ini` baseline was therefore a narrow b9843
+compatibility override that omitted only E4B's draft keys. It is retained in
+reports as evidence, not as a selectable runtime artifact. Equivalent
+reproduction must supply those settings explicitly. The remaining cost is E4B
 throughput without speculative drafting; it is not a model identity or quality
 substitution.
 
@@ -310,7 +303,7 @@ It contains upstream E4B MTP fix #25148. The lane is opt-in; both Dockerfiles
 now default to b10362:
 
 ```bash
-python -m prefer_bench local --lane b9982 --cache-source-volume prefer-model-cache --models gemma-4-e2b --preset 12gb.ini --models-max 1 --contexts 8k
+python -m prefer_bench local --lane b9982 --cache-source-volume prefer-model-cache --models gemma-4-e2b --models-max 1 --contexts 8k
 ```
 
 The harness records tag, manifest digest, source commit, release URL, and

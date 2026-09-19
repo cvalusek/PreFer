@@ -20,14 +20,12 @@ ENV HF_HOME=/models/.prefer-cache/huggingface \
     PYTHONUNBUFFERED=1
 
 COPY server.cuda.generated.json /app/server.json
-COPY server-configs /server-configs
 COPY deployment-inventory.generated.json /deployment-inventory.json
 COPY download-artifacts.sh /prefer-download-artifacts.sh
 COPY model-downloads.generated.sh /model-downloads.generated.sh
 COPY generate.py /prefer-catalog/generate.py
 COPY runtime.json deployment-bundles.json /prefer-catalog/
 COPY models /prefer-catalog/models
-COPY deployment-scenarios /prefer-catalog/deployment-scenarios
 COPY .prefer-tooling/prefer.mjs /usr/local/bin/prefer
 COPY .prefer-tooling/prefer-model-catalog.json /prefer-model-catalog.json
 COPY .prefer-tooling/prefer-model-catalog.schema.json /prefer-catalog/schemas/prefer-model-catalog.schema.json

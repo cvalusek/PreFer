@@ -7,7 +7,6 @@ from prefer_bench.contract import (
     load_contract,
     load_corpus,
     load_json,
-    preset_contract_diff,
     validate_chat_request,
     validate_chat_response,
     validate_error_response,
@@ -22,8 +21,8 @@ class ContractFixtureTests(unittest.TestCase):
         self.assertEqual(load_contract()["contract_version"], "1.0.0")
         self.assertEqual(load_corpus()["data_class"], "synthetic_non_private")
 
-    def test_contract_matches_all_preset_ids_aliases_and_quantizations(self) -> None:
-        self.assertEqual(preset_contract_diff(), [])
+    def test_historical_contract_does_not_require_runtime_presets(self) -> None:
+        self.assertFalse((Path(__file__).resolve().parents[2] / "docker" / "llama-cpp" / "presets").exists())
 
     def test_ground_control_model_and_alias_are_pinned(self) -> None:
         model = next(item for item in load_contract()["models"] if "gemma-4-E2B" in item["canonical_id"])

@@ -7,7 +7,7 @@ RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates curl python3 python3-pip tini util-linux xz-utils \
     && rm -rf /var/lib/apt/lists/* \
     && python3 -m pip install --no-cache-dir --break-system-packages -U "huggingface_hub[cli]" \
-    && mkdir -p /models /app /server-configs
+    && mkdir -p /models /app
 
 COPY .prefer-tooling/install-prefer-node.sh /tmp/install-prefer-node.sh
 RUN sed -i 's/\r$//' /tmp/install-prefer-node.sh \
@@ -17,14 +17,12 @@ RUN sed -i 's/\r$//' /tmp/install-prefer-node.sh \
 
 COPY server.generated.json /app/server.json
 COPY server.generated.prestage /app/server.prestage
-COPY server-configs /server-configs
 COPY deployment-inventory.generated.json /deployment-inventory.json
 COPY download-artifacts.sh /prefer-download-artifacts.sh
 COPY model-downloads.generated.sh /model-downloads.generated.sh
 COPY generate.py /prefer-catalog/generate.py
 COPY runtime.json deployment-bundles.json /prefer-catalog/
 COPY models /prefer-catalog/models
-COPY deployment-scenarios /prefer-catalog/deployment-scenarios
 COPY .prefer-tooling/prefer.mjs /usr/local/bin/prefer
 COPY .prefer-tooling/prefer-model-catalog.json /prefer-model-catalog.json
 COPY .prefer-tooling/prefer-model-catalog.schema.json /prefer-catalog/schemas/prefer-model-catalog.schema.json

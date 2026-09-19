@@ -16,7 +16,7 @@ RUN apt-get update \
        esac \
     && curl -fsSL "https://github.com/peak/s5cmd/releases/download/v${S5CMD_VERSION}/s5cmd_${S5CMD_VERSION}_Linux-${s5cmd_arch}.tar.gz" \
        | tar -xz -C /usr/local/bin s5cmd \
-    && mkdir -p /models /app /server-configs
+    && mkdir -p /models /app
 
 COPY .prefer-tooling/install-prefer-node.sh /tmp/install-prefer-node.sh
 RUN sed -i 's/\r$//' /tmp/install-prefer-node.sh \
@@ -28,16 +28,12 @@ ENV HF_HOME=/models \
     HF_XET_HIGH_PERFORMANCE=1 \
     PYTHONUNBUFFERED=1
 
-COPY server.generated.json /app/server.json
-COPY server.generated.prestage /app/server.prestage
-COPY server-configs /server-configs
 COPY deployment-inventory.generated.json /deployment-inventory.json
 COPY download-artifacts.sh /prefer-download-artifacts.sh
 COPY model-downloads.generated.sh /model-downloads.generated.sh
 COPY generate.py /prefer-catalog/generate.py
 COPY runtime.json /prefer-catalog/runtime.json
 COPY models /prefer-catalog/models
-COPY deployment-scenarios /prefer-catalog/deployment-scenarios
 COPY .prefer-tooling/prefer.mjs /usr/local/bin/prefer
 COPY .prefer-tooling/prefer-model-catalog.json /prefer-model-catalog.json
 COPY .prefer-tooling/prefer-model-catalog.schema.json /prefer-catalog/schemas/prefer-model-catalog.schema.json

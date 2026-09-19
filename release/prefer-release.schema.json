@@ -10,6 +10,7 @@
     "release",
     "distribution",
     "engines",
+    "utilities",
     "tooling"
   ],
   "properties": {
@@ -100,6 +101,14 @@
         }
       }
     },
+    "utilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["downloader"],
+      "properties": {
+        "downloader": {"$ref": "#/$defs/utility"}
+      }
+    },
     "tooling": {
       "type": "object",
       "additionalProperties": false,
@@ -112,7 +121,9 @@
         "package",
         "cli",
         "model_catalog",
+        "hardware_profiles",
         "model_catalog_schema",
+        "hardware_profile_catalog_schema",
         "model_catalog_extension_schema",
         "resource_profile_schema",
         "model_plan_schema",
@@ -127,7 +138,9 @@
         "package": {"$ref": "#/$defs/tooling_asset"},
         "cli": {"$ref": "#/$defs/tooling_asset"},
         "model_catalog": {"$ref": "#/$defs/tooling_asset"},
+        "hardware_profiles": {"$ref": "#/$defs/tooling_asset"},
         "model_catalog_schema": {"$ref": "#/$defs/tooling_asset"},
+        "hardware_profile_catalog_schema": {"$ref": "#/$defs/tooling_asset"},
         "model_catalog_extension_schema": {"$ref": "#/$defs/tooling_asset"},
         "resource_profile_schema": {"$ref": "#/$defs/tooling_asset"},
         "model_plan_schema": {"$ref": "#/$defs/tooling_asset"},
@@ -158,6 +171,19 @@
           "additionalProperties": {
             "$ref": "#/$defs/image"
           }
+        }
+      }
+    },
+    "utility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtime", "images"],
+      "properties": {
+        "runtime": {"type": "string", "minLength": 1},
+        "images": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {"$ref": "#/$defs/image"}
         }
       }
     },

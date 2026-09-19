@@ -11,16 +11,34 @@
       "active_parameters_b": 13
     },
     "capabilities": {
-      "native_input_modalities": ["text"],
-      "configured_input_modalities": ["text"],
-      "output_modalities": ["text"],
+      "native_input_modalities": [
+        "text"
+      ],
+      "configured_input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
       "native_context_tokens": 1048576,
       "reasoning_control": "request-selectable"
     },
     "roles": {
-      "preferred": ["legacy-evaluations", "planning", "research", "long-context-synthesis"],
-      "capable": ["coding-design", "difficult-reasoning"],
-      "avoid": ["new-default-routing", "cheap-drafting", "constrained-hardware"]
+      "preferred": [
+        "legacy-evaluations",
+        "planning",
+        "research",
+        "long-context-synthesis"
+      ],
+      "capable": [
+        "coding-design",
+        "difficult-reasoning"
+      ],
+      "avoid": [
+        "new-default-routing",
+        "cheap-drafting",
+        "constrained-hardware"
+      ]
     },
     "strengths": [
       "Known compatibility route with strong reasoning and unusually affordable long context for its size.",
@@ -35,7 +53,10 @@
     ],
     "evidence": {
       "confidence": "mixed",
-      "basis": ["official", "operator"],
+      "basis": [
+        "official",
+        "operator"
+      ],
       "notes": "The route has direct operational history; its present role is primarily compatibility and regression comparison."
     }
   },
@@ -55,7 +76,7 @@
       "downloads": [
         {
           "repo": "antirez/deepseek-v4-gguf",
-          "revision": null,
+          "revision": "f71f23d552d664e523b422157b2befbf74040380",
           "include": [
             "*Q4KExperts-F16HC*imatrix*"
           ]
@@ -65,7 +86,9 @@
         {
           "role": "model",
           "repo": "antirez/deepseek-v4-gguf",
-          "path": "DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf"
+          "path": "DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf",
+          "size": 164633502592,
+          "sha256": "a2a3b31eca06344b93d32b2095511c4d36f92739a68a599b22047b4b2335d859"
         }
       ]
     }

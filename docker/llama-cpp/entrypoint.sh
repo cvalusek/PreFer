@@ -1,17 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
-source /detect-preset.sh
 source /prefer-download-artifacts.sh
 source /prefer-runtime-handoff-download.sh
 
-PREFER_DEPLOYMENT="${PREFER_DEPLOYMENT:-${LLAMA_DEPLOYMENT:-}}"
 PREFER_BUNDLE="${PREFER_BUNDLE:-${LLAMA_BUNDLE:-}}"
 PREFER_MODELS="${PREFER_MODELS:-${LLAMA_MODELS:-}}"
 PREFER_SERVER_OVERRIDES="${PREFER_SERVER_OVERRIDES:-${LLAMA_SERVER_OVERRIDES:-}}"
 PREFER_MODEL_OVERRIDES="${PREFER_MODEL_OVERRIDES:-${LLAMA_MODEL_OVERRIDES:-}}"
 PREFER_RUNTIME_HANDOFF="${PREFER_RUNTIME_HANDOFF:-${LLAMA_RUNTIME_HANDOFF:-}}"
 PREFER_RUNTIME_HANDOFF_BASE64="${PREFER_RUNTIME_HANDOFF_BASE64:-${LLAMA_RUNTIME_HANDOFF_BASE64:-}}"
+runtime_artifacts=""
 
 if [ -n "$PREFER_RUNTIME_HANDOFF" ] && [ -n "$PREFER_RUNTIME_HANDOFF_BASE64" ]; then
   echo "[entrypoint] path and base64 runtime handoff inputs are mutually exclusive" >&2
@@ -42,8 +41,6 @@ if [ -n "${PREFER_RUNTIME_HANDOFF}${PREFER_RUNTIME_HANDOFF_BASE64}" ]; then
   python3 /prefer-catalog/generate-presets.py \
     --compose-handoff \
     --handoff-input "$runtime_handoff" \
-    --base "${PREFER_DEPLOYMENT:-}" \
-    --default-base "$LLAMA_ARG_MODELS_PRESET" \
     --server-overrides "${PREFER_SERVER_OVERRIDES:-}" \
     --model-overrides "${PREFER_MODEL_OVERRIDES:-}" \
     --output "$runtime_preset" \
@@ -54,14 +51,13 @@ if [ -n "${PREFER_RUNTIME_HANDOFF}${PREFER_RUNTIME_HANDOFF_BASE64}" ]; then
     "${S3_BUCKET_NAME:-}" "${S3_MODEL_PREFIX:-}"
   export LLAMA_ARG_MODELS_PRESET="$runtime_preset"
   export PREFER_EFFECTIVE_PLAN="$runtime_plan"
-elif [ -n "${PREFER_DEPLOYMENT:-}${PREFER_BUNDLE:-}${PREFER_MODELS:-}${PREFER_SERVER_OVERRIDES:-}${PREFER_MODEL_OVERRIDES:-}" ]; then
+elif [ -n "${PREFER_BUNDLE:-}${PREFER_MODELS:-}${PREFER_SERVER_OVERRIDES:-}${PREFER_MODEL_OVERRIDES:-}" ]; then
   mkdir -p /run/prefer
   runtime_preset=/run/prefer/llama.ini
   runtime_prestage=/run/prefer/llama.prestage
   runtime_plan=/run/prefer/plan.json
   python3 /prefer-catalog/generate-presets.py \
     --compose \
-    --base "${PREFER_DEPLOYMENT:-$LLAMA_ARG_MODELS_PRESET}" \
     --bundles "${PREFER_BUNDLE:-}" \
     --models "${PREFER_MODELS:-}" \
     --server-overrides "${PREFER_SERVER_OVERRIDES:-}" \
@@ -71,6 +67,9 @@ elif [ -n "${PREFER_DEPLOYMENT:-}${PREFER_BUNDLE:-}${PREFER_MODELS:-}${PREFER_SE
     --plan-output "$runtime_plan"
   export LLAMA_ARG_MODELS_PRESET="$runtime_preset"
   export PREFER_EFFECTIVE_PLAN="$runtime_plan"
+else
+  echo "[entrypoint] select models with PREFER_MODELS or supply PREFER_RUNTIME_HANDOFF" >&2
+  exit 2
 fi
 
 if [ -z "$runtime_artifacts" ]; then

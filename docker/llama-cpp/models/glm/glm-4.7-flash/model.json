@@ -11,16 +11,36 @@
       "active_parameters_b": 3
     },
     "capabilities": {
-      "native_input_modalities": ["text"],
-      "configured_input_modalities": ["text"],
-      "output_modalities": ["text"],
+      "native_input_modalities": [
+        "text"
+      ],
+      "configured_input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
       "native_context_tokens": 202752,
       "reasoning_control": "request-selectable"
     },
     "roles": {
-      "preferred": ["bounded-coding", "search", "tool-use", "drafting", "synthesis"],
-      "capable": ["reasoning", "research-helper", "agent-steps"],
-      "avoid": ["vision", "final-research-authority", "unbounded-orchestration"]
+      "preferred": [
+        "bounded-coding",
+        "search",
+        "tool-use",
+        "drafting",
+        "synthesis"
+      ],
+      "capable": [
+        "reasoning",
+        "research-helper",
+        "agent-steps"
+      ],
+      "avoid": [
+        "vision",
+        "final-research-authority",
+        "unbounded-orchestration"
+      ]
     },
     "strengths": [
       "Its three-billion-active MoE architecture makes it a fast coding, browsing, and agent worker for its total size.",
@@ -35,7 +55,10 @@
     ],
     "evidence": {
       "confidence": "mixed",
-      "basis": ["official", "inference"],
+      "basis": [
+        "official",
+        "inference"
+      ],
       "notes": "Architecture and intended capabilities are publisher-backed; precise PreFer role and speed judgment still needs route-level experience."
     }
   },
@@ -57,7 +80,7 @@
       "downloads": [
         {
           "repo": "unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF",
-          "revision": null,
+          "revision": "983a65c63bc7bd37353e5246abc8005b3f72d5ec",
           "include": [
             "*UD-Q6_K_XL*"
           ]
@@ -67,7 +90,9 @@
         {
           "role": "model",
           "repo": "unsloth/GLM-4.7-Flash-REAP-23B-A3B-GGUF",
-          "path": "GLM-4.7-Flash-REAP-23B-A3B-UD-Q6_K_XL.gguf"
+          "path": "GLM-4.7-Flash-REAP-23B-A3B-UD-Q6_K_XL.gguf",
+          "size": 20227712736,
+          "sha256": "d14fc5c0ccdf6aff33420c16faf14070fcd7969b07a40abec54596fc7d32bb72"
         }
       ]
     }

@@ -11,16 +11,35 @@
       "active_parameters_b": 40
     },
     "capabilities": {
-      "native_input_modalities": ["text"],
-      "configured_input_modalities": ["text"],
-      "output_modalities": ["text"],
+      "native_input_modalities": [
+        "text"
+      ],
+      "configured_input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
       "native_context_tokens": 1048576,
       "reasoning_control": "request-selectable"
     },
     "roles": {
-      "preferred": ["difficult-reasoning", "research-synthesis", "coding-design", "long-context-planning"],
-      "capable": ["orchestration", "architecture-review", "complex-coding"],
-      "avoid": ["cheap-fanout", "latency-sensitive-work", "vision"]
+      "preferred": [
+        "difficult-reasoning",
+        "research-synthesis",
+        "coding-design",
+        "long-context-planning"
+      ],
+      "capable": [
+        "orchestration",
+        "architecture-review",
+        "complex-coding"
+      ],
+      "avoid": [
+        "cheap-fanout",
+        "latency-sensitive-work",
+        "vision"
+      ]
     },
     "strengths": [
       "Flagship long-horizon model with flexible thinking effort and a publisher-supported one-million-token context.",
@@ -35,7 +54,10 @@
     ],
     "evidence": {
       "confidence": "mixed",
-      "basis": ["official", "maintainer"],
+      "basis": [
+        "official",
+        "maintainer"
+      ],
       "notes": "Flagship capabilities are publisher-backed; local quality, speed, and route behavior remain deployment-specific."
     }
   },
@@ -55,7 +77,7 @@
       "downloads": [
         {
           "repo": "unsloth/GLM-5.2-GGUF",
-          "revision": null,
+          "revision": "abc55e72527792c6e77069c99b4cb7de16fa9f23",
           "include": [
             "UD-Q4_K_XL/*"
           ]
@@ -65,57 +87,79 @@
         {
           "role": "model",
           "repo": "unsloth/GLM-5.2-GGUF",
-          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00001-of-00011.gguf"
+          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00001-of-00011.gguf",
+          "size": 9423744,
+          "sha256": "3256ac8c290273f0965ff39e93a8bcd07dc99bcd23e923bd4b7306ef39061038"
         },
         {
           "role": "model-shard",
           "repo": "unsloth/GLM-5.2-GGUF",
-          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00002-of-00011.gguf"
+          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00002-of-00011.gguf",
+          "size": 49433942336,
+          "sha256": "aaedfb89d314d6967a80005b93a9c460a494babc6c3e4f0138e21891e21572e1"
         },
         {
           "role": "model-shard",
           "repo": "unsloth/GLM-5.2-GGUF",
-          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00003-of-00011.gguf"
+          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00003-of-00011.gguf",
+          "size": 48566415136,
+          "sha256": "a2b45b63075b2e1bc8a73c9ce531ccea54c03001286a80f77454871aa93fdca8"
         },
         {
           "role": "model-shard",
           "repo": "unsloth/GLM-5.2-GGUF",
-          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00004-of-00011.gguf"
+          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00004-of-00011.gguf",
+          "size": 48566415136,
+          "sha256": "b5404d8d17b63e127aa34c1f98cef64d3722050d8ef1a0792dba816477f4c606"
         },
         {
           "role": "model-shard",
           "repo": "unsloth/GLM-5.2-GGUF",
-          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00005-of-00011.gguf"
+          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00005-of-00011.gguf",
+          "size": 48566415136,
+          "sha256": "9ab79e1947115be35da815c1be2812a1451d3ec11f9f5d60dd3ba152e1ed5be2"
         },
         {
           "role": "model-shard",
           "repo": "unsloth/GLM-5.2-GGUF",
-          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00006-of-00011.gguf"
+          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00006-of-00011.gguf",
+          "size": 48566415136,
+          "sha256": "43a2631ee392492f8857bae6c88660e0f1cac0fd6bc40d832538ac5421b3167b"
         },
         {
           "role": "model-shard",
           "repo": "unsloth/GLM-5.2-GGUF",
-          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00007-of-00011.gguf"
+          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00007-of-00011.gguf",
+          "size": 48566415136,
+          "sha256": "1efd96717a956a160a1717999c7dedbe601b5787ea6220d8185d232e95eff893"
         },
         {
           "role": "model-shard",
           "repo": "unsloth/GLM-5.2-GGUF",
-          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00008-of-00011.gguf"
+          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00008-of-00011.gguf",
+          "size": 48566415136,
+          "sha256": "3460334e8148d12402c8f5adf684b132918504bbea4d3aecd74801121e8c8a99"
         },
         {
           "role": "model-shard",
           "repo": "unsloth/GLM-5.2-GGUF",
-          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00009-of-00011.gguf"
+          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00009-of-00011.gguf",
+          "size": 48566415136,
+          "sha256": "7f6be8ce1c9dcb973ede026b7341657f8add8617f386f77cc165ff697cf9620d"
         },
         {
           "role": "model-shard",
           "repo": "unsloth/GLM-5.2-GGUF",
-          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00010-of-00011.gguf"
+          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00010-of-00011.gguf",
+          "size": 48566415136,
+          "sha256": "6a26bf391e6f1de947e63016d11ada565f7476a06cb90b444f6db334baa949f9"
         },
         {
           "role": "model-shard",
           "repo": "unsloth/GLM-5.2-GGUF",
-          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00011-of-00011.gguf"
+          "path": "UD-Q4_K_XL/GLM-5.2-UD-Q4_K_XL-00011-of-00011.gguf",
+          "size": 29314424736,
+          "sha256": "27032b927daa606872d887c56631c5278a788b39d219784b262e1df3d4cb851e"
         }
       ]
     }

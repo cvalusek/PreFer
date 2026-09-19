@@ -13,8 +13,9 @@ class ModelsMaxAndIsolationTests(unittest.TestCase):
         facts = inspect_models_max(REPO_ROOT)
         self.assertEqual(facts["compose_default"], 1)
         self.assertEqual(facts["env_example_default"], 1)
-        self.assertEqual(facts["auto_detection_default"], 1)
+        self.assertIsNone(facts["auto_detection_default"])
         self.assertEqual(facts["upstream_fallback_default"], 4)
+        self.assertEqual(facts["presets_with_load_on_startup"], [])
         self.assertEqual(facts["tier_presets_with_load_on_startup"], [])
 
     def test_benchmark_compose_cannot_claim_operator_names_or_port(self) -> None:

@@ -243,39 +243,6 @@ export function planModelSet(catalog: ModelCatalogSnapshot, options: PlanModelSe
   };
 }
 
-/** Convert a generated engine deployment's existing model or bundle members
- * into planner requests. Bundle members are optional by default; single-model
- * deployments remain required. A deployment quant is a starting point, not an
- * exact lock, so constrained hardware may choose a smaller published lane. */
-export function modelRequestsFromDeployment(value: unknown): ModelPlanRequest[] {
-  if (!isObject(value) || !Array.isArray(value.models)) return [];
-  const bundle = value.kind === "bundle"
-    || String(value.id ?? "").endsWith("/general")
-    || (value.models.length > 1 && value.kind !== "single-model");
-  const result = new Map<string, ModelPlanRequest>();
-  const total = value.models.length;
-  for (const [index, raw] of value.models.entries()) {
-    if (!isObject(raw)) continue;
-    const modelId = firstString(raw.request_model_id, raw.model_slug, raw.profile_id);
-    if (!modelId || result.has(modelId)) continue;
-    const preferredQuant = firstString(raw.quant_slug, raw.quant);
-    const configuredOffload = hasConfiguredHostOffload(raw) || hasConfiguredHostOffload(value);
-    result.set(modelId, {
-      model_id: modelId,
-      ...(preferredQuant ? { preferred_quant: preferredQuant } : {}),
-      required: !bundle,
-      priority: total - index,
-      ...(configuredOffload ? {
-        fit: {
-          allow_host_offload: true,
-          allow_unknown_host_offload: true
-        }
-      } : {})
-    });
-  }
-  return [...result.values()];
-}
-
 export function tuneWorkloadToFit(
   variant: ResolvedModelVariant,
   resources: ResourceProfile,
@@ -542,20 +509,6 @@ function acceptableFit(fit: VariantFitEstimate, options: VariantFitOptions, acce
     );
 }
 
-function hasConfiguredHostOffload(value: Record<string, unknown>): boolean {
-  const settings = isObject(value.settings) ? value.settings : undefined;
-  if (settings && Number(settings["n-cpu-moe"] ?? 0) > 0) return true;
-  const server = isObject(value.server) ? value.server : undefined;
-  if (server && Number(server.cpu_offload_gb ?? 0) > 0) return true;
-  const residency = isObject(value.residency) ? value.residency : undefined;
-  const offload = residency && isObject(residency.offload) ? residency.offload : undefined;
-  if (!offload) return false;
-  if (offload.enabled === true) return true;
-  return typeof offload.components === "string"
-    ? offload.components.trim().length > 0
-    : Array.isArray(offload.components) && offload.components.length > 0;
-}
-
 function fitResult(
   status: VariantFitEstimate["status"],
   confidence: VariantFitEstimate["confidence"],
@@ -632,6 +585,3 @@ function positive(value: number, label: string): number {
 
 function formatGiB(bytes: number): string { return (bytes / GIB).toFixed(2); }
 function message(error: unknown): string { return error instanceof Error ? error.message : String(error); }
-function firstString(...values: unknown[]): string | undefined {
-  return values.find((value): value is string => typeof value === "string" && value.length > 0);
-}

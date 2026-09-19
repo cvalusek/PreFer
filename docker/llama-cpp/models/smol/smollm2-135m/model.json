@@ -11,16 +11,34 @@
       "active_parameters_b": 0.135
     },
     "capabilities": {
-      "native_input_modalities": ["text"],
-      "configured_input_modalities": ["text"],
-      "output_modalities": ["text"],
+      "native_input_modalities": [
+        "text"
+      ],
+      "configured_input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
       "native_context_tokens": 8192,
       "reasoning_control": "none"
     },
     "roles": {
-      "preferred": ["health-checks", "simple-labels", "formatting", "toy-completions"],
+      "preferred": [
+        "health-checks",
+        "simple-labels",
+        "formatting",
+        "toy-completions"
+      ],
       "capable": [],
-      "avoid": ["reasoning", "coding", "research", "nuanced-writing", "tools", "vision"]
+      "avoid": [
+        "reasoning",
+        "coding",
+        "research",
+        "nuanced-writing",
+        "tools",
+        "vision"
+      ]
     },
     "strengths": [
       "Starts quickly and cheaply enough to validate basic serving and request plumbing."
@@ -33,7 +51,10 @@
     ],
     "evidence": {
       "confidence": "high",
-      "basis": ["official", "inference"],
+      "basis": [
+        "official",
+        "inference"
+      ],
       "notes": "Model size and text capability are official; the smoke-test-only role is an explicit PreFer product decision."
     }
   },
@@ -54,7 +75,7 @@
       "downloads": [
         {
           "repo": "unsloth/SmolLM2-135M-Instruct-GGUF",
-          "revision": null,
+          "revision": "9e6855bc4be717fca1ef21360a1db4b29d5c559a",
           "include": [
             "*Q8_0.gguf"
           ]
@@ -64,7 +85,9 @@
         {
           "role": "model",
           "repo": "unsloth/SmolLM2-135M-Instruct-GGUF",
-          "path": "SmolLM2-135M-Instruct-Q8_0.gguf"
+          "path": "SmolLM2-135M-Instruct-Q8_0.gguf",
+          "size": 144811072,
+          "sha256": "c4a3dd037301b6ecea31d6da37f5cd793ead920dd5ddfe6d589294628d6ce66a"
         }
       ]
     }

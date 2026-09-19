@@ -10,14 +10,6 @@
       "linux/arm64": "sha256:ea625a2c5910867fbaff88f8f7cf87b0dbd9948743c13ec6db42036b32d50073"
     }
   },
-  "legacy_default_prestage": [
-    "gemma-4-26b-a4b",
-    "gemma-4-e2b",
-    "gemma-4-e4b",
-    "qwen-3.6-35b-a3b",
-    "qwen-3.8-27b",
-    "glm-4.7-flash"
-  ],
   "model_order": [
     "gemma-4-26b-a4b",
     "gemma-4-e2b",

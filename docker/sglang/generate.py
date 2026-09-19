@@ -689,48 +689,7 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
         else:
             profiles[profile_id] = profile
 
-    default_overrides = default_server_overrides()
-    if not text_primary:
-        raise ValueError("at least one primary text model is required for /app/server.json")
-    default_config = server_config([text_primary[0]], default_overrides)
-    default_artifact_bytes = sum(
-        artifact["size"] for lane in text_primary for artifact in lane["artifacts"]
-    )
-    deployments = [
-        {
-            "id": "sglang/cuda13",
-            "runtime": "sglang",
-            "backend": "cuda13",
-            "image_tag": "sglang-cuda13",
-            "base_image": runtime["base_image"]["reference"],
-            "requires_gpu": True,
-            "provider": "unspecified",
-            "kind": "runtime-default",
-            "selection_scope": "runtime-default",
-            "description": "Provider-neutral CUDA 13 fallback for unverified SM100+ Blackwell; target-only, one slot, and FP8 KV.",
-            "server_config": "/app/server.json",
-            "prestage_manifest": "/app/server.prestage",
-            "container": container_metadata(),
-            "environment": {
-                "SGLANG_SERVER_CONFIG": "/app/server.json",
-                "SGLANG_PRESTAGE_MODELS": ",".join(lane["key"] for lane in text_primary),
-            },
-            "server": default_config["server"],
-            "server_command": default_config["command"],
-            "residency": residency(default_config["server"]),
-            "staging": {
-                "source": "huggingface-only",
-                "reason": "Provider-neutral runtime default; AWS S3 read-through requires an explicit AWS staging environment.",
-            },
-            "runtime_modes": ["text"],
-            "capabilities": sorted({capability for lane in text_primary for capability in lane["capabilities"]}),
-            "models": deployment_model_records([text_primary[0]]),
-            "prestage_models": [text_primary[0]["key"]],
-            "staged_artifact_bytes": default_artifact_bytes,
-            "verification_status": "configuration-only",
-            "verification": "configuration-only",
-        }
-    ]
+    deployments: list[dict] = []
     for scenario in scenarios:
         selected = [primary_by_key[key] for key in scenario["model_keys"]]
         config = server_config(selected, scenario["server"])
@@ -808,7 +767,7 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
         "runtime": runtime["runtime"],
         "composition": {
             "schema_version": "prefer.runtime-composition.v1",
-            "activation": "opt-in; existing SGLANG_SERVER_CONFIG remains compatible when no composition variable is set",
+            "activation": "required; select one model or supply an immutable runtime handoff",
             "multi_model": False,
             "effective_config_path": "/run/prefer/sglang.json",
             "effective_plan_path": "/run/prefer/plan.json",
@@ -818,8 +777,6 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
             "compose_environment_prefix": "SGLANG",
             "override_merge": "objects merge recursively; scalar and array values replace",
             "environment": {
-                "PREFER_DEPLOYMENT": {"type": "string", "source": "deployments[].id"},
-                "PREFER_BUNDLE": {"type": "unsupported"},
                 "PREFER_MODELS": {"type": "single-string", "source": "models key, model_slug, request_model_id, or alias"},
                 "PREFER_SERVER_OVERRIDES": {"type": "json-object", "applies_to": "SGLang server settings"},
                 "PREFER_MODEL_OVERRIDES": {"type": "json-object-map", "applies_to": "the selected model's server settings"},
@@ -834,18 +791,17 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
             "selection_rules": [
                 "one model is allowed per SGLang process",
                 "a friendly model selection uses its primary catalog lane",
-                "switching models inherits a matching config from the selected hardware deployment when available",
+                "model settings come from the catalog and explicit runtime overrides",
                 "a runtime handoff replaces model selection and may include controller-extension artifacts",
                 "path and base64 runtime handoff inputs are mutually exclusive",
             ],
             "precedence": [
                 "catalog model and lane defaults",
-                "hardware deployment defaults",
                 "PREFER_SERVER_OVERRIDES",
                 "PREFER_MODEL_OVERRIDES",
                 "raw engine arguments",
             ],
-            "setting_sources": {"server": "deployments[].server", "model": "models[].server"},
+            "setting_sources": {"server": "composition defaults and runtime overrides", "model": "models[].server"},
         },
         "base_image": runtime["base_image"],
         "requirements": runtime["requirements"],
@@ -1034,33 +990,12 @@ def rendered_outputs() -> dict[Path, str]:
     if runtime.get("schema_version") != 1:
         raise ValueError("runtime.json schema_version must be 1")
     lanes = model_lanes()
-    primary = [lane for lane in lanes if lane["primary"]]
-    text_primary = [lane for lane in primary if lane.get("runtime_mode", "text") == "text"]
-    primary_by_key = {lane["key"]: lane for lane in primary}
-    scenarios = load_scenarios(primary_by_key)
-    default_overrides = default_server_overrides()
-    outputs: dict[Path, str] = {
-        ROOT / "server.generated.json": json.dumps(
-            server_config([text_primary[0]], default_overrides), indent=2
-        )
-        + "\n",
-        ROOT / "server.generated.prestage": ",".join(lane["key"] for lane in text_primary) + "\n",
+    return {
         ROOT / "deployment-inventory.generated.json": json.dumps(
-            deployment_inventory(runtime, lanes, scenarios), indent=2
-        )
-        + "\n",
+            deployment_inventory(runtime, lanes, []), indent=2
+        ) + "\n",
         ROOT / "model-downloads.generated.sh": download_script(lanes),
     }
-    for scenario in scenarios:
-        selected = [primary_by_key[key] for key in scenario["model_keys"]]
-        config_path = CONFIGS_ROOT / PurePosixPath(scenario["path"])
-        outputs[config_path] = json.dumps(
-            server_config(selected, scenario["server"]), indent=2
-        ) + "\n"
-        outputs[config_path.with_suffix(".prestage")] = ",".join(
-            scenario["model_keys"]
-        ) + "\n"
-    return outputs
 
 
 def parse_composition_list(value: str) -> list[str]:
@@ -1119,79 +1054,31 @@ def compose_runtime_config(
     if requested_bundles:
         raise ValueError("SGLang does not define multi-model bundles; select one PREFER_MODELS entry")
     requested_models = parse_composition_list(model_value)
-    if len(requested_models) > 1:
-        raise ValueError("SGLang runtime composition accepts exactly one model")
+    if len(requested_models) != 1:
+        raise ValueError("SGLang runtime composition requires exactly one model")
+    if base:
+        raise ValueError("hardware deployments and generated server configs have been removed")
     server_overrides = parse_composition_object(server_overrides_value, "PREFER_SERVER_OVERRIDES")
     model_overrides = parse_composition_object(model_overrides_value, "PREFER_MODEL_OVERRIDES")
     if any(not isinstance(value, dict) for value in model_overrides.values()):
         raise ValueError("PREFER_MODEL_OVERRIDES values must be JSON objects")
 
     lanes = model_lanes()
-    primary = [lane for lane in lanes if lane["primary"]]
     lanes_by_key = {lane["key"]: lane for lane in lanes}
-    primary_by_key = {lane["key"]: lane for lane in primary}
-    scenarios = load_scenarios(primary_by_key)
-    scenario_by_path = {scenario["path"]: scenario for scenario in scenarios}
-    normalized = normalize_runtime_config(base)
-    explicit_base_path = Path(base)
-
-    if normalized == "default" or explicit_base_path.is_file():
-        base_path = explicit_base_path
-        if not base_path.is_file():
-            installed_default = Path("/app/server.json")
-            base_path = installed_default if installed_default.is_file() else ROOT / "server.generated.json"
-        base_config = load_json(base_path)
-        model_records = base_config.get("models", [])
-        if len(model_records) != 1 or model_records[0].get("key") not in primary_by_key:
-            raise ValueError("cannot map the SGLang base config to one primary catalog model")
-        base_lane = primary_by_key[model_records[0]["key"]]
-        base_server = copy.deepcopy(base_config.get("server", {}))
-        base_deployment = (
-            PurePosixPath(normalized).with_suffix("").as_posix()
-            if normalized != "default"
-            else "sglang/cuda13"
-        )
-        cohort: list[dict] = []
+    selection = requested_models[0]
+    matches = [lane for lane in lanes if selection in sglang_selection_names(lane)]
+    if not matches:
+        raise ValueError(f"unknown SGLang model selection: {selection!r}")
+    if selection in lanes_by_key:
+        selected = lanes_by_key[selection]
     else:
-        scenario = scenario_by_path.get(normalized)
-        if scenario is None:
-            raise ValueError(f"unknown SGLang deployment: {base!r}")
-        if len(scenario["model_keys"]) != 1:
-            raise ValueError(f"{normalized}: SGLang deployment must contain one model")
-        base_lane = primary_by_key[scenario["model_keys"][0]]
-        base_server = copy.deepcopy(scenario["server"])
-        base_deployment = PurePosixPath(normalized).with_suffix("").as_posix()
-        parent = PurePosixPath(normalized).parent
-        cohort = [record for record in scenarios if PurePosixPath(record["path"]).parent == parent]
-
-    selected = base_lane
-    selected_server = base_server
-    if requested_models:
-        selection = requested_models[0]
-        matches = [lane for lane in lanes if selection in sglang_selection_names(lane)]
-        if not matches:
-            raise ValueError(f"unknown SGLang model selection: {selection!r}")
-        if selection in lanes_by_key:
-            selected = lanes_by_key[selection]
-        else:
-            primary_matches = [lane for lane in matches if lane["primary"]]
-            if len(primary_matches) != 1:
-                raise ValueError(
-                    f"ambiguous SGLang model {selection!r}; choose an exact lane: "
-                    + ", ".join(lane["key"] for lane in matches)
-                )
-            selected = primary_matches[0]
-        if selected["key"] != base_lane["key"]:
-            matching_scenarios = [
-                record
-                for record in cohort
-                if any(primary_by_key[key]["model_slug"] == selected["model_slug"] for key in record["model_keys"])
-            ]
-            selected_server = copy.deepcopy(
-                matching_scenarios[0]["server"]
-                if matching_scenarios
-                else base_server if selected["model_slug"] == base_lane["model_slug"] else {}
+        primary_matches = [lane for lane in matches if lane["primary"]]
+        if len(primary_matches) != 1:
+            raise ValueError(
+                f"ambiguous SGLang model {selection!r}; choose an exact lane: "
+                + ", ".join(lane["key"] for lane in matches)
             )
+        selected = primary_matches[0]
 
     matching_overrides = [
         value for name, value in model_overrides.items() if name in sglang_selection_names(selected)
@@ -1202,13 +1089,12 @@ def compose_runtime_config(
     if unknown_targets:
         raise ValueError("PREFER_MODEL_OVERRIDES targets are not selected: " + ", ".join(unknown_targets))
     model_override = matching_overrides[0] if matching_overrides else {}
-    effective_overrides = deep_merge(selected_server, server_overrides, model_override)
+    effective_overrides = deep_merge(default_server_overrides(), server_overrides, model_override)
     config = server_config([selected], effective_overrides)
     prestage = [selected["key"]]
     plan = {
         "schema_version": "prefer.runtime-plan.v1",
         "runtime": "sglang",
-        "base_deployment": base_deployment,
         "bundles": [],
         "requested_models": requested_models,
         "resolved_model_keys": prestage,
@@ -1216,7 +1102,6 @@ def compose_runtime_config(
         "model_overrides": {selected["key"]: model_override} if model_override else {},
         "precedence": [
             "catalog model and lane defaults",
-            "hardware deployment defaults",
             "PREFER_SERVER_OVERRIDES",
             "PREFER_MODEL_OVERRIDES",
             "SGLang command arguments",
@@ -1225,27 +1110,10 @@ def compose_runtime_config(
     return config, prestage, plan
 
 
-def resolve_handoff_base(base: str, default_base: str, handoff: dict, primary_by_key: dict[str, dict]) -> tuple[dict, str]:
-    reference = base or str(handoff.get("base_deployment") or default_base)
-    normalized = normalize_runtime_config(reference or "default")
-    explicit = Path(reference) if reference else Path()
-    if normalized == "default":
-        return default_server_overrides(), "sglang/cuda13"
-    if explicit.is_file():
-        config = load_json(explicit)
-        server = copy.deepcopy(config.get("server", {}))
-        for name in (
-            "served_model_name", "model_path", "model_revision", "model_variant",
-            "component_weights_paths", "quantization", "load_format", "reasoning_parser",
-            "tool_call_parser", "trust_remote_code", "runtime_mode", "lora_paths", "extra_args",
-        ):
-            server.pop(name, None)
-        return server, PurePosixPath(normalized).with_suffix("").as_posix()
-    scenarios = load_scenarios(primary_by_key)
-    scenario = next((record for record in scenarios if record["path"] == normalized), None)
-    if scenario is None:
-        raise ValueError(f"unknown SGLang runtime handoff deployment: {reference!r}")
-    return copy.deepcopy(scenario["server"]), PurePosixPath(normalized).with_suffix("").as_posix()
+def resolve_handoff_base(base: str, default_base: str, handoff: dict, primary_by_key: dict[str, dict]) -> dict:
+    if base or default_base or handoff.get("base_deployment"):
+        raise ValueError("runtime handoffs no longer accept hardware deployments or generated configs")
+    return default_server_overrides()
 
 
 def handoff_sglang_lane(handoff: dict, model: dict, artifacts: dict[str, dict]) -> dict:
@@ -1396,7 +1264,7 @@ def compose_runtime_handoff_config(
 
     lanes = model_lanes()
     primary_by_key = {lane["key"]: lane for lane in lanes if lane["primary"]}
-    base_server, base_deployment = resolve_handoff_base(base, default_base, handoff, primary_by_key)
+    base_server = resolve_handoff_base(base, default_base, handoff, primary_by_key)
     lane = handoff_sglang_lane(handoff, models[0], artifacts)
     handoff_server = handoff.get("server_settings", {})
     server_overrides = parse_composition_object(server_overrides_value, "PREFER_SERVER_OVERRIDES")
@@ -1422,7 +1290,6 @@ def compose_runtime_handoff_config(
     plan = {
         "schema_version": "prefer.runtime-plan.v1",
         "runtime": "sglang",
-        "base_deployment": base_deployment,
         "handoff_fingerprint": handoff.get("handoff_fingerprint"),
         "bundles": [],
         "requested_models": [lane["key"]],
@@ -1432,7 +1299,6 @@ def compose_runtime_handoff_config(
         "model_overrides": {lane["key"]: model_override} if model_override else {},
         "precedence": [
             "runtime handoff model and artifact settings",
-            "hardware deployment defaults",
             "runtime handoff server settings",
             "PREFER_SERVER_OVERRIDES",
             "PREFER_MODEL_OVERRIDES",
@@ -1476,8 +1342,8 @@ def main() -> None:
         print(f"composed SGLang runtime config from immutable handoff {plan['handoff_fingerprint']}")
         return
     if args.compose:
-        if args.check or not args.base or not args.output or not args.prestage_output or not args.plan_output:
-            parser.error("--compose requires --base, --output, --prestage-output, and --plan-output")
+        if args.check or not args.output or not args.prestage_output or not args.plan_output:
+            parser.error("--compose requires --output, --prestage-output, and --plan-output")
         config, prestage, plan = compose_runtime_config(
             base=args.base,
             bundle_value=args.bundles,
@@ -1490,7 +1356,7 @@ def main() -> None:
         Path(args.output).write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8", newline="\n")
         Path(args.prestage_output).write_text(",".join(prestage) + "\n", encoding="utf-8", newline="\n")
         Path(args.plan_output).write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8", newline="\n")
-        print(f"composed SGLang runtime config from {plan['base_deployment']}: {', '.join(prestage)}")
+        print(f"composed SGLang runtime config: {', '.join(prestage)}")
         return
     outputs = rendered_outputs()
     mismatches = []

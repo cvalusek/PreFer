@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/cvalusek/PreFer/blob/develop/catalog/hardware-profile-catalog.schema.json",
+  "title": "PreFer provider hardware profile catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "profiles"],
+  "properties": {
+    "schema_version": {"const": "prefer.hardware-profile-catalog.v1"},
+    "profiles": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"pattern": "^(aws|runpod)/"},
+      "additionalProperties": {"$ref": "#/$defs/profile"}
+    }
+  },
+  "$defs": {
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "hardware"],
+      "properties": {
+        "provider": {"enum": ["aws", "runpod"]},
+        "hardware": {"$ref": "#/$defs/hardware"},
+        "compatibility": {"$ref": "#/$defs/compatibility"}
+      }
+    },
+    "hardware": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gpu_name", "gpu_count", "vram_gb_each"],
+      "properties": {
+        "provider_sku": {"type": "string", "minLength": 1},
+        "provider_gpu_type_id": {"type": "string", "minLength": 1},
+        "gpu_slug": {"type": "string", "minLength": 1},
+        "gpu_name": {"type": "string", "minLength": 1},
+        "gpu_count": {"type": "integer", "minimum": 1},
+        "vram_gb_each": {"type": "number", "exclusiveMinimum": 0},
+        "architecture": {"type": "string", "minLength": 1},
+        "compute_capability": {"type": "string", "minLength": 1},
+        "vcpu": {"type": "integer", "minimum": 1},
+        "host_ram_gb": {"type": "number", "exclusiveMinimum": 0},
+        "local_nvme_gb": {"type": "number", "minimum": 0},
+        "observed_vcpu": {"type": "integer", "minimum": 1},
+        "observed_host_ram_gb": {"type": "number", "exclusiveMinimum": 0},
+        "advertised_hourly_usd_per_gpu": {"type": "number", "minimum": 0},
+        "pricing_observed_on": {"type": "string", "format": "date"},
+        "pricing_reference": {"type": "string", "format": "uri"}
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "container_runtime": {"type": "string", "minLength": 1},
+        "model_storage": {"type": "string", "minLength": 1},
+        "provisioning_api": {"type": "string", "format": "uri"},
+        "minimum_host_ram_gb": {"type": "number", "minimum": 0},
+        "minimum_volume_gb": {"type": "number", "minimum": 0}
+      }
+    }
+  }
+}

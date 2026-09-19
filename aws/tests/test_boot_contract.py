@@ -28,10 +28,10 @@ class AwsBootContractTest(unittest.TestCase):
         defaults = self.read("aws/boot/prefer-boot.env")
         self.assertRegex(defaults, r"(?m)^LLAMA_ARG_MODELS_MAX=1$")
 
-    def test_baked_s3_staging_defaults_are_bounded_and_periodic(self) -> None:
+    def test_baked_exact_artifact_staging_is_bounded(self) -> None:
         defaults = self.read("aws/boot/prefer-boot.env")
-        self.assertRegex(defaults, r"(?m)^MODEL_CACHE_RECHECK_DAYS=7$")
         self.assertRegex(defaults, r"(?m)^MODEL_DOWNLOAD_JOBS=4$")
+        self.assertNotIn("MODEL_CACHE_RECHECK_DAYS", defaults)
 
     def test_cdk_writes_deployment_file_without_controlling_the_service(self) -> None:
         stack = self.read("aws/cdk/lib/prefer-stack.ts")
@@ -41,35 +41,22 @@ class AwsBootContractTest(unittest.TestCase):
         self.assertIn("mv /opt/prefer/deployment.env.tmp /opt/prefer/deployment.env", stack)
         self.assertIn("'LLAMA_ARG_MODELS_MAX=1'", stack)
         self.assertIn("`AWS_REGION=${cdk.Aws.REGION}`", stack)
+        self.assertIn("RuntimeHandoffBase64", stack)
+        self.assertIn("PREFER_RUNTIME_HANDOFF_BASE64", stack)
+        self.assertNotIn("ModelsPreset", stack)
         self.assertNotIn(">> /opt/prefer/prefer-boot.env", stack)
         self.assertNotIn("systemctl restart prefer-boot.service", stack)
 
-    def test_container_runner_passes_router_and_composition_inputs(self) -> None:
+    def test_container_runner_requires_only_the_resolved_base64_handoff(self) -> None:
         runner = self.read("aws/boot/20-run-container.sh")
+        self.assertIn("AWS deployment requires a release-bound base64 runtime handoff", runner)
         passthrough = re.search(r"for v in (?P<variables>.*?)\s+do", runner, re.DOTALL)
         self.assertIsNotNone(passthrough)
         variables = passthrough.group("variables").split()
-        for variable in (
-            "LLAMA_ARG_MODELS_MAX",
-            "S3_MODEL_PREFIX",
-            "MODEL_CACHE_RECHECK_DAYS",
-            "MODEL_DOWNLOAD_JOBS",
-            "PREFER_DEPLOYMENT",
-            "PREFER_BUNDLE",
-            "PREFER_MODELS",
-            "PREFER_SERVER_OVERRIDES",
-            "PREFER_MODEL_OVERRIDES",
-            "PREFER_RUNTIME_HANDOFF",
-            "PREFER_RUNTIME_HANDOFF_BASE64",
-            "LLAMA_DEPLOYMENT",
-            "LLAMA_BUNDLE",
-            "LLAMA_MODELS",
-            "LLAMA_SERVER_OVERRIDES",
-            "LLAMA_MODEL_OVERRIDES",
-            "LLAMA_RUNTIME_HANDOFF",
-            "LLAMA_RUNTIME_HANDOFF_BASE64",
-        ):
+        for variable in ("LLAMA_ARG_MODELS_MAX", "S3_MODEL_PREFIX", "MODEL_DOWNLOAD_JOBS", "PREFER_RUNTIME_HANDOFF_BASE64"):
             self.assertIn(variable, variables)
+        for removed in ("PREFER_MODELS", "PREFER_SERVER_OVERRIDES", "PREFER_RUNTIME_HANDOFF", "LLAMA_MODELS", "LLAMA_RUNTIME_HANDOFF"):
+            self.assertNotIn(removed, variables)
 
 
 if __name__ == "__main__":

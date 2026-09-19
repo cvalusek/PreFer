@@ -6,6 +6,13 @@
   - Added the synchronous WebUI-compatible `/sdapi/v1` model, options, generation, editing, LoRA, upscaler, sampler, and scheduler routes.
   - Added side-effect-free model discovery and `POST /sdapi/v1/options` selection across the configured PreFer image catalog.
   - Model changes restart the private one-model worker; existing OpenAI image routes remain available and native asynchronous `/sdcpp/v1` jobs remain intentionally excluded.
+- Planning and runtime composition
+  - Removed all generated hardware/model deployments, local hardware profiles, llama.cpp VRAM-tier presets, and automatic preset detection; runtimes now require explicit model selection or an immutable handoff.
+  - Added a provider-only AWS/RunPod hardware catalog for `prefer-inference-core`; profiles expose resource facts without selecting models, quants, context, concurrency, cache, offload, or speculation.
+  - Runtime configuration is now base-free across llama.cpp, audio.cpp, stable-diffusion.cpp, SGLang, and vLLM; audio and image retain semantic bundles.
+- Model staging
+  - Added a release-matched CPU-only downloader image that consumes the same runtime handoff and `/models` layout as GPU runtimes.
+  - Unified llama.cpp direct staging with exact immutable artifacts and shared `downloads-v2` verification markers.
 
 ## sha-b746f7d (preview)
 

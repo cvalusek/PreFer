@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import sys
 
-from .contract import inspect_models_max, load_contract, load_corpus, preset_contract_diff
+from .contract import inspect_models_max, load_contract, load_corpus
 from .local import CACHE_MODELS, LANES, LocalOptions, default_output_path, run_local, write_local_outputs
 from .mock_server import contract_mock_server
 from .paths import BASELINES_ROOT, REPO_ROOT
@@ -40,6 +40,16 @@ def _models(value: str) -> list[str]:
     return models
 
 
+def _json_object(value: str) -> dict:
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError as exc:
+        raise argparse.ArgumentTypeError(f"invalid JSON: {exc.msg}") from exc
+    if not isinstance(parsed, dict):
+        raise argparse.ArgumentTypeError("value must be a JSON object")
+    return parsed
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python -m prefer_bench", description="PreFer contract and benchmark harness")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -50,7 +60,7 @@ def build_parser() -> argparse.ArgumentParser:
     target.add_argument("--base-url", help="Replay against an already-running isolated endpoint")
     contract.add_argument("--output", type=Path, help="Optional JSON output path")
 
-    validate = subparsers.add_parser("validate", help="Validate schemas, fixtures, corpus, and preset aliases")
+    validate = subparsers.add_parser("validate", help="Validate schemas, fixtures, corpus, and benchmark results")
     validate.add_argument("--result", type=Path, action="append", default=[], help="Also validate a benchmark result")
 
     subparsers.add_parser("models-max", help="Print the checked-in models-max precedence facts")
@@ -63,8 +73,9 @@ def build_parser() -> argparse.ArgumentParser:
     local.add_argument("--lane", choices=sorted(LANES), default="current")
     local.add_argument("--cache-source-volume", required=True, help="Existing cache volume mounted read-only only during cloning")
     local.add_argument("--models", type=_models, default=_models("gemma-4-e2b,gemma-4-e4b"))
-    local.add_argument("--preset", default="12gb.ini")
     local.add_argument("--models-max", type=int, default=1)
+    local.add_argument("--server-overrides", type=_json_object, default={})
+    local.add_argument("--model-overrides", type=_json_object, default={})
     local.add_argument("--contexts", type=_contexts, default=_contexts("8k"), help="none, 8k, 32k, 128k, comma list, or all")
     local.add_argument("--concurrency", type=int, default=2)
     local.add_argument("--timeout-seconds", type=float, default=180.0)
@@ -93,14 +104,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "validate":
         load_contract()
         load_corpus()
-        differences = preset_contract_diff()
-        if differences:
-            print(json.dumps({"preset_contract_differences": differences}, indent=2))
-            return 1
         result_paths = args.result or sorted(BASELINES_ROOT.glob("*.json"))
         for result_path in result_paths:
             validate_result(json.loads(result_path.read_text(encoding="utf-8")))
-        print(f"contract, corpus, preset aliases, and {len(result_paths)} benchmark results are valid")
+        print(f"contract, corpus, and {len(result_paths)} benchmark results are valid")
         return 0
     if args.command == "models-max":
         print(json.dumps(inspect_models_max(REPO_ROOT), indent=2))
@@ -122,8 +129,9 @@ def main(argv: list[str] | None = None) -> int:
                 lane=args.lane,
                 cache_source_volume=args.cache_source_volume,
                 model_keys=args.models,
-                preset=args.preset,
                 models_max=args.models_max,
+                server_overrides=args.server_overrides,
+                model_overrides=args.model_overrides,
                 contexts=args.contexts,
                 concurrency=args.concurrency,
                 timeout_seconds=args.timeout_seconds,

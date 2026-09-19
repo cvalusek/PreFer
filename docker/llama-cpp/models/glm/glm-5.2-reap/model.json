@@ -10,16 +10,32 @@
       "total_parameters_b": 504
     },
     "capabilities": {
-      "native_input_modalities": ["text"],
-      "configured_input_modalities": ["text"],
-      "output_modalities": ["text"],
+      "native_input_modalities": [
+        "text"
+      ],
+      "configured_input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
       "native_context_tokens": 1048576,
       "reasoning_control": "request-selectable"
     },
     "roles": {
-      "preferred": ["constrained-planning", "constrained-reasoning"],
-      "capable": ["research-synthesis", "coding-design"],
-      "avoid": ["rare-knowledge-authority", "quality-critical-decisions", "vision"]
+      "preferred": [
+        "constrained-planning",
+        "constrained-reasoning"
+      ],
+      "capable": [
+        "research-synthesis",
+        "coding-design"
+      ],
+      "avoid": [
+        "rare-knowledge-authority",
+        "quality-critical-decisions",
+        "vision"
+      ]
     },
     "strengths": [
       "Expert pruning opens a materially smaller multi-GPU deployment while retaining the GLM-5.2 interface.",
@@ -34,7 +50,10 @@
     ],
     "evidence": {
       "confidence": "low",
-      "basis": ["maintainer", "inference"],
+      "basis": [
+        "maintainer",
+        "inference"
+      ],
       "notes": "Artifact and pruning facts are documented; practical behavioral equivalence remains a verification item."
     }
   },
@@ -54,7 +73,7 @@
       "downloads": [
         {
           "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
-          "revision": null,
+          "revision": "2bd548feedd70e4a13a91ce327e59698524a4874",
           "include": [
             "*Q4_K_XL*"
           ]
@@ -64,42 +83,58 @@
         {
           "role": "model",
           "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
-          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00001-of-00008.gguf"
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00001-of-00008.gguf",
+          "size": 44476181536,
+          "sha256": "3a8f19f3817881e1401c7820c4cb7c4ecf42b37177dafe3d4c4fb652b3ce88da"
         },
         {
           "role": "model-shard",
           "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
-          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00002-of-00008.gguf"
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00002-of-00008.gguf",
+          "size": 44357827552,
+          "sha256": "6870eeb4e956fef22bee40c8cdab3ebb150eeed5ccafbfe19aac89329c98fa36"
         },
         {
           "role": "model-shard",
           "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
-          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00003-of-00008.gguf"
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00003-of-00008.gguf",
+          "size": 44758259104,
+          "sha256": "af9121dfaa481d64451eca9aa72fea08f27a0e6a663221fdda066d98c203e681"
         },
         {
           "role": "model-shard",
           "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
-          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00004-of-00008.gguf"
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00004-of-00008.gguf",
+          "size": 44217415168,
+          "sha256": "f793429794241ad8223924c617c9043ff71619897ff348962bfbf480c29220b1"
         },
         {
           "role": "model-shard",
           "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
-          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00005-of-00008.gguf"
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00005-of-00008.gguf",
+          "size": 44357827552,
+          "sha256": "038a786bc85aa03777d37bec2493f265c159506509ae7b61750dcb2adb1592d9"
         },
         {
           "role": "model-shard",
           "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
-          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00006-of-00008.gguf"
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00006-of-00008.gguf",
+          "size": 44758259104,
+          "sha256": "d1ccae11328d83be708bbc1ac6547be911e570fd918f46c98a267ee8780257fc"
         },
         {
           "role": "model-shard",
           "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
-          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00007-of-00008.gguf"
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00007-of-00008.gguf",
+          "size": 44217415168,
+          "sha256": "8f4f4119df25d942c79fae9168bade55fe17c86d06f9cb38c4be602e7f5eed24"
         },
         {
           "role": "model-shard",
           "repo": "0xSero/GLM-5.2-REAP-504B-GGUF",
-          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00008-of-00008.gguf"
+          "path": "GLM-5.2-REAP-504B-Q4_K_XL-00008-of-00008.gguf",
+          "size": 19537809664,
+          "sha256": "70ea83fc1366224db98967c897de12dd29b945668b546b45bb4337d8c3af83f2"
         }
       ]
     }
