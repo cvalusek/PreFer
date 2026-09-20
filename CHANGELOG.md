@@ -1,6 +1,19 @@
 # PreFer changelog
 
-## Current
+## sha-b7ea7e9 (preview)
+
+- Images
+  - Llama CUDA 12: `ghcr.io/cvalusek/prefer:llama-cuda12-sha-b7ea7e9@sha256:e0b7ed554b5d1b278b5e76c7021446de1e2189d49e11fb85bf494f11bfb758ef`.
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-b7ea7e9@sha256:bc722c7a8def053bc2472d9bb3803ab4ddb790f0d34f3eccf2312473f530d032`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-b7ea7e9@sha256:0299eb2a15250ed88f2e761e0bbe9f492fc709e1e2d3ea1bdb2fe5e9db7251c2`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-b7ea7e9@sha256:46c8226e475609402eeff550de7c085482b746452dfe3e01b8254ac747c8d3c5`.
+  - SGLang CUDA 12: `ghcr.io/cvalusek/prefer:sglang-cuda12-sha-b7ea7e9@sha256:973e3b016cd393412cfce908e9fe1287d8b7dbb8afdaaea79a583fa71e6c508e`.
+  - SGLang CUDA 13: `ghcr.io/cvalusek/prefer:sglang-cuda13-sha-b7ea7e9@sha256:79bd2c4642b47f542083028ecb51348943482db32957bf5f7dbae990ba9bc08b`.
+  - vLLM CUDA 12: `ghcr.io/cvalusek/prefer:vllm-cuda12-sha-b7ea7e9@sha256:16b5673dda39b49c36d313c6c6a19c79cba70f11a0eb1d497d9b123234a460f2`.
+  - vLLM CUDA 13: `ghcr.io/cvalusek/prefer:vllm-cuda13-sha-b7ea7e9@sha256:5272bf88f59cfc77450f80d8b5c84a7d6853e568bc72fe4b4dfbca70c8defe8e`.
+  - CPU downloader: `ghcr.io/cvalusek/prefer:downloader-sha-b7ea7e9@sha256:ac97257f0282d29d103df5c3217daa5a5012bc33622d04df404164c063e33e57`.
+- Package
+  - npm: `prefer-inference-core@0.0.0-gb7ea7e9`.
 
 - Runtime images
   - Updated llama.cpp from b10362 to the latest complete GHCR `server-cuda-b11058` index.
