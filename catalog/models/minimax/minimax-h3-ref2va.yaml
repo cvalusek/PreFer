@@ -54,7 +54,7 @@ profile:
     - community license terms apply
   prompting:
     - Describe the desired motion and transformation relative to the supplied reference.
-    - Use local file:// URIs or multipart uploads; the gateway rejects remote URLs.
+    - Use native conditions[].uri inputs with file, HTTPS, data, or base64 URIs; SGLang localizes and validates request material.
   evidence:
     confidence: limited
     basis:

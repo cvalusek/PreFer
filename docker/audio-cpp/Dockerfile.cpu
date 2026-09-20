@@ -1,4 +1,4 @@
-ARG AUDIO_CPP_BASE_IMAGE=ghcr.io/0xshug0/audio.cpp:full-cpu-20260828-6d530f4@sha256:df1c931a1bed1ca1591b8dcc911839ee0d178e8556c45e8ccf81133b9a7910a6
+ARG AUDIO_CPP_BASE_IMAGE=ghcr.io/0xshug0/audio.cpp:full-cpu-20260920-9ba8841@sha256:039a20de6ac08f7968e8a3fcc15c2c1e86f03b3713b21c36b9a90019fcba835e
 FROM ${AUDIO_CPP_BASE_IMAGE}
 
 ARG TARGETARCH
@@ -43,7 +43,7 @@ ENV PREFER_ENGINE=audio.cpp \
 
 LABEL io.prefer.runtime="audio.cpp" \
       io.prefer.audio.backend="cpu" \
-      io.prefer.audio.source-revision="6d530f4052ca93b5cd84ef6124406dcf85542a6f" \
+      io.prefer.audio.source-revision="9ba884179826c3b33dd305185b5f94c79175a03d" \
       io.prefer.deployment-inventory.path="/deployment-inventory.json" \
       io.prefer.deployment-inventory.schema="prefer.audio-deployment-inventory.v1"
 

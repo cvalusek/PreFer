@@ -6,7 +6,7 @@ services:
     build:
       context: ./docker/llama-cpp
       dockerfile: Dockerfile
-    image: prefer:llama-cuda-local
+    image: prefer:llama-cuda12-local
     ports:
       - "${LLM_PORT:-8080}:8080"
     volumes:
@@ -46,7 +46,12 @@ services:
     build:
       context: ./docker/sglang
       dockerfile: Dockerfile
-    image: prefer:sglang-cuda13-local
+      args:
+        SGLANG_BASE_IMAGE: ${SGLANG_BASE_IMAGE:-lmsysorg/sglang:v0.5.20@sha256:06e4f2ed21afde4ff513cda65070124e727ba23ccaeff7712b8c40e1097d611f}
+        SGLANG_CUDA_VARIANT: ${SGLANG_CUDA_VARIANT:-cuda13}
+        SGLANG_SOURCE_REVISION: ${SGLANG_SOURCE_REVISION:-94602c9c2b7cbdb8efd5c52802dac6a1c180089e}
+        SGLANG_IMAGE_VERSION: ${SGLANG_IMAGE_VERSION:-v0.5.20}
+    image: prefer:sglang-${SGLANG_CUDA_VARIANT:-cuda13}-local
     ports:
       - "${SGLANG_PORT:-8083}:30000"
     volumes:
@@ -78,9 +83,6 @@ services:
       - SGLANG_S3_MODEL_PREFIX=${SGLANG_S3_MODEL_PREFIX:-}
       - PRESTAGE_MODELS=${PRESTAGE_MODELS:-}
       - MODEL_DOWNLOAD_JOBS=${MODEL_DOWNLOAD_JOBS:-}
-      - SGLANG_VIDEO_MAX_INPUT_BYTES=${SGLANG_VIDEO_MAX_INPUT_BYTES:-1073741824}
-      - SGLANG_READY_DELAY_SECONDS=${SGLANG_READY_DELAY_SECONDS:-2}
-      - SGLANG_READY_PROBE_SECONDS=${SGLANG_READY_PROBE_SECONDS:-2}
     deploy:
       resources:
         reservations:
@@ -95,7 +97,12 @@ services:
     build:
       context: ./docker/vllm
       dockerfile: Dockerfile
-    image: prefer:vllm-cuda13-local
+      args:
+        VLLM_BASE_IMAGE: ${VLLM_BASE_IMAGE:-vllm/vllm-openai:v0.29.0-ubuntu2404@sha256:563b8929d66e0891adf9cf1062d1d31d7003b1a5b0cb87a51ba4e92055b5fdb1}
+        VLLM_CUDA_VARIANT: ${VLLM_CUDA_VARIANT:-cuda13}
+        VLLM_SOURCE_REVISION: ${VLLM_SOURCE_REVISION:-98dff2a81d747d1dba01a47f939f48c3526d4206}
+        VLLM_IMAGE_VERSION: ${VLLM_IMAGE_VERSION:-v0.29.0}
+    image: prefer:vllm-${VLLM_CUDA_VARIANT:-cuda13}-local
     ports:
       - "${VLLM_PORT:-8084}:8000"
     volumes:

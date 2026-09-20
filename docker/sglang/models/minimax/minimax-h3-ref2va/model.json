@@ -114,7 +114,7 @@
         "avoid": ["remote input URLs", "production claims before exact-card smoke", "text-only requests without a reference condition"]
       },
       "limitations": ["large component bundle", "configuration-only until target-card load and media-contract smoke", "community license terms apply"],
-      "prompting_notes": ["Describe the desired motion and transformation relative to the supplied reference.", "Use local file:// URIs or multipart uploads; the gateway rejects remote URLs."]
+      "prompting_notes": ["Describe the desired motion and transformation relative to the supplied reference.", "Use native conditions[].uri inputs with file, HTTPS, data, or base64 URIs; SGLang localizes and validates request material."]
     }
   },
   "quants": {

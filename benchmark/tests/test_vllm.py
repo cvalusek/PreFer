@@ -31,6 +31,7 @@ class VLLMTests(unittest.TestCase):
         self.assertNotIn("PREFER_DEPLOYMENT", inventory["composition"]["environment"])
         self.assertFalse((VLLM_ROOT / "deployment-scenarios").exists())
         self.assertFalse((VLLM_ROOT / "server-configs").exists())
+        self.assertEqual(set(inventory["base_images"]), {"cuda12", "cuda13"})
 
     def test_model_composes_with_mtp_control(self):
         inventory = json.loads((VLLM_ROOT / "deployment-inventory.generated.json").read_text(encoding="utf-8"))
@@ -47,6 +48,9 @@ class VLLMTests(unittest.TestCase):
             config = json.loads(output.read_text(encoding="utf-8"))
         self.assertEqual(len(config["models"]), 1)
         self.assertIn("--speculative-config", config["command"])
+        self.assertEqual(config["command"][config["command"].index("--port") + 1], "8000")
+        self.assertEqual(config["command"][config["command"].index("--host") + 1], "0.0.0.0")
+        self.assertNotIn("backend_port", config)
 
     def test_download_contract_uses_shared_helper_and_no_weights_in_image(self):
         self.assertEqual(
@@ -55,6 +59,9 @@ class VLLMTests(unittest.TestCase):
         )
         dockerfile = (VLLM_ROOT / "Dockerfile").read_text(encoding="utf-8")
         self.assertNotRegex(dockerfile, r"COPY .*\.(?:gguf|safetensors|bin)(?:\s|$)")
+        self.assertFalse((VLLM_ROOT / "router.py").exists())
+        self.assertNotIn("prefer-vllm-router", dockerfile)
+        self.assertNotIn("prefer-vllm-router", (VLLM_ROOT / "entrypoint.sh").read_text(encoding="utf-8"))
 
     def test_compose_keeps_vllm_opt_in_and_base_free(self):
         compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
@@ -63,6 +70,8 @@ class VLLMTests(unittest.TestCase):
         self.assertIn("VLLM_RUNTIME_HANDOFF=${VLLM_RUNTIME_HANDOFF:-}", compose)
         self.assertNotIn("VLLM_SERVER_CONFIG=", compose)
         self.assertNotIn("VLLM_DEPLOYMENT=", compose)
+        self.assertIn("VLLM_CUDA_VARIANT", compose)
+        self.assertIn("VLLM_BASE_IMAGE", compose)
 
 
 if __name__ == "__main__":

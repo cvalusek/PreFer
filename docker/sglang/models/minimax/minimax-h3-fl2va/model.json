@@ -115,7 +115,7 @@
         "avoid": ["remote input URLs", "production claims before exact-card smoke", "Ref2VA requests on the FL2VA route"]
       },
       "limitations": ["large component bundle", "configuration-only until target-card load and media-contract smoke", "community license terms apply"],
-      "prompting_notes": ["Use a concrete scene, camera, motion, and audio description.", "Use conditions with local file:// URIs or multipart uploads; the gateway rejects remote URLs."]
+      "prompting_notes": ["Use a concrete scene, camera, motion, and audio description.", "Use native conditions[].uri inputs with file, HTTPS, data, or base64 URIs; SGLang localizes and validates request material."]
     },
     "lora_options": {
       "balanced": {

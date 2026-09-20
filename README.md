@@ -162,13 +162,21 @@ Engine-scoped Compose inputs are:
   `VLLM_RUNTIME_HANDOFF[_BASE64]`
 
 A handoff is mutually exclusive with direct model/bundle selectors. SGLang and
-vLLM require exactly one model. llama.cpp requires explicit models; it does not
-auto-detect a preset. Audio and image retain semantic bundles, which group
-capabilities without encoding hardware choices.
+vLLM require exactly one model. Their entrypoints stage artifacts and then exec
+the native upstream servers directly; PreFer does not proxy either inference
+API. llama.cpp requires explicit models and does not auto-detect a preset.
+Audio and image retain semantic bundles, which group capabilities without
+encoding hardware choices.
 
 Direct selectors are an unmanaged convenience path. Operators are responsible
 for live resource detection and explicit context, concurrency, cache, offload,
 and speculative settings. Controllers should prefer immutable handoffs.
+
+SGLang and vLLM publish explicit CUDA 12 and CUDA 13 tags; no generic moving
+alias chooses a CUDA major. SGLang CUDA 12 uses the final official CUDA 12.9
+release (`v0.5.19`), while CUDA 13 uses `v0.5.20`. Both vLLM variants use
+v0.29.0. MiniMax H3 clients may pass HTTP(S), data, base64, or local condition
+URIs directly to SGLang's native `/v1/videos` API.
 
 Ports:
 
@@ -195,11 +203,12 @@ and written under `/run/prefer`.
 
 ## Releases
 
-One grouped workflow publishes the five engines, both audio variants, and the
-CPU downloader under one seven-character source SHA. `prefer-release.json`
-binds every immutable OCI digest, the five runtime inventories, shared model
-catalog, provider hardware catalog, schemas, CLI, and npm package. Stable
-aliases advance from `main`; preview aliases advance from `develop`.
+One grouped workflow publishes nine image indexes under one seven-character
+source SHA: llama CUDA 12, Audio CUDA 12/CPU, Image CUDA 12, SGLang CUDA 12/13,
+vLLM CUDA 12/13, and the CPU downloader. `prefer-release.json` binds every
+immutable OCI digest, the five runtime inventories, shared model catalog,
+provider hardware catalog, schemas, CLI, and npm package. Stable aliases
+advance from `main`; preview aliases advance from `develop`.
 
 The downloader aliases are `downloader` and `downloader-preview`; immutable
 releases use `downloader-sha-<commit>`. Runtime model bytes remain external.

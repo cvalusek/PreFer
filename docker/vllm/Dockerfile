@@ -1,8 +1,11 @@
-ARG VLLM_BASE_IMAGE=vllm/vllm-openai:v0.28.0-ubuntu2404@sha256:f8fe15a8039343336945db10494eaad80ef941fe2b2a5fa6649fa38636051a65
+ARG VLLM_BASE_IMAGE=vllm/vllm-openai:v0.29.0-ubuntu2404@sha256:563b8929d66e0891adf9cf1062d1d31d7003b1a5b0cb87a51ba4e92055b5fdb1
 FROM ${VLLM_BASE_IMAGE}
 
 ARG TARGETARCH
 ARG S5CMD_VERSION=2.2.2
+ARG VLLM_CUDA_VARIANT=cuda13
+ARG VLLM_SOURCE_REVISION=98dff2a81d747d1dba01a47f939f48c3526d4206
+ARG VLLM_IMAGE_VERSION=v0.29.0
 
 USER root
 RUN apt-get update \
@@ -43,23 +46,22 @@ COPY .prefer-tooling/prefer-model-plan.schema.json /prefer-catalog/schemas/prefe
 COPY .prefer-tooling/prefer-runtime-handoff.schema.json /prefer-catalog/schemas/prefer-runtime-handoff.schema.json
 COPY .prefer-tooling/prefer-runtime-handoff-download.sh /prefer-runtime-handoff-download.sh
 COPY entrypoint.sh /prefer-vllm-entrypoint.sh
-COPY router.py /prefer-vllm-router.py
-RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /model-downloads.generated.sh /prefer-vllm-entrypoint.sh /prefer-vllm-router.py /prefer-catalog/generate.py \
-    && chmod +x /usr/local/bin/prefer /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /model-downloads.generated.sh /prefer-vllm-entrypoint.sh /prefer-vllm-router.py
+RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /model-downloads.generated.sh /prefer-vllm-entrypoint.sh /prefer-catalog/generate.py \
+    && chmod +x /usr/local/bin/prefer /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /model-downloads.generated.sh /prefer-vllm-entrypoint.sh
 
 ENV PREFER_ENGINE=vllm \
     PREFER_MODEL_CATALOG=/prefer-model-catalog.json
 
 LABEL io.prefer.runtime="vllm" \
-      io.prefer.vllm.backend="cuda13" \
-      io.prefer.vllm.source-revision="2cf0a6915ce544dc493a0990f2ea38d81601128a" \
-      io.prefer.vllm.image-build-revision="v0.28.0" \
+      io.prefer.vllm.backend="${VLLM_CUDA_VARIANT}" \
+      io.prefer.vllm.source-revision="${VLLM_SOURCE_REVISION}" \
+      io.prefer.vllm.image-build-revision="${VLLM_IMAGE_VERSION}" \
       io.prefer.vllm.lineage="official-upstream" \
       io.prefer.deployment-inventory.path="/deployment-inventory.json" \
       io.prefer.deployment-inventory.schema="prefer.vllm-deployment-inventory.v1"
 
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=4h --retries=3 \
-  CMD curl -fsS http://127.0.0.1:8000/readyz || exit 1
+  CMD curl -fsS http://127.0.0.1:8000/health || exit 1
 
 ENTRYPOINT ["/prefer-vllm-entrypoint.sh"]

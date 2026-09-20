@@ -16,18 +16,20 @@ downloaded from Hugging Face on first start. `docker/audio-cpp/` is a separate
 speech/music runtime with its own API, inventory, model volume, and image
 variants. `docker/stable-diffusion-cpp/` provides image generation/editing with
 a separate API, inventory, and model volume. All five engines publish as one
-grouped PreFer release. `docker/sglang/` is the opt-in CUDA 13 sibling for
-Qwen3.8-27B NVFP4 on modern NVIDIA Blackwell hardware; it has its own API,
-inventory and model catalog while using the same
-`/models` artifact layout as llama.cpp. `docker/vllm/` is the opt-in official
-vLLM CUDA 13 sibling for the Inferact Qwen3.8-27B NVFP4 text lane on the same
-Blackwell generation, with its own gateway, inventory, and catalog.
+grouped PreFer release. `docker/sglang/` publishes explicit official CUDA 12.9
+and CUDA 13 variants for Qwen3.8-27B NVFP4 and MiniMax H3; it directly exposes
+upstream text/video APIs while using the same `/models` artifact layout as
+llama.cpp. `docker/vllm/` publishes matched official CUDA 12.9 and CUDA 13
+variants for the Inferact Qwen3.8-27B NVFP4 text lane and directly exposes the
+upstream OpenAI-compatible server. Neither runtime has a mandatory PreFer HTTP
+proxy.
 
 ## Grouped release contract
 
 `build-prefer.yml` is the only runtime-image workflow. A change under any of
 the five runtime folders rebuilds and publishes llama CUDA, Audio CUDA/CPU,
-Image CUDA, SGLang CUDA, and vLLM CUDA together under the same seven-character source SHA. Do not add
+Image CUDA, SGLang CUDA 12/13, and vLLM CUDA 12/13 together under the same
+seven-character source SHA. Do not add
 engine-specific image workflows or path-gate individual engine jobs: the
 atomic release is deliberate so downstream controllers never have to compose
 different PreFer versions.
@@ -40,13 +42,13 @@ work by merging it to `main`, and merge any exceptional stable hotfix back into
 `develop` immediately so the lines do not drift. Do not publish a runtime
 commit directly to `main` merely to bypass preview validation.
 
-After all seven immutable image indexes publish, the workflow creates the
+After all nine immutable image indexes publish, the workflow creates the
 GitHub release `sha-<short-commit>` and the matching
 `prefer-release-<full-commit>` Actions artifact. Both contain
 `prefer-release.json`, its schema, the exact five deployment inventories, the
 release-matched package/CLI/materialized shared model catalog, and checksums.
 `release/build-release.py` owns that manifest. It must reference the
-resolved OCI index digests returned by the seven image build jobs, never moving tags.
+resolved OCI index digests returned by the nine image builds, never moving tags.
 Each runtime image still embeds its own `/deployment-inventory.json`.
 
 The grouped release contains metadata and executable tooling only. Model weights must never be copied
@@ -65,8 +67,9 @@ building; never leave an empty `Current` section in the file.
 
 After CI publishes the grouped immutable release, make a root-only follow-up commit that
 changes the `Current` heading to the resulting `sha-<short-commit>` tag and
-adds all seven exact image identities from that release: llama CUDA, Audio CUDA,
-Audio CPU, Image CUDA, SGLang CUDA, vLLM CUDA, and the CPU-only downloader. Do not rewrite the approved change bullets during
+adds all nine exact image identities from that release: llama CUDA, Audio CUDA,
+Audio CPU, Image CUDA, SGLang CUDA 12/13, vLLM CUDA 12/13, and the CPU-only
+downloader. Do not rewrite the approved change bullets during
 finalization. Also name the matching `prefer-inference-core@0.0.0-g<short-sha>`
 package when the release includes shared tooling. Suffix a preview heading with `(preview)` and a stable heading
 with `(stable)`; pre-channel headings without a suffix are stable. The grouped
@@ -123,7 +126,7 @@ details retained later in this file as benchmark rationale:
   The v1 client contract distinguishes these configured section identities
   from normalized `/v1/models`/request IDs. On measured b9843, for example,
   E2B was configured as `:UD-Q4_K_XL` but advertised and accepted as
-  `:Q4_K_XL` (plus `gemma-4-e2b`). b10362 is now the production pin; keep the
+  `:Q4_K_XL` (plus `gemma-4-e2b`). b11058 is now the production pin; keep the
   distinction until its exact discovery behavior is measured. Do not infer
   request compatibility from the preset header alone.
 - **Shared defaults use `[*]`**, not per-section duplication. A per-section
@@ -174,8 +177,8 @@ not something to infer from upstream defaults.
 ## Base image
 
 Pinned to
-`ghcr.io/ggml-org/llama.cpp:server-cuda-b10362@sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c`
-(source `4801e3c567d5131dd41b387df5f2d4b1370d92be`). The digest is the official
+`ghcr.io/ggml-org/llama.cpp:server-cuda-b11058@sha256:480f67114291c698d2b13097e0e3efdd57e81aa3a9de6720564c307663868a59`
+(source `f072b103714dfa1eee531f80b24512faf38e3dd2`). The digest is the official
 multi-platform manifest containing linux/amd64 and linux/arm64. Keep
 `Dockerfile.netskope` in lockstep. Policy remains "track latest," but a bump
 must resolve and pin the published manifest rather than use the moving
@@ -194,17 +197,15 @@ linux/amd64 and linux/arm64 manifests are present. A higher build number is a
 valid first consumable artifact when an intermediate image was never
 published.
 
-b10362 includes GLM MoE DSA, DeepSeek V4 base support, the Gemma E4B MTP
-FlashAttention fix from PR #25148, and DeepSeek V4 MTP/DSpark support from
-PR #25784. It also includes PR #22789's dynamic split-graph input allocation,
-which removes the fixed scheduler-input cap hit by DeepSeek V4 across two GPUs.
-Muse target, multimodal-projector, and DFlash support from PR #26841 is also
-included; source `4801e3c567d5131dd41b387df5f2d4b1370d92be` is 13 commits after
-the required merge `62bf73d25c53b8161f8a22894d4f90c4aebbd7d0`.
-The historical b9843 and b9982 lanes remain in benchmark data for reproducing
-old Pascal results; `current` now means b10362. The Muse presets are no longer
-runtime-gated, but their 24/48/96 GB shapes still require normal first-boot
-fit, contract, DFlash, projector, and concurrency verification on target GPUs.
+b11058 descends from b10362 and therefore retains GLM MoE DSA, DeepSeek V4
+base and MTP/DSpark support, PR #22789's dynamic split-graph allocation, the
+Gemma E4B MTP FlashAttention fix, and Muse target/projector/DFlash support.
+The moving GHCR `server-cuda` index identified b11058 and source
+`f072b103714dfa1eee531f80b24512faf38e3dd2`; the versioned tag resolved to the
+same complete index. The historical b9843, b9982, and b10362 lanes remain in
+benchmark data for reproduction; `current` now means b11058. Existing model
+routes still require normal preview load, contract, speculative, projector,
+and concurrency verification on target GPUs.
 
 ## Generated deployment presets and inventory
 
@@ -813,8 +814,8 @@ capabilities requires an exact pinned model/runtime smoke rather than inference
 from SDXL support.
 
 The pinned upstream CUDA base is
-`ghcr.io/leejet/stable-diffusion.cpp:master-cuda@sha256:dcd82f38252a32822dcd0c80672d5948df8e63bb4a3064988e0f7c2bec10c100`
-at source `be0e34480dada95f8ce9a021bbb95c5de85d67c7`. It currently provides
+`ghcr.io/leejet/stable-diffusion.cpp:master-cuda@sha256:dd71cfb3ed1459c6c227f16037bf98bf34c693930176aa45e98e19477117caac`
+at source `137f7409bbfb98c70a350a57d6a135487080db96`. It currently provides
 Linux AMD64 only. The release workflow must not advertise ARM64 or pin the
 moving tag without its immutable digest. The image tags are `image-cuda12`
 and `image-cuda12-sha-<commit>`; they do not alter llama.cpp's `latest` tags.
@@ -828,13 +829,13 @@ that the upstream image contains working `sm_61` kernels.
 
 ## Known upstream llama.cpp issues (not fixable via our config)
 
-- **#22789 (fixed in current b10362)** — DeepSeek V4 0731 plus DSpark could
+- **#22789 (fixed since b10362; retained in b11058)** — DeepSeek V4 0731 plus DSpark could
   exceed llama.cpp's fixed 30 split-graph input slots during multi-GPU graph
   reservation and abort at `GGML_SCHED_MAX_SPLIT_INPUTS`. PR #22789 replaces
   the fixed arrays with dynamic allocation. This is an upstream scheduler
   defect: context, batching, tensor split, and GPU count are not reliable
   configuration workarounds.
-- **#25148 (fixed in current b10362)** — Gemma E4B's MTP draft has 512-wide K/V
+- **#25148 (fixed since b10362; retained in b11058)** — Gemma E4B's MTP draft has 512-wide K/V
   heads and GQA ratio 2. On Pascal, b9843 selects the generic CUDA
   FlashAttention tile kernel, whose 512-wide specialization only compiled GQA
   ratios 4 and above; it aborts at `fattn-tile.cuh:1321`. E2B's draft is ratio
@@ -1187,7 +1188,7 @@ Run the deterministic suite and mock replay:
 Live verification remains hardware-dependent. The isolated command creates a
 generated Compose project, loopback port other than 8080, network, and cloned
 model volume, then removes all of them while leaving the operator llama service and
-NeurOn state alone. See `benchmark/README.md` for current b10362, the historical
+NeurOn state alone. See `benchmark/README.md` for current b11058, the historical
 Pascal compatibility preset, `models-max`, long-context, idle, and historical
 b9843/b9982 evidence.
 
@@ -1209,8 +1210,10 @@ practical for the normal model tiers.
 product remains `ghcr.io/cvalusek/prefer`, but runtime tags do not overlap:
 `audio-cuda12`, `audio-cuda12-sha-<commit>`, `audio-cpu`, and
 `audio-cpu-sha-<commit>`. The llama workflow retains `latest` and
-`sha-<commit>` for compatibility and also publishes `llama-cuda` and
-`llama-cuda-sha-<commit>`. Never point `latest` at audio.cpp.
+`sha-<commit>` for compatibility and also publishes explicit
+`llama-cuda12` / `llama-cuda12-sha-<commit>` tags. The older `llama-cuda` and
+`llama-cuda-sha-<commit>` aliases remain compatibility references to that same
+CUDA 12 digest. Never point `latest` at audio.cpp.
 
 The local Compose service key remains `prefer` for command compatibility, but
 its container is `prefer-llama`. The default Compose application also runs
@@ -1323,28 +1326,25 @@ PreFer stages only its pinned catalog artifacts and verifies size plus SHA-256.
 
 ## SGLang sibling runtime
 
-`docker/sglang/` is an opt-in CUDA 13 sibling for Qwen3.8-27B text serving and
-MiniMax H3 diffusion video serving. It is an alternative backend to llama.cpp,
-not a replacement for the existing router. The Compose service uses profile
-`sglang`, listens on host port 8083 by default, and uses the same named
-`prefer-model-cache` volume as llama.cpp by default. Keep its container name,
-internal gateway port 30000, model mount `/models`, video input mount
-`/inputs`, video output mount `/outputs`, and generated config/inventory
-paths distinct from the llama service so both can coexist when the operator
-intentionally has enough GPU capacity.
+`docker/sglang/` publishes explicit official CUDA 12.9 and CUDA 13 variants for
+Qwen3.8-27B text serving and MiniMax H3 diffusion video serving. It is an
+alternative backend to llama.cpp, not a replacement for the existing router.
+The Compose service uses profile `sglang`, listens on host port 8083 by
+default, and uses the same named `prefer-model-cache` volume as llama.cpp by
+default. Keep its container name, native internal port 30000, model mount
+`/models`, video input mount `/inputs`, video output mount `/outputs`, and
+generated config/inventory paths distinct from llama.
 
-The runtime source and image-build revision is
-`30705c004ca4bbfc92216dfaf845da14d84c4c4d`; the official base image is
-`lmsysorg/sglang:nightly-dev-cu13-20260907-30705c00` pinned to OCI index
-`sha256:19b8fa1223cc339c1eae7a5b703f1a8c2543b5b119155bf3d7efaef18f77f007`.
-The image is official upstream and does not contain the
-`jpezzulli/sglang-rtxpro6000` custom fork.
-This is the minimum pinned runtime for the generated MiniMax H3 commands: it
-parses the dynamic `--component-weights-paths.<component>` overrides used for
-the exact transformer, text encoder, video VAE, and audio VAE files. The former
-`c4271c3f` image rejected those arguments before model loading. Do not regress
-the image below `30705c00` without changing the generated command contract and
-passing an exact-artifact FL2VA and Ref2VA startup smoke.
+The CUDA 12 variant is the final official CUDA 12 image,
+`lmsysorg/sglang:v0.5.19-cu129@sha256:59e11312666e1c5c155210ea335589b91daa0d70848521b390b93b1b1e8fb0ef`
+(source `0bcd822377da7b5718e674eaf9c870d349424dd1`). The CUDA 13 variant is
+`lmsysorg/sglang:v0.5.20@sha256:06e4f2ed21afde4ff513cda65070124e727ba23ccaeff7712b8c40e1097d611f`
+(source `94602c9c2b7cbdb8efd5c52802dac6a1c180089e`). Both are official
+multi-platform images and neither contains the `jpezzulli/sglang-rtxpro6000`
+custom fork. Both parse the dynamic
+`--component-weights-paths.<component>` overrides required by the exact H3
+component bundles. Keep CUDA-major tags explicit; never add a generic moving
+alias that silently changes the required driver/toolchain.
 The primary model is `RadixArk/Qwen3.8-27B-NVFP4` at immutable revision
 `319f741cce68d7914884900c138a1fbb70a42f30`, with Apache-2.0 Qwen lineage,
 native text/image/video input, 262,144 native context, request-selectable
@@ -1355,8 +1355,8 @@ SHA-256 hashes; model weights stay on external `/models` storage.
 
 Only the Qwen3.8 text lane is restricted to NVIDIA Blackwell SM100-or-newer
 shapes. MiniMax H3 diffusion shapes use a separate SM86-or-newer compatibility
-gate for the INT8/NVFP4 component route. The provider-neutral `sglang/cuda13`
-entry is a runtime default, not a hardware scenario. The checked-in AWS/RunPod 96 GB Blackwell shapes expose a 524K
+gate for the INT8/NVFP4 component route. The explicit CUDA 12/13 image variants
+are runtime compatibility choices, not hardware scenarios. The checked-in AWS/RunPod 96 GB Blackwell shapes expose a 524K
 per-request FP8 E4M3-KV performance route with four configured request slots,
 BF16 recurrent state, FlashInfer, chunked prefill, CUDA graphs, and native NEXTN
 (three steps, top-k one, four draft tokens), plus target-only and BF16-KV
@@ -1415,13 +1415,15 @@ uses this exception because its exact ConvRot/NVFP4 weights come from Comfy-Org
 while its pipeline configuration, tokenizer, processor, and VAE support metadata
 come from the official MiniMax repository.
 
-Video mode is explicit in generated SGLang schema v2 configs. `server.json`
-continues to launch the text server directly; diffusion configs launch
-`sglang serve` on internal port 30001 behind
-`docker/sglang/video_gateway.py`. The gateway owns the public port, model and
-task aliases, local-file/multipart input policy, warmup-aware `/readyz`, and
-the `/v1/videos` proxy. It must not add `--served-model-name` to diffusion
-commands because the upstream diffusion CLI rejects that text-server flag.
+Video mode is explicit in generated SGLang schema v2 configs. Both text and
+diffusion commands directly own internal port 30000; there is no PreFer HTTP
+gateway. The diffusion command uses upstream `--model-id` rather than the
+text-only `--served-model-name` flag. Native `/v1/videos` owns job submission,
+status, content delivery, errors, and uploads. MiniMax H3 `conditions[].uri`
+may use local paths, `file://`, HTTP(S), `data:`, `base64://`, or supported tar
+member references; do not reintroduce a proxy that rejects upstream remote
+material support. SSRF restrictions, if required, belong in deployment network
+policy or upstream rather than a mandatory inference compatibility layer.
 MiniMax H3 uses the immutable official base revision plus exact Comfy-Org
 component artifacts, accepts `fl2va` and `ref2va`, and keeps the official H3
 community-license and 24 fps H.264/AAC output contract visible in the catalog.
@@ -1443,24 +1445,25 @@ Canonical H3 configs also set `--enable-torch-compile false`, including the
 full-GPU 96 GB shapes. Upstream documents that H3 speed mode deliberately keeps
 the DiT eager and that explicitly enabling `torch.compile` changes numerical
 output; treat compile-on as a separate controlled experiment, not the first
-startup or consistency path. If the upstream worker exits, the gateway must
-report `upstream_failed` on `/v1/models` and `/v1/videos`, rather than continue
-to describe a terminal failure as warmup.
+startup or consistency path. Container orchestration probes the native
+`/health`; PreFer does not synthesize a separate readiness API.
 Turbo LoRA recipes are recorded as optional FL2VA metadata; they are not
 staged or enabled by default until their exact immutable weight revisions and
 hashes are cataloged.
 
 ## vLLM sibling runtime
 
-`docker/vllm/` is the opt-in official-upstream vLLM CUDA 13 sibling for the
+`docker/vllm/` is the opt-in official-upstream vLLM sibling for the
 Qwen3.8-27B Inferact NVFP4 text lane. It is preview/develop-only until the
 route has passed target-card load, API, multimodal, MTP, context, and
-concurrency smokes. The pinned image is
-`vllm/vllm-openai:v0.28.0-ubuntu2404` at OCI index
-`sha256:f8fe15a8039343336945db10494eaad80ef941fe2b2a5fa6649fa38636051a65`,
-with source revision `2cf0a6915ce544dc493a0990f2ea38d81601128a`. Do not
-silently substitute a custom vLLM fork, SGLang, a Flash-Next checkpoint, or a
-moving image tag.
+concurrency smokes. Both variants use v0.29.0 source
+`98dff2a81d747d1dba01a47f939f48c3526d4206`: CUDA 12.9 is
+`vllm/vllm-openai:v0.29.0-cu129-ubuntu2404@sha256:b478e866ccff56876a0e159edae1620055c858c739fb20f23194fc636f1a4108`
+and CUDA 13 is
+`vllm/vllm-openai:v0.29.0-ubuntu2404@sha256:563b8929d66e0891adf9cf1062d1d31d7003b1a5b0cb87a51ba4e92055b5fdb1`.
+Do not silently substitute a custom vLLM fork, SGLang, a Flash-Next checkpoint,
+or a moving image tag, and do not publish a generic alias that hides CUDA
+selection.
 
 The catalog pins `Inferact/Qwen3.8-27B-NVFP4` at revision
 `6128240ebaf4eaa7bad2b3d1c72c37d677c5f462`, including the exact tokenizer,
@@ -1471,10 +1474,12 @@ AMI, grouped release, or workflow artifact.
 
 The canonical command follows the official Qwen3.8 vLLM recipe: TP1, native
 262K context, FP8 KV, Qwen reasoning/tool parsers, auto tool choice, and
-in-checkpoint MTP with three speculative tokens. The generated gateway keeps
-`/v1/models` available during background staging, waits for staging before
-starting the private vLLM backend, exposes `/readyz`, and normalizes aliases
-to the catalog `request_model_id`. The 32 GB RTX 5090 shape uses
+in-checkpoint MTP with three speculative tokens. The entrypoint validates and
+stages every required artifact before directly executing `vllm serve` on port
+8000. Native vLLM owns health, `/v1/models`, OpenAI requests, SSE streaming,
+cancellation, headers, and errors; do not restore a mandatory PreFer proxy.
+The generated command passes the catalog `request_model_id` through upstream
+`--served-model-name`. The 32 GB RTX 5090 shape uses
 `--enforce-eager` and a conservative target-only starting config; do not copy
 its settings into larger hosted scenarios.
 

@@ -1,6 +1,6 @@
 {
   "schema_version": "prefer.deployment-inventory.v1",
-  "catalog_fingerprint": "43fb5e9a1b7358597466c69908a2e5a4f56075b53ab4bc20ddbc89696dc2966b",
+  "catalog_fingerprint": "2a2283e66d609702533fa210f4cfa7a5735aa2dfba6efabe35bd9b253c26b640",
   "product": "PreFer",
   "distribution": {
     "embedded_image_path": "/deployment-inventory.json",
@@ -13,13 +13,13 @@
     }
   },
   "runtime": {
-    "llama_cpp_tag": "b10362",
-    "source_revision": "4801e3c567d5131dd41b387df5f2d4b1370d92be",
-    "image": "ghcr.io/ggml-org/llama.cpp:server-cuda-b10362",
-    "manifest_digest": "sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c",
+    "llama_cpp_tag": "b11058",
+    "source_revision": "f072b103714dfa1eee531f80b24512faf38e3dd2",
+    "image": "ghcr.io/ggml-org/llama.cpp:server-cuda-b11058",
+    "manifest_digest": "sha256:480f67114291c698d2b13097e0e3efdd57e81aa3a9de6720564c307663868a59",
     "platform_manifests": {
-      "linux/amd64": "sha256:1caad187e691f18327d9050464f6884ae193fd7151b71f3a192f21213a59208f",
-      "linux/arm64": "sha256:ea625a2c5910867fbaff88f8f7cf87b0dbd9948743c13ec6db42036b32d50073"
+      "linux/amd64": "sha256:fb70beb2887ac5127d3982ec6d80feb3d2cc36058e0410d90696febe533a83ae",
+      "linux/arm64": "sha256:ff1005faa7bd7432f9a8c7fb94380c94450f7e85b5cd8be2b68f6c86992a5044"
     }
   },
   "composition": {
@@ -644,7 +644,7 @@
       ],
       "prompting": [
         "Disable thinking for work that should not reason. With thinking enabled, use only low, medium, or xhigh: low asks for brief focused thinking, medium adds no effort instruction, and xhigh is the careful-validation default.",
-        "On the pinned b10362 runtime, pass reasoning control through the template kwargs path and verify it is rendered; do not assume an OpenAI-style top-level reasoning_effort field is forwarded."
+        "On the pinned b11058 runtime, pass reasoning control through the template kwargs path and verify it is rendered; do not assume an OpenAI-style top-level reasoning_effort field is forwarded."
       ],
       "evidence": {
         "confidence": "high",

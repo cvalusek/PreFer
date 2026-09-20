@@ -57,7 +57,7 @@ profile:
     - community license terms apply
   prompting:
     - Use a concrete scene, camera, motion, and audio description.
-    - Use conditions with local file:// URIs or multipart uploads; the gateway rejects remote URLs.
+    - Use native conditions[].uri inputs with file, HTTPS, data, or base64 URIs; SGLang localizes and validates request material.
   evidence:
     confidence: limited
     basis:

@@ -17,8 +17,8 @@ class DiagnosticAndCompatibilityTests(unittest.TestCase):
         self.assertFalse((llama_root / "presets").exists())
         self.assertFalse((llama_root / "detect-preset.sh").exists())
         dockerfile = (llama_root / "Dockerfile").read_text(encoding="utf-8")
-        self.assertIn("server-cuda-b10362", dockerfile)
-        self.assertIn("sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c", dockerfile)
+        self.assertIn("server-cuda-b11058", dockerfile)
+        self.assertIn("sha256:480f67114291c698d2b13097e0e3efdd57e81aa3a9de6720564c307663868a59", dockerfile)
 
     def test_historical_lane_is_published_immutable_b9982(self) -> None:
         candidate = LANES["b9982"]
@@ -30,18 +30,19 @@ class DiagnosticAndCompatibilityTests(unittest.TestCase):
         )
         self.assertNotIn("b9990", LANES)
 
-    def test_current_lane_is_published_immutable_b10362(self) -> None:
+    def test_current_lane_is_published_immutable_b11058(self) -> None:
         current = LANES["current"]
-        self.assertEqual(current["revision"], "b10362")
-        self.assertEqual(current["source_commit"], "4801e3c567d5131dd41b387df5f2d4b1370d92be")
-        self.assertEqual(current["manifest_digest"], "sha256:182a26fbd68d1774860bd2a0fb5581ba3047974307eaeee64930d8bf889e0c0c")
+        self.assertEqual(current["revision"], "b11058")
+        self.assertEqual(current["source_commit"], "f072b103714dfa1eee531f80b24512faf38e3dd2")
+        self.assertEqual(current["manifest_digest"], "sha256:480f67114291c698d2b13097e0e3efdd57e81aa3a9de6720564c307663868a59")
+        self.assertEqual(LANES["b10362"]["revision"], "b10362")
 
         catalog = json.loads((REPO_ROOT / "docker" / "llama-cpp" / "preset-catalog.json").read_text(encoding="utf-8"))
         self.assertEqual(
             catalog["runtime"]["platform_manifests"],
             {
-                "linux/amd64": "sha256:1caad187e691f18327d9050464f6884ae193fd7151b71f3a192f21213a59208f",
-                "linux/arm64": "sha256:ea625a2c5910867fbaff88f8f7cf87b0dbd9948743c13ec6db42036b32d50073",
+                "linux/amd64": "sha256:fb70beb2887ac5127d3982ec6d80feb3d2cc36058e0410d90696febe533a83ae",
+                "linux/arm64": "sha256:ff1005faa7bd7432f9a8c7fb94380c94450f7e85b5cd8be2b68f6c86992a5044",
             },
         )
 

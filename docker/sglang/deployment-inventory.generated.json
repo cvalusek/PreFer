@@ -1,6 +1,6 @@
 {
   "schema_version": "prefer.sglang-deployment-inventory.v2",
-  "catalog_fingerprint": "1aba216e1bcd4082aee3a32d59da3b770ec510f93fd0e00509348dd403bcc1c8",
+  "catalog_fingerprint": "9fd747b36c7fc41dcbb65d46cbe1637805bbb4fbd88fd9ae024009f04b425d15",
   "product": "PreFer",
   "distribution": {
     "embedded_image_path": "/deployment-inventory.json",
@@ -15,9 +15,19 @@
   "runtime": {
     "name": "sglang",
     "source_repo": "sgl-project/sglang",
-    "source_revision": "30705c004ca4bbfc92216dfaf845da14d84c4c4d",
-    "source_revision_role": "Pinned official SGLang nightly containing the CUDA 13 multimodal-generation server, dynamic component-weight override CLI, and the regular text server.",
-    "lineage": "official-upstream"
+    "source_revision": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
+    "source_revision_role": "Official SGLang v0.5.20 CUDA 13 release; the CUDA 12.9 variant uses the final official CUDA 12 release, v0.5.19 at 0bcd822377da7b5718e674eaf9c870d349424dd1.",
+    "lineage": "official-upstream",
+    "variants": {
+      "cuda12": {
+        "version": "v0.5.19",
+        "source_revision": "0bcd822377da7b5718e674eaf9c870d349424dd1"
+      },
+      "cuda13": {
+        "version": "v0.5.20",
+        "source_revision": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e"
+      }
+    }
   },
   "composition": {
     "schema_version": "prefer.runtime-composition.v1",
@@ -75,15 +85,30 @@
       "model": "models[].server"
     }
   },
-  "base_image": {
-    "reference": "lmsysorg/sglang:nightly-dev-cu13-20260907-30705c00@sha256:19b8fa1223cc339c1eae7a5b703f1a8c2543b5b119155bf3d7efaef18f77f007",
-    "index_digest": "sha256:19b8fa1223cc339c1eae7a5b703f1a8c2543b5b119155bf3d7efaef18f77f007",
-    "build_revision": "30705c004ca4bbfc92216dfaf845da14d84c4c4d",
-    "build_revision_source": "https://hub.docker.com/layers/lmsysorg/sglang/nightly-dev-cu13-20260907-30705c00/images/sha256-c7b3fcf8e99dd8c983f0c7c89ac6e85a63c8cbee4211a2c6ad8daf2ca0d018dc?tab=layers",
-    "build_revision_note": "The official OCI image contains both SGLang's regular text server and its multimodal-generation server, including the dynamic --component-weights-paths.<component> parser required by the MiniMax H3 routes; this is not the jpezzulli/sglang-rtxpro6000 custom fork.",
-    "platform_manifests": {
-      "linux/amd64": "sha256:c7b3fcf8e99dd8c983f0c7c89ac6e85a63c8cbee4211a2c6ad8daf2ca0d018dc",
-      "linux/arm64": "sha256:c28dc8335134ad8142052f7463acdbe6a60ffe80cddc57fd5288787b88f4c6c2"
+  "base_images": {
+    "cuda12": {
+      "reference": "lmsysorg/sglang:v0.5.19-cu129@sha256:59e11312666e1c5c155210ea335589b91daa0d70848521b390b93b1b1e8fb0ef",
+      "index_digest": "sha256:59e11312666e1c5c155210ea335589b91daa0d70848521b390b93b1b1e8fb0ef",
+      "cuda_version": "12.9.2",
+      "build_revision": "0bcd822377da7b5718e674eaf9c870d349424dd1",
+      "build_revision_source": "OCI labels on lmsysorg/sglang:v0.5.19-cu129",
+      "build_revision_note": "Final official SGLang CUDA 12 image. It contains the regular text server and multimodal generation server; exact model and card compatibility remains smoke-gated.",
+      "platform_manifests": {
+        "linux/amd64": "sha256:1173f6a57ac63209b1bfb054e6a7366896fd3df5539c809bbd6d332694e91d15",
+        "linux/arm64": "sha256:cf238ae51b6ce8850a860892d09a0b2a2f039d15ca21cbea3db01a9aac2b2d33"
+      }
+    },
+    "cuda13": {
+      "reference": "lmsysorg/sglang:v0.5.20@sha256:06e4f2ed21afde4ff513cda65070124e727ba23ccaeff7712b8c40e1097d611f",
+      "index_digest": "sha256:06e4f2ed21afde4ff513cda65070124e727ba23ccaeff7712b8c40e1097d611f",
+      "cuda_version": "13.0.3",
+      "build_revision": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
+      "build_revision_source": "OCI labels on lmsysorg/sglang:v0.5.20",
+      "build_revision_note": "Current official stable SGLang CUDA 13 image with the regular text server and multimodal generation server.",
+      "platform_manifests": {
+        "linux/amd64": "sha256:b27fce60bc5494c118c4910702812bcfa8cee67abcdd1ff8b0902f21647552f4",
+        "linux/arm64": "sha256:1aadde9859bcb72b8d81c428120d5d47ff8e90adba2fec4935e9b8ae98245c45"
+      }
     }
   },
   "requirements": {
@@ -91,7 +116,6 @@
       "linux/amd64",
       "linux/arm64"
     ],
-    "cuda_major": 13,
     "minimum_compute_capability": "sm_100",
     "supported_compute_capabilities": [
       "sm_86",
@@ -121,7 +145,12 @@
     "fp4_gemm_backend_sm100": "flashinfer_cutlass",
     "fp4_gemm_backend_sm120": "flashinfer_cudnn",
     "fp4_gemm_backend_sm120_status": "preferred-but-smoke-gated",
-    "fp4_gemm_backend_cuda_requirement": "CUDA 13.x and cuDNN 9.15 or newer for the SM120 cuDNN backend; the pinned official image reports cuDNN 9.14.0.64, so auto selection and exact-card smoke determine availability"
+    "fp4_gemm_backend_cuda_requirement": "CUDA 13.x and cuDNN 9.15 or newer for the SM120 cuDNN backend; the pinned official image reports cuDNN 9.14.0.64, so auto selection and exact-card smoke determine availability",
+    "cuda_variants": {
+      "cuda12": "12.9.2",
+      "cuda13": "13.0.3"
+    },
+    "driver_note": "Choose the explicit CUDA variant that matches the host driver; no moving generic CUDA alias selects one implicitly."
   },
   "staging": {
     "hf": {
@@ -164,14 +193,24 @@
       ],
       "component_weight_overrides": true,
       "component_weight_override_cli": "--component-weights-paths.<component>",
-      "component_weight_override_source": "https://github.com/sgl-project/sglang/blob/30705c004ca4bbfc92216dfaf845da14d84c4c4d/python/sglang/multimodal_gen/runtime/server_args/server_args.py",
-      "local_file_inputs_only": true,
+      "component_weight_override_source": "https://github.com/sgl-project/sglang/blob/94602c9c2b7cbdb8efd5c52802dac6a1c180089e/python/sglang/multimodal_gen/runtime/server_args/server_args.py",
       "output_container": "mp4",
       "pin_cpu_memory_default": false,
       "known_issue_refs": [
         "https://github.com/sgl-project/sglang/issues/34902",
         "https://github.com/sgl-project/sglang/issues/34954"
-      ]
+      ],
+      "input_uri_schemes": [
+        "file",
+        "http",
+        "https",
+        "data",
+        "base64",
+        "tar+offset",
+        "tar+b64header"
+      ],
+      "transport": "native SGLang /v1/videos API; no PreFer inference proxy",
+      "multipart_uploads": "native upstream fields; canonical MiniMax H3 conditions may directly use remote or data URIs"
     },
     "attention_backend": "flashinfer",
     "chunked_prefill": {
@@ -196,9 +235,13 @@
     "pinned_image_lineage": {
       "kind": "official-upstream",
       "source_repo": "sgl-project/sglang",
-      "source_contract_revision": "30705c004ca4bbfc92216dfaf845da14d84c4c4d",
-      "image_build_revision": "30705c004ca4bbfc92216dfaf845da14d84c4c4d",
-      "custom_fork_code_included": false
+      "source_contract_revision": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
+      "image_build_revision": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
+      "custom_fork_code_included": false,
+      "official_variants": {
+        "cuda12": "v0.5.19",
+        "cuda13": "v0.5.20"
+      }
     },
     "feature_matrix": [
       {
@@ -368,7 +411,7 @@
         "feature": "Exact SM120 QSA sparse-decode routing",
         "merge_target": "qwen4-main-squashed",
         "status": "merged-to-non-main-branch-not-in-image",
-        "image_status": "absent from official mainline build 30705c004ca4bbfc92216dfaf845da14d84c4c4d",
+        "image_status": "absent from official mainline build 94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
         "source_ref": "https://github.com/sgl-project/sglang/pull/36806",
         "decision": "The current stock catalog does not claim the custom fork's SM120 QSA/XQA resolution."
       },
@@ -377,7 +420,7 @@
         "feature": "Mamba radix-cache ghost-node and speculative tracking fix",
         "merge_target": "qwen_optimize",
         "status": "merged-to-non-main-branch-not-in-image",
-        "image_status": "absent from official mainline build 30705c004ca4bbfc92216dfaf845da14d84c4c4d",
+        "image_status": "absent from official mainline build 94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
         "source_ref": "https://github.com/sgl-project/sglang/pull/35821",
         "decision": "The stock image's Mamba settings remain configuration-only; do not infer long-run speculative stability from the later fork sync."
       },
@@ -386,7 +429,7 @@
         "feature": "Three-axis Qwen mRoPE fused-kernel fix",
         "merge_target": "main",
         "status": "open-not-in-image",
-        "image_status": "absent from official mainline build 30705c004ca4bbfc92216dfaf845da14d84c4c4d",
+        "image_status": "absent from official mainline build 94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
         "source_ref": "https://github.com/sgl-project/sglang/pull/35744",
         "decision": "The custom fork's mRoPE patch remains custom-only for this release."
       }
@@ -406,7 +449,7 @@
       "target_revision": "319f741cce68d7914884900c138a1fbb70a42f30",
       "draft_repo": "incoai/Qwen3.8-27B-DFlash2",
       "draft_revision": null,
-      "upstream_source_contract_revision": "30705c004ca4bbfc92216dfaf845da14d84c4c4d",
+      "upstream_source_contract_revision": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
       "known_issue": "https://github.com/sgl-project/sglang/issues/35437",
       "custom_campaign": {
         "status": "custom-fork-only",
@@ -449,7 +492,6 @@
   ],
   "api": {
     "health": "GET /health",
-    "ready": "GET /readyz",
     "models": "GET /v1/models",
     "chat_completions": "POST /v1/chat/completions",
     "completions": "POST /v1/completions",
@@ -501,7 +543,7 @@
       ],
       "prompting_notes": [
         "Use a concrete scene, camera, motion, and audio description.",
-        "Use conditions with local file:// URIs or multipart uploads; the gateway rejects remote URLs."
+        "Use native conditions[].uri inputs with file, HTTPS, data, or base64 URIs; SGLang localizes and validates request material."
       ],
       "model_slug": "minimax-h3-fl2va",
       "profile_id": "minimax-h3",

@@ -1,4 +1,4 @@
-ARG STABLE_DIFFUSION_CPP_BASE_IMAGE=ghcr.io/leejet/stable-diffusion.cpp:master-cuda@sha256:dcd82f38252a32822dcd0c80672d5948df8e63bb4a3064988e0f7c2bec10c100
+ARG STABLE_DIFFUSION_CPP_BASE_IMAGE=ghcr.io/leejet/stable-diffusion.cpp:master-cuda@sha256:dd71cfb3ed1459c6c227f16037bf98bf34c693930176aa45e98e19477117caac
 FROM ${STABLE_DIFFUSION_CPP_BASE_IMAGE}
 
 ARG TARGETARCH
@@ -41,7 +41,7 @@ ENV PREFER_ENGINE=stable-diffusion.cpp \
 
 LABEL io.prefer.runtime="stable-diffusion.cpp" \
       io.prefer.image.backend="cuda12" \
-      io.prefer.image.source-revision="be0e34480dada95f8ce9a021bbb95c5de85d67c7" \
+      io.prefer.image.source-revision="137f7409bbfb98c70a350a57d6a135487080db96" \
       io.prefer.deployment-inventory.path="/deployment-inventory.json" \
       io.prefer.deployment-inventory.schema="prefer.image-deployment-inventory.v1"
 

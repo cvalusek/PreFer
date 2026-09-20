@@ -32,7 +32,7 @@
     ],
     "prompting": [
       "Disable thinking for work that should not reason. With thinking enabled, use only low, medium, or xhigh: low asks for brief focused thinking, medium adds no effort instruction, and xhigh is the careful-validation default.",
-      "On the pinned b10362 runtime, pass reasoning control through the template kwargs path and verify it is rendered; do not assume an OpenAI-style top-level reasoning_effort field is forwarded."
+      "On the pinned b11058 runtime, pass reasoning control through the template kwargs path and verify it is rendered; do not assume an OpenAI-style top-level reasoning_effort field is forwarded."
     ],
     "evidence": {
       "confidence": "high",

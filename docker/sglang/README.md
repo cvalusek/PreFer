@@ -1,7 +1,9 @@
 # PreFer SGLang runtime
 
-This opt-in CUDA 13 image serves Qwen3.8 text and MiniMax H3 diffusion video.
-It is an alternative backend, not a llama.cpp replacement.
+PreFer publishes two official-upstream SGLang variants: CUDA 12.9 on the final
+upstream CUDA 12 release (`v0.5.19-cu129`) and CUDA 13 on `v0.5.20`. They serve
+Qwen3.8 text and MiniMax H3 diffusion video as alternatives to llama.cpp.
+Capability and fit remain exact variant/card smoke gates.
 
 Generated hardware deployments, local profiles, and checked-in server configs
 have been removed. The inventory retains model profiles, runtime modes, API
@@ -18,12 +20,32 @@ raw arguments. No hardware defaults are inherited. The controller is
 responsible for planning context, concurrency, KV precision, memory fraction,
 speculation, offload, and diffusion settings from live resources.
 
-## Modes
+## Native API
 
-Text configurations launch the SGLang text server on the internal public port.
-Diffusion configurations launch `sglang serve` behind `video_gateway.py`, which
-owns `/v1/videos`, local-file and multipart policy, warmup readiness, and worker
-failure reporting. H3 input/output volumes remain `/inputs` and `/outputs`.
+After validating and staging artifacts, the entrypoint directly executes the
+upstream SGLang server on port 30000. PreFer does not proxy text or diffusion
+requests. The generated native model name is the catalog `request_model_id`;
+friendly aliases remain planner inputs rather than an HTTP rewrite contract.
+
+MiniMax H3 uses SGLang's native `/v1/videos` API. Canonical `conditions[].uri`
+inputs may use local paths, `file://`, HTTP(S), `data:`, or `base64://`; SGLang
+localizes and validates request-owned material. Native multipart fields remain
+available where the upstream API maps them. Outputs remain under `/outputs`,
+and native uploads use `/inputs`.
+
+## CUDA variants
+
+Published tags are explicit: `sglang-cuda12[-preview]` and
+`sglang-cuda13[-preview]`. There is no generic alias that silently changes CUDA
+major. For a local CUDA 12 build, use the values recorded in `runtime.json`:
+
+```bash
+SGLANG_CUDA_VARIANT=cuda12 \
+SGLANG_BASE_IMAGE='lmsysorg/sglang:v0.5.19-cu129@sha256:59e11312666e1c5c155210ea335589b91daa0d70848521b390b93b1b1e8fb0ef' \
+SGLANG_SOURCE_REVISION=0bcd822377da7b5718e674eaf9c870d349424dd1 \
+SGLANG_IMAGE_VERSION=v0.5.19 \
+  docker compose build sglang
+```
 
 ## Staging
 

@@ -138,9 +138,21 @@ stage_models() {
   fi
 }
 
-echo "[vllm-entrypoint] staging ${#model_keys[@]} model key(s) in the background"
-stage_models &
-staging_pid=$!
+echo "[vllm-entrypoint] staging ${#model_keys[@]} model key(s) before server startup"
+stage_models
 
-echo "[vllm-entrypoint] starting vLLM gateway with $server_config"
-exec python3 /prefer-vllm-router.py "$server_config" "$staging_pid" "$@"
+echo "[vllm-entrypoint] starting upstream vLLM server with $server_config"
+exec python3 - "$server_config" "$@" <<'PY'
+import json
+import os
+import sys
+
+config_path = sys.argv[1]
+extra_args = sys.argv[2:]
+with open(config_path, encoding="utf-8") as handle:
+    config = json.load(handle)
+command = config.get("command")
+if not isinstance(command, list) or not command or any(not isinstance(item, str) for item in command):
+    raise SystemExit(f"[vllm-entrypoint] invalid command in {config_path}")
+os.execvp(command[0], [*command, *extra_args])
+PY

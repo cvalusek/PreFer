@@ -132,7 +132,7 @@ prompt.
 
 ## Isolated current-backend baseline
 
-The default baseline builds the production-pinned b10362 Dockerfile, never
+The default baseline builds the production-pinned b11058 Dockerfile, never
 downloads models, and copies only selected files from an existing Docker cache
 into a generated run volume. The harness composes the selected catalog models
 at startup; use `--server-overrides` and `--model-overrides` with compact JSON
@@ -300,7 +300,8 @@ immutable manifest before building and distinguishes
 source `99f3dc32296f825fec94f202da1e9fede1e78cf9` and linux/amd64 GHCR manifest
 `sha256:3a8429364531aa324a477f5fd3f9a9472ca16164c9c5fbc5b202629068263e76`.
 It contains upstream E4B MTP fix #25148. The lane is opt-in; both Dockerfiles
-now default to b10362:
+now default to b11058. The prior production b10362 image remains available as
+the separate `--lane b10362` comparison:
 
 ```bash
 python -m prefer_bench local --lane b9982 --cache-source-volume prefer-model-cache --models gemma-4-e2b --models-max 1 --contexts 8k

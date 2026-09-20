@@ -73,8 +73,10 @@ class GroupedReleaseTests(unittest.TestCase):
             "audio_cuda": "sha256:" + "2" * 64,
             "audio_cpu": "sha256:" + "3" * 64,
             "image": image_digest or "sha256:" + "4" * 64,
-            "sglang": "sha256:" + "5" * 64,
-            "vllm": "sha256:" + "6" * 64,
+            "sglang_cuda12": "sha256:" + "5" * 64,
+            "sglang_cuda13": "sha256:" + "6" * 64,
+            "vllm_cuda12": "sha256:" + "7" * 64,
+            "vllm_cuda13": "sha256:" + "8" * 64,
             "downloader": "sha256:" + "9" * 64,
         }
         return subprocess.run(
@@ -95,10 +97,14 @@ class GroupedReleaseTests(unittest.TestCase):
                 digests["audio_cpu"],
                 "--image-digest",
                 digests["image"],
-                "--sglang-digest",
-                digests["sglang"],
-                "--vllm-digest",
-                digests["vllm"],
+                "--sglang-cuda12-digest",
+                digests["sglang_cuda12"],
+                "--sglang-cuda13-digest",
+                digests["sglang_cuda13"],
+                "--vllm-cuda12-digest",
+                digests["vllm_cuda12"],
+                "--vllm-cuda13-digest",
+                digests["vllm_cuda13"],
                 "--downloader-digest",
                 digests["downloader"],
                 "--llama-inventory",
@@ -177,8 +183,8 @@ class GroupedReleaseTests(unittest.TestCase):
                 self.assertEqual(binding["sha256"], hashlib.sha256(copied.read_bytes()).hexdigest())
 
             expected_images = {
-                ("llama", "cuda"): (
-                    "llama-cuda-sha-abcdef0",
+                ("llama", "cuda12"): (
+                    "llama-cuda12-sha-abcdef0",
                     ["linux/amd64"],
                 ),
                 ("audio", "cuda12"): (
@@ -193,8 +199,16 @@ class GroupedReleaseTests(unittest.TestCase):
                     "image-cuda12-sha-abcdef0",
                     ["linux/amd64"],
                 ),
+                ("sglang", "cuda12"): (
+                    "sglang-cuda12-sha-abcdef0",
+                    ["linux/amd64", "linux/arm64"],
+                ),
                 ("sglang", "cuda13"): (
                     "sglang-cuda13-sha-abcdef0",
+                    ["linux/amd64", "linux/arm64"],
+                ),
+                ("vllm", "cuda12"): (
+                    "vllm-cuda12-sha-abcdef0",
                     ["linux/amd64", "linux/arm64"],
                 ),
                 ("vllm", "cuda13"): (
@@ -202,6 +216,10 @@ class GroupedReleaseTests(unittest.TestCase):
                     ["linux/amd64", "linux/arm64"],
                 ),
             }
+            self.assertEqual(
+                sum(len(engine["images"]) for engine in manifest["engines"].values()),
+                8,
+            )
             downloader = manifest["utilities"]["downloader"]["images"]["cpu"]
             self.assertEqual(downloader["tag"], "downloader-sha-abcdef0")
             self.assertEqual(downloader["platforms"], ["linux/amd64", "linux/arm64"])
@@ -266,16 +284,18 @@ class GroupedReleaseTests(unittest.TestCase):
         ):
             self.assertIn(watched_path, workflow)
         for immutable_tag in (
-            "llama-cuda-sha-",
+            "llama-cuda12-sha-",
             "audio-cuda12-sha-",
             "audio-cpu-sha-",
             "image-cuda12-sha-",
+            "sglang-cuda12-sha-",
             "sglang-cuda13-sha-",
+            "vllm-cuda12-sha-",
             "vllm-cuda13-sha-",
             "downloader-sha-",
         ):
             self.assertIn(immutable_tag, workflow)
-        self.assertIn("needs: [tooling, llama, audio_cuda, audio_cpu, image, sglang, vllm, downloader]", workflow)
+        self.assertIn("needs: [tooling, llama, audio_cuda, audio_cpu, image, sglang_cuda12, sglang_cuda13, vllm_cuda12, vllm_cuda13, downloader]", workflow)
         self.assertIn("name: prefer-release-${{ github.sha }}", workflow)
         self.assertIn("gh release create", workflow)
         self.assertIn("prefer-release.json", workflow)
@@ -300,21 +320,28 @@ class GroupedReleaseTests(unittest.TestCase):
         self.assertIn("branches: [main, develop]", workflow)
         self.assertIn("prefer-release-${{ github.ref_name }}", workflow)
         for preview_tag in (
-            "llama-cuda-preview",
+            "llama-cuda12-preview",
             "audio-cuda12-preview",
             "audio-cpu-preview",
             "image-cuda12-preview",
-            "vllm-cuda-preview",
+            "sglang-cuda12-preview",
+            "sglang-cuda13-preview",
+            "vllm-cuda12-preview",
+            "vllm-cuda13-preview",
             "downloader-preview",
         ):
             self.assertIn(preview_tag, workflow)
         for stable_tag in (
             '"$image_repository:latest"',
             '"$image_repository:llama-cuda"',
+            '"$image_repository:llama-cuda12"',
             '"$image_repository:audio-cuda12"',
             '"$image_repository:audio-cpu"',
             '"$image_repository:image-cuda12"',
-            '"$image_repository:vllm-cuda"',
+            '"$image_repository:sglang-cuda12"',
+            '"$image_repository:sglang-cuda13"',
+            '"$image_repository:vllm-cuda12"',
+            '"$image_repository:vllm-cuda13"',
             '"$image_repository:downloader"',
         ):
             self.assertIn(stable_tag, workflow)

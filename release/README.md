@@ -3,7 +3,9 @@
 PreFer publishes llama.cpp, audio.cpp, stable-diffusion.cpp, SGLang, and vLLM as one
 atomic release. A runtime change rebuilds all engine images with the same
 `sha-<commit>` version instead of asking downstream consumers to combine
-component releases.
+component releases. The current matrix has nine image indexes: llama CUDA 12,
+Audio CUDA 12/CPU, Image CUDA 12, SGLang CUDA 12/13, vLLM CUDA 12/13, and the
+CPU downloader. SGLang and vLLM tags always name the CUDA major explicitly.
 
 `main` is the stable release line. `develop` is the opt-in preview line, and
 its immutable GitHub releases are marked as prereleases. A successful grouped
@@ -47,7 +49,7 @@ pass the resulting JSON to any engine image from the same grouped release by
 mounted path or by the bounded base64 environment transport.
 See [the runtime handoff contract](../docs/runtime-handoff.md).
 
-The model catalog is refreshed from Hugging Face before the six images build.
+The model catalog is refreshed from Hugging Face before the nine image indexes build.
 If that refresh is unavailable, the build can reuse repository metadata from
 the previous successful release only when it covers every currently authored
 repository and immutable revision. Current YAML settings are still
@@ -55,6 +57,6 @@ rematerialized over that last successful metadata. The release manifest records
 whether the dataset came from a live refresh or that bounded fallback.
 
 `build-release.py` runs only after every engine build returns its published OCI
-digest. It validates the source revision and all six image digests, copies the exact
+digest. It validates the source revision and all nine image digests, copies the exact
 generated inventories without rewriting them, records their catalog
 fingerprints and SHA-256 values, and emits the grouped manifest.

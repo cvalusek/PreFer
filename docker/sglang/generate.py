@@ -362,9 +362,13 @@ def server_command(lane: dict, server: dict) -> list[str]:
             "--host",
             "0.0.0.0",
             "--port",
-            "30001",
+            "30000",
             "--model-path",
             str(server["model_path"]),
+            "--model-id",
+            lane["request_model_id"],
+            "--input-save-path",
+            str(server.get("input_save_path", "/inputs")),
             "--model-variant",
             str(server["model_variant"]),
             "--revision",
@@ -519,16 +523,7 @@ def server_config(lanes: list[dict], overrides: dict | None = None) -> dict:
         "server": server,
         "models": [model_config_record(lane)],
     }
-    if runtime_mode == "text":
-        config["served_model_name"] = lane["request_model_id"]
-    else:
-        config["gateway"] = {
-            "upstream_host": "127.0.0.1",
-            "upstream_port": 30001,
-            "model_id": lane["request_model_id"],
-            "input_mount": "/inputs",
-            "output_mount": "/outputs",
-        }
+    config["served_model_name"] = lane["request_model_id"]
     return config
 
 
@@ -640,7 +635,6 @@ def container_metadata() -> dict:
         "name": "prefer-sglang",
         "internal_port": 30000,
         "health_path": "/health",
-        "ready_path": "/readyz",
         "model_mount": "/models",
         "input_mount": "/inputs",
         "output_mount": "/outputs",
@@ -704,7 +698,7 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
                 "runtime": "sglang",
                 "backend": "cuda13",
                 "image_tag": "sglang-cuda13",
-                "base_image": runtime["base_image"]["reference"],
+                "base_image": runtime["base_images"]["cuda13"]["reference"],
                 "requires_gpu": True,
                 "provider": scenario["provider"],
                 "hardware": scenario["hardware"],
@@ -803,7 +797,7 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
             ],
             "setting_sources": {"server": "composition defaults and runtime overrides", "model": "models[].server"},
         },
-        "base_image": runtime["base_image"],
+        "base_images": runtime["base_images"],
         "requirements": runtime["requirements"],
         "staging": runtime.get("staging", {}),
         "features": runtime.get("features", {}),
@@ -813,7 +807,6 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
         "runtime_modes": sorted({lane.get("runtime_mode", "text") for lane in lanes}),
         "api": {
             "health": "GET /health",
-            "ready": "GET /readyz",
             "models": "GET /v1/models",
             "chat_completions": "POST /v1/chat/completions",
             "completions": "POST /v1/completions",

@@ -1,11 +1,11 @@
 {
-  "catalog_fingerprint": "25ffb5533528476322874378236370c6bf2cd1127eb975fe08221f4a102b2a72",
+  "catalog_fingerprint": "ab7e1a24789fcdd144061f43168606e239af40658edeeb5ddc0e934f4f3bb20b",
   "schema_version": "prefer.vllm-deployment-inventory.v1",
   "runtime": {
     "name": "vllm",
     "source_repo": "vllm-project/vllm",
-    "source_revision": "2cf0a6915ce544dc493a0990f2ea38d81601128a",
-    "source_revision_role": "Official vLLM v0.28.0 release with Qwen3.5-family hybrid-model, NVFP4, and native MTP serving support.",
+    "source_revision": "98dff2a81d747d1dba01a47f939f48c3526d4206",
+    "source_revision_role": "Official vLLM v0.29.0 release with matched CUDA 12.9 and CUDA 13.0 images, Qwen3.5-family hybrid-model, NVFP4, and native MTP serving support.",
     "lineage": "official-upstream"
   },
   "composition": {
@@ -64,15 +64,30 @@
       "model": "models[].server"
     }
   },
-  "base_image": {
-    "reference": "vllm/vllm-openai:v0.28.0-ubuntu2404@sha256:f8fe15a8039343336945db10494eaad80ef941fe2b2a5fa6649fa38636051a65",
-    "index_digest": "sha256:f8fe15a8039343336945db10494eaad80ef941fe2b2a5fa6649fa38636051a65",
-    "build_revision": "2cf0a6915ce544dc493a0990f2ea38d81601128a",
-    "build_revision_source": "https://github.com/vllm-project/vllm/releases/tag/v0.28.0",
-    "build_revision_note": "Official CUDA 13.0 Ubuntu 24.04 vLLM image; PreFer adds only staging, inventory, and the warmup-aware gateway.",
-    "platform_manifests": {
-      "linux/amd64": "sha256:ffaf945675c81fa7ed3e6a66c7c2d7189dd012614e2c961fac1c2702a7ba04be",
-      "linux/arm64": "sha256:41b54fb42c66a670a8b27e613ebef05898f24b9ab1bdab28bd00c877bd4935f4"
+  "base_images": {
+    "cuda12": {
+      "reference": "vllm/vllm-openai:v0.29.0-cu129-ubuntu2404@sha256:b478e866ccff56876a0e159edae1620055c858c739fb20f23194fc636f1a4108",
+      "index_digest": "sha256:b478e866ccff56876a0e159edae1620055c858c739fb20f23194fc636f1a4108",
+      "cuda_version": "12.9.1",
+      "build_revision": "98dff2a81d747d1dba01a47f939f48c3526d4206",
+      "build_revision_source": "OCI labels on vllm/vllm-openai:v0.29.0-cu129-ubuntu2404",
+      "build_revision_note": "Official CUDA 12.9 Ubuntu 24.04 vLLM v0.29.0 image.",
+      "platform_manifests": {
+        "linux/amd64": "sha256:51b1042786c1bb7ab640fd05e4a2b19ae41662959387cc07e1c3106ae2a851b8",
+        "linux/arm64": "sha256:5783cd2ca65815dc3005669079f05a02ea7a45d7e5f2a1f4ece448acf8a7c049"
+      }
+    },
+    "cuda13": {
+      "reference": "vllm/vllm-openai:v0.29.0-ubuntu2404@sha256:563b8929d66e0891adf9cf1062d1d31d7003b1a5b0cb87a51ba4e92055b5fdb1",
+      "index_digest": "sha256:563b8929d66e0891adf9cf1062d1d31d7003b1a5b0cb87a51ba4e92055b5fdb1",
+      "cuda_version": "13.0.2",
+      "build_revision": "98dff2a81d747d1dba01a47f939f48c3526d4206",
+      "build_revision_source": "OCI labels on vllm/vllm-openai:v0.29.0-ubuntu2404",
+      "build_revision_note": "Official CUDA 13.0 Ubuntu 24.04 vLLM v0.29.0 image.",
+      "platform_manifests": {
+        "linux/amd64": "sha256:382ebda2484376b2b0d26cd39b411cbe7114646238f1a41a7b5904c9eead18ca",
+        "linux/arm64": "sha256:f2f7ae43bf74648b332ba1982abde982488e25f345dce2da8500a834f9090e76"
+      }
     }
   },
   "requirements": {
@@ -80,7 +95,6 @@
       "linux/amd64",
       "linux/arm64"
     ],
-    "cuda_major": 13,
     "minimum_compute_capability": "sm_100",
     "supported_compute_capabilities": [
       "sm_100",
@@ -88,9 +102,13 @@
       "sm_121"
     ],
     "gpu_architecture": "NVIDIA Blackwell; NVFP4 activation arithmetic requires SM100 or newer",
-    "minimum_vllm_version": "0.28.0",
+    "minimum_vllm_version": "0.29.0",
     "nvfp4_backend": "FlashInfer/CUTLASS on Blackwell; older GPUs use a weight-only fallback and are not a supported PreFer lane",
-    "driver_note": "CUDA 13 images require an R580-or-newer host driver in normal mode; use the vLLM CUDA compatibility guidance for older supported drivers"
+    "driver_note": "Choose the explicit CUDA variant that matches the host driver; CUDA 13 normally requires an R580-or-newer driver.",
+    "cuda_variants": {
+      "cuda12": "12.9.1",
+      "cuda13": "13.0.2"
+    }
   },
   "staging": {
     "hf": {
@@ -121,7 +139,6 @@
   "features": {
     "api": [
       "GET /health",
-      "GET /readyz",
       "GET /v1/models",
       "POST /v1/chat/completions",
       "POST /v1/completions"
@@ -130,9 +147,10 @@
     "reasoning_parser": "qwen3",
     "tool_call_parser": "qwen3_coder",
     "structured_output": "vLLM guided decoding; exact schema smoke required",
-    "streaming": "gateway forwards backend SSE bytes and termination",
+    "streaming": "native vLLM OpenAI-compatible streaming",
     "kv_cache": "FP8 KV is the performance default; calibration and long-context quality remain smoke gates",
-    "speculative_decoding": "native Qwen3.5-family MTP head through vLLM speculative_config"
+    "speculative_decoding": "native Qwen3.5-family MTP head through vLLM speculative_config",
+    "transport": "native vLLM OpenAI-compatible server; no PreFer inference proxy"
   },
   "experimental_routes": {
     "qwen-3.8-flash": {
@@ -153,7 +171,6 @@
   ],
   "api": {
     "health": "GET /health",
-    "ready": "GET /readyz",
     "models": "GET /v1/models",
     "chat": "POST /v1/chat/completions",
     "completion": "POST /v1/completions"

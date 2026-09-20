@@ -1,8 +1,11 @@
-ARG SGLANG_BASE_IMAGE=lmsysorg/sglang:nightly-dev-cu13-20260907-30705c00@sha256:19b8fa1223cc339c1eae7a5b703f1a8c2543b5b119155bf3d7efaef18f77f007
+ARG SGLANG_BASE_IMAGE=lmsysorg/sglang:v0.5.20@sha256:06e4f2ed21afde4ff513cda65070124e727ba23ccaeff7712b8c40e1097d611f
 FROM ${SGLANG_BASE_IMAGE}
 
 ARG TARGETARCH
 ARG S5CMD_VERSION=2.2.2
+ARG SGLANG_CUDA_VARIANT=cuda13
+ARG SGLANG_SOURCE_REVISION=94602c9c2b7cbdb8efd5c52802dac6a1c180089e
+ARG SGLANG_IMAGE_VERSION=v0.5.20
 
 USER root
 RUN apt-get update \
@@ -43,17 +46,16 @@ COPY .prefer-tooling/prefer-model-plan.schema.json /prefer-catalog/schemas/prefe
 COPY .prefer-tooling/prefer-runtime-handoff.schema.json /prefer-catalog/schemas/prefer-runtime-handoff.schema.json
 COPY .prefer-tooling/prefer-runtime-handoff-download.sh /prefer-runtime-handoff-download.sh
 COPY entrypoint.sh /prefer-sglang-entrypoint.sh
-COPY video_gateway.py /prefer-sglang-video-gateway.py
-RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /model-downloads.generated.sh /prefer-sglang-entrypoint.sh /prefer-sglang-video-gateway.py /prefer-catalog/generate.py \
-    && chmod +x /usr/local/bin/prefer /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /model-downloads.generated.sh /prefer-sglang-entrypoint.sh /prefer-sglang-video-gateway.py
+RUN sed -i 's/\r$//' /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /model-downloads.generated.sh /prefer-sglang-entrypoint.sh /prefer-catalog/generate.py \
+    && chmod +x /usr/local/bin/prefer /prefer-download-artifacts.sh /prefer-runtime-handoff-download.sh /model-downloads.generated.sh /prefer-sglang-entrypoint.sh
 
 ENV PREFER_ENGINE=sglang \
     PREFER_MODEL_CATALOG=/prefer-model-catalog.json
 
 LABEL io.prefer.runtime="sglang" \
-      io.prefer.sglang.backend="cuda13" \
-      io.prefer.sglang.source-revision="30705c004ca4bbfc92216dfaf845da14d84c4c4d" \
-      io.prefer.sglang.image-build-revision="30705c004ca4bbfc92216dfaf845da14d84c4c4d" \
+      io.prefer.sglang.backend="${SGLANG_CUDA_VARIANT}" \
+      io.prefer.sglang.source-revision="${SGLANG_SOURCE_REVISION}" \
+      io.prefer.sglang.image-build-revision="${SGLANG_IMAGE_VERSION}" \
       io.prefer.sglang.lineage="official-upstream" \
       io.prefer.deployment-inventory.path="/deployment-inventory.json" \
       io.prefer.deployment-inventory.schema="prefer.sglang-deployment-inventory.v2"

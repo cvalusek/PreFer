@@ -1,5 +1,19 @@
 # PreFer changelog
 
+## Current
+
+- Runtime images
+  - Updated llama.cpp from b10362 to the latest complete GHCR `server-cuda-b11058` index.
+  - Updated Audio CUDA 12/CPU to upstream `9ba8841` and stable-diffusion.cpp CUDA 12 to upstream `137f740`.
+  - Added explicit SGLang CUDA 12.9 (`v0.5.19`) and CUDA 13 (`v0.5.20`) image variants.
+  - Added explicit vLLM CUDA 12.9 and CUDA 13.0 variants on the same v0.29.0 source revision.
+  - Expanded the atomic grouped release from seven to nine immutable image indexes; SGLang and vLLM no longer publish ambiguous generic CUDA aliases.
+- Native server APIs
+  - Removed the mandatory vLLM HTTP gateway; artifact staging completes before `vllm serve` directly owns port 8000.
+  - Removed the mandatory SGLang diffusion gateway; `sglang serve` directly owns port 30000 for native `/v1/videos` requests.
+  - Friendly SGLang/vLLM catalog aliases remain planner inputs; HTTP clients now use each lane's canonical `request_model_id` without proxy rewriting.
+  - Restored native MiniMax H3 HTTP(S), data, base64, and local condition URIs instead of rejecting remote media at a PreFer proxy.
+
 ## sha-43b06c1 (preview)
 
 - Images

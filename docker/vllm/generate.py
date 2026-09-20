@@ -282,9 +282,8 @@ def load_scenarios(primary_by_key: dict[str, dict]) -> list[dict]:
 def effective_server(lane: dict, overrides: dict | None = None) -> dict:
     server = copy.deepcopy(lane["server"])
     server.update(copy.deepcopy(overrides or {}))
-    server.setdefault("backend_host", "127.0.0.1")
-    server.setdefault("backend_port", 8001)
-    server.setdefault("public_port", 8000)
+    server.setdefault("host", "0.0.0.0")
+    server.setdefault("port", 8000)
     return server
 
 
@@ -298,9 +297,9 @@ def server_command(lane: dict, server: dict) -> list[str]:
         "serve",
         lane["container_path"],
         "--host",
-        str(server["backend_host"]),
+        str(server["host"]),
         "--port",
-        str(server["backend_port"]),
+        str(server["port"]),
         "--served-model-name",
         lane["request_model_id"],
     ]
@@ -380,10 +379,8 @@ def server_config(lane: dict, overrides: dict | None = None) -> dict:
     return {
         "schema_version": 1,
         "runtime": "vllm",
-        "host": "0.0.0.0",
-        "port": server["public_port"],
-        "backend_host": server["backend_host"],
-        "backend_port": server["backend_port"],
+        "host": server["host"],
+        "port": server["port"],
         "command": server_command(lane, server),
         "server": server,
         "models": [model_config_record(lane)],
@@ -531,7 +528,7 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
             ],
             "setting_sources": {"server": "runtime overrides", "model": "models[].server"},
         },
-        "base_image": runtime["base_image"],
+        "base_images": runtime["base_images"],
         "requirements": runtime["requirements"],
         "staging": runtime["staging"],
         "features": runtime["features"],
@@ -539,7 +536,6 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
         "known_limitations": runtime["known_limitations"],
         "api": {
             "health": "GET /health",
-            "ready": "GET /readyz",
             "models": "GET /v1/models",
             "chat": "POST /v1/chat/completions",
             "completion": "POST /v1/completions",

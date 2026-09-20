@@ -1,6 +1,6 @@
 {
   "schema_version": "prefer.audio-deployment-inventory.v1",
-  "catalog_fingerprint": "6e0be29d9a45f210bda2b1f911951f67392d9710e81e6dffde56e072d0708798",
+  "catalog_fingerprint": "b3534fa68121d6509965b54cc5e5e003d6bb25f1098106cafdec6df94de8d8b8",
   "product": "PreFer",
   "distribution": {
     "embedded_image_path": "/deployment-inventory.json",
@@ -15,7 +15,7 @@
   "runtime": {
     "name": "audio.cpp",
     "source_repo": "0xShug0/audio.cpp",
-    "source_revision": "6d530f4052ca93b5cd84ef6124406dcf85542a6f"
+    "source_revision": "9ba884179826c3b33dd305185b5f94c79175a03d"
   },
   "composition": {
     "schema_version": "prefer.runtime-composition.v1",
@@ -93,19 +93,19 @@
   },
   "base_images": {
     "cuda12": {
-      "reference": "ghcr.io/0xshug0/audio.cpp:full-cuda12-20260828-6d530f4@sha256:88ec7504877ae0ff427dd15089693b260c1228cc511b22cd4a79b44f0b1ee268",
-      "index_digest": "sha256:88ec7504877ae0ff427dd15089693b260c1228cc511b22cd4a79b44f0b1ee268",
+      "reference": "ghcr.io/0xshug0/audio.cpp:full-cuda12-20260920-9ba8841@sha256:49df3b8f9d4054fed2d15ab0a3c4f02f7a756b75ab0a02cae4be8bf4d2e7e5e3",
+      "index_digest": "sha256:49df3b8f9d4054fed2d15ab0a3c4f02f7a756b75ab0a02cae4be8bf4d2e7e5e3",
       "platform_manifests": {
-        "linux/amd64": "sha256:f0b9cc1318845dc9fec14b7d1d59475e12c06313900345523fb36b89fca99c16",
-        "linux/arm64": "sha256:e835dadb8a18b91107ba80aea291e0b31be37b469dc49207e698c390fb6bc20d"
+        "linux/amd64": "sha256:77dac7f46cbc2cd97679987d09958d77cd1cd0da2e52abc8cadc81a922e0adba",
+        "linux/arm64": "sha256:4d44541e9bce0281cc34fd61e2d643e3db03afd402dab184ddc0e471e5513bc1"
       }
     },
     "cpu": {
-      "reference": "ghcr.io/0xshug0/audio.cpp:full-cpu-20260828-6d530f4@sha256:df1c931a1bed1ca1591b8dcc911839ee0d178e8556c45e8ccf81133b9a7910a6",
-      "index_digest": "sha256:df1c931a1bed1ca1591b8dcc911839ee0d178e8556c45e8ccf81133b9a7910a6",
+      "reference": "ghcr.io/0xshug0/audio.cpp:full-cpu-20260920-9ba8841@sha256:039a20de6ac08f7968e8a3fcc15c2c1e86f03b3713b21c36b9a90019fcba835e",
+      "index_digest": "sha256:039a20de6ac08f7968e8a3fcc15c2c1e86f03b3713b21c36b9a90019fcba835e",
       "platform_manifests": {
-        "linux/amd64": "sha256:e37f3c94e7cf929723eb570e584c389030cef1eb07165c1909ef863f9a9bb37f",
-        "linux/arm64": "sha256:b4944f43f1ad4a4db4bc26d093631f8ef7fc5ecbf554dc812ac32f9750d44bb6"
+        "linux/amd64": "sha256:71612d39e47760c2fa9ff01ed4a5b24bf7c2c1c9e27b75502f8d450e7209dc71",
+        "linux/arm64": "sha256:b177ced3957696dd9aeccac67702a9af4807dd627fc44714d1ee8b87e10dc371"
       }
     }
   },

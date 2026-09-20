@@ -24,8 +24,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--audio-cuda-digest", required=True)
     parser.add_argument("--audio-cpu-digest", required=True)
     parser.add_argument("--image-digest", required=True)
-    parser.add_argument("--sglang-digest", required=True)
-    parser.add_argument("--vllm-digest", required=True)
+    parser.add_argument("--sglang-cuda12-digest", required=True)
+    parser.add_argument("--sglang-cuda13-digest", required=True)
+    parser.add_argument("--vllm-cuda12-digest", required=True)
+    parser.add_argument("--vllm-cuda13-digest", required=True)
     parser.add_argument("--downloader-digest", required=True)
     parser.add_argument("--llama-inventory", type=Path, required=True)
     parser.add_argument("--audio-inventory", type=Path, required=True)
@@ -216,9 +218,9 @@ def build_manifest(args: argparse.Namespace) -> dict[str, object]:
                 "runtime": "llama.cpp",
                 "inventory": llama_inventory,
                 "images": {
-                    "cuda": image_entry(
+                    "cuda12": image_entry(
                         image_repository,
-                        f"llama-cuda-{release_id}",
+                        f"llama-cuda12-{release_id}",
                         args.llama_digest,
                         ["linux/amd64"],
                     )
@@ -258,24 +260,36 @@ def build_manifest(args: argparse.Namespace) -> dict[str, object]:
                 "runtime": "sglang",
                 "inventory": sglang_inventory,
                 "images": {
+                    "cuda12": image_entry(
+                        image_repository,
+                        f"sglang-cuda12-{release_id}",
+                        args.sglang_cuda12_digest,
+                        ["linux/amd64", "linux/arm64"],
+                    ),
                     "cuda13": image_entry(
                         image_repository,
                         f"sglang-cuda13-{release_id}",
-                        args.sglang_digest,
+                        args.sglang_cuda13_digest,
                         ["linux/amd64", "linux/arm64"],
-                    )
+                    ),
                 },
             },
             "vllm": {
                 "runtime": "vllm",
                 "inventory": vllm_inventory,
                 "images": {
+                    "cuda12": image_entry(
+                        image_repository,
+                        f"vllm-cuda12-{release_id}",
+                        args.vllm_cuda12_digest,
+                        ["linux/amd64", "linux/arm64"],
+                    ),
                     "cuda13": image_entry(
                         image_repository,
                         f"vllm-cuda13-{release_id}",
-                        args.vllm_digest,
+                        args.vllm_cuda13_digest,
                         ["linux/amd64", "linux/arm64"],
-                    )
+                    ),
                 },
             },
         },

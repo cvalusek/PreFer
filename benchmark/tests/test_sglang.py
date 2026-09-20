@@ -32,6 +32,7 @@ class SGLangTests(unittest.TestCase):
         self.assertNotIn("PREFER_DEPLOYMENT", inventory["composition"]["environment"])
         self.assertFalse((SGLANG_ROOT / "deployment-scenarios").exists())
         self.assertFalse((SGLANG_ROOT / "server-configs").exists())
+        self.assertEqual(set(inventory["base_images"]), {"cuda12", "cuda13"})
 
     def test_every_lane_composes_to_one_model(self):
         inventory = json.loads((SGLANG_ROOT / "deployment-inventory.generated.json").read_text(encoding="utf-8"))
@@ -63,6 +64,8 @@ class SGLangTests(unittest.TestCase):
         self.assertIn("SGLANG_RUNTIME_HANDOFF=${SGLANG_RUNTIME_HANDOFF:-}", compose)
         self.assertNotIn("SGLANG_SERVER_CONFIG=", compose)
         self.assertNotIn("SGLANG_DEPLOYMENT=", compose)
+        self.assertIn("SGLANG_CUDA_VARIANT", compose)
+        self.assertIn("SGLANG_BASE_IMAGE", compose)
 
 
 if __name__ == "__main__":
