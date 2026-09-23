@@ -1,9 +1,11 @@
 # PreFer SGLang runtime
 
-PreFer publishes two official-upstream SGLang variants: CUDA 12.9 on the final
-upstream CUDA 12 release (`v0.5.19-cu129`) and CUDA 13 on `v0.5.20`. They serve
-Qwen3.8 text and MiniMax H3 diffusion video as alternatives to llama.cpp.
-Capability and fit remain exact variant/card smoke gates.
+PreFer publishes official SGLang CUDA 12.9 (`v0.5.19-cu129`) and CUDA 13
+(`v0.5.20`) variants, plus a build-only ROCm MI30x image. The CUDA variants
+serve Qwen3.8 text and MiniMax H3 diffusion video as alternatives to llama.cpp.
+The ROCm image is not an R9700 `gfx1201` build, and the checked-in NVFP4 and
+FlashInfer CUDA routes must not be treated as validated AMD model configs.
+Capability and fit remain exact variant/card/model smoke gates.
 
 Generated hardware deployments, local profiles, and checked-in server configs
 have been removed. The inventory retains model profiles, runtime modes, API

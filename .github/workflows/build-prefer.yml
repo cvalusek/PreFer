@@ -926,6 +926,116 @@ jobs:
           cache-from: type=gha,scope=vllm-cuda13
           cache-to: type=gha,scope=vllm-cuda13,mode=max
 
+  accelerator_variants:
+    needs: [verify, tooling]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: llama-rocm
+            context: docker/llama-cpp
+            base_image: ghcr.io/ggml-org/llama.cpp:server-rocm-b11058@sha256:441f21381f6973b744a21b8cf8c0f7a6406965fe401d77caab7770cf7c555e5d
+            backend: rocm
+            platforms: linux/amd64
+            extra_args: ''
+          - name: audio-vulkan
+            context: docker/audio-cpp
+            base_image: ghcr.io/0xshug0/audio.cpp:full-vulkan-20260920-9ba8841@sha256:68d18c9eec7b9e85630a3c08fd72bd1feebdd5f495baaf85fa513ed72a0ae792
+            backend: vulkan
+            platforms: linux/amd64,linux/arm64
+            extra_args: PREFER_AUDIO_SERVER_CONFIG=server.vulkan.generated.json
+          - name: image-vulkan
+            context: docker/stable-diffusion-cpp
+            base_image: ghcr.io/leejet/stable-diffusion.cpp:master-vulkan@sha256:6b6a2cd377410b18d2eba048920d7046f4cdef444573dd7c05ada7b3a44a3446
+            backend: vulkan
+            platforms: linux/amd64
+            extra_args: PREFER_IMAGE_SOURCE_REVISION=c92d73c408515c94beef32161bb5960764fde7a0
+          - name: sglang-rocm-mi30x
+            context: docker/sglang
+            base_image: lmsysorg/sglang-rocm:v0.5.20-rocm724-mi30x-20260922@sha256:d788cf42968cd50045abd55c5ba5bee83825a8bbe5678a7e76674f970dd895a7
+            backend: rocm-mi30x
+            platforms: linux/amd64
+            extra_args: SGLANG_SOURCE_REVISION=unverified-rocm-build
+          - name: vllm-rocm
+            context: docker/vllm
+            base_image: vllm/vllm-openai-rocm:v0.29.0@sha256:e5e47f6aaab675c252c381f0dac237b31b10d87bb74d092b07fb4065efd7f5a1
+            backend: rocm
+            platforms: linux/amd64
+            extra_args: ''
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add release tooling to build context
+        uses: actions/download-artifact@v4
+        with:
+          name: prefer-tooling-${{ github.sha }}
+          path: ${{ matrix.context }}/.prefer-tooling
+
+      - name: Free runner disk space for accelerator bases
+        shell: bash
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/powershell /usr/local/share/chromium
+          df -h /
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set immutable image tag
+        id: image
+        shell: bash
+        run: echo "tag=ghcr.io/${GITHUB_REPOSITORY,,}:${{ matrix.name }}-sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push ${{ matrix.name }}
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.context }}/Dockerfile
+          platforms: ${{ matrix.platforms }}
+          push: true
+          tags: ${{ steps.image.outputs.tag }}
+          build-args: |
+            PREFER_BASE_IMAGE=${{ matrix.base_image }}
+            PREFER_RUNTIME_BACKEND=${{ matrix.backend }}
+            ${{ matrix.extra_args }}
+          labels: |
+            io.prefer.runtime.backend=${{ matrix.backend }}
+            io.prefer.release.revision=${{ github.sha }}
+            io.prefer.cli.path=/usr/local/bin/prefer
+            io.prefer.model-catalog.path=/prefer-model-catalog.json
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,scope=${{ matrix.name }},mode=max
+
+      - name: Record resolved immutable digest
+        shell: bash
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || exit 1
+          printf '%s\n' "$DIGEST" > "${{ matrix.name }}.digest"
+
+      - name: Upload variant digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: prefer-variant-${{ matrix.name }}-${{ github.sha }}
+          path: ${{ matrix.name }}.digest
+          if-no-files-found: error
+
   downloader:
     needs: [verify, tooling]
     runs-on: ubuntu-latest
@@ -985,7 +1095,7 @@ jobs:
           cache-to: type=gha,scope=artifact-downloader,mode=max
 
   release:
-    needs: [tooling, llama, audio_cuda, audio_cpu, image, sglang_cuda12, sglang_cuda13, vllm_cuda12, vllm_cuda13, downloader]
+    needs: [tooling, llama, audio_cuda, audio_cpu, image, sglang_cuda12, sglang_cuda13, vllm_cuda12, vllm_cuda13, accelerator_variants, downloader]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -1010,6 +1120,13 @@ jobs:
         with:
           name: prefer-tooling-${{ github.sha }}
           path: prefer-tooling
+
+      - name: Download accelerator variant digests
+        uses: actions/download-artifact@v4
+        with:
+          pattern: prefer-variant-*-${{ github.sha }}
+          merge-multiple: true
+          path: variant-digests
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -1038,6 +1155,11 @@ jobs:
             --sglang-cuda13-digest "$SGLANG_CUDA13_DIGEST" \
             --vllm-cuda12-digest "$VLLM_CUDA12_DIGEST" \
             --vllm-cuda13-digest "$VLLM_CUDA13_DIGEST" \
+            --llama-rocm-digest "$(cat variant-digests/llama-rocm.digest)" \
+            --audio-vulkan-digest "$(cat variant-digests/audio-vulkan.digest)" \
+            --image-vulkan-digest "$(cat variant-digests/image-vulkan.digest)" \
+            --sglang-rocm-mi30x-digest "$(cat variant-digests/sglang-rocm-mi30x.digest)" \
+            --vllm-rocm-digest "$(cat variant-digests/vllm-rocm.digest)" \
             --downloader-digest "$DOWNLOADER_DIGEST" \
             --llama-inventory docker/llama-cpp/deployment-inventory.generated.json \
             --audio-inventory docker/audio-cpp/deployment-inventory.generated.json \
@@ -1126,6 +1248,15 @@ jobs:
             echo "Unsupported release branch: $GITHUB_REF_NAME" >&2
             exit 1
           fi
+          for variant in llama-rocm audio-vulkan image-vulkan sglang-rocm-mi30x vllm-rocm; do
+            digest="$(cat "variant-digests/$variant.digest")"
+            if [[ "$GITHUB_REF_NAME" == "develop" ]]; then
+              alias="$variant-preview"
+            else
+              alias="$variant"
+            fi
+            docker buildx imagetools create --tag "$image_repository:$alias" "$image_repository@$digest"
+          done
 
       - name: Publish immutable GitHub release
         shell: bash
@@ -1141,7 +1272,7 @@ jobs:
             exit 1
           fi
           release_title="PreFer $release_tag ($release_channel)"
-          release_notes="Grouped PreFer $release_channel release for commit $GITHUB_SHA. Download prefer-release.json to select exact llama.cpp, audio.cpp, stable-diffusion.cpp, SGLang, vLLM, and CPU-only downloader images plus runtime inventories. Model weights are staged separately from the same runtime handoff."
+          release_notes="Grouped PreFer $release_channel release for commit $GITHUB_SHA. Download prefer-release.json to select exact CUDA, ROCm, Vulkan, and CPU images plus runtime inventories. ROCm/Vulkan lanes are build-only pending exact GPU/model smoke; SGLang ROCm is MI30x-only. Model weights are staged separately from the same runtime handoff."
           if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             if [[ "$release_channel" == "stable" ]]; then
               gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" --title "$release_title" --notes "$release_notes" --prerelease=false --latest

@@ -77,6 +77,11 @@ class GroupedReleaseTests(unittest.TestCase):
             "sglang_cuda13": "sha256:" + "6" * 64,
             "vllm_cuda12": "sha256:" + "7" * 64,
             "vllm_cuda13": "sha256:" + "8" * 64,
+            "llama_rocm": "sha256:" + "a" * 64,
+            "audio_vulkan": "sha256:" + "b" * 64,
+            "image_vulkan": "sha256:" + "c" * 64,
+            "sglang_rocm_mi30x": "sha256:" + "d" * 64,
+            "vllm_rocm": "sha256:" + "e" * 64,
             "downloader": "sha256:" + "9" * 64,
         }
         return subprocess.run(
@@ -105,6 +110,11 @@ class GroupedReleaseTests(unittest.TestCase):
                 digests["vllm_cuda12"],
                 "--vllm-cuda13-digest",
                 digests["vllm_cuda13"],
+                "--llama-rocm-digest", digests["llama_rocm"],
+                "--audio-vulkan-digest", digests["audio_vulkan"],
+                "--image-vulkan-digest", digests["image_vulkan"],
+                "--sglang-rocm-mi30x-digest", digests["sglang_rocm_mi30x"],
+                "--vllm-rocm-digest", digests["vllm_rocm"],
                 "--downloader-digest",
                 digests["downloader"],
                 "--llama-inventory",
@@ -187,6 +197,11 @@ class GroupedReleaseTests(unittest.TestCase):
                     "llama-cuda12-sha-abcdef0",
                     ["linux/amd64"],
                 ),
+                ("llama", "rocm"): ("llama-rocm-sha-abcdef0", ["linux/amd64"]),
+                ("audio", "vulkan"): ("audio-vulkan-sha-abcdef0", ["linux/amd64", "linux/arm64"]),
+                ("image", "vulkan"): ("image-vulkan-sha-abcdef0", ["linux/amd64"]),
+                ("sglang", "rocm-mi30x"): ("sglang-rocm-mi30x-sha-abcdef0", ["linux/amd64"]),
+                ("vllm", "rocm"): ("vllm-rocm-sha-abcdef0", ["linux/amd64"]),
                 ("audio", "cuda12"): (
                     "audio-cuda12-sha-abcdef0",
                     ["linux/amd64", "linux/arm64"],
@@ -218,7 +233,7 @@ class GroupedReleaseTests(unittest.TestCase):
             }
             self.assertEqual(
                 sum(len(engine["images"]) for engine in manifest["engines"].values()),
-                8,
+                13,
             )
             downloader = manifest["utilities"]["downloader"]["images"]["cpu"]
             self.assertEqual(downloader["tag"], "downloader-sha-abcdef0")
@@ -293,9 +308,14 @@ class GroupedReleaseTests(unittest.TestCase):
             "vllm-cuda12-sha-",
             "vllm-cuda13-sha-",
             "downloader-sha-",
+            "name: llama-rocm",
+            "name: audio-vulkan",
+            "name: image-vulkan",
+            "name: sglang-rocm-mi30x",
+            "name: vllm-rocm",
         ):
             self.assertIn(immutable_tag, workflow)
-        self.assertIn("needs: [tooling, llama, audio_cuda, audio_cpu, image, sglang_cuda12, sglang_cuda13, vllm_cuda12, vllm_cuda13, downloader]", workflow)
+        self.assertIn("needs: [tooling, llama, audio_cuda, audio_cpu, image, sglang_cuda12, sglang_cuda13, vllm_cuda12, vllm_cuda13, accelerator_variants, downloader]", workflow)
         self.assertIn("name: prefer-release-${{ github.sha }}", workflow)
         self.assertIn("gh release create", workflow)
         self.assertIn("prefer-release.json", workflow)
@@ -345,6 +365,9 @@ class GroupedReleaseTests(unittest.TestCase):
             '"$image_repository:downloader"',
         ):
             self.assertIn(stable_tag, workflow)
+        self.assertIn('for variant in llama-rocm audio-vulkan image-vulkan sglang-rocm-mi30x vllm-rocm', workflow)
+        self.assertIn('alias="$variant-preview"', workflow)
+        self.assertIn('alias="$variant"', workflow)
         self.assertIn('release_channel="stable"', workflow)
         self.assertIn('release_channel="preview"', workflow)
         self.assertIn("--prerelease --latest=false", workflow)

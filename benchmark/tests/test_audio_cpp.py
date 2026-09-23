@@ -36,9 +36,10 @@ class AudioCppTests(unittest.TestCase):
         self.assertFalse((AUDIO_ROOT / "server-configs").exists())
 
     def test_checked_in_server_configs_are_empty_base_free_templates(self):
-        for name in ("server.cuda.generated.json", "server.cpu.generated.json"):
+        for name, backend in (("server.cuda.generated.json", "cuda"), ("server.cpu.generated.json", "cpu"), ("server.vulkan.generated.json", "vulkan")):
             config = json.loads((AUDIO_ROOT / name).read_text(encoding="utf-8"))
             self.assertEqual(config["models"], [])
+            self.assertEqual(config["backend"], backend)
 
     def test_images_stage_external_model_volumes_as_root(self):
         for name in ("Dockerfile", "Dockerfile.cpu"):

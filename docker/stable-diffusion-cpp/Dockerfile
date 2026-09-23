@@ -1,7 +1,10 @@
 ARG STABLE_DIFFUSION_CPP_BASE_IMAGE=ghcr.io/leejet/stable-diffusion.cpp:master-cuda@sha256:dd71cfb3ed1459c6c227f16037bf98bf34c693930176aa45e98e19477117caac
-FROM ${STABLE_DIFFUSION_CPP_BASE_IMAGE}
+ARG PREFER_BASE_IMAGE=${STABLE_DIFFUSION_CPP_BASE_IMAGE}
+FROM ${PREFER_BASE_IMAGE}
 
 ARG TARGETARCH
+ARG PREFER_RUNTIME_BACKEND=cuda12
+ARG PREFER_IMAGE_SOURCE_REVISION=137f7409bbfb98c70a350a57d6a135487080db96
 USER root
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates curl python3 python3-pip tini util-linux xz-utils \
@@ -40,8 +43,8 @@ ENV PREFER_ENGINE=stable-diffusion.cpp \
     PREFER_MODEL_CATALOG=/prefer-model-catalog.json
 
 LABEL io.prefer.runtime="stable-diffusion.cpp" \
-      io.prefer.image.backend="cuda12" \
-      io.prefer.image.source-revision="137f7409bbfb98c70a350a57d6a135487080db96" \
+      io.prefer.image.backend="${PREFER_RUNTIME_BACKEND}" \
+      io.prefer.image.source-revision="${PREFER_IMAGE_SOURCE_REVISION}" \
       io.prefer.deployment-inventory.path="/deployment-inventory.json" \
       io.prefer.deployment-inventory.schema="prefer.image-deployment-inventory.v1"
 

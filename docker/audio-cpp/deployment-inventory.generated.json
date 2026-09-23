@@ -1,6 +1,6 @@
 {
   "schema_version": "prefer.audio-deployment-inventory.v1",
-  "catalog_fingerprint": "b3534fa68121d6509965b54cc5e5e003d6bb25f1098106cafdec6df94de8d8b8",
+  "catalog_fingerprint": "de97d9b956fd256646008cb923fa63e07ac76bd26e9b2c1a0804ee8199096a5f",
   "product": "PreFer",
   "distribution": {
     "embedded_image_path": "/deployment-inventory.json",
@@ -99,6 +99,15 @@
         "linux/amd64": "sha256:77dac7f46cbc2cd97679987d09958d77cd1cd0da2e52abc8cadc81a922e0adba",
         "linux/arm64": "sha256:4d44541e9bce0281cc34fd61e2d643e3db03afd402dab184ddc0e471e5513bc1"
       }
+    },
+    "vulkan": {
+      "reference": "ghcr.io/0xshug0/audio.cpp:full-vulkan-20260920-9ba8841@sha256:68d18c9eec7b9e85630a3c08fd72bd1feebdd5f495baaf85fa513ed72a0ae792",
+      "index_digest": "sha256:68d18c9eec7b9e85630a3c08fd72bd1feebdd5f495baaf85fa513ed72a0ae792",
+      "platform_manifests": {
+        "linux/amd64": "sha256:9124fabfeb623a67e5a3b2dc66906f9b53bae4454ccf30e7ed8af4638f94e459",
+        "linux/arm64": "sha256:e60ad8e64f4f715b3e068456223573fdde99688a456797d7317f51cb4f2a5fb4"
+      },
+      "verification": "build-only; backend and model coverage not validated on AMD"
     },
     "cpu": {
       "reference": "ghcr.io/0xshug0/audio.cpp:full-cpu-20260920-9ba8841@sha256:039a20de6ac08f7968e8a3fcc15c2c1e86f03b3713b21c36b9a90019fcba835e",

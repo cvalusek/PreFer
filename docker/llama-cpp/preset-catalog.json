@@ -5,6 +5,13 @@
     "source_revision": "f072b103714dfa1eee531f80b24512faf38e3dd2",
     "image": "ghcr.io/ggml-org/llama.cpp:server-cuda-b11058",
     "manifest_digest": "sha256:480f67114291c698d2b13097e0e3efdd57e81aa3a9de6720564c307663868a59",
+    "rocm": {
+      "reference": "ghcr.io/ggml-org/llama.cpp:server-rocm-b11058@sha256:441f21381f6973b744a21b8cf8c0f7a6406965fe401d77caab7770cf7c555e5d",
+      "platform_manifests": {
+        "linux/amd64": "sha256:b429b8be10d3d0353a09c98f4ab840fe516f779858a28f9fd4e5bdf10bc63cb4"
+      },
+      "verification": "build-only; no PreFer model or API smoke on ROCm"
+    },
     "platform_manifests": {
       "linux/amd64": "sha256:fb70beb2887ac5127d3982ec6d80feb3d2cc36058e0410d90696febe533a83ae",
       "linux/arm64": "sha256:ff1005faa7bd7432f9a8c7fb94380c94450f7e85b5cd8be2b68f6c86992a5044"

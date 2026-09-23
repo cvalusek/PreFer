@@ -32,7 +32,7 @@ class SGLangTests(unittest.TestCase):
         self.assertNotIn("PREFER_DEPLOYMENT", inventory["composition"]["environment"])
         self.assertFalse((SGLANG_ROOT / "deployment-scenarios").exists())
         self.assertFalse((SGLANG_ROOT / "server-configs").exists())
-        self.assertEqual(set(inventory["base_images"]), {"cuda12", "cuda13"})
+        self.assertEqual(set(inventory["base_images"]), {"cuda12", "cuda13", "rocm-mi30x"})
 
     def test_every_lane_composes_to_one_model(self):
         inventory = json.loads((SGLANG_ROOT / "deployment-inventory.generated.json").read_text(encoding="utf-8"))

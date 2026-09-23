@@ -1,7 +1,11 @@
 # PreFer llama.cpp runtime
 
-This image runs the pinned llama.cpp router. Hardware presets, VRAM-tier INIs,
-local GPU profiles, and automatic preset detection have been removed.
+The CUDA 12 and ROCm (Linux AMD64) images run the same pinned llama.cpp router
+and PreFer handoff. The ROCm image is build-only until exact GPU/model/API
+verification. Native Linux requires `/dev/kfd` and `/dev/dri`; Windows WSL
+`/dev/dxg` needs separate ROCDXG setup and is not an equivalent device mount.
+Hardware presets, VRAM-tier INIs, local GPU profiles, and automatic preset
+detection have been removed.
 
 ## Selection
 

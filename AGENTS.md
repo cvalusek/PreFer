@@ -27,8 +27,8 @@ proxy.
 ## Grouped release contract
 
 `build-prefer.yml` is the only runtime-image workflow. A change under any of
-the five runtime folders rebuilds and publishes llama CUDA, Audio CUDA/CPU,
-Image CUDA, SGLang CUDA 12/13, and vLLM CUDA 12/13 together under the same
+the five runtime folders rebuilds and publishes llama CUDA/ROCm, Audio CUDA/Vulkan/CPU,
+Image CUDA/Vulkan, SGLang CUDA 12/13 and ROCm MI30x, and vLLM CUDA 12/13 and ROCm together under the same
 seven-character source SHA. Do not add
 engine-specific image workflows or path-gate individual engine jobs: the
 atomic release is deliberate so downstream controllers never have to compose
@@ -42,7 +42,7 @@ work by merging it to `main`, and merge any exceptional stable hotfix back into
 `develop` immediately so the lines do not drift. Do not publish a runtime
 commit directly to `main` merely to bypass preview validation.
 
-After all nine immutable image indexes publish, the workflow creates the
+After all fourteen immutable image indexes publish, the workflow creates the
 GitHub release `sha-<short-commit>` and the matching
 `prefer-release-<full-commit>` Actions artifact. Both contain
 `prefer-release.json`, its schema, the exact five deployment inventories, the
@@ -67,9 +67,7 @@ building; never leave an empty `Current` section in the file.
 
 After CI publishes the grouped immutable release, make a root-only follow-up commit that
 changes the `Current` heading to the resulting `sha-<short-commit>` tag and
-adds all nine exact image identities from that release: llama CUDA, Audio CUDA,
-Audio CPU, Image CUDA, SGLang CUDA 12/13, vLLM CUDA 12/13, and the CPU-only
-downloader. Do not rewrite the approved change bullets during
+adds all fourteen exact image identities from that release: llama CUDA/ROCm, Audio CUDA/Vulkan/CPU, Image CUDA/Vulkan, SGLang CUDA 12/13 and ROCm MI30x, vLLM CUDA 12/13 and ROCm, and the CPU-only downloader. Do not rewrite the approved change bullets during
 finalization. Also name the matching `prefer-inference-core@0.0.0-g<short-sha>`
 package when the release includes shared tooling. Suffix a preview heading with `(preview)` and a stable heading
 with `(stable)`; pre-channel headings without a suffix are stable. The grouped
@@ -110,6 +108,22 @@ details retained later in this file as benchmark rationale:
   runtime images consume the same handoff, use `/models/<repo>/<path>`, and
   publish common `downloads-v2` verification markers. It must not require CUDA
   or copy model weights into an image.
+
+## AMD accelerator variants
+
+The grouped workflow also builds llama.cpp and vLLM official ROCm images,
+SGLang's official ROCm **MI30x-only** image, and upstream audio.cpp and
+stable-diffusion.cpp **Vulkan** images. Each pins its published OCI digest in
+the corresponding engine runtime catalog. Audio's Vulkan base uses the exact
+same upstream revision as CUDA/CPU; the image Vulkan base currently uses a
+later immutable source revision. The generated Audio Vulkan server config sets
+`backend: vulkan` rather than inheriting CUDA. All new image lanes remain
+build-only until exact-card model load and API smokes, and do not introduce
+hardware-derived model presets. Do not treat the published SGLang MI30x
+image, its NVIDIA NVFP4 catalog configuration, or the vLLM NVFP4 recipe as
+proof of Radeon AI PRO R9700 `gfx1201` inference. Windows WSL `/dev/dxg`
+needs ROCDXG for HIP and is not a substitute for native Linux `/dev/kfd`
+and `/dev/dri` access; Vulkan also needs an actual Vulkan device/ICD.
 
 ## Conventions
 

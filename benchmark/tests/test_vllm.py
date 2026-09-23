@@ -31,7 +31,7 @@ class VLLMTests(unittest.TestCase):
         self.assertNotIn("PREFER_DEPLOYMENT", inventory["composition"]["environment"])
         self.assertFalse((VLLM_ROOT / "deployment-scenarios").exists())
         self.assertFalse((VLLM_ROOT / "server-configs").exists())
-        self.assertEqual(set(inventory["base_images"]), {"cuda12", "cuda13"})
+        self.assertEqual(set(inventory["base_images"]), {"cuda12", "cuda13", "rocm"})
 
     def test_model_composes_with_mtp_control(self):
         inventory = json.loads((VLLM_ROOT / "deployment-inventory.generated.json").read_text(encoding="utf-8"))

@@ -3,9 +3,11 @@
 # dynamic split-graph fixes required by the catalog. Pin the immutable official
 # multi-platform index rather than the moving server-cuda tag.
 ARG LLAMA_CPP_BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda-b11058@sha256:480f67114291c698d2b13097e0e3efdd57e81aa3a9de6720564c307663868a59
-FROM ${LLAMA_CPP_BASE_IMAGE}
+ARG PREFER_BASE_IMAGE=${LLAMA_CPP_BASE_IMAGE}
+FROM ${PREFER_BASE_IMAGE}
 
 ARG TARGETARCH
+ARG PREFER_RUNTIME_BACKEND=cuda12
 
 # huggingface-cli is deprecated; the `hf` command (from huggingface_hub) replaces it.
 RUN apt-get update \
@@ -45,7 +47,7 @@ ENV LLAMA_CACHE=/models
 
 # Overriding ENTRYPOINT below drops whatever the base image did to set this
 # up for /app/llama-server's bundled shared libs (libllama-common.so etc).
-ENV LD_LIBRARY_PATH=/app
+ENV LD_LIBRARY_PATH=/app:/opt/rocm/lib
 
 COPY preset-catalog.json /preset-catalog.json
 COPY deployment-inventory.generated.json /deployment-inventory.json
@@ -69,6 +71,8 @@ RUN sed -i 's/\r$//' /model-downloads.generated.sh /prefer-download-artifacts.sh
 
 ENV PREFER_ENGINE=llama.cpp \
     PREFER_MODEL_CATALOG=/prefer-model-catalog.json
+
+LABEL io.prefer.llama.backend="${PREFER_RUNTIME_BACKEND}"
 
 EXPOSE 8080
 

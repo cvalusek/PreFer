@@ -1,7 +1,10 @@
 ARG AUDIO_CPP_BASE_IMAGE=ghcr.io/0xshug0/audio.cpp:full-cuda12-20260920-9ba8841@sha256:49df3b8f9d4054fed2d15ab0a3c4f02f7a756b75ab0a02cae4be8bf4d2e7e5e3
-FROM ${AUDIO_CPP_BASE_IMAGE}
+ARG PREFER_BASE_IMAGE=${AUDIO_CPP_BASE_IMAGE}
+FROM ${PREFER_BASE_IMAGE}
 
 ARG TARGETARCH
+ARG PREFER_RUNTIME_BACKEND=cuda12
+ARG PREFER_AUDIO_SERVER_CONFIG=server.cuda.generated.json
 USER root
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl python3-pip util-linux xz-utils \
@@ -19,7 +22,7 @@ ENV HF_HOME=/models/.prefer-cache/huggingface \
     HF_XET_HIGH_PERFORMANCE=1 \
     PYTHONUNBUFFERED=1
 
-COPY server.cuda.generated.json /app/server.json
+COPY ${PREFER_AUDIO_SERVER_CONFIG} /app/server.json
 COPY deployment-inventory.generated.json /deployment-inventory.json
 COPY download-artifacts.sh /prefer-download-artifacts.sh
 COPY model-downloads.generated.sh /model-downloads.generated.sh
@@ -42,7 +45,7 @@ ENV PREFER_ENGINE=audio.cpp \
     PREFER_MODEL_CATALOG=/prefer-model-catalog.json
 
 LABEL io.prefer.runtime="audio.cpp" \
-      io.prefer.audio.backend="cuda12" \
+      io.prefer.audio.backend="${PREFER_RUNTIME_BACKEND}" \
       io.prefer.audio.source-revision="9ba884179826c3b33dd305185b5f94c79175a03d" \
       io.prefer.deployment-inventory.path="/deployment-inventory.json" \
       io.prefer.deployment-inventory.schema="prefer.audio-deployment-inventory.v1"

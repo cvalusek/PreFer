@@ -1,5 +1,13 @@
 # PreFer changelog
 
+## Current
+
+- Runtime images
+  - Added release-matched llama.cpp ROCm and vLLM ROCm image variants for Linux AMD64.
+  - Added release-matched SGLang ROCm MI30x for Linux AMD64; this variant does not support the R9700.
+  - Added Audio Vulkan for Linux AMD64/ARM64 and Image Vulkan for Linux AMD64; these are Vulkan, not ROCm, backends.
+  - Expanded the atomic grouped release from nine to fourteen image indexes. All five new variants share the existing explicit model-selection and verified handoff contract; their model load, API, and exact-card behavior remain unverified. CUDA/CPU routes are unchanged.
+
 ## sha-b7ea7e9 (preview)
 
 - Images

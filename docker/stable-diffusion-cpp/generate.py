@@ -495,6 +495,7 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
             "server_defaults": default_server(),
         },
         "base_image": runtime["base_image"],
+        "vulkan_base_image": runtime["vulkan_base_image"],
         "platforms": ["linux/amd64"],
         "api": {
             "health": "GET /health",

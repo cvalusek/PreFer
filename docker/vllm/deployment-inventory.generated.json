@@ -1,5 +1,5 @@
 {
-  "catalog_fingerprint": "ab7e1a24789fcdd144061f43168606e239af40658edeeb5ddc0e934f4f3bb20b",
+  "catalog_fingerprint": "311824247c4fd85932140f9401c1d07d6c1b09133a52e149abf2f7d9b98c8dc0",
   "schema_version": "prefer.vllm-deployment-inventory.v1",
   "runtime": {
     "name": "vllm",
@@ -65,6 +65,15 @@
     }
   },
   "base_images": {
+    "rocm": {
+      "reference": "vllm/vllm-openai-rocm:v0.29.0@sha256:e5e47f6aaab675c252c381f0dac237b31b10d87bb74d092b07fb4065efd7f5a1",
+      "index_digest": "sha256:e5e47f6aaab675c252c381f0dac237b31b10d87bb74d092b07fb4065efd7f5a1",
+      "platform_manifests": {
+        "linux/amd64": "sha256:e5e47f6aaab675c252c381f0dac237b31b10d87bb74d092b07fb4065efd7f5a1"
+      },
+      "rocm_architectures_in_base": "PyTorch includes gfx1201; AITER builds only gfx942/gfx950",
+      "verification": "build-only; the catalog's Inferact NVFP4 Qwen route is NVIDIA-specific, not an AMD compatibility claim"
+    },
     "cuda12": {
       "reference": "vllm/vllm-openai:v0.29.0-cu129-ubuntu2404@sha256:b478e866ccff56876a0e159edae1620055c858c739fb20f23194fc636f1a4108",
       "index_digest": "sha256:b478e866ccff56876a0e159edae1620055c858c739fb20f23194fc636f1a4108",

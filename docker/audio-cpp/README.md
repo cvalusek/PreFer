@@ -1,7 +1,10 @@
 # PreFer audio.cpp runtime
 
-PreFer publishes CUDA 12 and CPU audio.cpp images with pinned speech, music,
-ASR, and full-duplex conversation artifacts.
+PreFer publishes CUDA 12, Vulkan, and CPU audio.cpp images with pinned speech,
+music, ASR, and full-duplex conversation artifacts. The Vulkan image uses the
+same pinned upstream source as CUDA/CPU and installs the generated
+`backend: vulkan` server config. Model and device compatibility are unverified;
+Vulkan is not ROCm. A native Linux Vulkan device/ICD is required.
 
 Generated hardware deployments and server-config trees have been removed.
 `deployment-inventory.generated.json` publishes model/profile/bundle metadata

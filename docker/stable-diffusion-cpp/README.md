@@ -1,7 +1,10 @@
 # PreFer stable-diffusion.cpp runtime
 
-This image wraps the pinned stable-diffusion.cpp server with PreFer's lazy
-one-worker router for image generation and editing.
+CUDA 12 and Vulkan images wrap stable-diffusion.cpp with PreFer's lazy
+one-worker router for image generation and editing. The pinned Vulkan base is
+at upstream `c92d73c`, newer than the CUDA base `137f740`; its router API,
+GPU/model behavior, and worker startup need an exact smoke before use. Vulkan
+requires a native Vulkan device/ICD; it is not ROCm.
 
 Hardware-specific deployment scenarios and generated server-config trees have
 been removed. The release inventory publishes models, profiles, semantic

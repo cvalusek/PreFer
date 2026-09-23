@@ -602,6 +602,7 @@ def rendered_outputs() -> dict[Path, str]:
     return {
         ROOT / "server.cuda.generated.json": json.dumps(server_config("cuda", []), indent=2) + "\n",
         ROOT / "server.cpu.generated.json": json.dumps(server_config("cpu", []), indent=2) + "\n",
+        ROOT / "server.vulkan.generated.json": json.dumps(server_config("vulkan", []), indent=2) + "\n",
         ROOT / "deployment-inventory.generated.json": json.dumps(
             deployment_inventory(runtime, lanes, [], bundles), indent=2
         ) + "\n",
@@ -633,7 +634,7 @@ def normalize_runtime_config(value: str) -> str:
         if normalized.startswith(prefix):
             normalized = normalized[len(prefix) :]
             break
-    if normalized in {"/app/server.json", "server.json", "default", "audio/cuda12", "audio/cpu"}:
+    if normalized in {"/app/server.json", "server.json", "default", "audio/cuda12", "audio/cpu", "audio/vulkan"}:
         return "default"
     if not normalized.endswith(".json"):
         normalized += ".json"
@@ -659,11 +660,11 @@ def compose_runtime_config(
     primary = [lane for lane in lanes if lane["primary"]]
     primary_by_key = {lane["key"]: lane for lane in primary}
     bundles = load_bundles(primary_by_key)
-    if base and base not in {"/app/server.json", "audio/cuda12", "audio/cpu"} and not Path(base).is_file():
+    if base and base not in {"/app/server.json", "audio/cuda12", "audio/cpu", "audio/vulkan"} and not Path(base).is_file():
         raise ValueError("hardware deployments and generated server configs have been removed")
     base_path = Path(base) if base and Path(base).is_file() else Path("/app/server.json")
     if not base_path.is_file():
-        generated_name = "server.cpu.generated.json" if base == "audio/cpu" else "server.cuda.generated.json"
+        generated_name = {"audio/cpu": "server.cpu.generated.json", "audio/vulkan": "server.vulkan.generated.json"}.get(base, "server.cuda.generated.json")
         base_path = ROOT / generated_name
     base_config = load_json(base_path)
     backend = base_config.get("backend", "cuda")

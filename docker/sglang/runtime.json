@@ -393,7 +393,12 @@
     "MiniMax H3 Turbo-LoRA and quality-high serving remain explicit experimental metadata; do not claim adapter or quality-tier support until the matching upstream audit path is verified."
   ],
   "base_images": {
-    "cuda12": {
+    "rocm-mi30x": {
+      "reference": "lmsysorg/sglang-rocm:v0.5.20-rocm724-mi30x-20260922@sha256:d788cf42968cd50045abd55c5ba5bee83825a8bbe5678a7e76674f970dd895a7",
+      "index_digest": "sha256:d788cf42968cd50045abd55c5ba5bee83825a8bbe5678a7e76674f970dd895a7",
+      "platform_manifests": {"linux/amd64": "sha256:d788cf42968cd50045abd55c5ba5bee83825a8bbe5678a7e76674f970dd895a7"},
+      "verification": "build-only; this MI30x image does not establish support for the R9700 gfx1201 or the NVIDIA NVFP4 model lanes"
+    },    "cuda12": {
       "reference": "lmsysorg/sglang:v0.5.19-cu129@sha256:59e11312666e1c5c155210ea335589b91daa0d70848521b390b93b1b1e8fb0ef",
       "index_digest": "sha256:59e11312666e1c5c155210ea335589b91daa0d70848521b390b93b1b1e8fb0ef",
       "cuda_version": "12.9.2",

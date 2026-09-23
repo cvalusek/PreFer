@@ -175,7 +175,15 @@ and speculative settings. Controllers should prefer immutable handoffs.
 SGLang and vLLM publish explicit CUDA 12 and CUDA 13 tags; no generic moving
 alias chooses a CUDA major. SGLang CUDA 12 uses the final official CUDA 12.9
 release (`v0.5.19`), while CUDA 13 uses `v0.5.20`. Both vLLM variants use
-v0.29.0. MiniMax H3 clients may pass HTTP(S), data, base64, or local condition
+v0.29.0. The grouped release also offers pinned llama/vLLM ROCm builds,
+SGLang ROCm MI30x (not R9700), and Audio/Image Vulkan builds. These variants
+are build-only pending GPU and model validation; the existing NVFP4 SGLang/vLLM
+catalog routes remain NVIDIA-specific and Vulkan is not ROCm. On native Linux,
+ROCm containers need `/dev/kfd` and `/dev/dri`; Vulkan needs `/dev/dri` plus
+a working ICD. The local Compose file still requests NVIDIA GPUs, so use an
+explicit AMD container launch rather than `docker compose up` for these tags.
+Windows WSL `/dev/dxg` requires additional ROCDXG setup and was not used to
+qualify any PreFer model. MiniMax H3 clients may pass HTTP(S), data, base64, or local condition
 URIs directly to SGLang's native `/v1/videos` API.
 
 Ports:
@@ -203,9 +211,9 @@ and written under `/run/prefer`.
 
 ## Releases
 
-One grouped workflow publishes nine image indexes under one seven-character
-source SHA: llama CUDA 12, Audio CUDA 12/CPU, Image CUDA 12, SGLang CUDA 12/13,
-vLLM CUDA 12/13, and the CPU downloader. `prefer-release.json` binds every
+One grouped workflow publishes fourteen image indexes under one seven-character
+source SHA: llama CUDA 12/ROCm, Audio CUDA 12/Vulkan/CPU, Image CUDA 12/Vulkan,
+SGLang CUDA 12/13 and ROCm MI30x, vLLM CUDA 12/13 and ROCm, and the CPU downloader. `prefer-release.json` binds every
 immutable OCI digest, the five runtime inventories, shared model catalog,
 provider hardware catalog, schemas, CLI, and npm package. Stable aliases
 advance from `main`; preview aliases advance from `develop`.

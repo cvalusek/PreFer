@@ -1,8 +1,10 @@
 # PreFer vLLM runtime
 
-This opt-in official-upstream vLLM v0.29.0 runtime serves the Inferact
-Qwen3.8-27B NVFP4 lane. PreFer publishes matched CUDA 12.9 and CUDA 13.0 images
-from the same upstream source revision.
+The official vLLM v0.29.0 CUDA 12.9 and CUDA 13.0 images serve the Inferact
+Qwen3.8-27B NVFP4 lane. PreFer also publishes an official ROCm Linux AMD64
+image as a build-only backend; the NVFP4/FlashInfer CUDA recipe is not an AMD
+model-compatibility claim. The base PyTorch lists `gfx1201`, but AITER does
+not; exact model/GPU/API validation is required before using the ROCm lane.
 
 Generated hardware deployments, local profiles, and checked-in server configs
 have been removed. The inventory retains exact model artifacts, profiles,

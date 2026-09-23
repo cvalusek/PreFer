@@ -1,6 +1,6 @@
 {
   "schema_version": "prefer.image-deployment-inventory.v1",
-  "catalog_fingerprint": "338cdd533b7acc8338e2e682b49851f556aa39d527123ce927f747e1c9c3c9c7",
+  "catalog_fingerprint": "341128875002d69c52382f8b3de53f12e4e748cab75216b4d02d530b26242ac0",
   "product": "PreFer",
   "distribution": {
     "embedded_image_path": "/deployment-inventory.json",
@@ -104,6 +104,15 @@
       "linux/amd64": "sha256:6860ba02f02326e9350a6af7f05ba9c37fc708cf10ddf8ebe34181ae251c61c7"
     },
     "attestation_manifest": "sha256:ef02ccbd0e330e6649a1fde89c6c4d0487b22af76e013d9f0fa61f5a98d9e6a3"
+  },
+  "vulkan_base_image": {
+    "reference": "ghcr.io/leejet/stable-diffusion.cpp:master-vulkan@sha256:6b6a2cd377410b18d2eba048920d7046f4cdef444573dd7c05ada7b3a44a3446",
+    "source_revision": "c92d73c408515c94beef32161bb5960764fde7a0",
+    "index_digest": "sha256:6b6a2cd377410b18d2eba048920d7046f4cdef444573dd7c05ada7b3a44a3446",
+    "platform_manifests": {
+      "linux/amd64": "sha256:4c41c03c977829ba2859aa4a456aec15cf122484c0a2b7cad98f3bb53177488c"
+    },
+    "verification": "build-only; this Vulkan upstream revision differs from the pinned CUDA base and needs an image API smoke"
   },
   "platforms": [
     "linux/amd64"

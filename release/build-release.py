@@ -28,6 +28,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sglang-cuda13-digest", required=True)
     parser.add_argument("--vllm-cuda12-digest", required=True)
     parser.add_argument("--vllm-cuda13-digest", required=True)
+    parser.add_argument("--llama-rocm-digest", required=True)
+    parser.add_argument("--audio-vulkan-digest", required=True)
+    parser.add_argument("--image-vulkan-digest", required=True)
+    parser.add_argument("--sglang-rocm-mi30x-digest", required=True)
+    parser.add_argument("--vllm-rocm-digest", required=True)
     parser.add_argument("--downloader-digest", required=True)
     parser.add_argument("--llama-inventory", type=Path, required=True)
     parser.add_argument("--audio-inventory", type=Path, required=True)
@@ -223,7 +228,11 @@ def build_manifest(args: argparse.Namespace) -> dict[str, object]:
                         f"llama-cuda12-{release_id}",
                         args.llama_digest,
                         ["linux/amd64"],
-                    )
+                    ),
+                    "rocm": image_entry(
+                        image_repository, f"llama-rocm-{release_id}",
+                        args.llama_rocm_digest, ["linux/amd64"],
+                    ),
                 },
             },
             "audio": {
@@ -235,6 +244,10 @@ def build_manifest(args: argparse.Namespace) -> dict[str, object]:
                         f"audio-cuda12-{release_id}",
                         args.audio_cuda_digest,
                         ["linux/amd64", "linux/arm64"],
+                    ),
+                    "vulkan": image_entry(
+                        image_repository, f"audio-vulkan-{release_id}",
+                        args.audio_vulkan_digest, ["linux/amd64", "linux/arm64"],
                     ),
                     "cpu": image_entry(
                         image_repository,
@@ -253,7 +266,11 @@ def build_manifest(args: argparse.Namespace) -> dict[str, object]:
                         f"image-cuda12-{release_id}",
                         args.image_digest,
                         ["linux/amd64"],
-                    )
+                    ),
+                    "vulkan": image_entry(
+                        image_repository, f"image-vulkan-{release_id}",
+                        args.image_vulkan_digest, ["linux/amd64"],
+                    ),
                 },
             },
             "sglang": {
@@ -272,6 +289,10 @@ def build_manifest(args: argparse.Namespace) -> dict[str, object]:
                         args.sglang_cuda13_digest,
                         ["linux/amd64", "linux/arm64"],
                     ),
+                    "rocm-mi30x": image_entry(
+                        image_repository, f"sglang-rocm-mi30x-{release_id}",
+                        args.sglang_rocm_mi30x_digest, ["linux/amd64"],
+                    ),
                 },
             },
             "vllm": {
@@ -289,6 +310,10 @@ def build_manifest(args: argparse.Namespace) -> dict[str, object]:
                         f"vllm-cuda13-{release_id}",
                         args.vllm_cuda13_digest,
                         ["linux/amd64", "linux/arm64"],
+                    ),
+                    "rocm": image_entry(
+                        image_repository, f"vllm-rocm-{release_id}",
+                        args.vllm_rocm_digest, ["linux/amd64"],
                     ),
                 },
             },

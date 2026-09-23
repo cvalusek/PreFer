@@ -1,9 +1,11 @@
 ARG SGLANG_BASE_IMAGE=lmsysorg/sglang:v0.5.20@sha256:06e4f2ed21afde4ff513cda65070124e727ba23ccaeff7712b8c40e1097d611f
-FROM ${SGLANG_BASE_IMAGE}
+ARG PREFER_BASE_IMAGE=${SGLANG_BASE_IMAGE}
+FROM ${PREFER_BASE_IMAGE}
 
 ARG TARGETARCH
 ARG S5CMD_VERSION=2.2.2
 ARG SGLANG_CUDA_VARIANT=cuda13
+ARG PREFER_RUNTIME_BACKEND=${SGLANG_CUDA_VARIANT}
 ARG SGLANG_SOURCE_REVISION=94602c9c2b7cbdb8efd5c52802dac6a1c180089e
 ARG SGLANG_IMAGE_VERSION=v0.5.20
 
@@ -53,7 +55,7 @@ ENV PREFER_ENGINE=sglang \
     PREFER_MODEL_CATALOG=/prefer-model-catalog.json
 
 LABEL io.prefer.runtime="sglang" \
-      io.prefer.sglang.backend="${SGLANG_CUDA_VARIANT}" \
+      io.prefer.sglang.backend="${PREFER_RUNTIME_BACKEND}" \
       io.prefer.sglang.source-revision="${SGLANG_SOURCE_REVISION}" \
       io.prefer.sglang.image-build-revision="${SGLANG_IMAGE_VERSION}" \
       io.prefer.sglang.lineage="official-upstream" \
