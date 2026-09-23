@@ -1,6 +1,24 @@
 # PreFer changelog
 
-## Current
+## sha-d0423c0 (preview)
+
+- Images
+  - Llama CUDA 12: `ghcr.io/cvalusek/prefer:llama-cuda12-sha-d0423c0@sha256:7cfd465921e54bbb456cca215641ebe33b313b0b0e9588bf0206e91987d4d676`.
+  - Llama ROCm: `ghcr.io/cvalusek/prefer:llama-rocm-sha-d0423c0@sha256:d4b8cae8ee83c6986b03242affca5643037ab99bf8c11707496c6dbd17f1e320`.
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-d0423c0@sha256:282d9d53f7de5a22970a54183395e4453843c83c4703ff178964b2e18ce6b052`.
+  - Audio Vulkan: `ghcr.io/cvalusek/prefer:audio-vulkan-sha-d0423c0@sha256:544669b65d956d97ebfe844b1f169ae2450afda3a4693a885956e020e6df4533`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-d0423c0@sha256:f1eb51cfee0fe8dbde51da512d5fb721a503b837a45bcaacc999082998df1ba5`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-d0423c0@sha256:402eaed885efb6f8f80b761464b55a3b00ff2466459b87c64a3978de9d20bb70`.
+  - Image Vulkan: `ghcr.io/cvalusek/prefer:image-vulkan-sha-d0423c0@sha256:17d54f2fb4bdd84059d0504ae497dcf806a6b0f47b6ebcd48d9a4280c9a3de98`.
+  - SGLang CUDA 12: `ghcr.io/cvalusek/prefer:sglang-cuda12-sha-d0423c0@sha256:2c3140abbd1c959001519ef9dc0e8e2537a26a366471ee859cdc79cd5e607fff`.
+  - SGLang CUDA 13: `ghcr.io/cvalusek/prefer:sglang-cuda13-sha-d0423c0@sha256:d0f4f869fc3a7f4a9707c1bbe956334ceb429204b5c461477eaf9723144dd9aa`.
+  - SGLang ROCm MI30x: `ghcr.io/cvalusek/prefer:sglang-rocm-mi30x-sha-d0423c0@sha256:a9d2e2566c5c4c590bed79fe67d2c73ddbbb9dc6056d4f01d82d835ff68fad7c`.
+  - vLLM CUDA 12: `ghcr.io/cvalusek/prefer:vllm-cuda12-sha-d0423c0@sha256:3af8ced8832eb79788f45e692ddeff42a9fb71c5876b5ff331c9781422d82313`.
+  - vLLM CUDA 13: `ghcr.io/cvalusek/prefer:vllm-cuda13-sha-d0423c0@sha256:59b1e33ab65dd88f8a69da2936a7945863cf8f7b0beab87d1ad50aabee27494e`.
+  - vLLM ROCm: `ghcr.io/cvalusek/prefer:vllm-rocm-sha-d0423c0@sha256:e2821afab0a74e97906095b44791865b199c5b79248b1a7861d4cc67439261b3`.
+  - CPU downloader: `ghcr.io/cvalusek/prefer:downloader-sha-d0423c0@sha256:ed2be124a1960d2f7c5ebe875c3a901ce06143b1f0882a6dd00267665aa55703`.
+- Package
+  - npm: `prefer-inference-core@0.0.0-gd0423c0`.
 
 - Runtime images
   - Added release-matched llama.cpp ROCm and vLLM ROCm image variants for Linux AMD64.
