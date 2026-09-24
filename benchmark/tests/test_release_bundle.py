@@ -244,6 +244,9 @@ class GroupedReleaseTests(unittest.TestCase):
                 self.assertEqual(image["tag"], tag)
                 self.assertEqual(image["platforms"], platforms)
                 self.assertTrue(image["reference"].startswith(f"ghcr.io/cvalusek/prefer:{tag}@sha256:"))
+                self.assertIn(image["accelerator"]["backend"], {"cuda", "rocm", "vulkan", "cpu"})
+            self.assertEqual(manifest["engines"]["sglang"]["images"]["rocm-mi30x"]["accelerator"]["gpu_architectures"], ["gfx942"])
+            self.assertEqual(manifest["engines"]["vllm"]["images"]["cuda13"]["accelerator"]["cuda_major"], 13)
 
             sources = {
                 "llama": REPO_ROOT / "docker" / "llama-cpp" / "deployment-inventory.generated.json",

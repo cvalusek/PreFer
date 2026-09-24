@@ -128,7 +128,7 @@
     "nvfp4": {
       "key": "qwen-3.8-27b-nvfp4",
       "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
-      "primary": true,
+      "primary": false,
       "request_model_id": "qwen-3.8-27b",
       "artifacts": [
         {

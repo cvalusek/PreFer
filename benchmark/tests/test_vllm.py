@@ -33,9 +33,11 @@ class VLLMTests(unittest.TestCase):
         self.assertFalse((VLLM_ROOT / "server-configs").exists())
         self.assertEqual(set(inventory["base_images"]), {"cuda12", "cuda13", "rocm"})
 
-    def test_model_composes_with_mtp_control(self):
+    def test_model_composes_without_implicit_nvfp4_or_mtp(self):
         inventory = json.loads((VLLM_ROOT / "deployment-inventory.generated.json").read_text(encoding="utf-8"))
-        key = next(iter(inventory["models"]))
+        key = "qwen-3.5-9b-bf16"
+        self.assertTrue(inventory["models"][key]["primary"])
+        self.assertFalse(inventory["models"]["qwen-3.8-27b-nvfp4"]["primary"])
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "server.json"
             completed = subprocess.run(
@@ -47,10 +49,23 @@ class VLLMTests(unittest.TestCase):
             self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
             config = json.loads(output.read_text(encoding="utf-8"))
         self.assertEqual(len(config["models"]), 1)
-        self.assertIn("--speculative-config", config["command"])
+        self.assertNotIn("--speculative-config", config["command"])
+        self.assertNotIn("--quantization", config["command"])
         self.assertEqual(config["command"][config["command"].index("--port") + 1], "8000")
         self.assertEqual(config["command"][config["command"].index("--host") + 1], "0.0.0.0")
         self.assertNotIn("backend_port", config)
+
+    def test_nvfp4_requires_explicit_lane_selection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "server.json"
+            base = [sys.executable, str(VLLM_ROOT / "generate.py"), "--compose",
+                    "--output", str(output), "--prestage-output", str(Path(directory) / "prestage"),
+                    "--plan-output", str(Path(directory) / "plan")]
+            friendly = subprocess.run(base + ["--models", "qwen-3.8-27b"], cwd=ROOT, text=True, capture_output=True)
+            self.assertNotEqual(friendly.returncode, 0)
+            explicit = subprocess.run(base + ["--models", "qwen-3.8-27b-nvfp4"], cwd=ROOT, text=True, capture_output=True)
+            self.assertEqual(explicit.returncode, 0, explicit.stdout + explicit.stderr)
+            self.assertIn("--speculative-config", json.loads(output.read_text(encoding="utf-8"))["command"])
 
     def test_download_contract_uses_shared_helper_and_no_weights_in_image(self):
         self.assertEqual(

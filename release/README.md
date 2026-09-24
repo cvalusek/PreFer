@@ -18,7 +18,7 @@ before this split are stable.
 
 Each immutable GitHub release and matching Actions artifact contains:
 
-- `prefer-release.json`: exact engine/backend image tags and OCI index digests
+- `prefer-release.json`: exact engine/backend image tags, OCI index digests, and image accelerator requirements (vendor, CUDA major, and restricted ROCm architecture)
 - `prefer-release.schema.json`: the public `prefer.release.v1` schema
 - `prefer-llama-deployment-inventory.json`
 - `prefer-audio-deployment-inventory.json`
@@ -40,6 +40,10 @@ engine/backend, and then reads that engine's referenced inventory for hardware,
 configuration, model, and prestaging choices. All references are immutable.
 NeurOn and similar controllers can select `main` or `develop` as their release
 source, but must ignore a branch head until its complete grouped release exists.
+Use `resolveRuntimeImage` with observed host driver compatibility to select
+an image before model fit planning. Hardware profiles never pin an image or
+quant; an image match is not a model-load or API smoke. Older releases without
+image accelerator metadata require explicit controller image selection.
 
 The bundle contains metadata only. Model weights are neither copied into the
 release nor embedded in its container images; each runtime stages them onto its

@@ -111,7 +111,7 @@
     "nvfp4": {
       "key": "qwen-3.8-27b-nvfp4",
       "precision": "NVFP4 W4A4 compressed-tensors with FP8 attention/KV and a pinned MTP companion",
-      "primary": true,
+      "primary": false,
       "request_model_id": "qwen-3.8-27b",
       "aliases": ["qwen-3.8-27b"],
       "artifacts": [

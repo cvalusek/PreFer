@@ -1,6 +1,6 @@
 {
   "schema_version": "prefer.sglang-deployment-inventory.v2",
-  "catalog_fingerprint": "0a921537ef7d28a607b1ad9e1d38168a4c0a7f80f0d74ada6d1ba372443e49e5",
+  "catalog_fingerprint": "15a45bb5d63e9215073454bb1f4e8a8493ccacd2d3788699c2d76259ff5fa44c",
   "product": "PreFer",
   "distribution": {
     "embedded_image_path": "/deployment-inventory.json",
@@ -619,9 +619,9 @@
         ]
       }
     },
-    "qwen-3.8-27b": {
-      "summary": "A high-intelligence multimodal Qwen route for modern Blackwell GPUs, with native image/video understanding and optional in-checkpoint MTP acceleration.",
-      "architecture": "64-layer hybrid linear/full-attention vision-language model with 48 GDN layers, 16 full-attention layers, and one embedded MTP layer.",
+    "qwen-3.5-9b": {
+      "summary": "Compact Qwen3.5 text route with a first-party BF16 checkpoint; multimodal input and ROCm execution require exact-card verification.",
+      "architecture": "9B-class dense Qwen3.5 hybrid vision-language model.",
       "native_capabilities": [
         "text",
         "image",
@@ -631,79 +631,59 @@
       ],
       "configured_capabilities": [
         "text",
-        "image",
-        "video",
         "reasoning",
         "tool calls",
-        "structured output",
         "streaming"
       ],
-      "context": "Native 262,144 tokens; roomy Blackwell scenarios expose a 524,288-token per-request maximum from a dynamically shared runtime pool, while the 32 GB RTX 5090 and provider-neutral default remain at 262,144.",
-      "reasoning": "Thinking is enabled by default. Requests may select low, medium, or xhigh reasoning_effort and may disable or preserve thinking through the Qwen template controls.",
+      "context": "Native 262K; the base-free starting context is bounded at 8K and may be overridden after fit planning.",
+      "reasoning": "Request-selectable thinking in the Qwen template.",
       "role_fit": {
         "preferred": [
-          "multimodal assistant",
-          "long-form analysis",
-          "tool-using orchestrator",
-          "code and structured-output assistant"
+          "small coding",
+          "extraction",
+          "routine reasoning"
         ],
         "capable": [
-          "image and video interpretation",
-          "general chat",
-          "document analysis"
+          "tool use",
+          "visual tasks after verification"
         ],
         "avoid": [
-          "older than Blackwell GPUs",
-          "strict low-latency CPU service",
-          "production use before target-card smoke"
+          "large-scale orchestration"
         ],
         "strengths": [
-          "strong reasoning ceiling",
-          "native visual and video inputs",
-          "large native context",
-          "in-checkpoint speculative support"
+          "smaller artifact than dense 27B routes"
         ],
         "limitations": [
-          "requires modern Blackwell NVFP4 support",
-          "FP8 KV has no pinned explicit scale metadata and remains a fidelity gate",
-          "packaged deployment shapes are configuration-only",
-          "the current 21.945 GB RadixArk artifact is not interchangeable with smaller community variants"
+          "BF16 weights require substantial VRAM; R9700 load and output are unverified"
         ],
         "prompting_notes": [
-          "Leave reasoning_effort at xhigh for difficult tasks; use medium or low for latency-sensitive requests.",
-          "Preserve the returned thinking trace only when the client needs it; otherwise retain the template default and let the API control visibility.",
-          "Use the Qwen3 coder tool schema and provide explicit tool descriptions for reliable calls."
+          "Specify the expected response format and tool schema."
         ]
       },
-      "evidence_confidence": "high for upstream capability and artifact provenance; mixed for this repository's target-card fit and throughput until hardware smoke tests complete",
-      "model_slug": "qwen-3.8-27b",
-      "profile_id": "qwen-3.8-27b",
+      "evidence_confidence": "official artifact provenance; deployment fit and API behavior unverified",
+      "model_slug": "qwen-3.5-9b",
+      "profile_id": "qwen-3.5-9b",
       "license": "Apache-2.0",
       "lineage": {
-        "repo": "Qwen/Qwen3.8-27B",
-        "revision": "e13a4f0e35203116364e3b3f3f0c82f6ef1afd3c",
-        "derivative_repo": "RadixArk/Qwen3.8-27B-NVFP4",
-        "derivative_revision": "319f741cce68d7914884900c138a1fbb70a42f30",
-        "quantizer_repo": "NVIDIA/Model-Optimizer",
-        "quantizer_revision": "87c9f8cf83021957d1a1a575c90c9a4eaaf7ef0c"
+        "repo": "Qwen/Qwen3.5-9B",
+        "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a"
       },
       "native_context_length": 262144,
-      "max_context_length": 1048576,
+      "max_context_length": 262144,
       "native_modalities": [
         "text",
         "image",
         "video"
       ],
       "configured_modalities": [
-        "text",
-        "image",
-        "video"
+        "text"
       ],
       "runtime_modes": [
         "text"
       ],
       "tasks": [
-        "chat"
+        "chat",
+        "completion"
       ],
       "input_contract": {},
       "output_contract": {}
@@ -2099,6 +2079,214 @@
         }
       ]
     },
+    "qwen-3.5-9b-bf16": {
+      "key": "qwen-3.5-9b-bf16",
+      "id": "qwen-3.5-9b",
+      "request_model_id": "qwen-3.5-9b",
+      "model_slug": "qwen-3.5-9b",
+      "quant_slug": "bf16",
+      "aliases": [
+        "qwen-3.5-9b"
+      ],
+      "profile_id": "qwen-3.5-9b",
+      "runtime_mode": "text",
+      "tasks": [
+        "chat",
+        "completion"
+      ],
+      "capability_aliases": {},
+      "family": "qwen",
+      "task": "chat",
+      "mode": "text-reasoning",
+      "description": "First-party Qwen3.5-9B BF16 text route",
+      "precision": "first-party BF16",
+      "primary": true,
+      "license": "Apache-2.0",
+      "lineage": {
+        "repo": "Qwen/Qwen3.5-9B",
+        "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a"
+      },
+      "modalities": {
+        "native": [
+          "text",
+          "image",
+          "video"
+        ],
+        "configured": [
+          "text"
+        ],
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "input_contract": {},
+      "output_contract": {},
+      "base_model": null,
+      "native_context_length": 262144,
+      "max_context_length": 262144,
+      "reasoning_controls": {
+        "enabled_by_default": true
+      },
+      "template": {
+        "source_file": "chat_template.jinja",
+        "reasoning_parser": "qwen3",
+        "tool_call_parser": "qwen3_coder"
+      },
+      "speculative": {
+        "supported": false
+      },
+      "kv_cache_scaling": null,
+      "artifact_variant": null,
+      "lora_options": null,
+      "server_path": "/models/Qwen/Qwen3.5-9B",
+      "server": {
+        "served_model_name": "qwen-3.5-9b",
+        "context_length": 8192,
+        "max_running_requests": 1,
+        "mem_fraction_static": 0.8,
+        "reasoning_parser": "qwen3",
+        "tool_call_parser": "qwen3_coder",
+        "trust_remote_code": true,
+        "runtime_mode": "text"
+      },
+      "download_fingerprint": "23b16bbe087da36319f05dfa545fe00792c2cae745712bfebcb73400e4d4098d",
+      "artifact_bytes": 19329302904,
+      "artifacts": [
+        {
+          "repo": "Qwen/Qwen3.5-9B",
+          "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+          "path": "chat_template.jinja",
+          "size": 7756,
+          "sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715",
+          "role": "chat-template",
+          "container_path": "/models/Qwen/Qwen3.5-9B/chat_template.jinja",
+          "download_id": "728db78a22432a94f75872a9c8a33c0953b49cf2beed398fa9d890257ec1e008"
+        },
+        {
+          "repo": "Qwen/Qwen3.5-9B",
+          "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+          "path": "config.json",
+          "size": 3126,
+          "sha256": "d0883072e01861ed0b2d47be3c16c36a8e81c224c7ffaa310c6558fb3f932b05",
+          "role": "model-config",
+          "container_path": "/models/Qwen/Qwen3.5-9B/config.json",
+          "download_id": "3540aa5322eb9b6c321f1adbca0d66d93a8351a2cdd1eeaf9309d68bcf16170e"
+        },
+        {
+          "repo": "Qwen/Qwen3.5-9B",
+          "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+          "path": "merges.txt",
+          "size": 3353259,
+          "sha256": "a9d356d7bdf1ef4949e3e748e95b8e10ad9d4e2e838eddc38a0a7b6b94d1db8d",
+          "role": "tokenizer",
+          "container_path": "/models/Qwen/Qwen3.5-9B/merges.txt",
+          "download_id": "d71d65bcfdb503e4da7de9950bfe0f60a804f5d9812a239c2c6264fe37f06db2"
+        },
+        {
+          "repo": "Qwen/Qwen3.5-9B",
+          "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+          "path": "model.safetensors-00001-of-00004.safetensors",
+          "size": 5276436216,
+          "sha256": "db6f444b43d318c92f360a13a25561a6a65b10c0631b8ed305a426dbaa6c380e",
+          "role": "model",
+          "container_path": "/models/Qwen/Qwen3.5-9B/model.safetensors-00001-of-00004.safetensors",
+          "download_id": "d86510b151fc5396de972cf7e2904cbd5639ffeb1a3b9611426554b567b6a653"
+        },
+        {
+          "repo": "Qwen/Qwen3.5-9B",
+          "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+          "path": "model.safetensors-00002-of-00004.safetensors",
+          "size": 5335161512,
+          "sha256": "31c7d7e2dd5d207840b31cc59083c8f4c4718959149e0358c0364052bb9a0330",
+          "role": "model",
+          "container_path": "/models/Qwen/Qwen3.5-9B/model.safetensors-00002-of-00004.safetensors",
+          "download_id": "ac088af1799a45838994aa0add5ba92f7393f97dfd419e1f1701f30fb8865ec7"
+        },
+        {
+          "repo": "Qwen/Qwen3.5-9B",
+          "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+          "path": "model.safetensors-00003-of-00004.safetensors",
+          "size": 5368717440,
+          "sha256": "7ec36ba3a4176a44c3c0876ad80c56a2f70c84bf008d82e9501df642f17dadec",
+          "role": "model",
+          "container_path": "/models/Qwen/Qwen3.5-9B/model.safetensors-00003-of-00004.safetensors",
+          "download_id": "d7ed9cec7587b6d8563aa30c50a44da9d89fa88ab016b637b834b7bf81a1b3b2"
+        },
+        {
+          "repo": "Qwen/Qwen3.5-9B",
+          "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+          "path": "model.safetensors-00004-of-00004.safetensors",
+          "size": 3325995712,
+          "sha256": "b62b0c4cd7e44edee103ee8f4fe225f246d5e768e07bfd5f25b63a8aa1fdd0c6",
+          "role": "model",
+          "container_path": "/models/Qwen/Qwen3.5-9B/model.safetensors-00004-of-00004.safetensors",
+          "download_id": "bd8949aadb54cd2008bae2933db190eded0a73d1f79b48f2ffed632f6538fa5f"
+        },
+        {
+          "repo": "Qwen/Qwen3.5-9B",
+          "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+          "path": "model.safetensors.index.json",
+          "size": 79657,
+          "sha256": "26d3539b516be613f39563617cb9d33b3f83d401298125be392c80cefb8f7fe5",
+          "role": "model-index",
+          "container_path": "/models/Qwen/Qwen3.5-9B/model.safetensors.index.json",
+          "download_id": "96714214595d5de5e3d58925bcd664cf26db6422494ac8bfbfd059f32fa18955"
+        },
+        {
+          "repo": "Qwen/Qwen3.5-9B",
+          "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+          "path": "preprocessor_config.json",
+          "size": 390,
+          "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+          "role": "image-preprocessor",
+          "container_path": "/models/Qwen/Qwen3.5-9B/preprocessor_config.json",
+          "download_id": "a712412fcd8890ac728477fcda1b0a67a7e936e370452edab8185d2b9fdc7faa"
+        },
+        {
+          "repo": "Qwen/Qwen3.5-9B",
+          "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+          "path": "tokenizer.json",
+          "size": 12807982,
+          "sha256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42",
+          "role": "tokenizer",
+          "container_path": "/models/Qwen/Qwen3.5-9B/tokenizer.json",
+          "download_id": "fa7d573dad39c1815365377c98dd1778f7ae313bfe996066361eb7d97d8f3e76"
+        },
+        {
+          "repo": "Qwen/Qwen3.5-9B",
+          "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+          "path": "tokenizer_config.json",
+          "size": 16710,
+          "sha256": "316230d6a809701f4db5ea8f8fc862bc3a6f3229c937c174e674ff3ca0a64ac8",
+          "role": "tokenizer-config",
+          "container_path": "/models/Qwen/Qwen3.5-9B/tokenizer_config.json",
+          "download_id": "a5e18443f8adb0bd74babe7233b72bdae78064eb42a18e588b3d037c17b9e602"
+        },
+        {
+          "repo": "Qwen/Qwen3.5-9B",
+          "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+          "path": "video_preprocessor_config.json",
+          "size": 385,
+          "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13",
+          "role": "video-preprocessor",
+          "container_path": "/models/Qwen/Qwen3.5-9B/video_preprocessor_config.json",
+          "download_id": "7e82c3cfe5b70e6a14c7c50da177d96f62e2220e95d25938b0adf488ec95d7f9"
+        },
+        {
+          "repo": "Qwen/Qwen3.5-9B",
+          "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+          "path": "vocab.json",
+          "size": 6722759,
+          "sha256": "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003",
+          "role": "tokenizer",
+          "container_path": "/models/Qwen/Qwen3.5-9B/vocab.json",
+          "download_id": "6fd716375257123a017ed29811fe9e54bb099101c633e63e50699fd9b0c56abd"
+        }
+      ]
+    },
     "qwen-3.8-27b-nvfp4": {
       "key": "qwen-3.8-27b-nvfp4",
       "id": "qwen-3.8-27b",
@@ -2119,7 +2307,7 @@
       "mode": "multimodal-reasoning",
       "description": "Qwen3.8-27B dense hybrid vision-language model in an SGLang-validated NVFP4 W4A4 checkpoint",
       "precision": "NVFP4 W4A4 group-16 MLP/lm_head + FP8 attention/KV + BF16 vision/MTP",
-      "primary": true,
+      "primary": false,
       "license": "Apache-2.0",
       "lineage": {
         "repo": "Qwen/Qwen3.8-27B",

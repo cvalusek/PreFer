@@ -65,6 +65,17 @@ profile:
 default:
   repository: unsloth/Qwen3.5-9B-GGUF
   quant: ud-q4-k-xl
+engine_defaults:
+  sglang:
+    repository: Qwen/Qwen3.5-9B
+    quant: bf16
+  vllm:
+    repository: Qwen/Qwen3.5-9B
+    quant: bf16
+quant_sources:
+  bf16:
+    sglang: Qwen/Qwen3.5-9B
+    vllm: Qwen/Qwen3.5-9B
 engines:
   llama.cpp:
     settings:
@@ -74,6 +85,23 @@ engines:
   sglang: {}
   vllm: {}
 repositories:
+  Qwen/Qwen3.5-9B:
+    quants:
+      bf16:
+        include:
+          - chat_template.jinja
+          - config.json
+          - merges.txt
+          - model.safetensors-*.safetensors
+          - model.safetensors.index.json
+          - preprocessor_config.json
+          - tokenizer.json
+          - tokenizer_config.json
+          - video_preprocessor_config.json
+          - vocab.json
+        engines:
+          sglang: {}
+          vllm: {}
   unsloth/Qwen3.5-9B-GGUF:
     discover: gguf
     quants:

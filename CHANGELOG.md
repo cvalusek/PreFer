@@ -1,5 +1,15 @@
 # PreFer changelog
 
+## Current
+
+- Image and resource selection
+  - Release image entries now declare accelerator vendor, backend, CUDA major, and MI30x architecture where applicable; the package selects an immutable image from observed host compatibility before model fitting.
+  - AWS/RunPod hardware profiles may record accelerator vendor and dated CUDA-major evidence; an observed NVIDIA driver API version still determines whether CUDA 12 or 13 can launch. Mixed-vendor machines require separate runtime profiles.
+  - Native ROCm VRAM detection supplies AMD resources without inventing NVFP4 support.
+- Text models
+  - SGLang and vLLM add first-party Qwen3.5-9B BF16 as a named, explicitly selected single-model text lane at 1×8K; R9700 inference remains unverified.
+  - Qwen3.8-27B NVFP4 is no longer selected by a friendly direct-model name on SGLang/vLLM. Its old lane remains available only by explicit quant key or a release-bound handoff.
+
 ## sha-d0423c0 (preview)
 
 - Images

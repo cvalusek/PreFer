@@ -16,12 +16,13 @@ downloaded from Hugging Face on first start. `docker/audio-cpp/` is a separate
 speech/music runtime with its own API, inventory, model volume, and image
 variants. `docker/stable-diffusion-cpp/` provides image generation/editing with
 a separate API, inventory, and model volume. All five engines publish as one
-grouped PreFer release. `docker/sglang/` publishes explicit official CUDA 12.9
-and CUDA 13 variants for Qwen3.8-27B NVFP4 and MiniMax H3; it directly exposes
-upstream text/video APIs while using the same `/models` artifact layout as
-llama.cpp. `docker/vllm/` publishes matched official CUDA 12.9 and CUDA 13
-variants for the Inferact Qwen3.8-27B NVFP4 text lane and directly exposes the
-upstream OpenAI-compatible server. Neither runtime has a mandatory PreFer HTTP
+grouped PreFer release. `docker/sglang/` publishes explicit official CUDA 12.9 and CUDA 13 variants
+for first-party Qwen3.5-9B BF16 text, explicit-only Qwen3.8 NVFP4, and MiniMax
+H3 video; it directly exposes upstream text/video APIs while using the same
+`/models` artifact layout as llama.cpp. `docker/vllm/` publishes matched
+official CUDA 12.9 and CUDA 13 variants for Qwen3.5-9B BF16 text and an
+explicit-only Qwen3.8 NVFP4 experiment; it directly exposes the upstream
+OpenAI-compatible server. Neither runtime has a mandatory PreFer HTTP
 proxy.
 
 ## Grouped release contract
@@ -48,7 +49,7 @@ GitHub release `sha-<short-commit>` and the matching
 `prefer-release.json`, its schema, the exact five deployment inventories, the
 release-matched package/CLI/materialized shared model catalog, and checksums.
 `release/build-release.py` owns that manifest. It must reference the
-resolved OCI index digests returned by the nine image builds, never moving tags.
+resolved OCI index digests returned by the fourteen image builds, never moving tags.
 Each runtime image still embeds its own `/deployment-inventory.json`.
 
 The grouped release contains metadata and executable tooling only. Model weights must never be copied
@@ -108,6 +109,31 @@ details retained later in this file as benchmark rationale:
   runtime images consume the same handoff, use `/models/<repo>/<path>`, and
   publish common `downloads-v2` verification markers. It must not require CUDA
   or copy model weights into an image.
+
+## Release image selection and native text lanes
+
+Select the image for an engine from the immutable grouped release before
+planning its model/quant. Each image entry declares accelerator vendor,
+backend, platform, CUDA major where applicable, and exact ROCm architecture
+only when the upstream build is architecture-specific. `resolveRuntimeImage`
+uses a normalized resource profile and observed host driver API; a GPU SKU is
+not a CUDA driver version. Static AWS/RunPod profiles may carry accelerator
+vendor and provider-verified CUDA-major evidence, but never a preferred image
+or model. Keep one accelerator vendor per profile/runtime process. Mixed-vendor
+systems require separate resource profiles and inference processes. Local hosts
+remain observed resources, not authored `local/*` provider profiles. A matched
+image is only an image/driver candidate, not a model fit or API smoke.
+
+SGLang and vLLM now expose first-party Qwen3.5-9B BF16 as a normal native
+text lane with bounded 8K starting context; controllers may override context
+through the base-free handoff after planning. The earlier Qwen3.8 NVFP4
+experiment remains visible only by its exact catalog key or an explicit
+handoff, not as the friendly name's default. Do not restore it as a preset or
+map a GPU vendor to a model/quant. Shared `engine_defaults` select BF16 for
+Qwen3.5 on SGLang/vLLM while llama.cpp retains GGUF; no 32 GB GPU/model/API
+smoke has been completed. Historical SGLang/vLLM NVFP4 configuration and
+benchmark sections below document that experiment rather than a current
+preferred route.
 
 ## AMD accelerator variants
 

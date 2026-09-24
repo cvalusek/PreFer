@@ -150,8 +150,8 @@ def model_lanes() -> list[dict]:
         if not isinstance(quants, dict) or not quants:
             raise ValueError(f"{path}: quants must be a non-empty object")
         primary = [quant for quant in quants.values() if quant.get("primary")]
-        if len(primary) != 1:
-            raise ValueError(f"{path}: exactly one primary quant is required")
+        if len(primary) > 1:
+            raise ValueError(f"{path}: at most one primary quant is allowed; explicit-only quants have none")
 
         for quant_slug, quant in quants.items():
             if not isinstance(quant, dict):

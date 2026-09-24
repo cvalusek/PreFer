@@ -136,8 +136,8 @@ def model_lanes() -> list[dict]:
         if not isinstance(quants, dict) or not quants:
             raise ValueError(f"{path}: quants must be a non-empty object")
         primary = [quant for quant in quants.values() if quant.get("primary")]
-        if len(primary) != 1:
-            raise ValueError(f"{path}: exactly one primary quant is required")
+        if len(primary) > 1:
+            raise ValueError(f"{path}: at most one primary quant is allowed; explicit-only quants have none")
 
         for quant_slug, quant in quants.items():
             if not isinstance(quant, dict):
@@ -424,6 +424,7 @@ def lane_inventory(lane: dict) -> dict:
     ]
     return {
         "key": lane["key"],
+        "primary": lane["primary"],
         "request_model_id": lane["request_model_id"],
         "quant_slug": lane["quant_slug"],
         "aliases": lane["aliases"],
@@ -541,8 +542,8 @@ def deployment_inventory(runtime: dict, lanes: list[dict], scenarios: list[dict]
             "completion": "POST /v1/completions",
         },
         "runtime_modes": ["text"],
-        "model_profiles": {lane["profile_id"]: lane["profile"] for lane in primary},
-        "models": {lane["key"]: lane_inventory(lane) for lane in primary},
+        "model_profiles": {lane["profile_id"]: lane["profile"] for lane in lanes},
+        "models": {lane["key"]: lane_inventory(lane) for lane in lanes},
         "deployments": deployments,
     }
     fingerprint = hashlib.sha256(

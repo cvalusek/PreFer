@@ -33,6 +33,15 @@
         "kind": {"enum": ["local", "network", "unknown"]}
       }
     },
+    "runtime_compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cuda_max_major": {"type": "integer", "minimum": 1},
+        "nvidia_driver": {"type": "string", "minLength": 1},
+        "rocm_version": {"type": "string", "minLength": 1}
+      }
+    },
     "capabilities": {"$ref": "#/$defs/stringList"}
   },
   "$defs": {
@@ -49,6 +58,7 @@
       "additionalProperties": false,
       "required": ["capabilities"],
       "properties": {
+        "vendor": {"enum": ["nvidia", "amd"]},
         "id": {"type": "string"},
         "slug": {"type": "string"},
         "canonical_id": {"type": "string"},

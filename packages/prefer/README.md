@@ -60,13 +60,19 @@ same bytes once as VRAM and again as host RAM.
 import {
   readHardwareProfileCatalog,
   resolveHardwareProfile,
+  resolvePreferRelease,
+  resolveRuntimeImage,
   readModelCatalog,
   planModelSet
 } from "prefer-inference-core";
 
 const hardware = await readHardwareProfileCatalog("prefer-hardware-profiles.json");
+const release = await resolvePreferRelease({ repository: "cvalusek/PreFer", channel: "preview" });
 const catalog = await readModelCatalog("prefer-model-catalog.json");
 const resources = resolveHardwareProfile(hardware, "aws/g7e.2xlarge", runtimeObservation);
+// runtimeObservation must include the observed host driver API, e.g.
+// runtime_compatibility: { cuda_max_major: 13 }, not a guessed GPU-SKU value.
+const image = resolveRuntimeImage(release.manifest, "llama.cpp", resources);
 const plan = planModelSet(catalog, {
   engine: "llama.cpp",
   resources,
@@ -83,6 +89,15 @@ const plan = planModelSet(catalog, {
   }
 });
 ```
+
+Image selection precedes fitting. On releases that publish accelerator metadata,
+`resolveRuntimeImage` returns an immutable release image candidate using vendor, platform, observed CUDA driver API, and
+ROCm architecture restrictions; it cannot validate a model's kernels or
+output. One resource profile/process represents one GPU vendor. A provider
+profile may include dated CUDA-major evidence but the live driver observation
+controls deployment; a host CUDA toolkit version does not select the image.
+RunPod/AWS and local observed profiles use the same contract, without authored
+`local/*` entries.
 
 Planning starts with each model's normal quant and walks downward through
 quality-credible published variants only when the preferred artifact does not
@@ -121,7 +136,10 @@ prefer hardware detect --base observed-or-provider-resource.json
 prefer model plan --resources resources.json --engine llama.cpp --models qwen-3.8-27b,gemma-4-12b --preferred-role repository-coding --speed-importance 0.8 --headroom-gib 2
 ```
 
-Qwen3.8 27B defaults to Unsloth UD-Q6_K_XL on every engine. Setting
+Qwen3.8 27B keeps Unsloth UD-Q6_K_XL as its cross-engine default; Qwen3.5-9B
+uses first-party BF16 for SGLang and vLLM while retaining GGUF for llama.cpp.
+The former NVFP4 direct text lanes are explicit-only rather than friendly-name
+defaults. Setting
 `USE_NVFP4=true` in the CLI environment (or passing `useNvfp4` to the library)
 selects the engine-specific NVFP4 source. Explicit repository and quant choices
 still win. The CLI resolves storage from `--model-root`, then

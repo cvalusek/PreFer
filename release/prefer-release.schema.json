@@ -247,6 +247,17 @@
           "type": "string",
           "pattern": "@sha256:[0-9a-f]{64}$"
         },
+        "accelerator": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["vendor", "backend"],
+          "properties": {
+            "vendor": {"enum": ["nvidia", "amd", "any"]},
+            "backend": {"enum": ["cuda", "rocm", "vulkan", "cpu"]},
+            "cuda_major": {"type": "integer", "enum": [12, 13]},
+            "gpu_architectures": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^gfx[0-9a-z]+$"}}
+          }
+        },
         "platforms": {
           "type": "array",
           "minItems": 1,

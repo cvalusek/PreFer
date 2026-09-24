@@ -70,7 +70,10 @@ been smoked. Qwen3.8 27B keeps Unsloth UD-Q6_K_XL as the shared default across
 all engines. `USE_NVFP4=true` (or `--use-nvfp4`) deliberately selects the
 engine-specific RadixArk or Inferact NVFP4 repository; an explicit repository
 or quant remains available for expert control. The official BF16 and FP8
-repositories are choices as well.
+repositories are choices as well. Qwen3.5-9B keeps GGUF as the llama.cpp
+default, while its SGLang/vLLM engine defaults select first-party BF16.
+The old Qwen3.8 NVFP4 direct lanes are explicit-only: the friendly model name
+does not select or stage those checkpoints by default.
 
 Artifact format is inferred from the selected files, and SGLang/vLLM's NVFP4
 launcher mode is inferred from that explicit choice. Model YAML must not repeat
@@ -93,7 +96,23 @@ device count, memory, architecture, compute capability, and precision support.
 Provider SKU, host RAM, logical CPU count, and storage are additional facts.
 Hardware profiles never contain model, quant, context, concurrency, cache,
 offload, or speculation choices, and there are no authored `local/*` profiles.
-Unmanaged local execution uses live detection and explicit policy.
+Unmanaged local execution uses live detection and explicit policy. Provider
+profiles represent one accelerator vendor per runtime process; an AMD card
+cannot be silently combined with NVIDIA devices in one profile. They may
+record CUDA-major compatibility only with dated provider evidence, never a
+preferred image. Host driver API support is observed separately; GPU model
+and an installed host CUDA toolkit do not determine a container's CUDA-major
+compatibility.
+
+`resolveRuntimeImage` chooses an immutable image reference from the release
+manifest for an engine, platform, vendor, observed CUDA driver API where
+required, and exact ROCm architecture when the image is restricted (for
+example MI30x `gfx942`). It fails when the NVIDIA driver API is unknown, a
+mixed-vendor resource profile is supplied, or no backend matches; it never
+selects a model/quant. Image eligibility is **not** an inference smoke or
+claim of model fit. Run `planModelSet` next with the selected engine and
+observed resources, then produce the release-bound handoff. A local R9700 is
+an observed `gfx1201` AMD resource, not an authored provider hardware profile.
 
 Discrete VRAM, host memory, and unified memory are distinct accounting models.
 On a unified-memory system, host and accelerator observations constrain one
@@ -159,7 +178,7 @@ the runtime image.
 
 ## Release artifacts
 
-After all seven image indexes build, `prefer-release.json` binds the following tooling to
+After all fourteen image indexes build, `prefer-release.json` binds the following tooling to
 the same full source SHA and checksums as the images:
 
 - `prefer-inference-core.tgz`

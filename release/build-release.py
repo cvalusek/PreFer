@@ -14,6 +14,24 @@ from pathlib import Path
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 DIGEST_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 
+# Image compatibility describes the published binary, not a model or hardware preset.
+IMAGE_ACCELERATORS = {
+    "llama-cuda12": {"vendor": "nvidia", "backend": "cuda", "cuda_major": 12},
+    "llama-rocm": {"vendor": "amd", "backend": "rocm"},
+    "audio-cuda12": {"vendor": "nvidia", "backend": "cuda", "cuda_major": 12},
+    "audio-vulkan": {"vendor": "any", "backend": "vulkan"},
+    "audio-cpu": {"vendor": "any", "backend": "cpu"},
+    "image-cuda12": {"vendor": "nvidia", "backend": "cuda", "cuda_major": 12},
+    "image-vulkan": {"vendor": "any", "backend": "vulkan"},
+    "sglang-cuda12": {"vendor": "nvidia", "backend": "cuda", "cuda_major": 12},
+    "sglang-cuda13": {"vendor": "nvidia", "backend": "cuda", "cuda_major": 13},
+    "sglang-rocm-mi30x": {"vendor": "amd", "backend": "rocm", "gpu_architectures": ["gfx942"]},
+    "vllm-cuda12": {"vendor": "nvidia", "backend": "cuda", "cuda_major": 12},
+    "vllm-cuda13": {"vendor": "nvidia", "backend": "cuda", "cuda_major": 13},
+    "vllm-rocm": {"vendor": "amd", "backend": "rocm"},
+    "downloader": {"vendor": "any", "backend": "cpu"},
+}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -84,11 +102,16 @@ def image_entry(
     platforms: list[str],
 ) -> dict[str, object]:
     require_match(digest, DIGEST_PATTERN, f"digest for {tag}")
+    variant = tag.rsplit("-sha-", 1)[0]
+    accelerator = IMAGE_ACCELERATORS.get(variant)
+    if not accelerator:
+        raise ValueError(f"unknown image accelerator variant: {variant}")
     return {
         "tag": tag,
         "digest": digest,
         "reference": f"{repository}:{tag}@{digest}",
         "platforms": platforms,
+        "accelerator": accelerator,
     }
 
 

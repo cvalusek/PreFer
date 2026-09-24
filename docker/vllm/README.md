@@ -1,10 +1,13 @@
 # PreFer vLLM runtime
 
-The official vLLM v0.29.0 CUDA 12.9 and CUDA 13.0 images serve the Inferact
-Qwen3.8-27B NVFP4 lane. PreFer also publishes an official ROCm Linux AMD64
-image as a build-only backend; the NVFP4/FlashInfer CUDA recipe is not an AMD
-model-compatibility claim. The base PyTorch lists `gfx1201`, but AITER does
-not; exact model/GPU/API validation is required before using the ROCm lane.
+Official vLLM v0.29.0 CUDA 12.9/13.0 and ROCm images accept the same explicit
+model handoff. First-party Qwen3.5-9B BF16 is the normal named text lane,
+with a conservative 8K starting context and no implicit speculative decoding.
+The prior Qwen3.8 NVFP4 experiment remains available only by its exact key
+`qwen-3.8-27b-nvfp4` or an explicit release-bound handoff; the friendly
+`qwen-3.8-27b` direct selector does not stage it. Image eligibility and model
+fit are separate: ROCm/R9700 model load, kernel and API behavior need a smoke.
+The ROCm base PyTorch lists `gfx1201`, but its AITER build does not.
 
 Generated hardware deployments, local profiles, and checked-in server configs
 have been removed. The inventory retains exact model artifacts, profiles,

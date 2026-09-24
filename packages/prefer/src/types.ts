@@ -268,6 +268,7 @@ export interface MemoryResource {
 }
 
 export interface AcceleratorResource extends MemoryResource {
+  vendor?: "nvidia" | "amd";
   id?: string;
   slug?: string;
   canonical_id?: string;
@@ -306,6 +307,8 @@ export interface ResourceProfile {
   host_memory?: MemoryResource;
   cpu?: CpuResource;
   storage?: StorageResource;
+  /** Observed host driver API, not the CUDA toolkit packaged inside an image. */
+  runtime_compatibility?: { cuda_max_major?: number; nvidia_driver?: string; rocm_version?: string };
   capabilities: string[];
 }
 
@@ -315,6 +318,7 @@ export interface RuntimeResourceObservation {
   host_memory?: MemoryResource;
   cpu?: CpuResource;
   storage?: StorageResource;
+  runtime_compatibility?: ResourceProfile["runtime_compatibility"];
   capabilities?: string[];
 }
 

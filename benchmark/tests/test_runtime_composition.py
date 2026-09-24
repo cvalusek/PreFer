@@ -174,12 +174,12 @@ class RuntimeCompositionTests(unittest.TestCase):
     def test_vllm_applies_server_then_model_override(self):
         config_text, prestage, _ = self.compose(
             "vllm",
-            models="qwen-3.8-27b",
-            model={"qwen-3.8-27b": {"gpu_memory_utilization": 0.91, "max_num_seqs": 6}},
+            models="qwen-3.5-9b",
+            model={"qwen-3.5-9b": {"gpu_memory_utilization": 0.91, "max_num_seqs": 6}},
             server={"max_num_seqs": 8},
         )
         config = json.loads(config_text)
-        self.assertEqual(prestage, ["qwen-3.8-27b-nvfp4"])
+        self.assertEqual(prestage, ["qwen-3.5-9b-bf16"])
         self.assertEqual(config["server"]["gpu_memory_utilization"], 0.91)
         self.assertEqual(config["server"]["max_num_seqs"], 6)
 

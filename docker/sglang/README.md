@@ -1,10 +1,11 @@
 # PreFer SGLang runtime
 
 PreFer publishes official SGLang CUDA 12.9 (`v0.5.19-cu129`) and CUDA 13
-(`v0.5.20`) variants, plus a build-only ROCm MI30x image. The CUDA variants
-serve Qwen3.8 text and MiniMax H3 diffusion video as alternatives to llama.cpp.
-The ROCm image is not an R9700 `gfx1201` build, and the checked-in NVFP4 and
-FlashInfer CUDA routes must not be treated as validated AMD model configs.
+(`v0.5.20`) variants, plus a build-only ROCm MI30x image. The normal named text lane is now first-party Qwen3.5-9B BF16 at a bounded
+8K starting context, alongside MiniMax H3 diffusion video. Qwen3.8 NVFP4
+remains an explicit-only experimental lane (`qwen-3.8-27b-nvfp4`); its friendly
+model name no longer selects it. The MI30x ROCm image is not an R9700
+`gfx1201` build and cannot become one by changing the model quant.
 Capability and fit remain exact variant/card/model smoke gates.
 
 Generated hardware deployments, local profiles, and checked-in server configs

@@ -13,6 +13,9 @@ import {
   mergeCatalogExtensions,
   normalizeDeploymentResources,
   parseNvidiaSmi,
+  parseNvidiaCudaVersion,
+  parseRocmSmi,
+  detectRuntimeResources,
   planModelSet,
   quantQuality,
   readHardwareProfileCatalog,
@@ -23,6 +26,7 @@ import {
   resolveExtensionModelVariant,
   resolveHardwareProfile,
   resolveModelVariant,
+  resolveRuntimeImage,
   estimateVariantFit,
   tuneWorkloadToFit
 } from "../dist/index.js";
@@ -360,7 +364,26 @@ test("provider hardware profiles are planner inputs without model selection", as
   const resources = resolveHardwareProfile(catalog, "aws/g6.xlarge");
   assert.equal(resources.accelerators.length, 1);
   assert.equal(resources.accelerators[0].total_bytes, 24 * GIB);
+  assert.equal(resources.accelerators[0].vendor, "nvidia");
   assert.equal(resources.host_memory?.total_bytes, 16 * GIB);
+  const amdProfile = { schema_version: "prefer.hardware-profile-catalog.v1", profiles: {
+    "runpod/mi300x/1x": { provider: "runpod", hardware: {
+      gpu_name: "MI300X", accelerator_vendor: "amd", compute_capability: "gfx942", gpu_count: 1, vram_gb_each: 192
+    } }
+  } };
+  assert.equal(resolveHardwareProfile(amdProfile, "runpod/mi300x/1x").accelerators[0].vendor, "amd");
+  assert.throws(() => resolveHardwareProfile({ ...amdProfile, profiles: {
+    "runpod/mi300x/1x": { ...amdProfile.profiles["runpod/mi300x/1x"], compatibility: { container_runtime: "nvidia" } }
+  } }, "runpod/mi300x/1x"), /mixes accelerator vendors/);
+  const evidenced = { schema_version: "prefer.hardware-profile-catalog.v1", profiles: {
+    "aws/observed": { provider: "aws", hardware: { gpu_name: "L4", gpu_count: 1, vram_gb_each: 24,
+      accelerator_vendor: "nvidia" }, compatibility: { cuda_runtime_majors: [12],
+      cuda_compatibility_observed_on: "2026-09-01", cuda_compatibility_reference: "https://example.com/driver-evidence" } }
+  } };
+  assert.equal(resolveHardwareProfile(evidenced, "aws/observed").runtime_compatibility, undefined);
+  assert.throws(() => resolveHardwareProfile({ ...evidenced, profiles: {
+    "aws/observed": { ...evidenced.profiles["aws/observed"], compatibility: { cuda_runtime_majors: [13] } }
+  } }, "aws/observed"), /invalid CUDA runtime compatibility/);
   assert.throws(
     () => resolveHardwareProfile({
       schema_version: "prefer.hardware-profile-catalog.v1",
@@ -391,7 +414,7 @@ test("provider hardware profiles are planner inputs without model selection", as
 test("deployment hardware normalizes discrete and unified memory without double counting", () => {
   const discrete = normalizeDeploymentResources({
     provider: "aws",
-    hardware: { provider_sku: "g7e.12xlarge", gpu_slug: "rtx-pro-6000", gpu_count: 2, vram_gb_each: 96, architecture: "Blackwell", vcpu: 48 }
+    hardware: { provider_sku: "g7e.12xlarge", gpu_slug: "rtx-pro-6000", accelerator_vendor: "nvidia", gpu_count: 2, vram_gb_each: 96, architecture: "Blackwell", vcpu: 48 }
   });
   assert.equal(discrete.memory_topology, "discrete");
   assert.equal(discrete.accelerators.length, 2);
@@ -429,6 +452,54 @@ test("runtime GPU facts parse into exact available memory and capabilities", () 
   assert.equal(gpu.available_bytes, 90000 * 1024 ** 2);
   assert.equal(gpu.compute_capability, "sm_120");
   assert.ok(gpu.capabilities.includes("nvfp4"));
+  assert.equal(parseNvidiaCudaVersion("Driver Version: 580.65.06  CUDA Version: 13.0"), 13);
+  assert.throws(() => parseNvidiaCudaVersion("Driver Version: 550.00"), /did not report/);
+});
+
+test("release image choice uses host driver and GPU vendor before model fitting", () => {
+  const digest = `sha256:${"a".repeat(64)}`;
+  const image = (tag, accelerator) => ({ tag, digest, reference: `ghcr.io/example/prefer:${tag}@${digest}`,
+    platforms: ["linux/amd64"], accelerator });
+  const release = { engines: {
+    sglang: { images: {
+      cuda12: image("sglang-cuda12-sha-aaaaaaa", { vendor: "nvidia", backend: "cuda", cuda_major: 12 }),
+      cuda13: image("sglang-cuda13-sha-aaaaaaa", { vendor: "nvidia", backend: "cuda", cuda_major: 13 }),
+      "rocm-mi30x": image("sglang-rocm-mi30x-sha-aaaaaaa", { vendor: "amd", backend: "rocm", gpu_architectures: ["gfx942"] })
+    } },
+    vllm: { images: { rocm: image("vllm-rocm-sha-aaaaaaa", { vendor: "amd", backend: "rocm" }) } },
+    audio: { images: { vulkan: image("audio-vulkan-sha-aaaaaaa", { vendor: "any", backend: "vulkan" }) } }
+  } };
+  const nvidia = { schema_version: "prefer.resources.v1", source: "runtime", memory_topology: "discrete",
+    accelerators: [{ vendor: "nvidia", compute_capability: "sm_120", capabilities: ["cuda"] }], capabilities: ["gpu", "cuda"] };
+  assert.throws(() => resolveRuntimeImage(release, "sglang", nvidia), /CUDA driver API version is unknown/);
+  assert.equal(resolveRuntimeImage(release, "sglang", { ...nvidia, runtime_compatibility: { cuda_max_major: 12 } }).variant, "cuda12");
+  assert.equal(resolveRuntimeImage(release, "sglang", { ...nvidia, runtime_compatibility: { cuda_max_major: 13 } }).variant, "cuda13");
+  const amd = { ...nvidia, accelerators: [{ vendor: "amd", compute_capability: "gfx1201", capabilities: ["rocm"] }], capabilities: ["gpu", "rocm"] };
+  assert.throws(() => resolveRuntimeImage(release, "sglang", amd), /no sglang image matches/);
+  assert.equal(resolveRuntimeImage(release, "vllm", amd).variant, "rocm");
+  assert.equal(resolveRuntimeImage(release, "audio.cpp", amd).variant, "vulkan");
+  assert.equal(resolveRuntimeImage(release, "sglang", { ...amd, accelerators: [{ ...amd.accelerators[0], compute_capability: "gfx942" }] }).variant, "rocm-mi30x");
+  assert.throws(() => resolveRuntimeImage(release, "vllm", { ...amd, accelerators: [...amd.accelerators, nvidia.accelerators[0]] }), /mixed accelerator vendors/);
+  assert.throws(() => resolveRuntimeImage(release, "vllm", { ...amd, accelerators: [{ ...amd.accelerators[0], capabilities: ["cuda"] }] }), /vendor conflicts/);
+});
+
+test("ROCm discovery reports free VRAM without inventing NVFP4 support", async () => {
+  const sample = JSON.stringify({ card0: {
+    "Card series": "AMD Radeon AI PRO R9700",
+    "VRAM Total Memory (B)": String(32 * GIB),
+    "VRAM Total Used Memory (B)": String(2 * GIB)
+  } });
+  const [gpu] = parseRocmSmi(sample);
+  assert.equal(gpu.available_bytes, 30 * GIB);
+  assert.deepEqual(gpu.capabilities, ["rocm"]);
+  const detected = await detectRuntimeResources({
+    runNvidiaSmi: async () => { throw new Error("no NVIDIA GPU"); },
+    runRocmSmi: async () => sample
+  });
+  assert.equal(detected.accelerators[0].available_bytes, 30 * GIB);
+  assert.ok(detected.capabilities.includes("rocm"));
+  assert.ok(!detected.capabilities.includes("nvfp4"));
+  assert.throws(() => parseRocmSmi('{"card0":{"VRAM Total Memory (B)":"8","VRAM Total Used Memory (B)":"9"}}'), /invalid rocm-smi VRAM/);
 });
 
 test("resource planning keeps the preferred quant when it fits and drops to a quality-credible smaller quant when constrained", async () => {

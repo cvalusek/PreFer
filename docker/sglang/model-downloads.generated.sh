@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly SGLANG_GENERATED_MODEL_KEYS="qwen-3.8-27b-nvfp4"
+readonly SGLANG_GENERATED_MODEL_KEYS="qwen-3.5-9b-bf16"
 GENERATED_MODEL_KEYS=$SGLANG_GENERATED_MODEL_KEYS
 LEGACY_SMALL_MODELS=$SGLANG_GENERATED_MODEL_KEYS
 
@@ -9,6 +9,7 @@ model_key_fingerprint() {
   case "$1" in
   minimax-h3-fl2va-int8-convrot) printf '%s\n' 45bf26078343977c9cf1c732a2f2e5ff5940ae5c2968fa9f0638df5adc255cbe ;;
   minimax-h3-ref2va-int8-convrot) printf '%s\n' 9e2c8ed8e1b63ded5c76a2870395c3b3b765d2efe456bd35fd2c452558c0399e ;;
+  qwen-3.5-9b-bf16) printf '%s\n' 23b16bbe087da36319f05dfa545fe00792c2cae745712bfebcb73400e4d4098d ;;
   qwen-3.8-27b-nvfp4) printf '%s\n' 510de70a8bdfa5363430bba4fe345730579aed08ab48c3c0656f54cfd097cb4f ;;
     *) echo "[sglang-download] unknown model key: $1" >&2; return 2 ;;
   esac
@@ -127,6 +128,21 @@ model_key_artifacts() {
       printf '%s\n' "Comfy-Org/MiniMax-H3/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
       printf '%s\n' "Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors"
       printf '%s\n' "Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
+      ;;
+  qwen-3.5-9b-bf16)
+      printf '%s\n' "Qwen/Qwen3.5-9B/chat_template.jinja"
+      printf '%s\n' "Qwen/Qwen3.5-9B/config.json"
+      printf '%s\n' "Qwen/Qwen3.5-9B/merges.txt"
+      printf '%s\n' "Qwen/Qwen3.5-9B/model.safetensors-00001-of-00004.safetensors"
+      printf '%s\n' "Qwen/Qwen3.5-9B/model.safetensors-00002-of-00004.safetensors"
+      printf '%s\n' "Qwen/Qwen3.5-9B/model.safetensors-00003-of-00004.safetensors"
+      printf '%s\n' "Qwen/Qwen3.5-9B/model.safetensors-00004-of-00004.safetensors"
+      printf '%s\n' "Qwen/Qwen3.5-9B/model.safetensors.index.json"
+      printf '%s\n' "Qwen/Qwen3.5-9B/preprocessor_config.json"
+      printf '%s\n' "Qwen/Qwen3.5-9B/tokenizer.json"
+      printf '%s\n' "Qwen/Qwen3.5-9B/tokenizer_config.json"
+      printf '%s\n' "Qwen/Qwen3.5-9B/video_preprocessor_config.json"
+      printf '%s\n' "Qwen/Qwen3.5-9B/vocab.json"
       ;;
   qwen-3.8-27b-nvfp4)
       printf '%s\n' "RadixArk/Qwen3.8-27B-NVFP4/chat_template.jinja"
@@ -262,6 +278,21 @@ model_key_artifact_records() {
       printf '%s\t%s\n' 605254808 "Comfy-Org/MiniMax-H3/vae/minimax_h3_audio_vae_fp32.safetensors"
       printf '%s\t%s\n' 5207808496 "Comfy-Org/MiniMax-H3/vae/minimax_h3_video_vae_fp16.safetensors"
       ;;
+  qwen-3.5-9b-bf16)
+      printf '%s\t%s\n' 7756 "Qwen/Qwen3.5-9B/chat_template.jinja"
+      printf '%s\t%s\n' 3126 "Qwen/Qwen3.5-9B/config.json"
+      printf '%s\t%s\n' 3353259 "Qwen/Qwen3.5-9B/merges.txt"
+      printf '%s\t%s\n' 5276436216 "Qwen/Qwen3.5-9B/model.safetensors-00001-of-00004.safetensors"
+      printf '%s\t%s\n' 5335161512 "Qwen/Qwen3.5-9B/model.safetensors-00002-of-00004.safetensors"
+      printf '%s\t%s\n' 5368717440 "Qwen/Qwen3.5-9B/model.safetensors-00003-of-00004.safetensors"
+      printf '%s\t%s\n' 3325995712 "Qwen/Qwen3.5-9B/model.safetensors-00004-of-00004.safetensors"
+      printf '%s\t%s\n' 79657 "Qwen/Qwen3.5-9B/model.safetensors.index.json"
+      printf '%s\t%s\n' 390 "Qwen/Qwen3.5-9B/preprocessor_config.json"
+      printf '%s\t%s\n' 12807982 "Qwen/Qwen3.5-9B/tokenizer.json"
+      printf '%s\t%s\n' 16710 "Qwen/Qwen3.5-9B/tokenizer_config.json"
+      printf '%s\t%s\n' 385 "Qwen/Qwen3.5-9B/video_preprocessor_config.json"
+      printf '%s\t%s\n' 6722759 "Qwen/Qwen3.5-9B/vocab.json"
+      ;;
   qwen-3.8-27b-nvfp4)
       printf '%s\t%s\n' 8952 "RadixArk/Qwen3.8-27B-NVFP4/chat_template.jinja"
       printf '%s\t%s\n' 73003 "RadixArk/Qwen3.8-27B-NVFP4/config.json"
@@ -289,6 +320,9 @@ sglang_model_artifact_ids() {
     ;;
   minimax-h3-ref2va-int8-convrot)
     printf '%s\n' "cefbdb47c26a2d9cfd7530197c97751b2fb838be3f7c4c6df474e8e7e472ab45" "03164c445d7327ea4a0fbc01638920edf4056bfdeae1ea9203a60096169f5fdd" "90b3b7e679a6b856a3413d16c4636245a61fcf71463d968b4ecd63abc209f953" "247e72bfc485f160845f5522051c41d301884f3f35d0dcc1019b18b70d99a1c0" "53a5efc78f1739519cfacdb528b7b2d5fc82024b85c34f5d4907c452a9788ac0" "cb3c6a6aae91178f1d7d02aa097005898cabaa95cdd14b8d5b944c4a4e40582c" "d33a505cba5eeb915a10f86fd60b87294c4e7ffdecb13c5e3d19a2420dacec36" "ed0fb2e418b2902b7ed1ab2b442355f7b1be46712b7912f4da2b60f6c14a4a9e" "97ebd718db0f02eda12ec5d669a0abed1cb3991966fab9564c7114622fcc6313" "127a5f54a82d01b4886f6e615c613bc424fd7af527be65932038052cf3391561" "6d107783bd63177c9ee197c5477688c5e99113417578b7878651273d90ee3854" "b9b1c527d89ec7ca1c89ecf6d1984d0f120e4cd23f11ac789c559b030ba317fd" "47b1d01b67fe2df13f9e39e79b101baec94ccfd8b4ece7c641322edb5a87728e" "def039a803ddc8227dcdbe8c702469483c29f2451b7ce38643579109d72689e2" "35158b65febc07515ae249a6220e75c7f2c0d20c2dd413438fe05b61153e3bca" "45744f4a728a958821b6e251f7111ddea3b655dd4b857184826433f796b165dc" "bf2fec0c64575ab5bd8957ca68cd8ba8dad7c8ca75cd22265ad7f0460ead746a" "1cd77b434193822c3a7526db00d2a126ef7d39fcf022654ca0f4e4b0b84270e4" "3ee7af87d088762a967a08df8ad5da0866ee6d1163469cd286d7ed3c84392ba8" "c55222b12846cf5c8c8cebd81c42a537ab306888ada596806a30fd4a7d2618ab" "932d40a3d4b1fda3fe087cea99024be5dba4543d3a3089ec4caa0f9d530c7de0" "a9c4f6a66c12e12134bc9168208b3dc49f334673e566a69b346a4f59e366147f" "221d67d6e046f742e7e28172089cc96e81999eead245bad8fee5b85e14c239b0" "4ea96b08125671598ae3abd1d087e8058ffe9b69b1fd2a7ccaff206f3247c2a3" "e5d72605eb8b0067faa22b4dcbe8a589158782123f5ddd66fd4d6b2fb81709a5" "18cba62292ed3e4d1972e92649c1378ac11050edd6875112c27883b90ddc1977" "94df1cfefc7cc274fd9d348449d026c75e59d61fcf09e6deaa78639bd80a8039" "434a13d7eb7658186962af30c6ae511f718166834ad1073237298d1600fc71a5" "58a285ae8c68cf5b24ceb6f7601df1f695f79cd86cc877833f03486827af1634" "5e0b58636c189d3bc78aa642e7e1cb7483a3eef0c681f8cc01d54a5732fe265d" "ec574c3a9688759e09c150892060816f05b810433d824db5f4b2dd5f93ac86d9" "b5cce8521d0922e7231cf395b12e4806cfdeafa1b647c395c65d6b77ed03cb5d" "32987bba8301dab54f2125367cec44a10b81225b2f24e12f5ffe3b22ea1e2373" "7c1f1541994d8adbb9acfc38cd23229b9c2145b18ec8684cd71b7f972ed40d0f" "a840bd7de4b572d9448bd4f828abf3202b2ec133a4398fb1b0e87526fb0729a9" "b3af6d16005c0e1ce72958eeeb04925e42ed2c10e1479a12c69b4a4083fc4666" "002655bb8c773c8226c896fee0936d54553b9fc704581764acc73ad2e26d224b" "ff9caea90791bcad5e43dbbfd55f051a13a5a798301bb7da866abf6c5cbcc775" "00edbf980322c706fe3e7438c1ad6654bf1e5635d4cba79590adbdaff6afc69d" "d8f14bf4d50a3dec20d44e8975f0d981dd97066ea5b11b68082bb642ca481d07" "7ac94323cffd7ac2488a7fc167a6863a13f7b607d67e5c9dc6f9308d356af6d4" "470810526fdaf745776eb0828072384bec39f89a65dc283d491ddbbe9b4f266d" "5de0d62499dda586ca5b3880ee64383d7b9f68648f16a22df5aac706d132283c" "da4ea9d0e87ab5d25d628f049ce35c1e649219ec2a53435c7e94302e52cdeb0b" "643f218ae163bb85c7fd0084d30408090f16efbde14c7883ce260d6b5b5046a4" "021324fb3d450a9a8e717049f7107543bb62c7133da03fb8db5a85a023bbb348" "d29b0f89a1322f74b95bc1f6638eb9864eca0fd6b407c8ca35a27f77f97e7da3" "a32d7605df547188c02a488b3e7fec45ef6ed7ce03ff335f3300e43474de22a6" "01825b8b9e3577a377cb782bb8420455920dc1efada09ba1bd99e123729ceed2" "473ebef86532b8d5a42f3bef95d5ba27d3fb63fe294922815dd20a9de28a1c6d" "3588902454f67912fd9d4dbbdd50aa71d22a89a3356854aa1c8904c696b51c95" "eb27812965db98bab9180298f41629add421020e807111c667f2ec6b801b2024" "f8a4b810d64ac7aae80edf1a86dcac463d9e2d49a7443584a7bcc3bc87a1f1bf" "8b05098bd8da92c5e326c4152fe9f29834aef2489b5a098192c088e0abdb64a6"
+    ;;
+  qwen-3.5-9b-bf16)
+    printf '%s\n' "728db78a22432a94f75872a9c8a33c0953b49cf2beed398fa9d890257ec1e008" "3540aa5322eb9b6c321f1adbca0d66d93a8351a2cdd1eeaf9309d68bcf16170e" "d71d65bcfdb503e4da7de9950bfe0f60a804f5d9812a239c2c6264fe37f06db2" "d86510b151fc5396de972cf7e2904cbd5639ffeb1a3b9611426554b567b6a653" "ac088af1799a45838994aa0add5ba92f7393f97dfd419e1f1701f30fb8865ec7" "d7ed9cec7587b6d8563aa30c50a44da9d89fa88ab016b637b834b7bf81a1b3b2" "bd8949aadb54cd2008bae2933db190eded0a73d1f79b48f2ffed632f6538fa5f" "96714214595d5de5e3d58925bcd664cf26db6422494ac8bfbfd059f32fa18955" "a712412fcd8890ac728477fcda1b0a67a7e936e370452edab8185d2b9fdc7faa" "fa7d573dad39c1815365377c98dd1778f7ae313bfe996066361eb7d97d8f3e76" "a5e18443f8adb0bd74babe7233b72bdae78064eb42a18e588b3d037c17b9e602" "7e82c3cfe5b70e6a14c7c50da177d96f62e2220e95d25938b0adf488ec95d7f9" "6fd716375257123a017ed29811fe9e54bb099101c633e63e50699fd9b0c56abd"
     ;;
   qwen-3.8-27b-nvfp4)
     printf '%s\n' "1872540f100537b1a3934324582e5d9a5088aeed741a555bc27e960a482355a4" "bd4d870488e327b76b72c88c8720083052627fbb0b93f1fa10ff858ebb155b2c" "919d7ee15a0fadbddfc063ea3ab00cd3e40eff57da0e06367feb477d0dfd7c05" "3e6b53eec281228ca50a1417d3d768d33ee1d8578aeafb516fe50aa81401db7d" "e7e3e7f9a82fa7f51aabb6ade09bb28fa48f5d0c182c27058d4429e42c93435a" "93758408a062a258fd549c4e4ba9e28bfa2b045e2ab55cd6b27487fb01afc3db" "1b005625d88e08b27423395b98ec92f1bc2fcc747355bba89a8581f61e25757b" "68ad6bf748e17568538d93aa614efd5cd86ae3b458364276787fc87ae98aa167" "8a0d6be7fd2bcbb0483918329bc56b1ab010eb4e59d92332a4ebdd81ebfb226b" "ba5d8f1df983d9283c17076c60f2426e27f4917cfdd25e4e436826bdc563245c" "3001036477fa91b75a2b38182de57581aa886607f24a1a4fddea200e1b4c291b" "f3c3ca7e0bd239424a4fea839b50a052e6727c3c89c8fefaa7d1811a94bcfa63" "d46158d901e1e5079969870d919555b038173ce4ef182146087ac682bc638785" "1d6ee74940f64d6aae63bf1f31e9f5c07fb279da96d73c9744736b58e4b96163"
@@ -613,6 +647,45 @@ sglang_download_artifact_id() {
     ;;
   3588902454f67912fd9d4dbbdd50aa71d22a89a3356854aa1c8904c696b51c95)
     prefer_download_hf_artifact "sglang-download" "$1" "Comfy-Org/MiniMax-H3" "3f57e8291d2ef846f9a074b1b76d2767db434abe" "diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors" 20970379616 "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779"
+    ;;
+  728db78a22432a94f75872a9c8a33c0953b49cf2beed398fa9d890257ec1e008)
+    prefer_download_hf_artifact "sglang-download" "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "chat_template.jinja" 7756 "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715"
+    ;;
+  3540aa5322eb9b6c321f1adbca0d66d93a8351a2cdd1eeaf9309d68bcf16170e)
+    prefer_download_hf_artifact "sglang-download" "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "config.json" 3126 "d0883072e01861ed0b2d47be3c16c36a8e81c224c7ffaa310c6558fb3f932b05"
+    ;;
+  d71d65bcfdb503e4da7de9950bfe0f60a804f5d9812a239c2c6264fe37f06db2)
+    prefer_download_hf_artifact "sglang-download" "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "merges.txt" 3353259 "a9d356d7bdf1ef4949e3e748e95b8e10ad9d4e2e838eddc38a0a7b6b94d1db8d"
+    ;;
+  d86510b151fc5396de972cf7e2904cbd5639ffeb1a3b9611426554b567b6a653)
+    prefer_download_hf_artifact "sglang-download" "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "model.safetensors-00001-of-00004.safetensors" 5276436216 "db6f444b43d318c92f360a13a25561a6a65b10c0631b8ed305a426dbaa6c380e"
+    ;;
+  ac088af1799a45838994aa0add5ba92f7393f97dfd419e1f1701f30fb8865ec7)
+    prefer_download_hf_artifact "sglang-download" "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "model.safetensors-00002-of-00004.safetensors" 5335161512 "31c7d7e2dd5d207840b31cc59083c8f4c4718959149e0358c0364052bb9a0330"
+    ;;
+  d7ed9cec7587b6d8563aa30c50a44da9d89fa88ab016b637b834b7bf81a1b3b2)
+    prefer_download_hf_artifact "sglang-download" "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "model.safetensors-00003-of-00004.safetensors" 5368717440 "7ec36ba3a4176a44c3c0876ad80c56a2f70c84bf008d82e9501df642f17dadec"
+    ;;
+  bd8949aadb54cd2008bae2933db190eded0a73d1f79b48f2ffed632f6538fa5f)
+    prefer_download_hf_artifact "sglang-download" "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "model.safetensors-00004-of-00004.safetensors" 3325995712 "b62b0c4cd7e44edee103ee8f4fe225f246d5e768e07bfd5f25b63a8aa1fdd0c6"
+    ;;
+  96714214595d5de5e3d58925bcd664cf26db6422494ac8bfbfd059f32fa18955)
+    prefer_download_hf_artifact "sglang-download" "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "model.safetensors.index.json" 79657 "26d3539b516be613f39563617cb9d33b3f83d401298125be392c80cefb8f7fe5"
+    ;;
+  a712412fcd8890ac728477fcda1b0a67a7e936e370452edab8185d2b9fdc7faa)
+    prefer_download_hf_artifact "sglang-download" "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "preprocessor_config.json" 390 "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516"
+    ;;
+  fa7d573dad39c1815365377c98dd1778f7ae313bfe996066361eb7d97d8f3e76)
+    prefer_download_hf_artifact "sglang-download" "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "tokenizer.json" 12807982 "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42"
+    ;;
+  a5e18443f8adb0bd74babe7233b72bdae78064eb42a18e588b3d037c17b9e602)
+    prefer_download_hf_artifact "sglang-download" "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "tokenizer_config.json" 16710 "316230d6a809701f4db5ea8f8fc862bc3a6f3229c937c174e674ff3ca0a64ac8"
+    ;;
+  7e82c3cfe5b70e6a14c7c50da177d96f62e2220e95d25938b0adf488ec95d7f9)
+    prefer_download_hf_artifact "sglang-download" "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "video_preprocessor_config.json" 385 "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13"
+    ;;
+  6fd716375257123a017ed29811fe9e54bb099101c633e63e50699fd9b0c56abd)
+    prefer_download_hf_artifact "sglang-download" "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "vocab.json" 6722759 "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003"
     ;;
   1872540f100537b1a3934324582e5d9a5088aeed741a555bc27e960a482355a4)
     prefer_download_hf_artifact "sglang-download" "$1" "RadixArk/Qwen3.8-27B-NVFP4" "319f741cce68d7914884900c138a1fbb70a42f30" "chat_template.jinja" 8952 "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041"
@@ -976,6 +1049,45 @@ sglang_artifact_record() {
     ;;
   3588902454f67912fd9d4dbbdd50aa71d22a89a3356854aa1c8904c696b51c95)
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "Comfy-Org/MiniMax-H3" "3f57e8291d2ef846f9a074b1b76d2767db434abe" "diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors" 20970379616 sha256 "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779"
+    ;;
+  728db78a22432a94f75872a9c8a33c0953b49cf2beed398fa9d890257ec1e008)
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "chat_template.jinja" 7756 sha256 "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715"
+    ;;
+  3540aa5322eb9b6c321f1adbca0d66d93a8351a2cdd1eeaf9309d68bcf16170e)
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "config.json" 3126 sha256 "d0883072e01861ed0b2d47be3c16c36a8e81c224c7ffaa310c6558fb3f932b05"
+    ;;
+  d71d65bcfdb503e4da7de9950bfe0f60a804f5d9812a239c2c6264fe37f06db2)
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "merges.txt" 3353259 sha256 "a9d356d7bdf1ef4949e3e748e95b8e10ad9d4e2e838eddc38a0a7b6b94d1db8d"
+    ;;
+  d86510b151fc5396de972cf7e2904cbd5639ffeb1a3b9611426554b567b6a653)
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "model.safetensors-00001-of-00004.safetensors" 5276436216 sha256 "db6f444b43d318c92f360a13a25561a6a65b10c0631b8ed305a426dbaa6c380e"
+    ;;
+  ac088af1799a45838994aa0add5ba92f7393f97dfd419e1f1701f30fb8865ec7)
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "model.safetensors-00002-of-00004.safetensors" 5335161512 sha256 "31c7d7e2dd5d207840b31cc59083c8f4c4718959149e0358c0364052bb9a0330"
+    ;;
+  d7ed9cec7587b6d8563aa30c50a44da9d89fa88ab016b637b834b7bf81a1b3b2)
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "model.safetensors-00003-of-00004.safetensors" 5368717440 sha256 "7ec36ba3a4176a44c3c0876ad80c56a2f70c84bf008d82e9501df642f17dadec"
+    ;;
+  bd8949aadb54cd2008bae2933db190eded0a73d1f79b48f2ffed632f6538fa5f)
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "model.safetensors-00004-of-00004.safetensors" 3325995712 sha256 "b62b0c4cd7e44edee103ee8f4fe225f246d5e768e07bfd5f25b63a8aa1fdd0c6"
+    ;;
+  96714214595d5de5e3d58925bcd664cf26db6422494ac8bfbfd059f32fa18955)
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "model.safetensors.index.json" 79657 sha256 "26d3539b516be613f39563617cb9d33b3f83d401298125be392c80cefb8f7fe5"
+    ;;
+  a712412fcd8890ac728477fcda1b0a67a7e936e370452edab8185d2b9fdc7faa)
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "preprocessor_config.json" 390 sha256 "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516"
+    ;;
+  fa7d573dad39c1815365377c98dd1778f7ae313bfe996066361eb7d97d8f3e76)
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "tokenizer.json" 12807982 sha256 "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42"
+    ;;
+  a5e18443f8adb0bd74babe7233b72bdae78064eb42a18e588b3d037c17b9e602)
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "tokenizer_config.json" 16710 sha256 "316230d6a809701f4db5ea8f8fc862bc3a6f3229c937c174e674ff3ca0a64ac8"
+    ;;
+  7e82c3cfe5b70e6a14c7c50da177d96f62e2220e95d25938b0adf488ec95d7f9)
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "video_preprocessor_config.json" 385 sha256 "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13"
+    ;;
+  6fd716375257123a017ed29811fe9e54bb099101c633e63e50699fd9b0c56abd)
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "Qwen/Qwen3.5-9B" "c202236235762e1c871ad0ccb60c8ee5ba337b9a" "vocab.json" 6722759 sha256 "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003"
     ;;
   1872540f100537b1a3934324582e5d9a5088aeed741a555bc27e960a482355a4)
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "RadixArk/Qwen3.8-27B-NVFP4" "319f741cce68d7914884900c138a1fbb70a42f30" "chat_template.jinja" 8952 sha256 "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041"
@@ -1343,6 +1455,45 @@ sglang_s3_download_artifact_id() {
     ;;
   3588902454f67912fd9d4dbbdd50aa71d22a89a3356854aa1c8904c696b51c95)
     prefer_download_s3_artifact "sglang-s3" "$1" "Comfy-Org/MiniMax-H3" "diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors" 20970379616 "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  728db78a22432a94f75872a9c8a33c0953b49cf2beed398fa9d890257ec1e008)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Qwen/Qwen3.5-9B" "chat_template.jinja" 7756 "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  3540aa5322eb9b6c321f1adbca0d66d93a8351a2cdd1eeaf9309d68bcf16170e)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Qwen/Qwen3.5-9B" "config.json" 3126 "d0883072e01861ed0b2d47be3c16c36a8e81c224c7ffaa310c6558fb3f932b05" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  d71d65bcfdb503e4da7de9950bfe0f60a804f5d9812a239c2c6264fe37f06db2)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Qwen/Qwen3.5-9B" "merges.txt" 3353259 "a9d356d7bdf1ef4949e3e748e95b8e10ad9d4e2e838eddc38a0a7b6b94d1db8d" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  d86510b151fc5396de972cf7e2904cbd5639ffeb1a3b9611426554b567b6a653)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Qwen/Qwen3.5-9B" "model.safetensors-00001-of-00004.safetensors" 5276436216 "db6f444b43d318c92f360a13a25561a6a65b10c0631b8ed305a426dbaa6c380e" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  ac088af1799a45838994aa0add5ba92f7393f97dfd419e1f1701f30fb8865ec7)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Qwen/Qwen3.5-9B" "model.safetensors-00002-of-00004.safetensors" 5335161512 "31c7d7e2dd5d207840b31cc59083c8f4c4718959149e0358c0364052bb9a0330" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  d7ed9cec7587b6d8563aa30c50a44da9d89fa88ab016b637b834b7bf81a1b3b2)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Qwen/Qwen3.5-9B" "model.safetensors-00003-of-00004.safetensors" 5368717440 "7ec36ba3a4176a44c3c0876ad80c56a2f70c84bf008d82e9501df642f17dadec" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  bd8949aadb54cd2008bae2933db190eded0a73d1f79b48f2ffed632f6538fa5f)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Qwen/Qwen3.5-9B" "model.safetensors-00004-of-00004.safetensors" 3325995712 "b62b0c4cd7e44edee103ee8f4fe225f246d5e768e07bfd5f25b63a8aa1fdd0c6" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  96714214595d5de5e3d58925bcd664cf26db6422494ac8bfbfd059f32fa18955)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Qwen/Qwen3.5-9B" "model.safetensors.index.json" 79657 "26d3539b516be613f39563617cb9d33b3f83d401298125be392c80cefb8f7fe5" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  a712412fcd8890ac728477fcda1b0a67a7e936e370452edab8185d2b9fdc7faa)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Qwen/Qwen3.5-9B" "preprocessor_config.json" 390 "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  fa7d573dad39c1815365377c98dd1778f7ae313bfe996066361eb7d97d8f3e76)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Qwen/Qwen3.5-9B" "tokenizer.json" 12807982 "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  a5e18443f8adb0bd74babe7233b72bdae78064eb42a18e588b3d037c17b9e602)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Qwen/Qwen3.5-9B" "tokenizer_config.json" 16710 "316230d6a809701f4db5ea8f8fc862bc3a6f3229c937c174e674ff3ca0a64ac8" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  7e82c3cfe5b70e6a14c7c50da177d96f62e2220e95d25938b0adf488ec95d7f9)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Qwen/Qwen3.5-9B" "video_preprocessor_config.json" 385 "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
+    ;;
+  6fd716375257123a017ed29811fe9e54bb099101c633e63e50699fd9b0c56abd)
+    prefer_download_s3_artifact "sglang-s3" "$1" "Qwen/Qwen3.5-9B" "vocab.json" 6722759 "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"
     ;;
   1872540f100537b1a3934324582e5d9a5088aeed741a555bc27e960a482355a4)
     prefer_download_s3_artifact "sglang-s3" "$1" "RadixArk/Qwen3.8-27B-NVFP4" "chat_template.jinja" 8952 "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041" "$SGLANG_S3_BUCKET_NAME" "${SGLANG_S3_MODEL_PREFIX:-}"

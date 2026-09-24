@@ -177,8 +177,10 @@ alias chooses a CUDA major. SGLang CUDA 12 uses the final official CUDA 12.9
 release (`v0.5.19`), while CUDA 13 uses `v0.5.20`. Both vLLM variants use
 v0.29.0. The grouped release also offers pinned llama/vLLM ROCm builds,
 SGLang ROCm MI30x (not R9700), and Audio/Image Vulkan builds. These variants
-are build-only pending GPU and model validation; the existing NVFP4 SGLang/vLLM
-catalog routes remain NVIDIA-specific and Vulkan is not ROCm. On native Linux,
+are build-only pending GPU and model validation. SGLang/vLLM expose a
+first-party Qwen3.5-9B BF16 native text lane; the older NVFP4 experiment is
+explicit-only. Release image selection uses the observed GPU vendor/driver
+before model fitting, and Vulkan is not ROCm. On native Linux,
 ROCm containers need `/dev/kfd` and `/dev/dri`; Vulkan needs `/dev/dri` plus
 a working ICD. The local Compose file still requests NVIDIA GPUs, so use an
 explicit AMD container launch rather than `docker compose up` for these tags.

@@ -17,12 +17,14 @@ const MIB = 1024 ** 2;
 const execFileAsync = promisify(execFile);
 const DERIVED_RESOURCE_CAPABILITIES = new Set([
   "gpu", "cpu", "multi-gpu", "unified-memory", "discrete-vram", "host-memory",
-  "cuda", "bf16", "fp8", "nvfp4"
+  "cuda", "rocm", "bf16", "fp8", "nvfp4"
 ]);
 
 export interface DetectRuntimeResourcesOptions {
   base?: ResourceProfile;
   runNvidiaSmi?: (() => Promise<string>) | undefined;
+  runRocmSmi?: (() => Promise<string>) | undefined;
+  runNvidiaCudaVersion?: (() => Promise<string>) | undefined;
 }
 
 const HARDWARE_PROFILE_RECORD_FIELDS = new Set(["provider", "hardware", "compatibility"]);
@@ -31,6 +33,7 @@ const HARDWARE_PROFILE_FIELDS = new Set([
   "provider_gpu_type_id",
   "gpu_slug",
   "gpu_name",
+  "accelerator_vendor",
   "gpu_count",
   "vram_gb_each",
   "architecture",
@@ -46,6 +49,9 @@ const HARDWARE_PROFILE_FIELDS = new Set([
 ]);
 const HARDWARE_COMPATIBILITY_FIELDS = new Set([
   "container_runtime",
+  "cuda_runtime_majors",
+  "cuda_compatibility_observed_on",
+  "cuda_compatibility_reference",
   "model_storage",
   "provisioning_api",
   "minimum_host_ram_gb",
@@ -86,11 +92,30 @@ export function validateHardwareProfileCatalog(value: unknown): asserts value is
     if (typeof hardware.vram_gb_each !== "number" || hardware.vram_gb_each <= 0) {
       throw new Error(`hardware profile ${id} must declare positive vram_gb_each`);
     }
+    const vendor = hardware.accelerator_vendor;
+    if (vendor !== undefined && vendor !== "nvidia" && vendor !== "amd") {
+      throw new Error(`hardware profile ${id} has an invalid accelerator vendor`);
+    }
+    const compute = stringValue(hardware.compute_capability);
+    if ((vendor === "amd" && compute?.startsWith("sm_")) || (vendor === "nvidia" && compute?.startsWith("gfx"))) {
+      throw new Error(`hardware profile ${id} mixes accelerator vendors`);
+    }
     if (profile.compatibility !== undefined) {
       const compatibility = requireObject(profile.compatibility, `hardware profile ${id} compatibility`);
       for (const field of Object.keys(compatibility)) {
         if (!HARDWARE_COMPATIBILITY_FIELDS.has(field)) {
           throw new Error(`hardware profile ${id} contains unsupported compatibility field ${field}`);
+        }
+      }
+      if (vendor === "amd" && compatibility.container_runtime === "nvidia") {
+        throw new Error(`hardware profile ${id} mixes accelerator vendors`);
+      }
+      if (compatibility.cuda_runtime_majors !== undefined) {
+        const majors = compatibility.cuda_runtime_majors;
+        if (!Array.isArray(majors) || !majors.length || new Set(majors).size !== majors.length || majors.some((major) => major !== 12 && major !== 13) || acceleratorVendor(hardware, compatibility) !== "nvidia"
+          || !/^\d{4}-\d{2}-\d{2}$/u.test(String(compatibility.cuda_compatibility_observed_on ?? ""))
+          || !/^https:\/\//u.test(String(compatibility.cuda_compatibility_reference ?? ""))) {
+          throw new Error(`hardware profile ${id} has invalid CUDA runtime compatibility`);
         }
       }
     }
@@ -132,8 +157,10 @@ export function normalizeDeploymentResources(
   const totalEach = bytesFromGiB(hardware.vram_gb_each) ?? bytesFromGiB(hardware.vram_gb);
   const topology = memoryTopology(hardware, count);
   const acceleratorCapabilities = deriveAcceleratorCapabilities(hardware, compatibility);
+  const vendor = acceleratorVendor(hardware, compatibility);
   const accelerators: AcceleratorResource[] = Array.from({ length: count }, (_, index) => ({
     ...(count > 1 ? { id: `deployment-gpu-${index}` } : {}),
+    ...(vendor ? { vendor } : {}),
     ...(stringValue(hardware.gpu_slug) ? { slug: stringValue(hardware.gpu_slug)! } : {}),
     ...(stringValue(hardware.gpu_id) ? { canonical_id: stringValue(hardware.gpu_id)! } : {}),
     ...(stringValue(hardware.provider_gpu_type_id) ? { provider_id: stringValue(hardware.provider_gpu_type_id)! } : {}),
@@ -202,6 +229,7 @@ export function mergeRuntimeResources(
     ...(hostMemory ? { host_memory: hostMemory } : {}),
     ...(observation.cpu ? { cpu: { ...base.cpu, ...observation.cpu } } : {}),
     ...(observation.storage ? { storage: { ...base.storage, ...observation.storage } } : {}),
+    ...(observation.runtime_compatibility ? { runtime_compatibility: observation.runtime_compatibility } : {}),
     capabilities: [...new Set([
       ...baseCapabilities,
       ...structuralCapabilities,
@@ -211,22 +239,35 @@ export function mergeRuntimeResources(
   };
   if (!unifiedMemory) delete result.unified_memory;
   if (!hostMemory) delete result.host_memory;
+  if (acceleratorObservationSupplied && !observation.runtime_compatibility) delete result.runtime_compatibility;
   return result;
 }
 
 export async function detectRuntimeResources(
   options: DetectRuntimeResourcesOptions = {}
 ): Promise<ResourceProfile> {
-  const run = options.runNvidiaSmi ?? defaultNvidiaSmi;
   let accelerators: AcceleratorResource[] = [];
   let acceleratorProbeSucceeded = false;
   try {
-    accelerators = parseNvidiaSmi(await run());
+    accelerators = parseNvidiaSmi(await (options.runNvidiaSmi ?? defaultNvidiaSmi)());
     acceleratorProbeSucceeded = true;
   }
-  catch { /* CPU-only and restricted containers are valid resource probes. */ }
+  catch { /* Try ROCm before falling back to host-only resources. */ }
+  if (!acceleratorProbeSucceeded) {
+    try {
+      accelerators = parseRocmSmi(await (options.runRocmSmi ?? defaultRocmSmi)());
+      acceleratorProbeSucceeded = true;
+    }
+    catch { /* CPU-only and restricted containers are valid resource probes. */ }
+  }
+  let runtimeCompatibility: RuntimeResourceObservation["runtime_compatibility"];
+  if (accelerators.some((entry) => entry.vendor === "nvidia")) {
+    try { runtimeCompatibility = { cuda_max_major: parseNvidiaCudaVersion(await (options.runNvidiaCudaVersion ?? defaultNvidiaCudaVersion)()) }; }
+    catch { /* Driver compatibility remains unknown until the controller observes it. */ }
+  }
   const observation: RuntimeResourceObservation = {
     ...(acceleratorProbeSucceeded ? { accelerators } : {}),
+    ...(runtimeCompatibility ? { runtime_compatibility: runtimeCompatibility } : {}),
     host_memory: { total_bytes: totalmem(), available_bytes: freemem() },
     cpu: {
       architecture: arch(),
@@ -241,6 +282,7 @@ export async function detectRuntimeResources(
     source: "runtime",
     memory_topology: accelerators.length ? "discrete" : "host",
     accelerators,
+    ...(runtimeCompatibility ? { runtime_compatibility: runtimeCompatibility } : {}),
     host_memory: observation.host_memory!,
     cpu: observation.cpu!,
     capabilities: [...new Set([
@@ -267,12 +309,31 @@ export function parseNvidiaSmi(output: string): AcceleratorResource[] {
     };
     return {
       ...(id ? { id } : {}),
+      vendor: "nvidia",
       name,
       total_bytes: Math.round(total * MIB),
       available_bytes: Math.round(available * MIB),
       ...(computeCapability ? { compute_capability: `sm_${computeCapability.replace(".", "")}` } : {}),
       capabilities: [...deriveAcceleratorCapabilities(hardware, {})]
     };
+  });
+}
+
+export function parseRocmSmi(output: string): AcceleratorResource[] {
+  const parsed: unknown = JSON.parse(output);
+  if (!isObject(parsed)) throw new Error("rocm-smi must return a JSON object");
+  return Object.entries(parsed).map(([id, value]) => {
+    if (!/^card\d+$/u.test(id) || !isObject(value)) throw new Error(`invalid rocm-smi GPU record ${id}`);
+    const total = Number(value["VRAM Total Memory (B)"]);
+    const used = Number(value["VRAM Total Used Memory (B)"]);
+    if (!Number.isSafeInteger(total) || total <= 0 || !Number.isSafeInteger(used) || used < 0 || used > total) {
+      throw new Error(`invalid rocm-smi VRAM for ${id}`);
+    }
+    const name = stringValue(value["Card series"]) ?? stringValue(value["Card model"]) ?? id;
+    const gfx = stringValue(value["GPU architecture"]);
+    return { id, vendor: "amd", name,
+      ...(gfx && /^gfx[0-9a-z]+$/u.test(gfx) ? { compute_capability: gfx } : {}),
+      total_bytes: total, available_bytes: total - used, capabilities: ["rocm"] };
   });
 }
 
@@ -299,19 +360,34 @@ function deriveProfileCapabilities(
   ])].sort();
 }
 
+function acceleratorVendor(hardware: Record<string, unknown>, compatibility: Record<string, unknown>): "nvidia" | "amd" | undefined {
+  const explicit = stringValue(hardware.accelerator_vendor);
+  if (explicit === "nvidia" || explicit === "amd") return explicit;
+  const compute = stringValue(hardware.compute_capability) ?? "";
+  if (compute.startsWith("sm_")) return "nvidia";
+  if (compute.startsWith("gfx")) return "amd";
+  if (compatibility.container_runtime === "nvidia") return "nvidia";
+  const identity = [hardware.gpu_name, hardware.gpu_slug, hardware.architecture]
+    .filter((part): part is string => typeof part === "string").join(" ").toLowerCase();
+  if (/\b(?:nvidia|rtx|blackwell|hopper|ampere|tesla|l40s)\b/u.test(identity)) return "nvidia";
+  return undefined;
+}
+
 function deriveAcceleratorCapabilities(hardware: Record<string, unknown>, compatibility: Record<string, unknown>): Set<string> {
   const result = new Set<string>([...stringArray(hardware.capabilities), ...stringArray(compatibility.capabilities)]);
+  const vendor = acceleratorVendor(hardware, compatibility);
   const architecture = (stringValue(hardware.architecture) ?? stringValue(hardware.gpu_name) ?? "").toLowerCase();
   const compute = stringValue(hardware.compute_capability) ?? stringValue(compatibility.minimum_compute_capability) ?? "";
   const computeNumber = Number(compute.toLowerCase().replace(/^sm_/u, ""));
-  if (architecture.includes("blackwell") || computeNumber >= 100) {
+  if (vendor === "nvidia" && (architecture.includes("blackwell") || computeNumber >= 100)) {
     result.add("bf16"); result.add("fp8"); result.add("nvfp4");
-  } else if (architecture.includes("hopper") || (computeNumber >= 89 && computeNumber < 100)) {
+  } else if (vendor === "nvidia" && (architecture.includes("hopper") || (computeNumber >= 89 && computeNumber < 100))) {
     result.add("bf16"); result.add("fp8");
-  } else if (architecture.includes("ampere") || (computeNumber >= 80 && computeNumber < 89)) {
+  } else if (vendor === "nvidia" && (architecture.includes("ampere") || (computeNumber >= 80 && computeNumber < 89))) {
     result.add("bf16");
   }
-  if (compute || architecture) result.add("cuda");
+  if (vendor === "nvidia") result.add("cuda");
+  if (vendor === "amd") result.add("rocm");
   return result;
 }
 
@@ -357,6 +433,26 @@ function bytesFromGiB(value: unknown): number | undefined {
 
 function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
+}
+
+export function parseNvidiaCudaVersion(output: string): number {
+  const match = /CUDA Version:\s*(\d+)(?:\.\d+)?/u.exec(output);
+  if (!match) throw new Error("nvidia-smi did not report a CUDA driver API version");
+  const major = Number(match[1]);
+  if (!Number.isSafeInteger(major) || major < 1) throw new Error("nvidia-smi CUDA version is invalid");
+  return major;
+}
+
+async function defaultNvidiaCudaVersion(): Promise<string> {
+  const { stdout } = await execFileAsync("nvidia-smi", [], { encoding: "utf8", timeout: 10_000 });
+  return stdout;
+}
+
+async function defaultRocmSmi(): Promise<string> {
+  const { stdout } = await execFileAsync("rocm-smi", ["--showproductname", "--showmeminfo", "vram", "--json"], {
+    encoding: "utf8", timeout: 10_000
+  });
+  return stdout;
 }
 
 async function defaultNvidiaSmi(): Promise<string> {

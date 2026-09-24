@@ -50,6 +50,23 @@ class SGLangTests(unittest.TestCase):
                 self.assertEqual(len(config["models"]), 1)
                 self.assertTrue(config["command"])
 
+    def test_text_defaults_to_bf16_and_nvfp4_is_explicit_only(self):
+        inventory = json.loads((SGLANG_ROOT / "deployment-inventory.generated.json").read_text(encoding="utf-8"))
+        self.assertTrue(inventory["models"]["qwen-3.5-9b-bf16"]["primary"])
+        self.assertFalse(inventory["models"]["qwen-3.8-27b-nvfp4"]["primary"])
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "server.json"
+            command = [sys.executable, str(SGLANG_ROOT / "generate.py"), "--compose",
+                       "--output", str(output), "--prestage-output", str(Path(directory) / "prestage"),
+                       "--plan-output", str(Path(directory) / "plan")]
+            default = subprocess.run(command + ["--models", "qwen-3.5-9b"], cwd=ROOT, text=True, capture_output=True)
+            self.assertEqual(default.returncode, 0, default.stdout + default.stderr)
+            self.assertEqual(json.loads(output.read_text(encoding="utf-8"))["models"][0]["quant_slug"], "bf16")
+            friendly = subprocess.run(command + ["--models", "qwen-3.8-27b"], cwd=ROOT, text=True, capture_output=True)
+            self.assertNotEqual(friendly.returncode, 0)
+            explicit = subprocess.run(command + ["--models", "qwen-3.8-27b-nvfp4"], cwd=ROOT, text=True, capture_output=True)
+            self.assertEqual(explicit.returncode, 0, explicit.stdout + explicit.stderr)
+
     def test_download_contract_uses_shared_exact_marker_helper(self):
         helper = (SGLANG_ROOT / "download-artifacts.sh").read_bytes()
         self.assertEqual(helper, (ROOT / "docker" / "audio-cpp" / "download-artifacts.sh").read_bytes())
