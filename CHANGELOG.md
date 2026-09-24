@@ -1,6 +1,24 @@
 # PreFer changelog
 
-## Current
+## sha-160df3e (preview)
+
+- Images
+  - Llama CUDA 12: `ghcr.io/cvalusek/prefer:llama-cuda12-sha-160df3e@sha256:d7384456e4bfd43a8d516412ef5aefbd0374e1891483a0d7f812d68ea874dc19`.
+  - Llama ROCm: `ghcr.io/cvalusek/prefer:llama-rocm-sha-160df3e@sha256:52489cb156c3a2651daff1e1daf2b06dcdfec2abcd54651ba18b0958decac864`.
+  - Audio CUDA 12: `ghcr.io/cvalusek/prefer:audio-cuda12-sha-160df3e@sha256:bea3c23507170a0594afe865ca3e6e075243184a5641e297028e6b733624eb91`.
+  - Audio Vulkan: `ghcr.io/cvalusek/prefer:audio-vulkan-sha-160df3e@sha256:adc78580d9099bb972c75ed2e3afe372fd5c53cbd97ca40ea7b840b9bea25ee1`.
+  - Audio CPU: `ghcr.io/cvalusek/prefer:audio-cpu-sha-160df3e@sha256:02da2864b40fe6e942e5461a460ab86bd19b913619e14a883b3c62841f6ba072`.
+  - Image CUDA 12: `ghcr.io/cvalusek/prefer:image-cuda12-sha-160df3e@sha256:fba7418b6230c4d8bf912d67df82346af5e3df4657a9816487fe03a15315cc1c`.
+  - Image Vulkan: `ghcr.io/cvalusek/prefer:image-vulkan-sha-160df3e@sha256:61ffc589373ce28f7b938f72cbc35096f72178342f8c130a3f45c689e8b425f7`.
+  - SGLang CUDA 12: `ghcr.io/cvalusek/prefer:sglang-cuda12-sha-160df3e@sha256:75cd0406a8b0c64de1e60154e890a4c8db69e16b52a5133bce3e29e2be3ac3d2`.
+  - SGLang CUDA 13: `ghcr.io/cvalusek/prefer:sglang-cuda13-sha-160df3e@sha256:25a6568179b91957c5cad58a368b9b0325f940a1455e3372b3ed48b37ea67352`.
+  - SGLang ROCm MI30x: `ghcr.io/cvalusek/prefer:sglang-rocm-mi30x-sha-160df3e@sha256:f800f86620051391a2e65a1567f104efc893d3bc7eaac261943f1e9a1d693f2e`.
+  - vLLM CUDA 12: `ghcr.io/cvalusek/prefer:vllm-cuda12-sha-160df3e@sha256:ba13295ab1f66b070fe1baa11319a0ba6b0dec7f9196635db5daaf159517025a`.
+  - vLLM CUDA 13: `ghcr.io/cvalusek/prefer:vllm-cuda13-sha-160df3e@sha256:7fdcc4730c9ff2384d18ace301a65e027c32dd9f2cccb6eeacb0d841c2523115`.
+  - vLLM ROCm: `ghcr.io/cvalusek/prefer:vllm-rocm-sha-160df3e@sha256:c827418e464d2a3c75897be5e4398c5412abe6bff8858378783d0be9f1fd27bc`.
+  - CPU downloader: `ghcr.io/cvalusek/prefer:downloader-sha-160df3e@sha256:072a2241ba89fa6d801de6db40e4920dd6c438fb523a49e5abdc6622c351f260`.
+- Package
+  - npm: `prefer-inference-core@0.0.0-g160df3e`.
 
 - Image and resource selection
   - Release image entries now declare accelerator vendor, backend, CUDA major, and MI30x architecture where applicable; the package selects an immutable image from observed host compatibility before model fitting.
